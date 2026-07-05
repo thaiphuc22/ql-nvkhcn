@@ -51,8 +51,17 @@ export const theme: ThemeConfig = {
       darkItemColor: "rgba(255,255,255,0.78)",
       darkItemHoverColor: "#ffffff",
       darkItemHoverBg: "rgba(255,255,255,0.10)",
-      darkItemSelectedBg: "RED_CHROME",
-      darkItemSelectedColor: "RED_CHROME",
+      darkItemSelectedBg: RED,
+      darkItemSelectedColor: "#ffffff",
+    },
+    Breadcrumb: {
+      // Breadcrumb đỏ theo brand: item cuối (trang hiện tại) đỏ tươi nổi bật,
+      // các cấp trước + link đỏ trầm, hover về đỏ tươi.
+      lastItemColor: RED,
+      itemColor: RED_CHROME,
+      linkColor: RED_CHROME,
+      linkHoverColor: RED,
+      separatorColor: "#d4a5a3",
     },
   },
 };

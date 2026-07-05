@@ -4,8 +4,8 @@ import { seedForms, emptySchema, type FormMeta } from '../forms'
 interface FormCtxValue {
   list: FormMeta[]
   getForm: (key?: string) => FormMeta | undefined
-  /** Tạo biểu mẫu mới với schema rỗng. Trả false nếu trùng key. */
-  addForm: (meta: { key: string; ten: string; moTa?: string; loai?: FormMeta['loai'] }) => boolean
+  /** Tạo biểu mẫu mới với schema rỗng. Trả FormMeta vừa tạo (để mở designer ngay), null nếu trùng key. */
+  addForm: (meta: { key: string; ten: string; moTa?: string; loai?: FormMeta['loai'] }) => FormMeta | null
   updateMeta: (key: string, patch: Partial<Pick<FormMeta, 'ten' | 'moTa' | 'loai'>>) => void
   /** Cập nhật schema sau khi thiết kế trong designer. */
   updateSchema: (key: string, schema: unknown) => void
@@ -27,12 +27,10 @@ export function FormProvider({ children }: { children: ReactNode }) {
 
   const addForm: FormCtxValue['addForm'] = ({ key, ten, moTa, loai }) => {
     const k = key.trim().toLowerCase()
-    if (!k || list.some((f) => f.key === k)) return false
-    setList((prev) => [
-      { key: k, ten: ten.trim(), moTa: moTa?.trim() || '', loai, schema: emptySchema(k, ten.trim()) },
-      ...prev,
-    ])
-    return true
+    if (!k || list.some((f) => f.key === k)) return null
+    const meta: FormMeta = { key: k, ten: ten.trim(), moTa: moTa?.trim() || '', loai, schema: emptySchema(k, ten.trim()) }
+    setList((prev) => [meta, ...prev])
+    return meta
   }
 
   const updateMeta: FormCtxValue['updateMeta'] = (key, patch) => {

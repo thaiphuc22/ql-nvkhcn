@@ -233,6 +233,7 @@ export default function App() {
               type="text"
               aria-label={collapsed ? 'Mở rộng menu' : 'Thu gọn menu'}
               icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+              style={{ color: 'var(--vht-red)' }}
               onClick={() => setCollapsed((v) => !v)}
             />
             <Breadcrumb items={breadcrumbItems} style={{ whiteSpace: 'normal' }} />

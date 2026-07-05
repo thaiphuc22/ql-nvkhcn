@@ -35,7 +35,6 @@ export default function ProcessCatalog() {
 
   const [q, setQ] = useState('')
   const [fNhom, setFNhom] = useState<string>()
-  const [fPha, setFPha] = useState<number>()
   const [fStatus, setFStatus] = useState<ProcessStatus>()
 
   const [createOpen, setCreateOpen] = useState(false)
@@ -51,7 +50,6 @@ export default function ProcessCatalog() {
   const rows = useMemo(() => {
     return list.filter((p) => {
       if (fNhom && p.nhom !== fNhom) return false
-      if (fPha && p.pha !== fPha) return false
       if (fStatus && p.trangThai !== fStatus) return false
       if (q) {
         const s = q.toLowerCase()
@@ -59,7 +57,7 @@ export default function ProcessCatalog() {
       }
       return true
     })
-  }, [list, q, fNhom, fPha, fStatus])
+  }, [list, q, fNhom, fStatus])
 
   function submitCreate() {
     form.validateFields().then((values) => {
@@ -69,7 +67,6 @@ export default function ProcessCatalog() {
         ma,
         ten,
         nhom: values.nhom,
-        pha: 2,
         trangThai: 'active',
         instances: 0,
         capNhat: '2026-07-03',
@@ -99,7 +96,6 @@ export default function ProcessCatalog() {
       ),
     },
     { title: 'Nhóm', dataIndex: 'nhom', width: 90, render: (v: string) => <Tag>{v}</Tag> },
-    { title: 'Pha', dataIndex: 'pha', width: 74, align: 'center', render: (v: number) => `Pha ${v}` },
     {
       title: 'Phiên bản', key: 'ver', width: 100, align: 'center',
       render: (_, r) => <Text strong>v{curVer(r)}</Text>,
@@ -144,8 +140,6 @@ export default function ProcessCatalog() {
         selects={[
           { key: 'nhom', placeholder: 'Tất cả nhóm', value: fNhom, onChange: setFNhom, width: 220,
             options: Object.entries(NHOM).map(([k, v]) => ({ value: k, label: `${k} · ${v}` })) },
-          { key: 'pha', placeholder: 'Tất cả pha', value: fPha, onChange: setFPha, width: 130,
-            options: [{ value: 1, label: 'Pha 1' }, { value: 2, label: 'Pha 2' }] },
           { key: 'status', placeholder: 'Tất cả trạng thái', value: fStatus, onChange: setFStatus,
             options: (Object.keys(STATUS_META) as ProcessStatus[]).map((k) => ({ value: k, label: STATUS_META[k].label })) },
         ]}

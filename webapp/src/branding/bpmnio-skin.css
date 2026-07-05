@@ -280,6 +280,27 @@
   border-radius: var(--vht-radius);
 }
 
+/* ── Đợt FD: Form designer bố cục custom (palette portal + full-height) ───────
+ * Palette form-js được portal vào dock React `.vht-fd-palette-dock` (config
+ * `palette: { parent }`) — CSS gốc chỉ set kích thước khi palette nằm trong
+ * `.fjs-editor-container`, nên phải cho nó nở đầy dock ở đây. KHÔNG sửa block
+ * `.vht-designer .bio-properties-panel` (Đợt 6 — dùng chung với dock BPMN). */
+.vht-fd-palette-dock .fjs-palette-container,
+.vht-fd-palette-dock .fjs-palette {
+  width: 100%;
+  height: 100%;
+  border-right: none;
+}
+/* Dock đã có header React riêng ("Thành phần") — ẩn header gốc của palette. */
+.vht-fd-palette-dock .fjs-palette-header {
+  display: none;
+}
+/* Canvas form-js chiếm trọn khung khi ghim trong flex row full-height. */
+.vht-fd-canvas .fjs-container,
+.vht-fd-canvas .fjs-editor-container {
+  height: 100%;
+}
+
 /* ── Drawer "Mẫu nghiệp vụ KHCN" (Đợt 3) ────────────────────────────────────── */
 /* Khi drawer mở: đẩy palette + minimap sang phải để không bị che. */
 .khcn-drawer-open .djs-palette {

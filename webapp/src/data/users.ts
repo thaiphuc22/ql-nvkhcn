@@ -33,8 +33,10 @@ export const ALL_ROLES = [
 
 export const users: AppUser[] = [
   {
+    // Tên user demo khớp người xuất hiện trong mock data (nhiemVu.ts/dossiers.ts)
+    // để demo nhất quán: đăng nhập pm@ thấy đúng chủ nhiệm của RD.2026.012.
     id: 'U-004',
-    hoTen: 'Nguyễn Văn PM',
+    hoTen: 'Trần Văn Nam',
     email: 'pm@example.com',
     donVi: 'Trung tâm Nghiên cứu',
     vaiTro: ['Chủ nhiệm đề tài'],
@@ -43,7 +45,7 @@ export const users: AppUser[] = [
   },
   {
     id: 'U-002',
-    hoTen: 'Trần Thị Ban Giám Đốc',
+    hoTen: 'Lê Minh Quang',
     email: 'bgd@example.com',
     donVi: 'Ban Giám đốc',
     vaiTro: ['Ban GĐ Trung tâm', 'Ban GĐ Khối'],
@@ -52,7 +54,7 @@ export const users: AppUser[] = [
   },
   {
     id: 'U-003',
-    hoTen: 'Lê Văn Nghiệp Vụ',
+    hoTen: 'Phạm Thu Hà',
     email: 'cqnv@example.com',
     donVi: 'CQNV VHT',
     vaiTro: ['Cơ quan nghiệp vụ VHT'],
@@ -61,7 +63,7 @@ export const users: AppUser[] = [
   },
   {
     id: 'U-006',
-    hoTen: 'Phạm Thị QLKHCN',
+    hoTen: 'Vũ Thành Long',
     email: 'qlkhcn@example.com',
     donVi: 'CQ QLKHCN',
     vaiTro: ['CQ Quản lý KHCN'],
@@ -70,7 +72,7 @@ export const users: AppUser[] = [
   },
   {
     id: 'U-008',
-    hoTen: 'Vũ Thị Trưởng Phòng',
+    hoTen: 'Đặng Thị Mai Hương',
     email: 'tp@example.com',
     donVi: 'Khối Phòng ban',
     vaiTro: ['TP Chiến lược KHCN', 'TP Tài chính Kế toán', 'TP Nhân sự', 'GĐ TT Mua sắm'],
@@ -79,7 +81,7 @@ export const users: AppUser[] = [
   },
   {
     id: 'U-005',
-    hoTen: 'Hoàng Văn Phó Tổng',
+    hoTen: 'Nguyễn Đức Thắng',
     email: 'ptgd@example.com',
     donVi: 'Ban Tổng Giám đốc',
     vaiTro: ['Phó TGĐ chuyên trách'],
@@ -88,7 +90,7 @@ export const users: AppUser[] = [
   },
   {
     id: 'U-007',
-    hoTen: 'Đỗ Văn Tổng Giám Đốc',
+    hoTen: 'Phạm Quang Vinh',
     email: 'tgd@example.com',
     donVi: 'Ban Tổng Giám đốc',
     vaiTro: ['Tổng Giám đốc VHT'],
@@ -97,7 +99,7 @@ export const users: AppUser[] = [
   },
   {
     id: 'U-001',
-    hoTen: 'Quản trị viên hệ thống',
+    hoTen: 'Lê Văn Cường',
     email: 'admin@example.com',
     donVi: 'CNTT',
     vaiTro: ['Quản trị hệ thống'],
