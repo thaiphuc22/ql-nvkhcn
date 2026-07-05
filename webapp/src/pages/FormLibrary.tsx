@@ -57,7 +57,7 @@ function slugify(s: string): string {
 }
 
 export default function FormLibrary() {
-  const { message } = App.useApp()
+  const { message, modal } = App.useApp()
   const { list, addForm, updateSchema, removeForm } = useForms()
   const { list: processes } = useProcesses()
 
@@ -81,14 +81,16 @@ export default function FormLibrary() {
   function submitCreate() {
     createForm.validateFields().then((v) => {
       const key = slugify(v.key || v.ten)
-      const ok = addForm({ key, ten: v.ten, moTa: v.moTa, loai: v.loai })
-      if (!ok) {
+      const created = addForm({ key, ten: v.ten, moTa: v.moTa, loai: v.loai })
+      if (!created) {
         message.error(`Mã biểu mẫu "${key}" đã tồn tại hoặc không hợp lệ.`)
         return
       }
-      message.success(`Đã tạo biểu mẫu "${v.ten}". Mở designer để thiết kế các trường.`)
+      message.success(`Đã tạo biểu mẫu "${v.ten}".`)
       setCreateOpen(false)
       createForm.resetFields()
+      // "Tạo & mở designer" đúng nghĩa: mở luôn drawer thiết kế cho form vừa tạo.
+      setEditing(created)
     })
   }
 
@@ -100,7 +102,24 @@ export default function FormLibrary() {
       return
     }
     updateSchema(editing.key, schema)
+    designerRef.current?.markSaved()
     message.success(`Đã lưu thiết kế biểu mẫu "${editing.ten}".`)
+    setEditing(null)
+  }
+
+  /** Đóng drawer thiết kế — còn thay đổi chưa lưu thì hỏi trước. */
+  function closeDesigner() {
+    if (designerRef.current?.isDirty()) {
+      modal.confirm({
+        title: 'Thoát khi chưa lưu?',
+        content: 'Thay đổi thiết kế chưa lưu sẽ bị mất.',
+        okText: 'Thoát',
+        okButtonProps: { danger: true },
+        cancelText: 'Ở lại',
+        onOk: () => setEditing(null),
+      })
+      return
+    }
     setEditing(null)
   }
 
@@ -256,23 +275,28 @@ export default function FormLibrary() {
         width="calc(100vw - var(--vht-sider-w, 230px) - 16px)"
         rootStyle={{ zIndex: 90 }}
         destroyOnClose
-        onClose={() => setEditing(null)}
+        onClose={closeDesigner}
+        // Full-height: body flex column, hint cố định trên, designer chiếm phần còn lại.
+        styles={{ body: { padding: 0, display: 'flex', flexDirection: 'column' } }}
         extra={
           <Space>
-            <Button onClick={() => setEditing(null)}>Huỷ</Button>
+            <Button onClick={closeDesigner}>Huỷ</Button>
             <Button type="primary" icon={<SaveOutlined />} onClick={saveDesign}>Lưu thiết kế</Button>
           </Space>
         }
       >
         {editing ? (
           <>
-            <Paragraph type="secondary" style={{ marginTop: 0 }}>
-              Kéo–thả các trường từ panel trái. Đặt <Text code>key</Text> = <Text code>ketLuan</Text> cho trường
-              kết luận để hệ thống tự nhận Đồng ý/Đạt/Thông qua/Phê duyệt khi xử lý hồ sơ.
+            <Paragraph type="secondary" style={{ flex: '0 0 auto', margin: 0, padding: '8px 16px 0' }}>
+              Kéo–thả các trường từ dock <Text strong>Thành phần</Text> (trái), chỉnh thuộc tính ở dock phải,
+              bật <Text strong>Xem trước</Text> để thấy form render trực tiếp. Đặt <Text code>key</Text> ={' '}
+              <Text code>ketLuan</Text> cho trường kết luận để hệ thống tự nhận Đồng ý/Đạt/Thông qua/Phê duyệt.
             </Paragraph>
-            <Suspense fallback={<div style={{ padding: 48, textAlign: 'center' }}><Spin tip="Đang tải trình thiết kế..." /></div>}>
-              <FormDesigner ref={designerRef} schema={editing.schema} />
-            </Suspense>
+            <div style={{ flex: 1, minHeight: 0, padding: '8px 16px 16px' }}>
+              <Suspense fallback={<div style={{ padding: 48, textAlign: 'center' }}><Spin tip="Đang tải trình thiết kế..." /></div>}>
+                <FormDesigner ref={designerRef} schema={editing.schema} />
+              </Suspense>
+            </div>
           </>
         ) : (
           <Empty />

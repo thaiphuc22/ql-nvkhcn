@@ -15,10 +15,13 @@ import { VI_DICT } from './translate-vi'
 
 const TEXT_SELECTORS = [
   '.fjs-palette-group-title',
+  '.fjs-palette-no-entries',
   '.bio-properties-panel-group-header-title',
   '.bio-properties-panel-label',
   '.bio-properties-panel-collapsible-entry-header-title',
   '.bio-properties-panel-header-label',
+  '.bio-properties-panel-header-type',
+  '.bio-properties-panel-placeholder-text',
 ].join(',')
 
 /** Sửa tại chỗ nodeValue của text node đầu tiên (giữ nguyên node của preact). */

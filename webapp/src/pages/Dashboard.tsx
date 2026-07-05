@@ -81,7 +81,7 @@ export default function Dashboard() {
   }, [list])
 
   const recentDossiers = useMemo(
-    () => [...list].sort((a, b) => (a.ngayTao < b.ngayTao ? 1 : -1)).slice(0, 5),
+    () => [...list].sort((a, b) => (a.ngayTao < b.ngayTao ? 1 : -1)),
     [list],
   )
 
@@ -152,7 +152,7 @@ export default function Dashboard() {
               rowKey="id"
               columns={columns}
               dataSource={recentDossiers}
-              pagination={false}
+              pageSize={5}
               onRowClick={(r) => navigate(`/ho-so/${encodeURIComponent(r.id)}`)}
             />
           </Card>

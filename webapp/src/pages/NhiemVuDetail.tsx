@@ -135,7 +135,7 @@ export default function NhiemVuDetail() {
               rowKey="id"
               columns={cols}
               dataSource={hoSo}
-              pagination={false}
+              pageSize={5}
               onRowClick={(r) => navigate(`/ho-so/${encodeURIComponent(r.id)}`)}
               emptyText="Nhiệm vụ chưa có hồ sơ nào."
             />

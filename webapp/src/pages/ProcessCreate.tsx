@@ -37,7 +37,7 @@ export default function ProcessCreate() {
   const [saving, setSaving] = useState(false)
 
   async function handleSave() {
-    let values: { ma: string; ten: string; nhom: string; pha: 1 | 2; moTa?: string }
+    let values: { ma: string; ten: string; nhom: string; moTa?: string }
     try {
       values = await form.validateFields()
     } catch {
@@ -58,7 +58,6 @@ export default function ProcessCreate() {
         ma,
         ten: values.ten.trim(),
         nhom: values.nhom,
-        pha: values.pha,
         trangThai: 'draft',
         instances: 0,
         capNhat: TODAY,
@@ -115,7 +114,7 @@ export default function ProcessCreate() {
 
       {/* ── Section trên: Thông tin chung ─────────────────────────────────── */}
       <Card title="Thông tin chung" size="small" style={{ marginBottom: 16, flex: '0 0 auto' }}>
-        <Form form={form} layout="vertical" initialValues={{ nhom: 'RD01', pha: 2 }}>
+        <Form form={form} layout="vertical" initialValues={{ nhom: 'RD01' }}>
           <Row gutter={12}>
             <Col xs={24} sm={8} md={5}>
               <Form.Item name="ma" label="Mã quy trình" rules={[{ required: true, message: 'Nhập mã' }]}>
@@ -127,14 +126,9 @@ export default function ProcessCreate() {
                 <Input placeholder="VD: Quản lý danh mục SPDV" />
               </Form.Item>
             </Col>
-            <Col xs={12} sm={8} md={6}>
+            <Col xs={12} sm={8} md={10}>
               <Form.Item name="nhom" label="Nhóm" rules={[{ required: true }]}>
                 <Select options={Object.entries(NHOM).map(([k, v]) => ({ value: k, label: `${k} · ${v}` }))} />
-              </Form.Item>
-            </Col>
-            <Col xs={12} sm={8} md={4}>
-              <Form.Item name="pha" label="Pha" rules={[{ required: true }]}>
-                <Select options={[{ value: 1, label: 'Pha 1' }, { value: 2, label: 'Pha 2' }]} />
               </Form.Item>
             </Col>
             <Col xs={24}>

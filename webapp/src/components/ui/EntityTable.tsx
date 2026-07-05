@@ -20,7 +20,7 @@ export interface EntityTableProps<T> extends Omit<TableProps<T>, 'onRow' | 'loca
 export const LIST_SCROLL_Y = 'calc(100vh - 360px)'
 
 /**
- * Bảng chuẩn: phân trang mặc định (ẩn khi 1 trang, cho chọn số dòng/trang),
+ * Bảng chuẩn: phân trang mặc định (luôn hiện, cho chọn số dòng/trang),
  * empty chuẩn, tự chống tràn ngang (`scroll.x`), và điều hướng khi bấm dòng.
  * Truyền `pagination={false}` cho bảng nhúng (không phân trang) và
  * `scroll={{ y: LIST_SCROLL_Y }}` cho bảng danh sách cấp trang để có vùng cuộn riêng.
@@ -44,7 +44,6 @@ export default function EntityTable<T extends object>({
         pagination === undefined
           ? {
               pageSize,
-              hideOnSinglePage: true,
               showSizeChanger: true,
               pageSizeOptions: [10, 20, 50, 100],
               showTotal: (total) => `Tổng ${total} dòng`,
