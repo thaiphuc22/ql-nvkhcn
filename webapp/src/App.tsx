@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Layout, Menu, Avatar, Typography, Space, Grid, Badge, Breadcrumb, Button, Dropdown } from 'antd'
+import { lazy, Suspense, startTransition, useEffect, useState } from 'react'
+import { Layout, Menu, Avatar, Typography, Space, Grid, Badge, Breadcrumb, Button, Dropdown, Spin } from 'antd'
 import {
   KeyOutlined,
   PartitionOutlined,
@@ -16,22 +16,25 @@ import {
   HistoryOutlined,
 } from '@ant-design/icons'
 import { Routes, Route, Navigate, useNavigate, useLocation, Link } from 'react-router-dom'
-import ProcessCatalog from './pages/ProcessCatalog'
-import ProcessCreate from './pages/ProcessCreate'
-import ProcessDetail from './pages/ProcessDetail'
-import DossierList from './pages/DossierList'
-import DossierDetail from './pages/DossierDetail'
-import NhiemVuList from './pages/NhiemVuList'
-import NhiemVuCreate from './pages/NhiemVuCreate'
-import NhiemVuDetail from './pages/NhiemVuDetail'
-import Worklist from './pages/Worklist'
-import FormLibrary from './pages/FormLibrary'
-import UserManagement from './pages/UserManagement'
-import ProcessMonitor from './pages/ProcessMonitor'
-import IntegrationStatus from './pages/IntegrationStatus'
-import ProcessEventLog from './pages/ProcessEventLog'
 import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'
+
+// Lazy-load các trang còn lại → tách khỏi bundle chính, giảm chi phí render mỗi lần
+// điều hướng (nguyên nhân INP khi bấm menu). Dashboard/Login giữ eager vì là trang đầu.
+const ProcessCatalog = lazy(() => import('./pages/ProcessCatalog'))
+const ProcessCreate = lazy(() => import('./pages/ProcessCreate'))
+const ProcessDetail = lazy(() => import('./pages/ProcessDetail'))
+const DossierList = lazy(() => import('./pages/DossierList'))
+const DossierDetail = lazy(() => import('./pages/DossierDetail'))
+const NhiemVuList = lazy(() => import('./pages/NhiemVuList'))
+const NhiemVuCreate = lazy(() => import('./pages/NhiemVuCreate'))
+const NhiemVuDetail = lazy(() => import('./pages/NhiemVuDetail'))
+const Worklist = lazy(() => import('./pages/Worklist'))
+const FormLibrary = lazy(() => import('./pages/FormLibrary'))
+const UserManagement = lazy(() => import('./pages/UserManagement'))
+const ProcessMonitor = lazy(() => import('./pages/ProcessMonitor'))
+const IntegrationStatus = lazy(() => import('./pages/IntegrationStatus'))
+const ProcessEventLog = lazy(() => import('./pages/ProcessEventLog'))
 import { useDossiers } from './store/DossierContext'
 import { useBreadcrumb } from './store/BreadcrumbContext'
 import { useAuth } from './store/AuthContext'
@@ -200,7 +203,9 @@ export default function App() {
           items={menuItems}
           onClick={({ key }) => {
             const to = ROUTE_BY_KEY[key]
-            if (to) navigate(to)
+            // startTransition: điều hướng là non-urgent → React paint highlight menu
+            // ngay, render trang đích ở nền, không chặn UI (giảm INP).
+            if (to) startTransition(() => navigate(to))
           }}
         />
       </Sider>
@@ -269,6 +274,7 @@ export default function App() {
         </Header>
 
         <Content id="app-scroll" style={{ padding: 24, background: 'var(--vht-surface-2)', position: 'relative' }}>
+          <Suspense fallback={<div style={{ display: 'grid', placeItems: 'center', minHeight: '40vh' }}><Spin size="large" /></div>}>
           <Routes>
             <Route path="/tong-quan" element={<Dashboard />} />
             <Route path="/viec-cua-toi" element={<Worklist />} />
@@ -287,6 +293,7 @@ export default function App() {
             <Route path="/nhat-ky" element={<ProcessEventLog />} />
             <Route path="*" element={<Navigate to="/tong-quan" replace />} />
           </Routes>
+          </Suspense>
         </Content>
       </Layout>
     </Layout>
