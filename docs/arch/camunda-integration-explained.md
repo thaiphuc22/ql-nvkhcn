@@ -1,7 +1,7 @@
 # Camunda 8 tích hợp & triển khai vào hệ thống QLNVKHCN — giải thích
 
 > **Trạng thái:** F2 — tài liệu giải thích (bổ trợ `camunda-design.md`) · **Ngày:** 2026-07-03
-> **Mục đích:** trả lời rõ *"Camunda được cài đặt và tích hợp vào hệ thống QL NV KHCN như thế nào"* cho team & khách.
+> **Mục đích:** trả lời rõ _"Camunda được cài đặt và tích hợp vào hệ thống QL NV KHCN như thế nào"_ cho team & khách.
 > **Bối cảnh:** license Camunda 8 đã chốt (RESOLVED 2026-07-03). Giả định triển khai **Self-Managed** trên hạ tầng VHT
 > (chờ khách xác nhận cuối — `OQ-CAM-DEPLOY`).
 > **Quan hệ tài liệu:** `camunda-design.md` = ranh giới BPMN↔code (làm gì ở đâu). Tài liệu này = **topology triển khai + cơ chế kết nối** (nằm ở đâu, gọi nhau ra sao).
@@ -12,12 +12,12 @@
 
 Hiểu lầm phổ biến nhất: "tích hợp Camunda" = thêm một thư viện vào code app (như thêm Ant Design). **Sai với Camunda 8.**
 
-| | Camunda 7 (cũ) | **Camunda 8 (ta dùng)** |
-|---|---|---|
-| Engine | Thư viện Java **nhúng** trong app | **Hệ thống riêng (Zeebe)** chạy độc lập |
-| Giao tiếp | Gọi hàm trong tiến trình | **Qua mạng** (gRPC + REST) |
-| Database | Chung DB với app | DB riêng của engine (Elasticsearch) |
-| Vai trò app | App *chứa* engine | App là **client** của engine |
+|             | Camunda 7 (cũ)                    | **Camunda 8 (ta dùng)**                 |
+| ----------- | --------------------------------- | --------------------------------------- |
+| Engine      | Thư viện Java **nhúng** trong app | **Hệ thống riêng (Zeebe)** chạy độc lập |
+| Giao tiếp   | Gọi hàm trong tiến trình          | **Qua mạng** (gRPC + REST)              |
+| Database    | Chung DB với app                  | DB riêng của engine (Elasticsearch)     |
+| Vai trò app | App _chứa_ engine                 | App là **client** của engine            |
 
 → **Ta không "cài Camunda vào app". Ta dựng Camunda như một cụm dịch vụ riêng, rồi backend app gọi tới nó** — giống app gọi tới một database hay một API bên ngoài.
 
@@ -27,17 +27,17 @@ Hiểu lầm phổ biến nhất: "tích hợp Camunda" = thêm một thư việ
 
 Khách (có license) cài **một bộ nhiều container** lên hạ tầng của họ — thường qua **Helm chart `camunda-platform`** trên Kubernetes (hoặc docker-compose khi POC):
 
-| Thành phần | Vai trò | Ta có gọi tới? |
-|---|---|---|
-| **Zeebe broker + Gateway** | LÕI: chạy BPMN, giữ trạng thái luồng. Mở cổng **gRPC** | ✅ Kênh 1-2-3 |
-| **Operate** | UI/API giám sát instance, xử lý incident | ✅ Kênh 4 (REST) |
-| **Tasklist** | API danh sách user task | ✅ Kênh 4 (REST) — ta gọi API, KHÔNG dùng UI (D2) |
-| **Identity** | Ánh xạ user/role, quản client OAuth; nối SSO | ✅ (cấp client-id/secret cho BE) |
-| **Connectors runtime** | (tuỳ license) chạy connector REST/SOAP cấu hình sẵn | ⚠️ tuỳ `OQ-CAM-COMPONENTS` |
-| **Optimize** | (tuỳ) phân tích/BI luồng | ❔ tuỳ nhu cầu |
-| **Elasticsearch / OpenSearch** | Nơi Operate/Tasklist lưu lịch sử luồng | ⛔ nội bộ cụm |
-| **Web Modeler** | (tuỳ) BA/dev vẽ BPMN/DMN trên web | ❔ hoặc dùng Desktop Modeler |
-| **Keycloak** | IdP nền cho Identity (hoặc nối SSO/IAM VHT sẵn có) | ✅ (BE xin token ở đây) |
+| Thành phần                     | Vai trò                                                | Ta có gọi tới?                                    |
+| ------------------------------ | ------------------------------------------------------ | ------------------------------------------------- |
+| **Zeebe broker + Gateway**     | LÕI: chạy BPMN, giữ trạng thái luồng. Mở cổng **gRPC** | ✅ Kênh 1-2-3                                     |
+| **Operate**                    | UI/API giám sát instance, xử lý incident               | ✅ Kênh 4 (REST)                                  |
+| **Tasklist**                   | API danh sách user task                                | ✅ Kênh 4 (REST) — ta gọi API, KHÔNG dùng UI (D2) |
+| **Identity**                   | Ánh xạ user/role, quản client OAuth; nối SSO           | ✅ (cấp client-id/secret cho BE)                  |
+| **Connectors runtime**         | (tuỳ license) chạy connector REST/SOAP cấu hình sẵn    | ⚠️ tuỳ `OQ-CAM-COMPONENTS`                        |
+| **Optimize**                   | (tuỳ) phân tích/BI luồng                               | ❔ tuỳ nhu cầu                                    |
+| **Elasticsearch / OpenSearch** | Nơi Operate/Tasklist lưu lịch sử luồng                 | ⛔ nội bộ cụm                                     |
+| **Web Modeler**                | (tuỳ) BA/dev vẽ BPMN/DMN trên web                      | ❔ hoặc dùng Desktop Modeler                      |
+| **Keycloak**                   | IdP nền cho Identity (hoặc nối SSO/IAM VHT sẵn có)     | ✅ (BE xin token ở đây)                           |
 
 > Đây chính là khối "**mua**". Frontend + Backend + DB nghiệp vụ là khối "**ta xây**".
 
@@ -112,6 +112,7 @@ Giả định VHT cấp 1 cụm K8s nội bộ. Tách **namespace** theo trách 
 ```
 
 **Đọc sơ đồ:**
+
 - **`ns: qlnvkhcn`** — khối ta xây: `frontend`, `backend-qlnvkhcn`, `postgres` (DB nghiệp vụ).
 - **`ns: camunda`** — khối khách cài từ Helm chart (cụm engine + Elasticsearch). Ta **không** deploy khối này, chỉ **kết nối tới** qua service DNS nội cụm, vd `zeebe-gateway.camunda.svc.cluster.local:26500`.
 - **`ns: iam`** — Keycloak (hoặc nối thẳng SSO/IAM sẵn có của VHT). BE xin token ở đây.
@@ -119,12 +120,12 @@ Giả định VHT cấp 1 cụm K8s nội bộ. Tách **namespace** theo trách 
 
 **Ai deploy cái gì:**
 
-| Khối | Ai deploy | Cách |
-|---|---|---|
+| Khối                          | Ai deploy              | Cách                            |
+| ----------------------------- | ---------------------- | ------------------------------- |
 | `ns: camunda` + Elasticsearch | **Khách** (có license) | Helm `camunda/camunda-platform` |
-| `ns: iam` Keycloak | Khách / hạ tầng VHT | Helm hoặc dùng IAM VHT sẵn |
-| `ns: qlnvkhcn` (FE/BE/DB) | **Đội dự án (ta)** | Helm/manifest của dự án |
-| Ingress, network policy | Hạ tầng VHT | — |
+| `ns: iam` Keycloak            | Khách / hạ tầng VHT    | Helm hoặc dùng IAM VHT sẵn      |
+| `ns: qlnvkhcn` (FE/BE/DB)     | **Đội dự án (ta)**     | Helm/manifest của dự án         |
+| Ingress, network policy       | Hạ tầng VHT            | —                               |
 
 ---
 
@@ -132,14 +133,14 @@ Giả định VHT cấp 1 cụm K8s nội bộ. Tách **namespace** theo trách 
 
 Tất cả nằm ở **backend**. FE không gọi thẳng Camunda.
 
-| # | Kênh | Chiều | Giao thức | BE làm gì |
-|---|---|---|---|---|
-| 1 | **Deploy BPMN/DMN** | BE → Zeebe | gRPC | Đẩy file `.bpmn`/`.dmn` (vẽ ở Modeler) lên engine |
-| 2 | **Tạo instance** | BE → Zeebe | gRPC | Mở hồ sơ mới: `createProcessInstance("RD01.01", {maHoSo})` |
-| 3 | **Job worker** | Zeebe → BE (BE **poll**) | gRPC | Worker nhận job `sap:sync-budget` → chạy logic → `completeJob`/`throwError` |
-| 4 | **Query task/instance** | BE → Operate/Tasklist | REST | Lấy "việc của tôi", trạng thái luồng để hiện UI |
+| #   | Kênh                    | Chiều                    | Giao thức | BE làm gì                                                                   |
+| --- | ----------------------- | ------------------------ | --------- | --------------------------------------------------------------------------- |
+| 1   | **Deploy BPMN/DMN**     | BE → Zeebe               | gRPC      | Đẩy file `.bpmn`/`.dmn` (vẽ ở Modeler) lên engine                           |
+| 2   | **Tạo instance**        | BE → Zeebe               | gRPC      | Mở hồ sơ mới: `createProcessInstance("RD01.01", {maHoSo})`                  |
+| 3   | **Job worker**          | Zeebe → BE (BE **poll**) | gRPC      | Worker nhận job `sap:sync-budget` → chạy logic → `completeJob`/`throwError` |
+| 4   | **Query task/instance** | BE → Operate/Tasklist    | REST      | Lấy "việc của tôi", trạng thái luồng để hiện UI                             |
 
-> **Kênh 3 đảo chiều:** không phải app gọi Camunda, mà **Camunda giao việc, worker của ta poll & làm**. Đây là cách gọi QLNS/SAP/PLM. Chính là các "job worker" ở màn *Tích hợp hệ ngoài* (mockup).
+> **Kênh 3 đảo chiều:** không phải app gọi Camunda, mà **Camunda giao việc, worker của ta poll & làm**. Đây là cách gọi QLNS/SAP/PLM. Chính là các "job worker" ở màn _Tích hợp_ (mockup).
 
 ---
 
@@ -167,10 +168,10 @@ zeebe.client:
   broker.gateway-address: zeebe-gateway.camunda.svc.cluster.local:26500
   security.plaintext: false
   cloud.identity:
-    auth-url:   https://sso.vht.local/realms/camunda/protocol/openid-connect/token
-    client-id:  qlnvkhcn-backend
-    client-secret: ${ZEEBE_CLIENT_SECRET}   # trong K8s Secret, KHÔNG commit
-    audience:   zeebe-api
+    auth-url: https://sso.vht.local/realms/camunda/protocol/openid-connect/token
+    client-id: qlnvkhcn-backend
+    client-secret: ${ZEEBE_CLIENT_SECRET} # trong K8s Secret, KHÔNG commit
+    audience: zeebe-api
 ```
 
 ```java
@@ -243,11 +244,11 @@ Camunda chỉ lo **"đang ở bước nào, giao ai, rẽ nhánh nào"**; mọi 
 
 ## 10. Neo vào mockup đã dựng (webapp/)
 
-| Màn mockup | Thực chất là kênh | Nguồn thật khi lên production |
-|---|---|---|
-| `/giam-sat` Giám sát tiến trình | Kênh 4 | Operate API (`/v1/process-instances`) |
-| `/tich-hop` Tích hợp hệ ngoài | Tình trạng kênh 3 | Metrics job worker + health hệ ngoài |
-| `/nhat-ky` Nhật ký sự kiện | Kênh 4 | Lịch sử Zeebe (Elasticsearch qua Operate) |
+| Màn mockup                      | Thực chất là kênh | Nguồn thật khi lên production             |
+| ------------------------------- | ----------------- | ----------------------------------------- |
+| `/giam-sat` Giám sát tiến trình | Kênh 4            | Operate API (`/v1/process-instances`)     |
+| `/tich-hop` Tích hợp            | Tình trạng kênh 3 | Metrics job worker + health hệ ngoài      |
+| `/nhat-ky` Nhật ký sự kiện      | Kênh 4            | Lịch sử Zeebe (Elasticsearch qua Operate) |
 
 Ba màn đó là **phần "nhìn thấy được" của tích hợp**; phần "không nhìn thấy" (Zeebe client, job worker, deploy BPMN) là code backend **F5**.
 
