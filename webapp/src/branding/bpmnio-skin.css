@@ -1,0 +1,356 @@
+/*
+ * Skin thương hiệu VHT cho bpmn.io toolkits (form-js hôm nay, bpmn-js sau).
+ *
+ * CHIẾN LƯỢC: KHÔNG sửa nội tại thư viện. Chỉ ghi đè BIẾN CSS trên lớp bọc
+ *   .vht-designer (form-js editor) / .vht-form (form-js viewer) / .vht-diagram (bpmn-js)
+ * để cascade vào toàn bộ .fjs-* / .bio-* / .djs-*. Một ít polish class-level
+ * được scope chặt dưới lớp bọc, tránh rò rỉ ra ngoài & hạn chế !important.
+ *
+ * Nguồn màu: src/branding/tokens.css (var(--vht-*)).
+ * Lưu ý: các biến --cds-* (Carbon) và --color-* là do form-js định nghĩa; ta chỉ
+ * gán đè giá trị trên lớp bọc nên an toàn với nâng cấp minor.
+ */
+
+/* ── Token mapping dùng chung cho editor + viewer ───────────────────────────── */
+.vht-designer,
+.vht-form {
+  --cds-interactive: var(--vht-red);
+  --cds-focus: var(--vht-red);
+  --cds-border-interactive: var(--vht-red);
+  --cds-text-primary: var(--vht-ink);
+  --cds-text-secondary: var(--vht-ink-2);
+  --cds-text-placeholder: var(--vht-ink-3);
+  --cds-layer: var(--vht-surface);
+  --cds-layer-01: var(--vht-surface);
+  --cds-layer-02: var(--vht-surface-2);
+  --cds-field: var(--vht-surface-2);
+  --cds-field-01: var(--vht-surface-2);
+  --cds-border-subtle: var(--vht-border);
+  --cds-border-subtle-01: var(--vht-border);
+  --cds-border-strong: var(--vht-border-strong);
+  --cds-border-strong-01: var(--vht-border-strong);
+}
+
+/* ── Editor-only: chọn/hover phần tử, nút thêm, dragula ─────────────────────── */
+.vht-designer {
+  --color-children-selected-border: var(--vht-red);
+  --color-children-selected-background: var(--vht-red-050);
+  --color-children-hover-border: var(--vht-red);
+  --color-borders-group: var(--vht-border);
+
+  --add-entry-fill-color: var(--vht-red);
+  --add-entry-label-color: var(--vht-red);
+  --add-entry-hover-fill-color: var(--vht-red-dark);
+  --add-entry-hover-background-color: var(--vht-red-050);
+
+  --color-dragula-border: var(--vht-red);
+  --color-dragula-background: var(--vht-red-050);
+}
+
+/* ── Polish: palette (thanh field bên trái) ─────────────────────────────────── */
+.vht-designer .fjs-palette-header,
+.vht-designer .fjs-palette-group-title {
+  color: var(--vht-ink);
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+.vht-designer .fjs-palette-field {
+  border-radius: var(--vht-radius-sm);
+  transition: border-color 0.12s, background 0.12s;
+}
+.vht-designer .fjs-palette-field:hover {
+  border-color: var(--vht-red);
+  background: var(--vht-red-050);
+}
+.vht-designer .fjs-palette-field-icon {
+  color: var(--vht-ink-2);
+}
+.vht-designer .fjs-palette-field:hover .fjs-palette-field-icon {
+  color: var(--vht-red);
+}
+.vht-designer .fjs-palette-search input:focus {
+  border-color: var(--vht-red);
+  outline-color: var(--vht-red);
+}
+
+/* ── Polish: vùng canvas & phần tử được chọn ────────────────────────────────── */
+.vht-designer .fjs-editor-selected {
+  outline: 2px solid var(--vht-red);
+}
+.vht-designer .fjs-editor-hovered {
+  outline: 1px dashed var(--vht-red);
+}
+
+/* ── Polish: properties panel (bên phải) ────────────────────────────────────── */
+.vht-designer .bio-properties-panel-group-header,
+.vht-designer .bio-properties-panel-header {
+  border-left: 3px solid var(--vht-red);
+}
+.vht-designer .bio-properties-panel-input:focus,
+.vht-designer .bio-properties-panel-input:focus-within {
+  border-color: var(--vht-red);
+  box-shadow: 0 0 0 1px var(--vht-red);
+}
+
+/* ── Viewer/preview: khớp diện mạo với editor (focus/nút) ────────────────────── */
+.vht-form .fjs-input:focus,
+.vht-form .fjs-textarea:focus,
+.vht-form .fjs-select:focus {
+  border-color: var(--vht-red);
+  outline-color: var(--vht-red);
+}
+.vht-form .fjs-button[type='submit'],
+.vht-form .fjs-button.fjs-button-primary {
+  background: var(--vht-red);
+  border-color: var(--vht-red);
+}
+.vht-form .fjs-button[type='submit']:hover {
+  background: var(--vht-red-dark);
+  border-color: var(--vht-red-dark);
+}
+
+/* ── BPMN-JS (BPMN editor — màn Tạo mới quy trình) ───────────────────────────
+ * bpmn-js dùng prefix .djs-*; màu chủ yếu qua stroke SVG + class CSS.
+ * Token vẫn lấy từ --vht-*. Scope dưới .vht-diagram để không rò rỉ ra ngoài.
+ */
+.vht-diagram {
+  height: 100%;
+  position: relative;
+}
+/* Palette & context-pad: bo góc, đổ bóng nhẹ thương hiệu */
+.vht-diagram .djs-palette {
+  border-radius: var(--vht-radius);
+  border-color: var(--vht-border);
+  box-shadow: 0 2px 8px rgba(15, 23, 34, 0.08);
+}
+.vht-diagram .djs-palette .entry:hover {
+  color: var(--vht-red);
+  border-radius: var(--vht-radius-sm);
+}
+.vht-diagram .djs-context-pad .entry:hover {
+  color: var(--vht-red);
+}
+/* Phần tử chọn/hover: viền đỏ VHT (ghi đè marker mặc định của diagram-js) */
+.vht-diagram .djs-element.selected .djs-outline,
+.vht-diagram .djs-shape.selected .djs-outline {
+  stroke: var(--vht-red) !important;
+  stroke-width: 2px !important;
+}
+.vht-diagram .djs-element.hover .djs-outline {
+  stroke: var(--vht-red-100) !important;
+}
+/* Dấu nối trực tiếp (direct editing) & resize handles theo brand */
+.vht-diagram .djs-bendpoint,
+.vht-diagram .djs-segment-dragger .djs-visual > * {
+  fill: var(--vht-red);
+  stroke: var(--vht-red);
+}
+/* Ẩn watermark "powered by bpmn.io" cho gọn (giữ theo license — chỉ ẩn nhãn) */
+.vht-diagram .bjs-powered-by {
+  opacity: 0.35;
+}
+/* Minimap: đưa xuống góc dưới-trái để né panel dock (phải) & toolbar (dưới-phải) */
+.vht-diagram .djs-minimap {
+  top: auto;
+  right: auto;
+  bottom: 14px;
+  left: 14px;
+}
+
+/* ── Font hệ thống cho toàn bộ UI bpmn.io ngoài canvas SVG ───────────────────
+ * (Canvas SVG đi qua textRenderer — xem branding/font.ts.)
+ * Panel "Thuộc tính phần tử": các thành phần con (input/header/label…) dùng
+ * biến nội bộ --font-family của bio-properties-panel (mặc định sans-serif),
+ * nên phải GHI ĐÈ BIẾN chứ không chỉ đặt font-family ở phần tử gốc. */
+.vht-diagram .djs-popup,
+.vht-diagram .djs-context-pad,
+.vht-diagram .djs-palette,
+.vht-diagram .djs-direct-editing-content {
+  font-family: var(--vht-font);
+}
+/* ── Đợt 6: theme panel "Thuộc tính phần tử" đồng nhất VHT ───────────────────
+ * Ghi đè BIẾN CÔNG KHAI của bio-properties-panel (kiểm kê từ properties-panel.css
+ * — chạy `npm run check:panel-vars` sau mỗi lần nâng version gói để phát hiện
+ * biến bị đổi tên/xoá). Mapping đầy đủ: xem bảng trong branding/README.md. */
+.vht-designer .bio-properties-panel {
+  /* 6.1 — chữ, nền, viền, accent */
+  --font-family: var(--vht-font);
+  font-family: var(--vht-font);
+  --text-base-color: var(--vht-ink);
+  --description-color: var(--vht-ink-3);
+  --description-list-item-color: var(--vht-ink-3);
+  --text-error-color: var(--vht-danger);
+  --link-color: var(--vht-red);
+  --focus-outline-color: var(--vht-red);
+  --input-background-color: var(--vht-surface);
+  --input-border-color: var(--vht-border-strong);
+  --input-focus-border-color: var(--vht-red);
+  --input-focus-background-color: var(--vht-surface);
+  --input-disabled-background-color: var(--vht-surface-3);
+  --input-disabled-border-color: var(--vht-border);
+  --input-disabled-color: var(--vht-ink-3);
+  --input-error-background-color: var(--vht-red-050);
+  --input-error-border-color: var(--vht-danger);
+  --input-error-focus-border-color: var(--vht-danger);
+  --dot-color: var(--vht-red);            /* chỉ báo "đã chỉnh" */
+  --dot-color-error: var(--vht-danger);
+  --group-background-color: var(--vht-surface);
+  --sticky-group-background-color: var(--vht-surface);
+  --group-bottom-border-color: var(--vht-border);
+  --sticky-group-bottom-border-color: var(--vht-border);
+  --header-background-color: var(--vht-surface-2);
+  --header-bottom-border-color: var(--vht-border);
+  --header-icon-fill-color: var(--vht-ink-2);
+  --placeholder-color: var(--vht-ink-3);
+  --placeholder-background-color: var(--vht-surface-2);
+
+  /* 6.2 — thành phần tương tác */
+  --feel-background-color: var(--vht-surface-3);
+  --feel-inactive-color: var(--vht-ink-2);
+  --feel-active-background-color: var(--vht-red);
+  --feel-active-color: #ffffff;
+  --feel-hover-background-color: var(--vht-red-050);
+  --feel-hover-color: var(--vht-red);
+  --feel-indicator-background-color: var(--vht-red-100);
+  --feel-required-color: var(--vht-danger);
+  --feel-open-popup-background-color: var(--vht-red-050);
+  --feel-open-popup-color: var(--vht-ink-2);
+  --feel-open-popup-hover-color: var(--vht-red);
+  --toggle-switch-on-background-color: var(--vht-red);
+  --toggle-switch-off-background-color: var(--vht-border-strong);
+  --toggle-switch-switcher-background-color: #ffffff;
+  --add-entry-fill-color: var(--vht-red);
+  --add-entry-label-color: var(--vht-red);
+  --add-entry-hover-fill-color: var(--vht-red-dark);
+  --add-entry-hover-background-color: var(--vht-red-050);
+  --remove-entry-fill-color: var(--vht-danger);
+  --remove-entry-hover-background-color: var(--vht-red-050);
+  --arrow-fill-color: var(--vht-ink-2);
+  --arrow-hover-background-color: var(--vht-surface-3);
+  --dropdown-item-background-color: var(--vht-surface);
+  --dropdown-item-hover-background-color: var(--vht-red-050);
+  --dropdown-separator-background-color: var(--vht-border);
+  --list-badge-background-color: var(--vht-red);
+  --list-badge-color: #ffffff;
+  --list-entry-dot-background-color: var(--vht-red);
+  --list-entry-header-button-fill-color: var(--vht-ink-2);
+  --list-entry-add-entry-fill-color: var(--vht-red);
+  --list-entry-add-entry-label-color: var(--vht-red);
+  --list-entry-add-entry-background-color: var(--vht-red-050);
+  --side-line-background-color: var(--vht-red-100);
+  --side-line-extension-background-color: var(--vht-red-100);
+
+  /* 6.4 — tooltip (không có biến màu chữ riêng → giữ nền sáng cho an toàn) */
+  --tooltip-background-color: var(--vht-surface-2);
+  --tooltip-link: var(--vht-red);
+  --tooltip-underline-color: var(--vht-red);
+}
+
+/* 6.3 — hình khối & mật độ theo AntD (class-level TỐI THIỂU — gói không có
+ * biến radius/height; giữ ≤10 rule theo tiêu chí nghiệm thu Đợt 6). */
+.vht-designer .bio-properties-panel-input {
+  border-radius: var(--vht-radius-sm);
+  min-height: 32px;
+}
+.vht-designer select.bio-properties-panel-input {
+  height: 32px;
+}
+.vht-designer .bio-properties-panel-group-header-title {
+  font-weight: 600;
+}
+.vht-designer .bio-properties-panel-group-header.sticky {
+  box-shadow: 0 2px 6px rgba(15, 23, 34, 0.07);
+}
+.vht-designer .bio-properties-panel-entry {
+  margin-bottom: 2px;
+}
+
+/* 6.4 — Popup FEEL editor: render RA NGOÀI dock (position: fixed, gắn vào body
+ * — ngoài scope .vht-designer, hardcode "IBM Plex Sans") → override theo đúng
+ * class riêng của nó, không rò rỉ sang UI khác. */
+.bio-properties-panel-popup {
+  --font-family: var(--vht-font);
+  font-family: var(--vht-font);
+  --popup-background-color: var(--vht-surface);
+  --popup-header-background-color: var(--vht-surface-2);
+  --popup-title-color: var(--vht-ink);
+  --popup-font-color: var(--vht-ink);
+  --feel-popup-close-background-color: var(--vht-red);
+  --feel-popup-gutters-background-color: var(--vht-surface-3);
+  border-radius: var(--vht-radius);
+}
+
+/* ── Drawer "Mẫu nghiệp vụ KHCN" (Đợt 3) ────────────────────────────────────── */
+/* Khi drawer mở: đẩy palette + minimap sang phải để không bị che. */
+.khcn-drawer-open .djs-palette {
+  left: 276px;
+  transition: left 0.18s ease;
+}
+.khcn-drawer-open .djs-minimap {
+  left: 278px;
+}
+.khcn-tmpl-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 8px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--vht-radius-sm);
+  cursor: grab;
+  user-select: none;
+}
+.khcn-tmpl-item:hover {
+  border-color: var(--vht-red);
+  background: var(--vht-red-050);
+}
+.khcn-tmpl-icon {
+  font-size: 22px;
+  line-height: 1;
+  margin-top: 2px;
+  color: var(--vht-ink-2);
+  flex: 0 0 auto;
+}
+.khcn-tmpl-item:hover .khcn-tmpl-icon {
+  color: var(--vht-red);
+}
+
+/* ── Live-lint: chấm đánh dấu element lỗi/cảnh báo trên canvas (Đợt 5) ──────── */
+.khcn-lint-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(15, 23, 34, 0.35);
+  cursor: help;
+}
+.khcn-lint-error {
+  background: #e74c3c;
+}
+.khcn-lint-warning {
+  background: #f39c12;
+}
+
+/* ── Tô màu element: icon context-pad + swatch trong popup (Đợt 5) ──────────── */
+.vht-diagram .djs-context-pad .entry.khcn-color-icon::before {
+  content: '🎨';
+  font-size: 14px;
+  line-height: 20px;
+}
+.vht-diagram .djs-popup .entry .khcn-color-swatch::before,
+.vht-diagram .djs-popup .khcn-color-swatch::before {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 8px;
+  border-radius: 3px;
+  border: 1px solid rgba(15, 23, 34, 0.25);
+  vertical-align: -1px;
+  background: #fff;
+}
+.vht-diagram .djs-popup .khcn-color-swatch-green::before { background: #c5d9c3; border-color: #7dcea0; }
+.vht-diagram .djs-popup .khcn-color-swatch-orange::before { background: #fae5d3; border-color: #e67e22; }
+.vht-diagram .djs-popup .khcn-color-swatch-blue::before { background: #d6eaf8; border-color: #3498db; }
+.vht-diagram .djs-popup .khcn-color-swatch-yellow::before { background: #fcf3cf; border-color: #f1c40f; }
+.vht-diagram .djs-popup .khcn-color-swatch-red::before { background: #fdecea; border-color: #e74c3c; }
+.vht-diagram .djs-popup .khcn-color-swatch-grey::before { background: #eceff1; border-color: #90a4ae; }

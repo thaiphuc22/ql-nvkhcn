@@ -1,0 +1,12 @@
+// Lớp UI component dùng chung — sửa một nơi, mọi trang dùng theo.
+export { default as PageHeader } from './PageHeader'
+export type { PageHeaderProps } from './PageHeader'
+export { default as StatCard } from './StatCard'
+export type { StatCardProps } from './StatCard'
+export { default as NotFound } from './NotFound'
+export type { NotFoundProps } from './NotFound'
+export { StatusTag, ProcessStatusTag, DossierStatusTag } from './StatusTag'
+export { default as FilterBar } from './FilterBar'
+export type { FilterBarProps, FilterSelectConfig } from './FilterBar'
+export { default as EntityTable, LIST_SCROLL_Y } from './EntityTable'
+export type { EntityTableProps } from './EntityTable'

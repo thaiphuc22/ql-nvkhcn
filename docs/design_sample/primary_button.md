@@ -1,0 +1,16 @@
+height: 46px;
+border-width: medium;
+border-style: none;
+border-color: currentcolor;
+border-image: initial;
+border-radius: 8px;
+background: rgb(238, 0, 51);
+color: rgb(255, 255, 255);
+font-size: 15px;
+font-weight: 600;
+font-family: inherit;
+cursor: pointer;
+letter-spacing: 0.01em;
+transition: background 0.15s;
+@type: submit;
+@class: scp2 scp3;

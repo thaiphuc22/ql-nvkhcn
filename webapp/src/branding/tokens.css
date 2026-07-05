@@ -1,0 +1,79 @@
+/*
+ * VHT brand tokens — MỘT NGUỒN cho toàn bộ giao diện thương hiệu.
+ * Dùng cho: skin form-js (hiện tại) và sẽ tái dùng cho bpmn-js (BPMN editor sau).
+ * Đặt ở :root để mọi nơi trong app đọc được var(--vht-*).
+ */
+:root {
+  /* Màu thương hiệu Viettel High Tech — "VHT Military Red" design system.
+   * (đồng bộ docs/design_sample/design-system.md) */
+  --vht-red: #ee0033;         /* primary-container — CTA / brand */
+  --vht-red-chrome: #bf0027;  /* primary — sidebar / chrome */
+  --vht-red-dark: #bf0027;
+  --vht-red-050: #fff1f3;
+  --vht-red-100: #ffdad8;     /* primary-fixed */
+
+  /* Màu ngữ nghĩa (Material 3 tokens) */
+  --vht-success: #006e0d;     /* tertiary */
+  --vht-warning: #daa520;     /* amber */
+  --vht-danger: #ba1a1a;      /* error */
+
+  /* Mực & phụ */
+  --vht-ink: #1b1c1c;         /* on-surface */
+  --vht-ink-2: #5a6675;
+  --vht-ink-3: #8593a3;
+
+  /* Bề mặt & viền */
+  --vht-surface: #ffffff;     /* surface-container-lowest */
+  --vht-surface-2: #fbf9f9;   /* background / surface (nền ấm) */
+  --vht-surface-3: #f5f3f3;   /* surface-container-low */
+  --vht-border: #e6e9ee;
+  --vht-border-strong: #c7cfda;
+
+  /* Sider tối (dành riêng cho skin bpmn.io — KHÔNG phải màu sider app đã đổi sang đỏ) */
+  --vht-dark: #0f1722;
+  --vht-dark-border: #1d2937;
+
+  /* Hình học */
+  --vht-radius: 8px;
+  --vht-radius-sm: 6px;
+
+  /* Font hệ thống — 1 nguồn cho app + bpmn.io (canvas dùng bản TS ở branding/font.ts). */
+  --vht-font: Inter, system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  /* Bề rộng sider (App cập nhật khi thu gọn) — dùng để canh Drawer né menu. */
+  --vht-sider-w: 230px;
+}
+
+/* Font hệ thống thiết kế = Inter (khớp antd token.fontFamily; phủ cả phần ngoài antd). */
+body {
+  font-family: var(--vht-font);
+}
+
+/*
+ * Thanh cuộn mảnh, ẨN mặc định — chỉ hiện khi con trỏ ở trên vùng cuộn.
+ * Chromium: thumb trong suốt, chuyển đậm khi :hover vùng cuộn.
+ * Firefox: thin + màu mờ (không hỗ trợ hiện-khi-hover per element).
+ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15, 23, 34, 0.16) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border: 3px solid transparent;
+  border-radius: 10px;
+  background-clip: padding-box;
+}
+*:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(15, 23, 34, 0.22);
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(15, 23, 34, 0.38);
+}

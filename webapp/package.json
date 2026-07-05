@@ -1,0 +1,36 @@
+{
+  "name": "qtkhcn-webapp",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "QTKHCN — Frontend SPA (React + Vite + Ant Design). Mockup mock-data, chưa nối backend/Camunda.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --noEmit",
+    "check:panel-vars": "node scripts/check-panel-vars.mjs"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^5.4.0",
+    "@bpmn-io/form-js": "^1.23.0",
+    "@bpmn-io/properties-panel": "^3.47.0",
+    "antd": "^5.20.6",
+    "bpmn-js": "^17.11.1",
+    "bpmn-js-properties-panel": "^5.60.0",
+    "dayjs": "^1.11.13",
+    "diagram-js-grid": "^2.0.1",
+    "diagram-js-minimap": "^5.3.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2",
+    "zeebe-bpmn-moddle": "^1.16.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.6"
+  }
+}

@@ -1,0 +1,318 @@
+/*
+ * Module `translate` cho bpmn.io — Việt hoá nhãn (best-effort) cho palette và
+ * properties panel của form-js. Không thay renderer, chỉ dịch chuỗi hiển thị.
+ *
+ * Cơ chế: form-js/diagram-js gọi service `translate(template, replacements)`.
+ * Ta cung cấp module ghi đè service này (theo chuẩn didi DI). Chuỗi không có
+ * trong từ điển sẽ giữ nguyên tiếng Anh (an toàn, không vỡ UI).
+ */
+
+/**
+ * Từ điển Anh → Việt DÙNG CHUNG cho: (1) module translate (chuỗi nào form-js
+ * định tuyến qua translate), và (2) relabel DOM (palette + properties panel —
+ * các nhãn render thẳng, không qua translate). Xem `relabel-vi.ts`.
+ * Khớp CHÍNH XÁC (đã trim); chuỗi không có trong từ điển giữ nguyên (an toàn).
+ */
+export const VI_DICT: Record<string, string> = {
+  // ── Palette: nhóm + ô tìm kiếm ──────────────────────────────
+  Components: 'Thành phần',
+  Search: 'Tìm kiếm',
+  'Search components': 'Tìm thành phần',
+  'Basic input': 'Nhập cơ bản',
+  Selection: 'Lựa chọn',
+  Presentation: 'Trình bày',
+  Containers: 'Vùng chứa',
+  Action: 'Hành động',
+
+  // ── Palette: các loại field (label từ form-js-viewer) ───────
+  'Text field': 'Trường văn bản',
+  'Text area': 'Vùng văn bản',
+  Number: 'Số',
+  Date: 'Ngày',
+  'Date time': 'Ngày / giờ',
+  Datetime: 'Ngày / giờ',
+  Checkbox: 'Ô kiểm',
+  'Checkbox group': 'Nhóm ô kiểm',
+  'Radio group': 'Nhóm chọn (Radio)',
+  Radio: 'Chọn một (Radio)',
+  Checklist: 'Danh sách kiểm',
+  Select: 'Danh sách chọn',
+  'Tag list': 'Danh sách thẻ',
+  Taglist: 'Danh sách thẻ',
+  'Text view': 'Văn bản hiển thị',
+  'HTML view': 'Khối HTML',
+  HTML: 'Khối HTML',
+  'Image view': 'Hình ảnh',
+  Image: 'Hình ảnh',
+  Table: 'Bảng',
+  Button: 'Nút',
+  Group: 'Nhóm',
+  'Dynamic list': 'Danh sách động',
+  Spacer: 'Khoảng trống',
+  Separator: 'Đường phân cách',
+  'Expression field': 'Trường biểu thức',
+  'File picker': 'Chọn tệp',
+  iFrame: 'IFrame',
+  IFrame: 'IFrame',
+  'Document preview': 'Xem tài liệu',
+
+  // ── Properties panel: nhóm & trường hay gặp ─────────────────
+  General: 'Chung',
+  'Field label': 'Nhãn trường',
+  Key: 'Khoá (key)',
+  ID: 'ID',
+  Description: 'Mô tả',
+  'Default value': 'Giá trị mặc định',
+  Layout: 'Bố cục',
+  Validation: 'Ràng buộc',
+  Required: 'Bắt buộc',
+  'Read only': 'Chỉ đọc',
+  Disabled: 'Vô hiệu hoá',
+  Options: 'Tùy chọn',
+  'Options source': 'Nguồn tùy chọn',
+  'Static options': 'Danh sách cố định',
+  Condition: 'Điều kiện',
+  'Hide if': 'Ẩn nếu',
+  Appearance: 'Giao diện',
+  Serialization: 'Tuần tự hoá',
+  Constraints: 'Ràng buộc',
+  Value: 'Giá trị',
+  Label: 'Nhãn',
+  Text: 'Nội dung',
+  Columns: 'Cột',
+  'Custom properties': 'Thuộc tính tuỳ biến',
+  Properties: 'Thuộc tính',
+
+  // ── BPMN (bpmn-js) — palette, context-pad, tooltip ──────────
+  // bpmn-js dùng service translate chuẩn nên các chuỗi này dịch được ngay.
+  'Activate hand tool': 'Công cụ di chuyển (hand)',
+  'Activate lasso tool': 'Công cụ chọn vùng (lasso)',
+  'Activate create/remove space tool': 'Công cụ thêm/bớt khoảng cách',
+  'Activate global connect tool': 'Công cụ nối phần tử',
+  'Create start event': 'Sự kiện bắt đầu',
+  'Create end event': 'Sự kiện kết thúc',
+  'Create task': 'Tác vụ (Task)',
+  'Create gateway': 'Cổng rẽ nhánh (Gateway)',
+  'Create intermediate/boundary event': 'Sự kiện trung gian / biên',
+  'Create expanded sub-process': 'Tiến trình con',
+  'Create pool/participant': 'Pool / Bên tham gia',
+  'Create group': 'Nhóm (Group)',
+  'Create data object reference': 'Đối tượng dữ liệu',
+  'Create data store reference': 'Kho dữ liệu',
+  'Append task': 'Nối thêm Task',
+  'Append gateway': 'Nối thêm Gateway',
+  'Append end event': 'Nối thêm Sự kiện kết thúc',
+  'Append intermediate/boundary event': 'Nối thêm Sự kiện trung gian / biên',
+  'Append receive task': 'Nối thêm Task nhận',
+  'Append text annotation': 'Nối thêm chú thích',
+  'Add text annotation': 'Thêm chú thích',
+  'Append compensation activity': 'Nối thêm hoạt động bù trừ',
+  'Append conditional intermediate catch event': 'Nối thêm sự kiện bắt có điều kiện',
+  'Append message intermediate catch event': 'Nối thêm sự kiện bắt tin nhắn',
+  'Append signal intermediate catch event': 'Nối thêm sự kiện bắt tín hiệu',
+  'Append timer intermediate catch event': 'Nối thêm sự kiện hẹn giờ',
+  'Change element': 'Đổi loại phần tử',
+  'Change type': 'Đổi loại phần tử',
+  'Connect to other element': 'Nối tới phần tử khác',
+  'Connect using association': 'Nối bằng liên kết (association)',
+  'Connect using data input association': 'Nối bằng liên kết dữ liệu vào',
+  Delete: 'Xoá',
+  Remove: 'Xoá',
+  'Add lane above': 'Thêm lane phía trên',
+  'Add lane below': 'Thêm lane phía dưới',
+  'Divide into two lanes': 'Chia thành 2 lane',
+  'Divide into three lanes': 'Chia thành 3 lane',
+  'Append element': 'Nối thêm phần tử',
+  'Create element': 'Tạo phần tử',
+  'Search options': 'Tìm loại phần tử',
+  'Open minimap': 'Mở bản đồ thu nhỏ',
+  'Close minimap': 'Đóng bản đồ thu nhỏ',
+
+  // ── BPMN: popup "Đổi loại phần tử" (replace menu) ───────────
+  'Start event': 'Sự kiện bắt đầu',
+  'End event': 'Sự kiện kết thúc',
+  'Intermediate throw event': 'Sự kiện trung gian (phát)',
+  'Message start event': 'Bắt đầu bằng tin nhắn',
+  'Timer start event': 'Bắt đầu hẹn giờ',
+  'Conditional start event': 'Bắt đầu có điều kiện',
+  'Signal start event': 'Bắt đầu bằng tín hiệu',
+  'Error start event': 'Bắt đầu khi lỗi',
+  'Escalation start event': 'Bắt đầu khi escalation',
+  'Compensation start event': 'Bắt đầu bù trừ',
+  'Message intermediate catch event': 'Chờ tin nhắn (trung gian)',
+  'Message intermediate throw event': 'Phát tin nhắn (trung gian)',
+  'Timer intermediate catch event': 'Chờ hẹn giờ (trung gian)',
+  'Conditional intermediate catch event': 'Chờ điều kiện (trung gian)',
+  'Signal intermediate catch event': 'Chờ tín hiệu (trung gian)',
+  'Signal intermediate throw event': 'Phát tín hiệu (trung gian)',
+  'Link intermediate catch event': 'Liên kết đến (link)',
+  'Link intermediate throw event': 'Liên kết đi (link)',
+  'Escalation intermediate throw event': 'Phát escalation (trung gian)',
+  'Compensation intermediate throw event': 'Phát bù trừ (trung gian)',
+  'Message end event': 'Kết thúc phát tin nhắn',
+  'Escalation end event': 'Kết thúc escalation',
+  'Error end event': 'Kết thúc khi lỗi',
+  'Cancel end event': 'Kết thúc huỷ',
+  'Compensation end event': 'Kết thúc bù trừ',
+  'Signal end event': 'Kết thúc phát tín hiệu',
+  'Terminate end event': 'Kết thúc chấm dứt toàn bộ',
+  Task: 'Tác vụ',
+  'User task': 'Tác vụ người dùng',
+  'Service task': 'Tác vụ hệ thống',
+  'Send task': 'Tác vụ gửi',
+  'Receive task': 'Tác vụ nhận',
+  'Manual task': 'Tác vụ thủ công',
+  'Business rule task': 'Tác vụ luật nghiệp vụ',
+  'Script task': 'Tác vụ script',
+  'Call activity': 'Gọi quy trình con (Call Activity)',
+  'Sub-process (collapsed)': 'Tiến trình con (thu gọn)',
+  'Sub-process (expanded)': 'Tiến trình con (mở rộng)',
+  'Sub-process': 'Tiến trình con',
+  'Event sub-process': 'Tiến trình con theo sự kiện',
+  Transaction: 'Giao dịch (Transaction)',
+  'Exclusive gateway': 'Cổng rẽ nhánh loại trừ (XOR)',
+  'Parallel gateway': 'Cổng song song (AND)',
+  'Inclusive gateway': 'Cổng bao gồm (OR)',
+  'Complex gateway': 'Cổng phức hợp',
+  'Event-based gateway': 'Cổng theo sự kiện',
+  'Sequence flow': 'Luồng tuần tự',
+  'Default flow': 'Luồng mặc định',
+  'Conditional flow': 'Luồng có điều kiện',
+  'Message boundary event': 'Sự kiện biên: tin nhắn',
+  'Timer boundary event': 'Sự kiện biên: hẹn giờ',
+  'Conditional boundary event': 'Sự kiện biên: điều kiện',
+  'Signal boundary event': 'Sự kiện biên: tín hiệu',
+  'Error boundary event': 'Sự kiện biên: lỗi',
+  'Escalation boundary event': 'Sự kiện biên: escalation',
+  'Cancel boundary event': 'Sự kiện biên: huỷ',
+  'Compensation boundary event': 'Sự kiện biên: bù trừ',
+  'Message boundary event (non-interrupting)': 'Sự kiện biên: tin nhắn (không ngắt)',
+  'Timer boundary event (non-interrupting)': 'Sự kiện biên: hẹn giờ (không ngắt)',
+  'Conditional boundary event (non-interrupting)': 'Sự kiện biên: điều kiện (không ngắt)',
+  'Signal boundary event (non-interrupting)': 'Sự kiện biên: tín hiệu (không ngắt)',
+  'Escalation boundary event (non-interrupting)': 'Sự kiện biên: escalation (không ngắt)',
+  'Message start event (non-interrupting)': 'Bắt đầu tin nhắn (không ngắt)',
+  'Timer start event (non-interrupting)': 'Bắt đầu hẹn giờ (không ngắt)',
+  'Conditional start event (non-interrupting)': 'Bắt đầu điều kiện (không ngắt)',
+  'Signal start event (non-interrupting)': 'Bắt đầu tín hiệu (không ngắt)',
+  'Escalation start event (non-interrupting)': 'Bắt đầu escalation (không ngắt)',
+  'Expanded pool/participant': 'Pool mở rộng',
+  'Empty pool/participant': 'Pool rỗng',
+  'Empty pool/participant (removes content)': 'Pool rỗng (xoá nội dung)',
+  Loop: 'Lặp (loop)',
+  'Parallel multi-instance': 'Đa thể hiện song song',
+  'Sequential multi-instance': 'Đa thể hiện tuần tự',
+  'Participant multiplicity': 'Số lượng bên tham gia',
+  'Ad-hoc': 'Ad-hoc',
+  'Toggle non-interrupting': 'Bật/tắt không ngắt',
+  Collection: 'Tập hợp',
+
+  // ── Properties panel (bpmn-js-properties-panel + Zeebe): nhóm ─
+  Documentation: 'Tài liệu mô tả',
+  'Multi-instance': 'Đa thể hiện (hội đồng)',
+  'Called element': 'Quy trình được gọi',
+  'Task definition': 'Định nghĩa job (worker)',
+  'Task schedule': 'Lịch tác vụ',
+  Assignment: 'Phân công',
+  Form: 'Biểu mẫu',
+  Forms: 'Biểu mẫu',
+  Message: 'Tin nhắn',
+  Signal: 'Tín hiệu',
+  Timer: 'Hẹn giờ',
+  Error: 'Lỗi',
+  Escalation: 'Escalation',
+  Link: 'Liên kết',
+  Header: 'Header',
+  Headers: 'Headers',
+  Inputs: 'Đầu vào',
+  Outputs: 'Đầu ra',
+  'Extension properties': 'Thuộc tính mở rộng',
+  'Execution listeners': 'Trình nghe thực thi',
+  'Task listeners': 'Trình nghe tác vụ',
+  'User task implementation': 'Kiểu tác vụ người dùng',
+  Implementation: 'Kiểu triển khai',
+  'Priority definition': 'Độ ưu tiên',
+  'Version tag': 'Nhãn phiên bản',
+  Compensation: 'Bù trừ',
+  'Asynchronous continuations': 'Tiếp tục bất đồng bộ',
+
+  // ── Properties panel: field/label hay gặp ───────────────────
+  Name: 'Tên',
+  Executable: 'Có thể thực thi',
+  'Element documentation': 'Mô tả phần tử',
+  'Process documentation': 'Mô tả quy trình',
+  Assignee: 'Người được gán',
+  'Candidate groups': 'Nhóm ứng viên (vai trò)',
+  'Candidate users': 'Người dùng ứng viên',
+  'Due date': 'Hạn xử lý',
+  'Follow up date': 'Ngày nhắc việc',
+  Priority: 'Độ ưu tiên',
+  Type: 'Loại',
+  Retries: 'Số lần thử lại',
+  'Job type': 'Loại job',
+  'Process ID': 'Mã process được gọi',
+  'Propagate all child variables': 'Truyền mọi biến con lên cha',
+  'Propagate all parent variables': 'Truyền mọi biến cha xuống con',
+  Binding: 'Ràng buộc phiên bản',
+  'Input collection': 'Danh sách đầu vào',
+  'Input element': 'Phần tử đầu vào',
+  'Output collection': 'Danh sách đầu ra',
+  'Output element': 'Phần tử đầu ra',
+  'Completion condition': 'Điều kiện hoàn thành (quorum)',
+  'Condition expression': 'Biểu thức điều kiện',
+  'Wait for completion': 'Chờ hoàn thành',
+  Cycle: 'Chu kỳ',
+  Duration: 'Khoảng thời gian',
+  'Form type': 'Kiểu biểu mẫu',
+  'Camunda Form (linked)': 'Camunda Form (liên kết)',
+  'Camunda Form (embedded)': 'Camunda Form (nhúng)',
+  'Custom form key': 'Form key tuỳ chỉnh',
+  'Form key': 'Form key',
+  'Form ID': 'Mã biểu mẫu',
+  'Form JSON configuration': 'Cấu hình JSON biểu mẫu',
+  'External reference': 'Tham chiếu ngoài',
+  'Job worker': 'Job worker',
+  'Zeebe user task': 'Zeebe user task',
+  'Message name': 'Tên tin nhắn',
+  'Subscription correlation key': 'Khoá tương quan (correlation key)',
+  'Global error reference': 'Tham chiếu lỗi toàn cục',
+  Code: 'Mã',
+  'Create new list item': 'Thêm mục mới',
+  'Delete item': 'Xoá mục',
+  'Select an element to edit its properties.': 'Chọn một phần tử để chỉnh thuộc tính.',
+  'Multiple elements are selected. Select a single element to edit its properties.':
+    'Đang chọn nhiều phần tử. Hãy chọn một phần tử để chỉnh thuộc tính.',
+}
+
+/** Bí danh nội bộ để phần dưới file dùng ngắn gọn. */
+const DICT = VI_DICT
+
+/**
+ * BẪY DEV: gom các chuỗi đi qua translate mà TỪ ĐIỂN CHƯA CÓ.
+ * Cách dùng (chỉ chạy ở dev): mở editor, thao tác đủ mọi menu/panel, rồi trong
+ * DevTools console gõ  __viMissing()  → in bảng chuỗi còn thiếu để bổ sung.
+ * Sau mỗi lần NÂNG VERSION bpmn-js / properties-panel bắt buộc chạy lại 1 lượt.
+ */
+const missing = new Set<string>()
+if (import.meta.env?.DEV && typeof window !== 'undefined') {
+  ;(window as unknown as Record<string, unknown>).__viMissing = () => {
+    // eslint-disable-next-line no-console
+    console.table([...missing].sort().map((s) => ({ 'chuỗi chưa dịch': s })))
+    return missing.size
+  }
+}
+
+export function translateVi(template: string, replacements?: Record<string, string>): string {
+  const msg = DICT[template] ?? template
+  if (import.meta.env?.DEV && !(template in DICT) && /[A-Za-z]/.test(template)) {
+    missing.add(template)
+  }
+  return msg.replace(/{([^}]+)}/g, (_m, key: string) =>
+    replacements && key in replacements ? String(replacements[key]) : '{' + key + '}',
+  )
+}
+
+/** Module didi ghi đè service `translate`. Nạp qua additionalModules của FormEditor/Form. */
+export const TranslateViModule = {
+  translate: ['value', translateVi],
+}

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quản lý Danh mục quy trình — QTKHCN</title>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo">VHT</div>
+        <div class="brand-text">
+          <strong>QTKHCN</strong>
+          <span>Quản trị KHCN</span>
+        </div>
+      </div>
+      <nav class="nav">
+        <div class="nav-group">Phân hệ</div>
+        <a class="nav-item" href="#">🏠 Cổng truy cập</a>
+        <a class="nav-item" href="#">🔑 Phân quyền</a>
+        <a class="nav-item" href="#">📚 Danh mục dùng chung</a>
+        <a class="nav-item active" href="#">🔀 Quản lý quy trình</a>
+        <a class="nav-item" href="#">🧪 Quản lý NV KHCN</a>
+        <a class="nav-item" href="#">📊 Dashboard</a>
+      </nav>
+      <div class="sidebar-foot">
+        <span class="dot"></span> Camunda 8 · Self-managed
+        <small>Mockup — không phải môi trường thật</small>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <header class="topbar">
+        <div class="crumbs">Quản lý quy trình <span>/</span> <b>Danh mục quy trình</b></div>
+        <div class="user">
+          <span class="user-name">Nguyễn Gia Vinh</span>
+          <span class="user-role">Quản trị quy trình</span>
+          <div class="avatar">NV</div>
+        </div>
+      </header>
+
+      <section class="content">
+        <div class="page-head">
+          <div>
+            <h1>Danh mục quy trình</h1>
+            <p class="muted">Quản lý định nghĩa quy trình (BPMN), phiên bản và trạng thái triển khai trên engine.</p>
+          </div>
+          <button class="btn btn-primary" id="btnDeployNew">⬆️ Deploy quy trình (.bpmn)</button>
+        </div>
+
+        <!-- KPI -->
+        <div class="kpis" id="kpis"></div>
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+          <input type="search" id="q" class="input search" placeholder="🔎 Tìm theo mã hoặc tên quy trình..." />
+          <select id="fNhom" class="input"></select>
+          <select id="fPha" class="input">
+            <option value="">Tất cả pha</option>
+            <option value="1">Pha 1</option>
+            <option value="2">Pha 2</option>
+          </select>
+          <select id="fTrangThai" class="input">
+            <option value="">Tất cả trạng thái</option>
+            <option value="active">Đang chạy</option>
+            <option value="draft">Nháp</option>
+            <option value="stopped">Tạm ngừng</option>
+            <option value="planned">Chưa triển khai</option>
+          </select>
+          <span class="count" id="count"></span>
+        </div>
+
+        <!-- Table -->
+        <div class="table-wrap">
+          <table class="table" id="table">
+            <thead>
+              <tr>
+                <th>Mã</th>
+                <th>Tên quy trình</th>
+                <th>Nhóm</th>
+                <th class="center">Pha</th>
+                <th class="center">Phiên bản</th>
+                <th class="center">Trạng thái</th>
+                <th class="right">Instance đang chạy</th>
+                <th>Cập nhật</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+          <div class="empty" id="empty" hidden>Không có quy trình khớp bộ lọc.</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Drawer chi tiết -->
+  <div class="drawer-backdrop" id="drawerBackdrop" hidden></div>
+  <aside class="drawer" id="drawer" hidden aria-label="Chi tiết quy trình"></aside>
+
+  <!-- Modal -->
+  <div class="modal-backdrop" id="modalBackdrop" hidden>
+    <div class="modal" id="modal" role="dialog" aria-modal="true"></div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>
