@@ -1,4 +1,5 @@
 import { RD0101_BPMN } from './rd0101Bpmn'
+import { RD0102_BPMN } from './rd0102Bpmn'
 
 // Dữ liệu mock cho màn Danh mục quy trình.
 // Seed từ catalog RD01–RD10 (docs/req) — trạng thái phản ánh đúng độ phủ RTM.
@@ -15,6 +16,8 @@ export interface TaskStep {
   key: string
   ten: string
   vaiTro: string
+  /** Mã candidateGroup (data/roles.ts) — hiển thị catalog; check quyền dùng DossierStep.vaiTroCodes. */
+  vaiTroCodes?: string[]
   hanhDong: string
   formKey?: string
 }
@@ -73,23 +76,38 @@ export const seedProcesses: ProcessDef[] = [
       { v: '1.2', date: '2026-06-28', note: 'Chuẩn hoá bước ký TGĐ' },
     ],
     taskSteps: [
-      { key: 't1', ten: 'Khởi tạo hồ sơ', vaiTro: 'PM/PA/NNC', hanhDong: 'Khởi tạo' },
-      { key: 't2', ten: 'Ký duyệt cấp Trung tâm/Khối', vaiTro: 'BGĐ TT/Khối', hanhDong: 'Ký duyệt', formKey: 'phieu-phe-duyet' },
-      { key: 't3', ten: 'Thẩm định Cơ quan nghiệp vụ', vaiTro: 'CQNV VHT', hanhDong: 'Thẩm định', formKey: 'phieu-nhan-xet' },
-      { key: 't4', ten: 'Lập Báo cáo thẩm định', vaiTro: 'CQ QLKHCN', hanhDong: 'Lập báo cáo', formKey: 'bao-cao-tham-dinh' },
-      { key: 't5', ten: 'Hội đồng KHCN phê duyệt', vaiTro: 'HĐ KHCN VHT', hanhDong: 'Phê duyệt', formKey: 'phieu-phe-duyet' },
-      { key: 't6', ten: 'TGĐ phê duyệt Quyết định chủ trương', vaiTro: 'TGĐ VHT', hanhDong: 'Phê duyệt', formKey: 'phieu-phe-duyet' },
+      { key: 't1', ten: 'Khởi tạo hồ sơ', vaiTro: 'PM/PA/NNC', vaiTroCodes: ['PM', 'PA', 'NNC'], hanhDong: 'Khởi tạo' },
+      { key: 't2', ten: 'Ký duyệt cấp Trung tâm/Khối', vaiTro: 'BGĐ TT/Khối', vaiTroCodes: ['BGD_TT', 'BGD_KHOI'], hanhDong: 'Ký duyệt', formKey: 'phieu-phe-duyet' },
+      // Mở cho cả 4 TP theo nhãn hiện hành (BPMN Task_9 chỉ TP_CLKHCN — nới chủ
+      // đích để tài khoản tp@ demo được đủ 4 vai), khớp bước seed trong dossiers.ts.
+      { key: 't3', ten: 'Thẩm định Cơ quan nghiệp vụ', vaiTro: 'TP CLKHCN, TCKT, NS, GĐ TTMS', vaiTroCodes: ['TP_CLKHCN', 'TP_TCKT', 'TP_NS', 'GD_TTMS'], hanhDong: 'Thẩm định', formKey: 'phieu-nhan-xet' },
+      { key: 't4', ten: 'Lập Báo cáo thẩm định', vaiTro: 'CQ QLKHCN', vaiTroCodes: ['CQ_QLKHCN'], hanhDong: 'Lập báo cáo', formKey: 'bao-cao-tham-dinh' },
+      { key: 't5', ten: 'Hội đồng KHCN phê duyệt', vaiTro: 'HĐ KHCN VHT', vaiTroCodes: ['HDKHCN'], hanhDong: 'Phê duyệt', formKey: 'phieu-phe-duyet' },
+      { key: 't6', ten: 'TGĐ phê duyệt Quyết định chủ trương', vaiTro: 'TGĐ VHT', vaiTroCodes: ['TGD_VHT'], hanhDong: 'Phê duyệt', formKey: 'phieu-phe-duyet' },
     ],
     bpmnXml: RD0101_BPMN,
   },
   {
     ma: 'RD01.02', ten: 'Xét duyệt Chủ trương cấp Tập đoàn', nhom: 'RD01',
-    trangThai: 'active', instances: 3, capNhat: '2026-06-25',
+    trangThai: 'active', instances: 3, capNhat: '2026-07-06',
     moTa: 'Kế thừa cấp CS + CQ KHCN TĐ, HĐ KHCN TĐ, TGĐ TĐ; hỗ trợ vai trò thay thế.',
     versions: [
       { v: '1.0', date: '2026-05-20', note: 'Bản đầu tiên' },
       { v: '1.1', date: '2026-06-25', note: 'Thêm act-on-behalf cho Tập đoàn' },
+      { v: '1.2', date: '2026-07-06', note: 'Dựng BPMN đầy đủ 10 làn theo sơ đồ nghiệp vụ (bước 1–23)' },
     ],
+    taskSteps: [
+      { key: 't1', ten: 'Khởi tạo & dự thảo HS cấp Tập đoàn', vaiTro: 'PM/PA/NNC', vaiTroCodes: ['PM', 'PA', 'NNC'], hanhDong: 'Khởi tạo' },
+      { key: 't2', ten: 'Ký duyệt cấp Trung tâm/Khối', vaiTro: 'BGĐ TT/Khối', vaiTroCodes: ['BGD_TT', 'BGD_KHOI'], hanhDong: 'Ký duyệt', formKey: 'phieu-phe-duyet' },
+      { key: 't3', ten: 'Thẩm định HS Chủ trương', vaiTro: 'HĐ KHCN VHT', vaiTroCodes: ['HDKHCN'], hanhDong: 'Thẩm định', formKey: 'phieu-nhan-xet' },
+      { key: 't4', ten: 'Lập & ký CV đề nghị thẩm định', vaiTro: 'CQ QLKHCN', vaiTroCodes: ['CQ_QLKHCN'], hanhDong: 'Lập công văn', formKey: 'phieu-phe-duyet' },
+      { key: 't5', ten: 'Phê duyệt CV đề nghị thẩm định', vaiTro: 'TGĐ VHT', vaiTroCodes: ['TGD_VHT'], hanhDong: 'Phê duyệt', formKey: 'phieu-phe-duyet' },
+      { key: 't6', ten: 'Kiểm tra HS, lập CV thẩm định', vaiTro: 'CQ KHCN TĐ', vaiTroCodes: ['CQ_KHCN_TD'], hanhDong: 'Thẩm định', formKey: 'phieu-nhan-xet' },
+      { key: 't7', ten: 'PNX cơ quan nghiệp vụ Tập đoàn', vaiTro: 'CQNV TĐ', vaiTroCodes: ['CQNV_TD'], hanhDong: 'Nhận xét', formKey: 'phieu-nhan-xet' },
+      { key: 't8', ten: 'Hội đồng KHCN TĐ ký duyệt', vaiTro: 'HĐ KHCN TĐ', vaiTroCodes: ['HDKHCN_TD'], hanhDong: 'Ký duyệt', formKey: 'phieu-phe-duyet' },
+      { key: 't9', ten: 'TGĐ TĐ phê duyệt QĐ chủ trương', vaiTro: 'TGĐ TĐ', vaiTroCodes: ['BTGD_TD'], hanhDong: 'Phê duyệt', formKey: 'phieu-phe-duyet' },
+    ],
+    bpmnXml: RD0102_BPMN,
   },
   {
     ma: 'RD02.01', ten: 'Xét duyệt NV KHCN cấp Cơ sở', nhom: 'RD02',
@@ -100,11 +118,11 @@ export const seedProcesses: ProcessDef[] = [
       { v: '1.1', date: '2026-06-27', note: 'Mô hình hoá phiên họp 1/2' },
     ],
     taskSteps: [
-      { key: 't1', ten: 'Khởi tạo hồ sơ', vaiTro: 'PM/PA/NNC', hanhDong: 'Khởi tạo' },
-      { key: 't2', ten: 'Chuyên quản thẩm định (Đạt/Chưa đạt)', vaiTro: 'CQ KHCN/MS/NS/TCKT', hanhDong: 'Thẩm định', formKey: 'phieu-dat-chua-dat' },
-      { key: 't3', ten: 'Hội đồng Xét duyệt (phiên 1 & 2)', vaiTro: 'HĐXD cấp Cơ sở', hanhDong: 'Đánh giá', formKey: 'phieu-nhan-xet' },
-      { key: 't4', ten: 'Hội đồng KHCN phê duyệt', vaiTro: 'HĐ KHCN VHT', hanhDong: 'Phê duyệt', formKey: 'phieu-phe-duyet' },
-      { key: 't5', ten: 'TGĐ phê duyệt mở mới đề tài', vaiTro: 'TGĐ VHT', hanhDong: 'Phê duyệt', formKey: 'phieu-phe-duyet' },
+      { key: 't1', ten: 'Khởi tạo hồ sơ', vaiTro: 'PM/PA/NNC', vaiTroCodes: ['PM', 'PA', 'NNC'], hanhDong: 'Khởi tạo' },
+      { key: 't2', ten: 'Chuyên quản thẩm định (Đạt/Chưa đạt)', vaiTro: 'CQ KHCN/MS/NS/TCKT', vaiTroCodes: ['CQ_KHCN', 'CQ_MS', 'CQ_NS', 'CQ_TCKT'], hanhDong: 'Thẩm định', formKey: 'phieu-dat-chua-dat' },
+      { key: 't3', ten: 'Hội đồng Xét duyệt (phiên 1 & 2)', vaiTro: 'HĐXD cấp Cơ sở', vaiTroCodes: ['HDXD'], hanhDong: 'Đánh giá', formKey: 'phieu-nhan-xet' },
+      { key: 't4', ten: 'Hội đồng KHCN phê duyệt', vaiTro: 'HĐ KHCN VHT', vaiTroCodes: ['HDKHCN'], hanhDong: 'Phê duyệt', formKey: 'phieu-phe-duyet' },
+      { key: 't5', ten: 'TGĐ phê duyệt mở mới đề tài', vaiTro: 'TGĐ VHT', vaiTroCodes: ['TGD_VHT'], hanhDong: 'Phê duyệt', formKey: 'phieu-phe-duyet' },
     ],
   },
   {
@@ -164,11 +182,11 @@ export const seedProcesses: ProcessDef[] = [
       { v: '1.1', date: '2026-06-26', note: 'Ràng buộc RD03 hoàn thành' },
     ],
     taskSteps: [
-      { key: 't1', ten: 'Khởi tạo hồ sơ nghiệm thu', vaiTro: 'PM/PA/NNC', hanhDong: 'Khởi tạo' },
-      { key: 't2', ten: 'Thẩm định chuyên quản', vaiTro: 'CQ KHCN/MS/NS/TCKT', hanhDong: 'Thẩm định', formKey: 'phieu-dat-chua-dat' },
-      { key: 't3', ten: 'QĐ thành lập Hội đồng Nghiệm thu', vaiTro: 'CQ QLKHCN', hanhDong: 'Lập QĐ' },
-      { key: 't4', ten: 'Hội đồng Nghiệm thu đánh giá', vaiTro: 'HĐ Nghiệm thu cấp CS', hanhDong: 'Đánh giá', formKey: 'phieu-nhan-xet' },
-      { key: 't5', ten: 'TGĐ công nhận kết quả', vaiTro: 'TGĐ VHT', hanhDong: 'Phê duyệt', formKey: 'phieu-phe-duyet' },
+      { key: 't1', ten: 'Khởi tạo hồ sơ nghiệm thu', vaiTro: 'PM/PA/NNC', vaiTroCodes: ['PM', 'PA', 'NNC'], hanhDong: 'Khởi tạo' },
+      { key: 't2', ten: 'Thẩm định chuyên quản', vaiTro: 'CQ KHCN/MS/NS/TCKT', vaiTroCodes: ['CQ_KHCN', 'CQ_MS', 'CQ_NS', 'CQ_TCKT'], hanhDong: 'Thẩm định', formKey: 'phieu-dat-chua-dat' },
+      { key: 't3', ten: 'QĐ thành lập Hội đồng Nghiệm thu', vaiTro: 'CQ QLKHCN', vaiTroCodes: ['CQ_QLKHCN'], hanhDong: 'Lập QĐ' },
+      { key: 't4', ten: 'Hội đồng Nghiệm thu đánh giá', vaiTro: 'HĐ Nghiệm thu cấp CS', vaiTroCodes: ['HDNT'], hanhDong: 'Đánh giá', formKey: 'phieu-nhan-xet' },
+      { key: 't5', ten: 'TGĐ công nhận kết quả', vaiTro: 'TGĐ VHT', vaiTroCodes: ['TGD_VHT'], hanhDong: 'Phê duyệt', formKey: 'phieu-phe-duyet' },
     ],
   },
   {

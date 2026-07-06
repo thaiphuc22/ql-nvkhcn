@@ -61,11 +61,18 @@ export default function NhiemVuDetail() {
   const cols: ColumnsType<Dossier> = [
     { title: 'Mã hồ sơ', dataIndex: 'id', width: 130, render: (v: string) => <Text code>{v}</Text> },
     { title: 'Loại', dataIndex: 'loai', width: 120, render: (v: string) => <Tag color="blue">{v}</Tag> },
-    { title: 'Quy trình', dataIndex: 'quyTrinh', width: 110, render: (v: string) => <Tag>{v}</Tag> },
+    { title: 'Quy trình', dataIndex: 'quyTrinh', width: 110, render: (v: string) => (v ? <Tag>{v}</Tag> : <Text type="secondary">—</Text>) },
     {
       title: 'Bước hiện tại',
       key: 'buoc',
-      render: (_, r) => (r.trangThai === 'processing' ? <Text>{r.steps[r.buocHienTai]?.ten ?? '—'}</Text> : <Text type="secondary">—</Text>),
+      render: (_, r) =>
+        r.trangThai === 'processing' ? (
+          <Text>{r.steps[r.buocHienTai]?.ten ?? '—'}</Text>
+        ) : r.trangThai === 'draft' ? (
+          <Text type="secondary">Chờ gửi duyệt</Text>
+        ) : (
+          <Text type="secondary">—</Text>
+        ),
     },
     { title: 'Trạng thái', dataIndex: 'trangThai', width: 140, render: (_, r) => <DossierStatusTag status={r.trangThai} /> },
     { title: 'Ngày tạo', dataIndex: 'ngayTao', width: 110 },

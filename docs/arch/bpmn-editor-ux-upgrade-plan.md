@@ -66,7 +66,7 @@ Nhận xét thêm từ review code:
 - **Kết quả lint chỉ nằm trong modal** — chưa có đánh dấu lỗi ngay trên canvas
   (overlay đỏ tại element lỗi) và badge số lỗi trên nút Kiểm tra.
 - **Nhánh mặc định (default flow) khó nhận biết** — ký hiệu gạch chéo BPMN chuẩn quá
-  "kín" với BA; nhóm "Điều kiện (KHCN)" cũng chưa có control đặt/bỏ default ngay tại chỗ
+  "kín" với BA; nhóm "Điều kiện" cũng chưa có control đặt/bỏ default ngay tại chỗ
   (phải mò sang nhóm Zeebe gốc).
 - **Rời trang khi chưa lưu không cảnh báo** (isDirty đã có, chưa gắn beforeunload/router
   guard).
@@ -117,7 +117,7 @@ nhìn thấy**. Cần thêm package `diagram-js-grid` (lưới chấm) + nút to
 | # | Việc | Cách làm |
 |---|---|---|
 | 4.1 | **Chế độ Đơn giản (mặc định) / Nâng cao** | Provider priority thấp lọc groups theo **whitelist theo loại element** — UserTask: Chung · Biểu mẫu KHCN · Phân công KHCN · (Thời hạn); SequenceFlow từ gateway: Điều kiện KHCN; ServiceTask: Chung · Job type; CallActivity: Chung · Process đích; Lane: Vai trò. Toggle "Nâng cao" (header panel) hiện đầy đủ Zeebe |
-| 4.2 | **Default flow tại chỗ** | Trong nhóm "Điều kiện (KHCN)": checkbox "Đặt làm nhánh mặc định (đi khi không nhánh nào khớp)" + badge "Mặc định" trên option; đồng bộ 2 chiều với thuộc tính `default` của gateway |
+| 4.2 | **Default flow tại chỗ** | Trong nhóm "Điều kiện": checkbox "Đặt làm nhánh mặc định (đi khi không nhánh nào khớp)" + badge "Mặc định" trên option; đồng bộ 2 chiều với thuộc tính `default` của gateway |
 | 4.3 | **Job type dropdown** | ServiceTask: thay ô text bằng dropdown 5 hệ tích hợp (QLNS/MS/SAP/QLTS/PLM — nguồn từ `camundaOps`/contract), cho phép "(tuỳ chỉnh)" |
 
 ### Đợt 5 — Trợ giúp chủ động trên canvas (ước ~2–3 ngày)

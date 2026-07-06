@@ -26,6 +26,8 @@ import {
   ThunderboltOutlined,
   ApiOutlined,
   HistoryOutlined,
+  ApartmentOutlined,
+  TeamOutlined,
 } from "@ant-design/icons";
 import {
   Routes,
@@ -51,12 +53,13 @@ const NhiemVuDetail = lazy(() => import("./pages/NhiemVuDetail"));
 const Worklist = lazy(() => import("./pages/Worklist"));
 const FormLibrary = lazy(() => import("./pages/FormLibrary"));
 const UserManagement = lazy(() => import("./pages/UserManagement"));
+const OrgStructure = lazy(() => import("./pages/OrgStructure"));
 const ProcessMonitor = lazy(() => import("./pages/ProcessMonitor"));
 const IntegrationStatus = lazy(() => import("./pages/IntegrationStatus"));
 const ProcessEventLog = lazy(() => import("./pages/ProcessEventLog"));
 import { useDossiers } from "./store/DossierContext";
 import { useBreadcrumb } from "./store/BreadcrumbContext";
-import { useAuth } from "./store/AuthContext";
+import { useAuth, usePermissions } from "./store/AuthContext";
 
 /** Chữ cái đầu của họ tên → nhãn avatar (tối đa 2 ký tự). */
 function initials(name: string): string {
@@ -78,6 +81,9 @@ const ROUTE_BY_KEY: Record<string, string> = {
   quytrinh: "/quy-trinh",
   bieumau: "/bieu-mau",
   nvkhcn: "/nhiem-vu",
+  "nhiem-vu": "/nhiem-vu",
+  "ho-so": "/ho-so",
+  donvi: "/co-cau-to-chuc",
   nguoidung: "/nguoi-dung",
   giamsat: "/giam-sat",
   tichhop: "/tich-hop",
@@ -92,8 +98,15 @@ export default function App() {
   const { list } = useDossiers();
   const { crumbs } = useBreadcrumb();
   const { user, logout } = useAuth();
+  const { admin, canManageSystem, canProcessStep } = usePermissions();
 
-  const pending = list.filter((d) => d.trangThai === "processing").length;
+  // Badge "Việc của tôi" đồng bộ với bộ lọc Worklist: chỉ đếm bước hiện tại
+  // thuộc candidate group của user (admin đếm tất cả hồ sơ đang xử lý).
+  const pending = list.filter(
+    (d) =>
+      d.trangThai === "processing" &&
+      (admin || canProcessStep(d.steps[d.buocHienTai])),
+  ).length;
   const siderW = collapsed ? SIDER_COLLAPSED_W : SIDER_W;
 
   // Cho Drawer/overlay biết bề rộng sider để né menu.
@@ -111,19 +124,25 @@ export default function App() {
           ? "tichhop"
           : location.pathname.startsWith("/nhat-ky")
             ? "nhatky"
-            : location.pathname.startsWith("/ho-so") ||
-                location.pathname.startsWith("/nhiem-vu")
-              ? "nvkhcn"
+            : location.pathname.startsWith("/ho-so")
+              ? "ho-so"
+              : location.pathname.startsWith("/nhiem-vu")
+                ? "nhiem-vu"
               : location.pathname.startsWith("/bieu-mau")
                 ? "bieumau"
-                : location.pathname.startsWith("/nguoi-dung")
-                  ? "nguoidung"
-                  : "quytrinh";
+                : location.pathname.startsWith("/co-cau-to-chuc")
+                  ? "donvi"
+                  : location.pathname.startsWith("/nguoi-dung")
+                    ? "nguoidung"
+                    : "quytrinh";
   const SECTION_TITLE: Record<string, string> = {
     dashboard: "Tổng quan",
     worklist: "Việc của tôi",
-    nvkhcn: "Quản lý NV KHCN",
+    nvkhcn: "Quản trị KHCN",
+    "nhiem-vu": "Quản trị KHCN",
+    "ho-so": "Quản trị KHCN",
     bieumau: "Thư viện biểu mẫu",
+    donvi: "Quản trị đơn vị",
     nguoidung: "Quản trị người dùng",
     giamsat: "Giám sát tiến trình luồng",
     tichhop: "Trạng thái Tích hợp",
@@ -149,13 +168,28 @@ export default function App() {
       key: "worklist",
       icon: <CarryOutOutlined />,
       label: (
-        <Space>
-          Việc của tôi
-          <Badge count={pending} size="small" />
-        </Space>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            width: "100%",
+          }}
+        >
+          <span>Việc của tôi</span>
+          <Badge count={pending} size="small" overflowCount={99} />
+        </div>
       ),
     },
-    { key: "nvkhcn", icon: <ExperimentOutlined />, label: "Quản lý NV KHCN" },
+    {
+      key: "nvkhcn",
+      icon: <ExperimentOutlined />,
+      label: "Quản trị KHCN",
+      children: [
+        { key: "nhiem-vu", icon: null, label: "Danh sách NV KHCN" },
+        { key: "ho-so", icon: null, label: "Danh sách Hồ sơ KHCN" },
+      ],
+    },
     {
       key: "quytrinh",
       icon: <PartitionOutlined />,
@@ -175,7 +209,28 @@ export default function App() {
         { key: "nhatky", icon: <HistoryOutlined />, label: "Nhật ký" },
       ],
     },
-    { key: "nguoidung", icon: <KeyOutlined />, label: "Quản trị người dùng" },
+    // Nhóm Quản trị tổ chức chỉ dành cho vai trò "Quản trị hệ thống".
+    ...(canManageSystem
+      ? [
+          {
+            key: "toChuc",
+            icon: <KeyOutlined />,
+            label: "Quản trị tổ chức",
+            children: [
+              {
+                key: "donvi",
+                icon: <ApartmentOutlined />,
+                label: "Quản trị đơn vị",
+              },
+              {
+                key: "nguoidung",
+                icon: <TeamOutlined />,
+                label: "Quản trị người dùng",
+              },
+            ],
+          },
+        ]
+      : []),
     { key: "bieumau", icon: <FormOutlined />, label: "Thư viện biểu mẫu" },
   ];
 
@@ -240,7 +295,7 @@ export default function App() {
           theme="dark"
           mode="inline"
           selectedKeys={[selectedKey]}
-          defaultOpenKeys={["vanhanh"]}
+          defaultOpenKeys={["nvkhcn", "vanhanh", "toChuc"]}
           items={menuItems}
           onClick={({ key }) => {
             const to = ROUTE_BY_KEY[key];
@@ -376,7 +431,16 @@ export default function App() {
               <Route path="/tong-quan" element={<Dashboard />} />
               <Route path="/viec-cua-toi" element={<Worklist />} />
               <Route path="/quy-trinh" element={<ProcessCatalog />} />
-              <Route path="/quy-trinh/moi" element={<ProcessCreate />} />
+              <Route
+                path="/quy-trinh/moi"
+                element={
+                  canManageSystem ? (
+                    <ProcessCreate />
+                  ) : (
+                    <Navigate to="/quy-trinh" replace />
+                  )
+                }
+              />
               <Route path="/quy-trinh/:ma" element={<ProcessDetail />} />
               <Route path="/bieu-mau" element={<FormLibrary />} />
               <Route path="/nhiem-vu" element={<NhiemVuList />} />
@@ -384,7 +448,26 @@ export default function App() {
               <Route path="/nhiem-vu/:ma" element={<NhiemVuDetail />} />
               <Route path="/ho-so" element={<DossierList />} />
               <Route path="/ho-so/:id" element={<DossierDetail />} />
-              <Route path="/nguoi-dung" element={<UserManagement />} />
+              <Route
+                path="/co-cau-to-chuc"
+                element={
+                  canManageSystem ? (
+                    <OrgStructure />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
+              />
+              <Route
+                path="/nguoi-dung"
+                element={
+                  canManageSystem ? (
+                    <UserManagement />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
+              />
               <Route path="/giam-sat" element={<ProcessMonitor />} />
               <Route path="/tich-hop" element={<IntegrationStatus />} />
               <Route path="/nhat-ky" element={<ProcessEventLog />} />

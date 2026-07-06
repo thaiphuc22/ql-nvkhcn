@@ -5,7 +5,7 @@ import { buildYKien, isApprove } from '../forms'
 import { useDossiers } from '../store/DossierContext'
 import { useProcesses } from '../store/ProcessContext'
 import { useForms } from '../store/FormContext'
-import { useAuth } from '../store/AuthContext'
+import { useAuth, usePermissions } from '../store/AuthContext'
 
 interface Props {
   dossierId: string | null
@@ -24,6 +24,7 @@ export default function TaskFormModal({ dossierId, open, onClose }: Props) {
   const { getByMa } = useProcesses()
   const { getForm } = useForms()
   const { user } = useAuth()
+  const { canProcessStep } = usePermissions()
   const currentUser = user?.hoTen ?? 'Người dùng'
   const formRef = useRef<FormRendererHandle>(null)
 
@@ -33,8 +34,11 @@ export default function TaskFormModal({ dossierId, open, onClose }: Props) {
   const bound = proc?.taskSteps?.find((ts) => ts.ten === step?.ten)
   const formKey = bound?.formKey ?? step?.formKey ?? 'phieu-nhan-xet'
   const form = getForm(formKey) ?? getForm('phieu-nhan-xet')!
+  // Check quyền theo candidateGroups của bước (mock — DossierContext không tự check).
+  const allowed = canProcessStep(step)
 
   function handleOk() {
+    if (!allowed) return
     const res = formRef.current?.submit()
     if (!res || !d || !step) return
     if (res.errors && Object.keys(res.errors).length > 0) {
@@ -61,10 +65,19 @@ export default function TaskFormModal({ dossierId, open, onClose }: Props) {
       cancelText="Đóng"
       width={640}
       destroyOnClose
+      okButtonProps={{ disabled: !allowed }}
       onOk={handleOk}
       onCancel={onClose}
     >
-      {d && step && (
+      {d && step && !allowed && (
+        <Alert
+          type="warning"
+          showIcon
+          message="Bạn không thuộc nhóm xử lý bước này."
+          description={`Bước "${step.ten}" thuộc vai trò: ${step.vaiTro}.`}
+        />
+      )}
+      {d && step && allowed && (
         <>
           <Alert
             type="info"

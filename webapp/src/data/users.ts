@@ -29,7 +29,42 @@ export const ALL_ROLES = [
   'TP Tài chính Kế toán',
   'TP Nhân sự',
   'GĐ TT Mua sắm',
+  'Hội đồng KHCN VHT',
+  'CQ KHCN Tập đoàn',
+  'CQ nghiệp vụ Tập đoàn',
+  'Hội đồng KHCN Tập đoàn',
+  'Ban TGĐ Tập đoàn',
 ] as const
+
+/** Nhãn vai trò của Quản trị hệ thống — bypass mọi check quyền (xem data/permissions.ts). */
+export const ADMIN_ROLE_LABEL = 'Quản trị hệ thống'
+
+/**
+ * Ánh xạ nhãn vai trò (ALL_ROLES) → mã candidateGroup trong BPMN (data/roles.ts).
+ * Đây là cầu nối duy nhất giữa tài khoản demo và `zeebe:AssignmentDefinition
+ * candidateGroups` trong RD01.01/RD01.02 — quyền xử lý bước suy từ map này.
+ */
+export const ROLE_LABEL_TO_CODES: Record<string, string[]> = {
+  'Quản trị hệ thống': [], // bypass qua isAdmin, không cần code
+  'Ban GĐ Trung tâm': ['BGD_TT'],
+  'Ban GĐ Khối': ['BGD_KHOI'],
+  'Cơ quan nghiệp vụ VHT': ['CQ_KHCN', 'CQ_MS', 'CQ_NS', 'CQ_TCKT'],
+  'Chủ nhiệm đề tài': ['PM', 'PA', 'NNC'],
+  'Phó TGĐ chuyên trách': ['PTGD_CT'],
+  'CQ Quản lý KHCN': ['CQ_QLKHCN'],
+  'Tổng Giám đốc VHT': ['TGD_VHT'],
+  'TP Chiến lược KHCN': ['TP_CLKHCN'],
+  'TP Tài chính Kế toán': ['TP_TCKT'],
+  'TP Nhân sự': ['TP_NS'],
+  'GĐ TT Mua sắm': ['GD_TTMS'],
+  // Demo gộp mọi hội đồng cấp VHT/TĐ vào 1 tài khoản thường trực — nếu tách,
+  // các bước HĐXD/HĐNT trong seed dossiers.ts sẽ không có ai xử lý được.
+  'Hội đồng KHCN VHT': ['HDKHCN', 'HDXD', 'HDXD_DC', 'HDNT', 'HD_DGHT'],
+  'CQ KHCN Tập đoàn': ['CQ_KHCN_TD'],
+  'CQ nghiệp vụ Tập đoàn': ['CQNV_TD'],
+  'Hội đồng KHCN Tập đoàn': ['HDKHCN_TD', 'HDXD_TD', 'HDNT_TD'],
+  'Ban TGĐ Tập đoàn': ['BTGD_TD'],
+}
 
 export const users: AppUser[] = [
   {
@@ -95,6 +130,51 @@ export const users: AppUser[] = [
     donVi: 'Ban Tổng Giám đốc',
     vaiTro: ['Tổng Giám đốc VHT'],
     chucDanh: 'Tổng Giám đốc VHT',
+    trangThai: 'active',
+  },
+  {
+    id: 'U-009',
+    hoTen: 'Ngô Thị Thanh Hằng',
+    email: 'hdkhcn@example.com',
+    donVi: 'Hội đồng KHCN VHT',
+    vaiTro: ['Hội đồng KHCN VHT'],
+    chucDanh: 'Thường trực HĐ KHCN VHT',
+    trangThai: 'active',
+  },
+  {
+    id: 'U-010',
+    hoTen: 'Trịnh Văn Sơn',
+    email: 'khcntd@example.com',
+    donVi: 'Ban CNCNC Tập đoàn',
+    vaiTro: ['CQ KHCN Tập đoàn'],
+    chucDanh: 'CQ KHCN Tập đoàn',
+    trangThai: 'active',
+  },
+  {
+    id: 'U-011',
+    hoTen: 'Lương Thị Bích Ngọc',
+    email: 'cqnvtd@example.com',
+    donVi: 'CQNV Tập đoàn',
+    vaiTro: ['CQ nghiệp vụ Tập đoàn'],
+    chucDanh: 'CQ nghiệp vụ Tập đoàn',
+    trangThai: 'active',
+  },
+  {
+    id: 'U-012',
+    hoTen: 'Hoàng Minh Đức',
+    email: 'hdtd@example.com',
+    donVi: 'Hội đồng KHCN Tập đoàn',
+    vaiTro: ['Hội đồng KHCN Tập đoàn'],
+    chucDanh: 'Thường trực HĐ KHCN TĐ',
+    trangThai: 'active',
+  },
+  {
+    id: 'U-013',
+    hoTen: 'Vũ Ngọc Toàn',
+    email: 'btgdtd@example.com',
+    donVi: 'Ban TGĐ Tập đoàn',
+    vaiTro: ['Ban TGĐ Tập đoàn'],
+    chucDanh: 'Ban TGĐ Tập đoàn',
     trangThai: 'active',
   },
   {

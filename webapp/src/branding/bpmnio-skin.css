@@ -375,3 +375,30 @@
 .vht-diagram .djs-popup .khcn-color-swatch-yellow::before { background: #fcf3cf; border-color: #f1c40f; }
 .vht-diagram .djs-popup .khcn-color-swatch-red::before { background: #fdecea; border-color: #e74c3c; }
 .vht-diagram .djs-popup .khcn-color-swatch-grey::before { background: #eceff1; border-color: #90a4ae; }
+
+/* Make Ant Design dark sider menu selected item follow brand red */
+.ant-layout-sider .ant-menu-dark .ant-menu-item-selected,
+.ant-layout-sider .ant-menu-dark .ant-menu-item-active,
+.ant-layout-sider .ant-menu-dark .ant-menu-submenu-selected > .ant-menu-submenu-title {
+  background: var(--vht-red) !important;
+  color: #ffffff !important;
+}
+.ant-layout-sider .ant-menu-dark .ant-menu-item-selected .anticon,
+.ant-layout-sider .ant-menu-dark .ant-menu-submenu-selected .anticon {
+  color: #ffffff !important;
+}
+.ant-layout-sider .ant-menu-dark .ant-menu-item a,
+.ant-layout-sider .ant-menu-dark .ant-menu-submenu-title {
+  color: inherit !important;
+}
+
+/* Specifically target inline (nested) submenu items when selected */
+.ant-layout-sider .ant-menu-dark .ant-menu-inline .ant-menu-item-selected,
+.ant-layout-sider .ant-menu-dark .ant-menu-inline .ant-menu-item-selected > a,
+.ant-layout-sider .ant-menu-dark .ant-menu-inline .ant-menu-item-selected .ant-menu-title-content {
+  background: var(--vht-red) !important;
+  color: #ffffff !important;
+}
+.ant-layout-sider .ant-menu-dark .ant-menu-inline .ant-menu-item-selected .anticon {
+  color: #ffffff !important;
+}

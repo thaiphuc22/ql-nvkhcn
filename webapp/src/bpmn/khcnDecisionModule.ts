@@ -10,7 +10,7 @@
  * AN TOÀN LUỒNG: nhánh default là "Từ chối" — nếu biến kết quả thiếu hoặc không
  * khớp điều kiện nào, token đi hướng từ chối/rework chứ KHÔNG vô tình phê duyệt.
  * Nhánh "Đồng ý" bắt buộc có điều kiện FEEL (chọn preset từ variableContract ở
- * nhóm "Điều kiện (KHCN)"); lint sẽ báo LỖI nếu nhánh không-default thiếu điều kiện.
+ * nhóm "Điều kiện"); lint sẽ báo LỖI nếu nhánh không-default thiếu điều kiện.
  *
  * ⚠️ ASSUMPTION A1 (OQ-002 — đích rework khi từ chối, CHƯA chốt với khách):
  *   - "Từ chối" là nhánh rework; ĐÍCH rework do người vẽ tự nối (mặc định khuyến

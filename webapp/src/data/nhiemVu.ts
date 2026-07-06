@@ -126,6 +126,16 @@ export const seedNhiemVu: NhiemVu[] = [
     giaiDoan: 'chu_truong',
   },
   {
+    ma: 'RD.2026.031',
+    ten: 'Nghiên cứu nền tảng xử lý tín hiệu số dùng chung cho radar',
+    cap: 'Cơ sở',
+    chuNhiem: { hoTen: 'Lê Thị Mai', hocHamHocVi: 'ThS.', maNhanVien: 'VHT0315', email: 'mailt@viettel.com.vn', donViCongTac: 'TT Nghiên cứu Vô tuyến' },
+    donViChuTri: 'TT Nghiên cứu Vô tuyến',
+    thoiGianThucHien: '09/2026 – 09/2027',
+    duToan: '2.750.000.000 đ',
+    giaiDoan: 'chu_truong',
+  },
+  {
     ma: 'RD.2026.030',
     ten: 'Chế tạo bộ nguồn công suất lớn cho radar',
     cap: 'Tập đoàn',

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Col, Row, Space, Tag, Typography } from 'antd'
+import { Button, Col, Row, Space, Tag, Tooltip, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { FolderOpenOutlined, PlusOutlined } from '@ant-design/icons'
 import {
@@ -13,6 +13,7 @@ import {
 } from '../data/nhiemVu'
 import { useNhiemVu } from '../store/NhiemVuContext'
 import { useDossiers } from '../store/DossierContext'
+import { usePermissions } from '../store/AuthContext'
 import { PageHeader, StatCard, FilterBar, EntityTable, LIST_SCROLL_Y } from '../components/ui'
 
 const { Text } = Typography
@@ -21,6 +22,7 @@ export default function NhiemVuList() {
   const navigate = useNavigate()
   const { list: nhiemVu } = useNhiemVu()
   const { list: dossiers } = useDossiers()
+  const { canCreateNhiemVu } = usePermissions()
 
   const [q, setQ] = useState('')
   const [fCap, setFCap] = useState<Cap>()
@@ -96,9 +98,22 @@ export default function NhiemVuList() {
             <Button icon={<FolderOpenOutlined />} onClick={() => navigate('/ho-so')}>
               Danh sách hồ sơ
             </Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/nhiem-vu/moi')}>
-              Tạo Nhiệm vụ KHCN mới
-            </Button>
+            <Tooltip
+              title={
+                canCreateNhiemVu
+                  ? undefined
+                  : 'Chỉ Chủ nhiệm đề tài (PM/PA/NNC) được khởi tạo nhiệm vụ KHCN.'
+              }
+            >
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                disabled={!canCreateNhiemVu}
+                onClick={() => navigate('/nhiem-vu/moi')}
+              >
+                Tạo Nhiệm vụ KHCN mới
+              </Button>
+            </Tooltip>
           </Space>
         }
       />

@@ -1,5 +1,14 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
 import { DEMO_PASSWORD, findUserByEmail, type AppUser } from '../data/users'
+import {
+  canCreateHoSo,
+  canCreateNhiemVu,
+  canManageSystem,
+  canProcessStep,
+  getUserRoleCodes,
+  isAdmin,
+} from '../data/permissions'
+import type { DossierStep } from '../data/dossiers'
 
 const STORAGE_KEY = 'qtkhcn.auth.email'
 
@@ -20,6 +29,26 @@ export function useAuth(): AuthCtxValue {
   const ctx = useContext(AuthCtx)
   if (!ctx) throw new Error('useAuth must be used within AuthProvider')
   return ctx
+}
+
+/**
+ * Quyền của user hiện tại, suy từ nhãn vai trò → mã candidateGroup BPMN
+ * (data/permissions.ts). Dùng ở mọi chỗ cần gate hành động theo vai trò.
+ */
+export function usePermissions() {
+  const { user } = useAuth()
+  return useMemo(
+    () => ({
+      user,
+      roleCodes: getUserRoleCodes(user),
+      admin: isAdmin(user),
+      canCreateNhiemVu: canCreateNhiemVu(user),
+      canCreateHoSo: canCreateHoSo(user),
+      canManageSystem: canManageSystem(user),
+      canProcessStep: (step?: Pick<DossierStep, 'vaiTroCodes'>) => canProcessStep(user, step),
+    }),
+    [user],
+  )
 }
 
 /** Khôi phục phiên đăng nhập từ localStorage (mock — chỉ lưu email). */

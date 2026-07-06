@@ -29,6 +29,7 @@ function daysLeft(deadline?: string): number | null {
 }
 
 const STATUS_COLOR: Record<DossierStatus, string> = {
+  draft: '#8593a3',
   processing: '#1677ff',
   approved: '#17935a',
   rejected: '#cf1322',
@@ -40,11 +41,12 @@ export default function Dashboard() {
   const { user } = useAuth()
 
   const stats = useMemo(() => {
+    const draft = list.filter((d) => d.trangThai === 'draft').length
     const processing = list.filter((d) => d.trangThai === 'processing').length
     const approved = list.filter((d) => d.trangThai === 'approved').length
     const rejected = list.filter((d) => d.trangThai === 'rejected').length
     const nhiemVu = new Set(list.map((d) => d.maNV)).size
-    return { total: list.length, processing, approved, rejected, nhiemVu }
+    return { total: list.length, draft, processing, approved, rejected, nhiemVu }
   }, [list])
 
   // Phân bố theo loại hồ sơ (giai đoạn vòng đời).
@@ -126,9 +128,8 @@ export default function Dashboard() {
         <Col xs={24} lg={16}>
           <Card title="Hồ sơ theo trạng thái" style={{ marginBottom: 14 }}>
             <Space direction="vertical" size={14} style={{ width: '100%' }}>
-              {(['processing', 'approved', 'rejected'] as DossierStatus[]).map((st) => {
-                const count =
-                  st === 'processing' ? stats.processing : st === 'approved' ? stats.approved : stats.rejected
+              {(['draft', 'processing', 'approved', 'rejected'] as DossierStatus[]).map((st) => {
+                const count = stats[st]
                 const pct = stats.total ? Math.round((count / stats.total) * 100) : 0
                 return (
                   <div key={st}>

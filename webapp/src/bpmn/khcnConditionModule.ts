@@ -5,7 +5,7 @@
  * ngưỡng (vd "vượt chủ trương") KHÔNG nằm ở gateway mà ở BIẾN quyết định tính từ
  * bước phía trước (business rule/DMN). Gateway chỉ so biến đó bằng FEEL.
  *
- * Module thêm nhóm "Điều kiện (KHCN)" cho bpmn:SequenceFlow (khi nguồn là Gateway):
+ * Module thêm nhóm "Điều kiện" cho bpmn:SequenceFlow (khi nguồn là Gateway):
  * dropdown preset nghiệp vụ → ghi bpmn:conditionExpression (FEEL, dùng BIẾN, không
  * hardcode số). Vẫn dùng chung ô Condition tự do của panel Zeebe cho biểu thức khác.
  *
@@ -122,7 +122,7 @@ class KhcnConditionPropertiesProvider {
       if (is(element, 'bpmn:SequenceFlow') && element.source && is(element.source, 'bpmn:Gateway')) {
         groups.push({
           id: 'khcnCondition',
-          label: this._translate('Điều kiện (KHCN)'),
+          label: this._translate('Điều kiện'),
           entries: [
             {
               id: 'khcn-condition',

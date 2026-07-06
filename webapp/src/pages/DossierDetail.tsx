@@ -10,6 +10,7 @@ import {
   List,
   Modal,
   Row,
+  Select,
   Space,
   Steps,
   Tag,
@@ -27,10 +28,13 @@ import {
   FileZipOutlined,
   FormOutlined,
   PrinterOutlined,
+  SendOutlined,
 } from "@ant-design/icons";
-import { type StepStatus } from "../data/dossiers";
+import { LOAI_TO_NHOM, type StepStatus } from "../data/dossiers";
 import { templatesFor, type DocTemplate } from "../data/docTemplates";
 import { useDossiers } from "../store/DossierContext";
+import { useProcesses } from "../store/ProcessContext";
+import { usePermissions } from "../store/AuthContext";
 import TaskFormModal from "../components/TaskFormModal";
 import OfficialDocument, {
   printOfficialDoc,
@@ -93,8 +97,12 @@ export default function DossierDetail() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const { message } = App.useApp();
-  const { getById } = useDossiers();
+  const { getById, submitHoSo } = useDossiers();
+  const { list: processes } = useProcesses();
+  const { canProcessStep, canCreateHoSo } = usePermissions();
   const [formOpen, setFormOpen] = useState(false);
+  const [submitOpen, setSubmitOpen] = useState(false);
+  const [selectedQT, setSelectedQT] = useState<string>();
   const [docTpl, setDocTpl] = useState<DocTemplate | null>(null);
 
   const d = getById(decodeURIComponent(id));
@@ -103,6 +111,41 @@ export default function DossierDetail() {
     () => (docTpl && d ? docTpl.build(d) : null),
     [docTpl, d],
   );
+
+  // Quy trình khả dụng khi Gửi duyệt: đúng nhóm theo loại hồ sơ (RD01–RD06),
+  // đang chạy và đã cấu hình bước (taskSteps) để dựng được luồng phê duyệt.
+  const quyTrinhOptions = useMemo(
+    () =>
+      d
+        ? processes.filter(
+            (p) =>
+              p.nhom === LOAI_TO_NHOM[d.loai] &&
+              p.trangThai === "active" &&
+              p.taskSteps?.length,
+          )
+        : [],
+    [processes, d],
+  );
+  const chosenQT = quyTrinhOptions.find((p) => p.ma === selectedQT);
+
+  const openSubmit = () => {
+    if (!d) return;
+    // Gợi ý sẵn quy trình khớp cấp của NV (Cơ sở → *.01, Tập đoàn → *.02).
+    const byCap = quyTrinhOptions.find((p) =>
+      d.cap === "Tập đoàn" ? p.ma.endsWith(".02") : p.ma.endsWith(".01"),
+    );
+    setSelectedQT((byCap ?? quyTrinhOptions[0])?.ma);
+    setSubmitOpen(true);
+  };
+
+  const doSubmit = () => {
+    if (!d || !chosenQT) return;
+    submitHoSo(d.id, chosenQT);
+    setSubmitOpen(false);
+    message.success(
+      `Đã gửi duyệt hồ sơ ${d.id} vào quy trình ${chosenQT.ma} · ${chosenQT.ten}.`,
+    );
+  };
 
   if (!d) {
     return (
@@ -117,6 +160,8 @@ export default function DossierDetail() {
 
   const currentStep = d.steps[d.buocHienTai];
   const rejectedStep = d.steps.find((s) => s.trangThai === "rejected");
+  // Chỉ user thuộc candidateGroups của bước hiện tại (theo BPMN) mới xử lý được.
+  const allowed = canProcessStep(currentStep);
 
   return (
     <div>
@@ -133,22 +178,71 @@ export default function DossierDetail() {
           <>
             <Text code>{d.id}</Text>{" "}
             <Text type="secondary">
-              · {d.quyTrinh} {d.quyTrinhTen} · cấp {d.cap}
+              · {d.quyTrinh ? `${d.quyTrinh} ${d.quyTrinhTen}` : d.quyTrinhTen}{" "}
+              · cấp {d.cap}
             </Text>
           </>
         }
         extra={
-          d.trangThai === "processing" ? (
-            <Button
-              type="primary"
-              icon={<FormOutlined />}
-              onClick={() => setFormOpen(true)}
+          d.trangThai === "draft" ? (
+            <Tooltip
+              title={
+                canCreateHoSo
+                  ? undefined
+                  : "Chỉ Chủ nhiệm đề tài (PM/PA/NNC) được gửi duyệt hồ sơ."
+              }
             >
-              Xử lý
-            </Button>
+              <Button
+                type="primary"
+                icon={<SendOutlined />}
+                disabled={!canCreateHoSo}
+                onClick={openSubmit}
+              >
+                Gửi duyệt
+              </Button>
+            </Tooltip>
+          ) : d.trangThai === "processing" ? (
+            <Tooltip
+              title={
+                allowed
+                  ? undefined
+                  : `Bước này thuộc vai trò: ${currentStep?.vaiTro ?? "—"}`
+              }
+            >
+              <Button
+                type="primary"
+                icon={<FormOutlined />}
+                disabled={!allowed}
+                onClick={() => setFormOpen(true)}
+              >
+                Xử lý
+              </Button>
+            </Tooltip>
           ) : undefined
         }
       />
+
+      {d.trangThai === "draft" && (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="Hồ sơ ở trạng thái Khởi tạo — chưa vào quy trình."
+          description="Bấm “Gửi duyệt” để chọn quy trình mà hồ sơ sẽ đi vào; hồ sơ sẽ chuyển sang Đang xử lý và bắt đầu luồng phê duyệt."
+          action={
+            canCreateHoSo ? (
+              <Button
+                size="small"
+                type="primary"
+                icon={<SendOutlined />}
+                onClick={openSubmit}
+              >
+                Gửi duyệt
+              </Button>
+            ) : undefined
+          }
+        />
+      )}
 
       {d.trangThai === "approved" && (
         <Alert
@@ -168,13 +262,13 @@ export default function DossierDetail() {
           description={rejectedStep.yKien}
         />
       )}
-      {d.trangThai === "processing" && currentStep && (
+      {d.trangThai === "processing" && currentStep && !allowed && (
         <Alert
           type="info"
           showIcon
           style={{ marginBottom: 16 }}
           message={`Đang chờ xử lý tại bước: ${currentStep.ten}`}
-          description={`Vai trò phụ trách: ${currentStep.vaiTro}`}
+          description={`Vai trò phụ trách: ${currentStep.vaiTro} — tài khoản của bạn không thuộc nhóm này.`}
         />
       )}
 
@@ -206,7 +300,11 @@ export default function DossierDetail() {
                 {d.tenDeTai}
               </Descriptions.Item>
               <Descriptions.Item label="Quy trình">
-                {d.quyTrinh} · {d.quyTrinhTen}
+                {d.quyTrinh ? (
+                  `${d.quyTrinh} · ${d.quyTrinhTen}`
+                ) : (
+                  <Text type="secondary">Chưa vào quy trình — chờ gửi duyệt</Text>
+                )}
               </Descriptions.Item>
               <Descriptions.Item label="Cấp xét duyệt">
                 {d.cap}
@@ -403,6 +501,66 @@ export default function DossierDetail() {
         open={formOpen}
         onClose={() => setFormOpen(false)}
       />
+
+      <Modal
+        open={submitOpen}
+        title={
+          <Space>
+            <SendOutlined />
+            Gửi duyệt hồ sơ
+          </Space>
+        }
+        okText="Gửi duyệt"
+        cancelText="Hủy"
+        okButtonProps={{ disabled: !chosenQT, icon: <SendOutlined /> }}
+        onOk={doSubmit}
+        onCancel={() => setSubmitOpen(false)}
+      >
+        <Paragraph>
+          Chọn quy trình mà hồ sơ <Text code>{d.id}</Text> (loại{" "}
+          <Tag color="blue" style={{ marginRight: 0 }}>{d.loai}</Tag>) sẽ đi vào:
+        </Paragraph>
+        {quyTrinhOptions.length ? (
+          <>
+            <Select
+              style={{ width: "100%" }}
+              placeholder="Chọn quy trình"
+              value={selectedQT}
+              onChange={setSelectedQT}
+              options={quyTrinhOptions.map((p) => ({
+                value: p.ma,
+                label: `${p.ma} · ${p.ten}`,
+              }))}
+            />
+            {chosenQT && (
+              <Alert
+                type="info"
+                showIcon
+                style={{ marginTop: 12 }}
+                message={`${chosenQT.ma} · ${chosenQT.ten}`}
+                description={
+                  <>
+                    <div>{chosenQT.moTa}</div>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      Sau khi gửi, hồ sơ chuyển sang <b>Đang xử lý</b> tại bước:{" "}
+                      {chosenQT.taskSteps?.[
+                        chosenQT.taskSteps[0]?.hanhDong === "Khởi tạo" ? 1 : 0
+                      ]?.ten ?? "—"}
+                    </Text>
+                  </>
+                }
+              />
+            )}
+          </>
+        ) : (
+          <Alert
+            type="warning"
+            showIcon
+            message={`Chưa có quy trình đang chạy cho loại hồ sơ "${d.loai}".`}
+            description="Cần triển khai (deploy) quy trình tương ứng trong Danh mục quy trình trước khi gửi duyệt."
+          />
+        )}
+      </Modal>
 
       <Modal
         open={!!docTpl}

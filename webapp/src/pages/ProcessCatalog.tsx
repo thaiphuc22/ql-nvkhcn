@@ -10,6 +10,7 @@ import {
   Select,
   Space,
   Tag,
+  Tooltip,
   Typography,
   Upload,
 } from 'antd'
@@ -24,6 +25,7 @@ import {
   type ProcessStatus,
 } from '../data/processes'
 import { useProcesses } from '../store/ProcessContext'
+import { usePermissions } from '../store/AuthContext'
 import { PageHeader, StatCard, ProcessStatusTag, FilterBar, EntityTable, LIST_SCROLL_Y } from '../components/ui'
 
 const { Text } = Typography
@@ -32,6 +34,7 @@ export default function ProcessCatalog() {
   const { message } = App.useApp()
   const navigate = useNavigate()
   const { list, addProcess } = useProcesses()
+  const { canManageSystem } = usePermissions()
 
   const [q, setQ] = useState('')
   const [fNhom, setFNhom] = useState<string>()
@@ -118,12 +121,21 @@ export default function ProcessCatalog() {
         title="Danh mục quy trình"
         extra={
           <Space>
-            <Button icon={<UploadOutlined />} onClick={() => setCreateOpen(true)}>
-              Nhập từ .bpmn
-            </Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/quy-trinh/moi')}>
-              Tạo & vẽ BPMN
-            </Button>
+            <Tooltip title={canManageSystem ? undefined : 'Chỉ Quản trị hệ thống được deploy quy trình.'}>
+              <Button icon={<UploadOutlined />} disabled={!canManageSystem} onClick={() => setCreateOpen(true)}>
+                Nhập từ .bpmn
+              </Button>
+            </Tooltip>
+            <Tooltip title={canManageSystem ? undefined : 'Chỉ Quản trị hệ thống được tạo quy trình.'}>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                disabled={!canManageSystem}
+                onClick={() => navigate('/quy-trinh/moi')}
+              >
+                Tạo & vẽ BPMN
+              </Button>
+            </Tooltip>
           </Space>
         }
       />

@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, Col, Row, Space, Tag, Typography } from "antd";
+import { Alert, Button, Col, Row, Space, Switch, Tag, Tooltip, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { FolderOpenOutlined, FormOutlined } from "@ant-design/icons";
-import type { Dossier } from "../data/dossiers";
+import type { Dossier, DossierStep } from "../data/dossiers";
 import { useDossiers } from "../store/DossierContext";
-import { useAuth } from "../store/AuthContext";
+import { useAuth, usePermissions } from "../store/AuthContext";
 import TaskFormModal from "../components/TaskFormModal";
 import {
   PageHeader,
@@ -26,6 +26,7 @@ function parseVN(dmy?: string): number | null {
 
 interface Task {
   d: Dossier;
+  step?: DossierStep;
   stepTen: string;
   vaiTro: string;
   han?: string;
@@ -35,8 +36,12 @@ export default function Worklist() {
   const navigate = useNavigate();
   const { list } = useDossiers();
   const { user } = useAuth();
+  const { admin, canProcessStep } = usePermissions();
   const currentUser = user?.hoTen ?? "Người dùng";
   const [formTask, setFormTask] = useState<string | null>(null);
+  // Admin mặc định xem toàn bộ việc đang xử lý; user thường chỉ thấy việc
+  // thuộc candidate group của mình (khớp vai trò gán trong BPMN).
+  const [showAll, setShowAll] = useState(admin);
 
   const tasks: Task[] = useMemo(
     () =>
@@ -46,13 +51,15 @@ export default function Worklist() {
           const step = d.steps[d.buocHienTai];
           return {
             d,
+            step,
             stepTen: step?.ten ?? "—",
             vaiTro: step?.vaiTro ?? "",
             han: step?.hanXuLy,
           };
         })
+        .filter((t) => (admin && showAll) || canProcessStep(t.step))
         .sort((a, b) => (parseVN(a.han) ?? 9e9) - (parseVN(b.han) ?? 9e9)),
-    [list],
+    [list, admin, showAll, canProcessStep],
   );
 
   const overdueCount = useMemo(
@@ -132,23 +139,29 @@ export default function Worklist() {
       title: "Thao tác",
       key: "act",
       width: 170,
-      render: (_, t) => (
-        <Space>
-          <Button
-            type="primary"
-            size="small"
-            icon={<FormOutlined />}
-            onClick={() => setFormTask(t.d.id)}
-          >
-            Xử lý
-          </Button>
-          <Button
-            size="small"
-            icon={<FolderOpenOutlined />}
-            onClick={() => navigate(`/ho-so/${encodeURIComponent(t.d.id)}`)}
-          />
-        </Space>
-      ),
+      render: (_, t) => {
+        const allowed = canProcessStep(t.step);
+        return (
+          <Space>
+            <Tooltip title={allowed ? undefined : `Thuộc vai trò: ${t.vaiTro}`}>
+              <Button
+                type="primary"
+                size="small"
+                icon={<FormOutlined />}
+                disabled={!allowed}
+                onClick={() => setFormTask(t.d.id)}
+              >
+                Xử lý
+              </Button>
+            </Tooltip>
+            <Button
+              size="small"
+              icon={<FolderOpenOutlined />}
+              onClick={() => navigate(`/ho-so/${encodeURIComponent(t.d.id)}`)}
+            />
+          </Space>
+        );
+      },
     },
   ];
 
@@ -177,11 +190,24 @@ export default function Worklist() {
       </Row>
 
       {/* <Alert
-        type="warning"
+        type="info"
         showIcon
         style={{ marginBottom: 12 }}
-        message="Hạn xử lý (SLA) đang là dữ liệu minh hoạ."
-        description="Bộ SLA thật + lọc theo nhóm phụ trách (candidate group / RBAC) sẽ áp dụng khi chốt OQ-006."
+        message={
+          admin && showAll
+            ? "Đang hiện toàn bộ việc của mọi nhóm (chế độ Quản trị)."
+            : "Danh sách đã lọc theo nhóm phụ trách (candidate group) gán trong quy trình BPMN."
+        }
+        action={
+          admin ? (
+            <Space>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Hiện toàn bộ việc
+              </Text>
+              <Switch size="small" checked={showAll} onChange={setShowAll} />
+            </Space>
+          ) : undefined
+        }
       /> */}
 
       <EntityTable<Task>

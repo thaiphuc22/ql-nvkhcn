@@ -18,7 +18,7 @@ export const RD0101_BPMN = `<?xml version="1.0" encoding="UTF-8"?>
         <bpmn:flowNodeRef>Start_RD01_01</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_1</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_2</bpmn:flowNodeRef><bpmn:flowNodeRef>Gateway_SystemCheck</bpmn:flowNodeRef><bpmn:flowNodeRef>Gateway_SystemResult</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_4</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_7</bpmn:flowNodeRef>
       </bpmn:lane>
       <bpmn:lane id="Lane_BGD" name="BGĐ Trung tâm / BGĐ Khối">
-        <bpmn:flowNodeRef>Task_5</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_8</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_5</bpmn:flowNodeRef><bpmn:flowNodeRef>Gateway_5</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_8</bpmn:flowNodeRef>
       </bpmn:lane>
       <bpmn:lane id="Lane_CQNV" name="Cơ quan nghiệp vụ VHT">
         <bpmn:flowNodeRef>Task_3</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_9</bpmn:flowNodeRef><bpmn:flowNodeRef>Gateway_9</bpmn:flowNodeRef>
@@ -41,7 +41,7 @@ export const RD0101_BPMN = `<?xml version="1.0" encoding="UTF-8"?>
     </bpmn:userTask>
     <bpmn:userTask id="Task_2" name="2. Dự thảo HS xét duyệt cấp CS">
       <bpmn:extensionElements><zeebe:AssignmentDefinition candidateGroups="PM" /></bpmn:extensionElements>
-      <bpmn:incoming>Flow_02</bpmn:incoming><bpmn:incoming>Flow_Scope_CS</bpmn:incoming><bpmn:outgoing>Flow_03</bpmn:outgoing>
+      <bpmn:incoming>Flow_02</bpmn:incoming><bpmn:incoming>Flow_Scope_CS</bpmn:incoming><bpmn:incoming>Flow_Check_Fail</bpmn:incoming><bpmn:outgoing>Flow_03</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:serviceTask id="Gateway_SystemCheck" name="Hệ thống — Check điều kiện mặc định">
       <bpmn:extensionElements><zeebe:TaskDefinition type="khcn.rd0101.check-default-condition" retries="3" /></bpmn:extensionElements>
@@ -56,22 +56,25 @@ export const RD0101_BPMN = `<?xml version="1.0" encoding="UTF-8"?>
     </bpmn:userTask>
     <bpmn:userTask id="Task_4" name="4. Hoàn chỉnh Dự thảo HS chủ trương">
       <bpmn:extensionElements><zeebe:AssignmentDefinition candidateGroups="PM" /></bpmn:extensionElements>
-      <bpmn:incoming>Flow_04</bpmn:incoming><bpmn:outgoing>Flow_05</bpmn:outgoing>
+      <bpmn:incoming>Flow_04</bpmn:incoming><bpmn:incoming>Flow_5_Reject</bpmn:incoming><bpmn:outgoing>Flow_05</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:userTask id="Task_5" name="5. Ký HS đề xuất xét duyệt Chủ trương">
       <bpmn:extensionElements><zeebe:AssignmentDefinition candidateGroups="BGD_TT,BGD_KHOI" /><zeebe:FormDefinition formKey="phieu-phe-duyet" /></bpmn:extensionElements>
       <bpmn:incoming>Flow_05</bpmn:incoming><bpmn:outgoing>Flow_06</bpmn:outgoing>
     </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_5" name="Kết quả xét duyệt?" default="Flow_5_Reject">
+      <bpmn:incoming>Flow_06</bpmn:incoming><bpmn:outgoing>Flow_5_Approve</bpmn:outgoing><bpmn:outgoing>Flow_5_Reject</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
     <bpmn:userTask id="Task_6" name="6. Thẩm định Chủ trương">
       <bpmn:extensionElements><zeebe:AssignmentDefinition candidateGroups="HDKHCN" /><zeebe:FormDefinition formKey="phieu-nhan-xet" /></bpmn:extensionElements>
-      <bpmn:incoming>Flow_06</bpmn:incoming><bpmn:outgoing>Flow_07</bpmn:outgoing>
+      <bpmn:incoming>Flow_5_Approve</bpmn:incoming><bpmn:outgoing>Flow_07</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:exclusiveGateway id="Gateway_6" name="Kết quả thẩm định?" default="Flow_6_Reject">
       <bpmn:incoming>Flow_07</bpmn:incoming><bpmn:outgoing>Flow_6_Supplement</bpmn:outgoing><bpmn:outgoing>Flow_6_Rework</bpmn:outgoing><bpmn:outgoing>Flow_6_Reject</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:userTask id="Task_7" name="7. Hoàn chỉnh HS chủ trương">
       <bpmn:extensionElements><zeebe:AssignmentDefinition candidateGroups="PM" /></bpmn:extensionElements>
-      <bpmn:incoming>Flow_6_Supplement</bpmn:incoming><bpmn:outgoing>Flow_08</bpmn:outgoing>
+      <bpmn:incoming>Flow_6_Supplement</bpmn:incoming><bpmn:incoming>Flow_9_Rework</bpmn:incoming><bpmn:incoming>Flow_11HD_Rework</bpmn:incoming><bpmn:outgoing>Flow_08</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:userTask id="Task_8" name="8. Ký duyệt HS">
       <bpmn:extensionElements><zeebe:AssignmentDefinition candidateGroups="BGD_TT,BGD_KHOI" /><zeebe:FormDefinition formKey="phieu-phe-duyet" /></bpmn:extensionElements>
@@ -99,7 +102,7 @@ export const RD0101_BPMN = `<?xml version="1.0" encoding="UTF-8"?>
     <bpmn:exclusiveGateway id="Gateway_11_HD" name="HĐ KHCN thông qua?" default="Flow_11HD_Rework">
       <bpmn:incoming>Flow_12</bpmn:incoming><bpmn:outgoing>Flow_11HD_Approve</bpmn:outgoing><bpmn:outgoing>Flow_11HD_Rework</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:userTask id="Task_11_TGD" name="11. Phê duyệt Quyết định mở mới">
+    <bpmn:userTask id="Task_11_TGD" name="12. Phê duyệt Quyết định mở mới">
       <bpmn:extensionElements><zeebe:AssignmentDefinition candidateGroups="TGD_VHT" /><zeebe:FormDefinition formKey="phieu-phe-duyet" /></bpmn:extensionElements>
       <bpmn:incoming>Flow_11b</bpmn:incoming><bpmn:outgoing>Flow_14</bpmn:outgoing>
     </bpmn:userTask>
@@ -107,7 +110,7 @@ export const RD0101_BPMN = `<?xml version="1.0" encoding="UTF-8"?>
       <bpmn:incoming>Flow_14</bpmn:incoming><bpmn:outgoing>Flow_TGD_Approve</bpmn:outgoing><bpmn:outgoing>Flow_TGD_Rework</bpmn:outgoing><bpmn:outgoing>Flow_TGD_Reject</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:exclusiveGateway id="Gateway_Scope" name="Phạm vi Chủ trương?" default="Flow_Scope_TD">
-      <bpmn:incoming>Flow_Check_Fail</bpmn:incoming><bpmn:incoming>Flow_6_Rework</bpmn:incoming><bpmn:incoming>Flow_9_Rework</bpmn:incoming><bpmn:incoming>Flow_11HD_Rework</bpmn:incoming><bpmn:incoming>Flow_TGD_Rework</bpmn:incoming><bpmn:outgoing>Flow_Scope_CS</bpmn:outgoing><bpmn:outgoing>Flow_Scope_TD</bpmn:outgoing>
+      <bpmn:incoming>Flow_6_Rework</bpmn:incoming><bpmn:incoming>Flow_TGD_Rework</bpmn:incoming><bpmn:outgoing>Flow_Scope_CS</bpmn:outgoing><bpmn:outgoing>Flow_Scope_TD</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:callActivity id="Call_TD" name="Quy trình xét duyệt Chủ trương cấp TĐ">
       <bpmn:extensionElements><zeebe:CalledElement processId="RD01_02" propagateAllChildVariables="true" /></bpmn:extensionElements>
@@ -127,10 +130,12 @@ export const RD0101_BPMN = `<?xml version="1.0" encoding="UTF-8"?>
     <bpmn:sequenceFlow id="Flow_03" sourceRef="Task_2" targetRef="Gateway_SystemCheck" />
     <bpmn:sequenceFlow id="Flow_Check_Result" sourceRef="Gateway_SystemCheck" targetRef="Gateway_SystemResult" />
     <bpmn:sequenceFlow id="Flow_Check_OK" name="Đạt yêu cầu" sourceRef="Gateway_SystemResult" targetRef="Task_3"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=dieuKienMacDinhDat = true</bpmn:conditionExpression></bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_Check_Fail" name="Không đạt yêu cầu" sourceRef="Gateway_SystemResult" targetRef="Gateway_Scope" />
+    <bpmn:sequenceFlow id="Flow_Check_Fail" name="Không đạt yêu cầu" sourceRef="Gateway_SystemResult" targetRef="Task_2" />
     <bpmn:sequenceFlow id="Flow_04" sourceRef="Task_3" targetRef="Task_4" />
     <bpmn:sequenceFlow id="Flow_05" sourceRef="Task_4" targetRef="Task_5" />
-    <bpmn:sequenceFlow id="Flow_06" sourceRef="Task_5" targetRef="Task_6" />
+    <bpmn:sequenceFlow id="Flow_06" sourceRef="Task_5" targetRef="Gateway_5" />
+    <bpmn:sequenceFlow id="Flow_5_Approve" name="Đồng ý" sourceRef="Gateway_5" targetRef="Task_6"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=ketQuaXetDuyet = "dong_y"</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_5_Reject" name="Không đồng ý" sourceRef="Gateway_5" targetRef="Task_4" />
     <bpmn:sequenceFlow id="Flow_07" sourceRef="Task_6" targetRef="Gateway_6" />
     <bpmn:sequenceFlow id="Flow_6_Supplement" name="Đồng ý, yêu cầu bổ sung" sourceRef="Gateway_6" targetRef="Task_7"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=ketQuaThamDinh = "dong_y_bo_sung"</bpmn:conditionExpression></bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_6_Rework" name="Yêu cầu hiệu chỉnh" sourceRef="Gateway_6" targetRef="Gateway_Scope"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=ketQuaThamDinh = "hieu_chinh"</bpmn:conditionExpression></bpmn:sequenceFlow>
@@ -139,11 +144,11 @@ export const RD0101_BPMN = `<?xml version="1.0" encoding="UTF-8"?>
     <bpmn:sequenceFlow id="Flow_09" sourceRef="Task_8" targetRef="Task_9" />
     <bpmn:sequenceFlow id="Flow_10" sourceRef="Task_9" targetRef="Gateway_9" />
     <bpmn:sequenceFlow id="Flow_9_Approve" name="Đồng ý" sourceRef="Gateway_9" targetRef="Task_10a"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=ketQuaKyDuyet = "dong_y"</bpmn:conditionExpression></bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_9_Rework" name="Yêu cầu hiệu chỉnh" sourceRef="Gateway_9" targetRef="Gateway_Scope" />
+    <bpmn:sequenceFlow id="Flow_9_Rework" name="Yêu cầu hiệu chỉnh" sourceRef="Gateway_9" targetRef="Task_7" />
     <bpmn:sequenceFlow id="Flow_11a" sourceRef="Task_10a" targetRef="Task_11_HD" />
     <bpmn:sequenceFlow id="Flow_12" sourceRef="Task_11_HD" targetRef="Gateway_11_HD" />
     <bpmn:sequenceFlow id="Flow_11HD_Approve" name="Đồng ý" sourceRef="Gateway_11_HD" targetRef="Task_10b"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=ketQuaHDKHCN = "dong_y"</bpmn:conditionExpression></bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_11HD_Rework" name="Yêu cầu hiệu chỉnh" sourceRef="Gateway_11_HD" targetRef="Gateway_Scope" />
+    <bpmn:sequenceFlow id="Flow_11HD_Rework" name="Yêu cầu hiệu chỉnh" sourceRef="Gateway_11_HD" targetRef="Task_7" />
     <bpmn:sequenceFlow id="Flow_11b" sourceRef="Task_10b" targetRef="Task_11_TGD" />
     <bpmn:sequenceFlow id="Flow_14" sourceRef="Task_11_TGD" targetRef="Gateway_11_TGD" />
     <bpmn:sequenceFlow id="Flow_TGD_Approve" name="Đồng ý" sourceRef="Gateway_11_TGD" targetRef="Call_CS"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=ketQuaPheDuyet = "dong_y"</bpmn:conditionExpression></bpmn:sequenceFlow>
@@ -171,6 +176,7 @@ export const RD0101_BPMN = `<?xml version="1.0" encoding="UTF-8"?>
     <bpmndi:BPMNShape id="Task_3_di" bpmnElement="Task_3"><dc:Bounds x="910" y="380" width="140" height="80" /></bpmndi:BPMNShape>
     <bpmndi:BPMNShape id="Task_4_di" bpmnElement="Task_4"><dc:Bounds x="1100" y="90" width="140" height="80" /></bpmndi:BPMNShape>
     <bpmndi:BPMNShape id="Task_5_di" bpmnElement="Task_5"><dc:Bounds x="1290" y="240" width="150" height="80" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Gateway_5_di" bpmnElement="Gateway_5" isMarkerVisible="true"><dc:Bounds x="1480" y="255" width="50" height="50" /></bpmndi:BPMNShape>
     <bpmndi:BPMNShape id="Task_6_di" bpmnElement="Task_6"><dc:Bounds x="1490" y="675" width="140" height="80" /></bpmndi:BPMNShape>
     <bpmndi:BPMNShape id="Gateway_6_di" bpmnElement="Gateway_6" isMarkerVisible="true"><dc:Bounds x="1680" y="690" width="50" height="50" /></bpmndi:BPMNShape>
     <bpmndi:BPMNShape id="Task_7_di" bpmnElement="Task_7"><dc:Bounds x="1780" y="90" width="140" height="80" /></bpmndi:BPMNShape>
@@ -196,10 +202,12 @@ export const RD0101_BPMN = `<?xml version="1.0" encoding="UTF-8"?>
     <bpmndi:BPMNEdge id="Flow_03_di" bpmnElement="Flow_03"><di:waypoint x="560" y="130"/><di:waypoint x="610" y="130"/></bpmndi:BPMNEdge>
     <bpmndi:BPMNEdge id="Flow_Check_Result_di" bpmnElement="Flow_Check_Result"><di:waypoint x="760" y="130"/><di:waypoint x="810" y="130"/></bpmndi:BPMNEdge>
     <bpmndi:BPMNEdge id="Flow_Check_OK_di" bpmnElement="Flow_Check_OK"><di:waypoint x="835" y="155"/><di:waypoint x="835" y="420"/><di:waypoint x="910" y="420"/></bpmndi:BPMNEdge>
-    <bpmndi:BPMNEdge id="Flow_Check_Fail_di" bpmnElement="Flow_Check_Fail"><di:waypoint x="860" y="130"/><di:waypoint x="885" y="130"/><di:waypoint x="885" y="715"/><di:waypoint x="910" y="715"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_Check_Fail_di" bpmnElement="Flow_Check_Fail"><di:waypoint x="835" y="105"/><di:waypoint x="835" y="75"/><di:waypoint x="490" y="75"/><di:waypoint x="490" y="90"/></bpmndi:BPMNEdge>
     <bpmndi:BPMNEdge id="Flow_04_di" bpmnElement="Flow_04"><di:waypoint x="1050" y="420"/><di:waypoint x="1075" y="420"/><di:waypoint x="1075" y="130"/><di:waypoint x="1100" y="130"/></bpmndi:BPMNEdge>
     <bpmndi:BPMNEdge id="Flow_05_di" bpmnElement="Flow_05"><di:waypoint x="1240" y="130"/><di:waypoint x="1265" y="130"/><di:waypoint x="1265" y="280"/><di:waypoint x="1290" y="280"/></bpmndi:BPMNEdge>
-    <bpmndi:BPMNEdge id="Flow_06_di" bpmnElement="Flow_06"><di:waypoint x="1440" y="280"/><di:waypoint x="1465" y="280"/><di:waypoint x="1465" y="715"/><di:waypoint x="1490" y="715"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_06_di" bpmnElement="Flow_06"><di:waypoint x="1440" y="280"/><di:waypoint x="1480" y="280"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_5_Approve_di" bpmnElement="Flow_5_Approve"><di:waypoint x="1505" y="305"/><di:waypoint x="1505" y="675"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_5_Reject_di" bpmnElement="Flow_5_Reject"><di:waypoint x="1505" y="255"/><di:waypoint x="1505" y="200"/><di:waypoint x="1170" y="200"/><di:waypoint x="1170" y="170"/></bpmndi:BPMNEdge>
     <bpmndi:BPMNEdge id="Flow_07_di" bpmnElement="Flow_07"><di:waypoint x="1630" y="715"/><di:waypoint x="1680" y="715"/></bpmndi:BPMNEdge>
     <bpmndi:BPMNEdge id="Flow_6_Supplement_di" bpmnElement="Flow_6_Supplement"><di:waypoint x="1705" y="690"/><di:waypoint x="1705" y="130"/><di:waypoint x="1780" y="130"/></bpmndi:BPMNEdge>
     <bpmndi:BPMNEdge id="Flow_6_Rework_di" bpmnElement="Flow_6_Rework"><di:waypoint x="1705" y="740"/><di:waypoint x="1705" y="1010"/><di:waypoint x="900" y="1010"/><di:waypoint x="900" y="750"/><di:waypoint x="925" y="740"/></bpmndi:BPMNEdge>
@@ -208,11 +216,11 @@ export const RD0101_BPMN = `<?xml version="1.0" encoding="UTF-8"?>
     <bpmndi:BPMNEdge id="Flow_09_di" bpmnElement="Flow_09"><di:waypoint x="2110" y="280"/><di:waypoint x="2135" y="280"/><di:waypoint x="2135" y="420"/><di:waypoint x="2160" y="420"/></bpmndi:BPMNEdge>
     <bpmndi:BPMNEdge id="Flow_10_di" bpmnElement="Flow_10"><di:waypoint x="2300" y="420"/><di:waypoint x="2350" y="420"/></bpmndi:BPMNEdge>
     <bpmndi:BPMNEdge id="Flow_9_Approve_di" bpmnElement="Flow_9_Approve"><di:waypoint x="2375" y="445"/><di:waypoint x="2375" y="555"/><di:waypoint x="2450" y="555"/></bpmndi:BPMNEdge>
-    <bpmndi:BPMNEdge id="Flow_9_Rework_di" bpmnElement="Flow_9_Rework"><di:waypoint x="2375" y="445"/><di:waypoint x="2375" y="1050"/><di:waypoint x="890" y="1050"/><di:waypoint x="890" y="760"/><di:waypoint x="920" y="735"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_9_Rework_di" bpmnElement="Flow_9_Rework"><di:waypoint x="2375" y="395"/><di:waypoint x="2375" y="190"/><di:waypoint x="1850" y="190"/><di:waypoint x="1850" y="170"/></bpmndi:BPMNEdge>
     <bpmndi:BPMNEdge id="Flow_11a_di" bpmnElement="Flow_11a"><di:waypoint x="2620" y="555"/><di:waypoint x="2630" y="555"/><di:waypoint x="2630" y="700"/><di:waypoint x="2640" y="700"/></bpmndi:BPMNEdge>
     <bpmndi:BPMNEdge id="Flow_12_di" bpmnElement="Flow_12"><di:waypoint x="2810" y="700"/><di:waypoint x="2840" y="700"/></bpmndi:BPMNEdge>
     <bpmndi:BPMNEdge id="Flow_11HD_Approve_di" bpmnElement="Flow_11HD_Approve"><di:waypoint x="2865" y="675"/><di:waypoint x="2865" y="555"/><di:waypoint x="2910" y="555"/></bpmndi:BPMNEdge>
-    <bpmndi:BPMNEdge id="Flow_11HD_Rework_di" bpmnElement="Flow_11HD_Rework"><di:waypoint x="2865" y="725"/><di:waypoint x="2865" y="1090"/><di:waypoint x="880" y="1090"/><di:waypoint x="880" y="770"/><di:waypoint x="915" y="730"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_11HD_Rework_di" bpmnElement="Flow_11HD_Rework"><di:waypoint x="2865" y="675"/><di:waypoint x="2865" y="205"/><di:waypoint x="1890" y="205"/><di:waypoint x="1890" y="170"/></bpmndi:BPMNEdge>
     <bpmndi:BPMNEdge id="Flow_11b_di" bpmnElement="Flow_11b"><di:waypoint x="3080" y="555"/><di:waypoint x="3090" y="555"/><di:waypoint x="3090" y="855"/><di:waypoint x="3100" y="855"/></bpmndi:BPMNEdge>
     <bpmndi:BPMNEdge id="Flow_14_di" bpmnElement="Flow_14"><di:waypoint x="3270" y="855"/><di:waypoint x="3310" y="855"/></bpmndi:BPMNEdge>
     <bpmndi:BPMNEdge id="Flow_TGD_Approve_di" bpmnElement="Flow_TGD_Approve"><di:waypoint x="3360" y="855"/><di:waypoint x="3380" y="855"/><di:waypoint x="3380" y="840"/><di:waypoint x="3400" y="840"/></bpmndi:BPMNEdge>

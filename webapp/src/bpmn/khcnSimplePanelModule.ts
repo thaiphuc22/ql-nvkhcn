@@ -23,7 +23,7 @@ const KEEP_BY_TYPE: Array<{ type: string; groups: string[] }> = [
   { type: 'bpmn:UserTask', groups: ['multiInstance'] },
   { type: 'bpmn:ServiceTask', groups: [] }, // job type đã có nhóm "Tích hợp (KHCN)"
   { type: 'bpmn:CallActivity', groups: ['calledElement'] },
-  { type: 'bpmn:SequenceFlow', groups: [] }, // điều kiện đã có nhóm "Điều kiện (KHCN)"
+  { type: 'bpmn:SequenceFlow', groups: [] }, // điều kiện đã có nhóm "Điều kiện"
   { type: 'bpmn:CatchEvent', groups: ['timer', 'message'] },
   { type: 'bpmn:StartEvent', groups: ['timer', 'message'] },
   { type: 'bpmn:BoundaryEvent', groups: ['timer', 'error', 'message'] },

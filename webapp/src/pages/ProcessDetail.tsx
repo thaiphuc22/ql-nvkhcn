@@ -18,6 +18,7 @@ import {
   Tabs,
   Tag,
   Timeline,
+  Tooltip,
   Typography,
   Upload,
 } from "antd";
@@ -35,6 +36,7 @@ import {
 import { NHOM, curVer, type TaskStep } from "../data/processes";
 import { useProcesses } from "../store/ProcessContext";
 import { useForms } from "../store/FormContext";
+import { usePermissions } from "../store/AuthContext";
 import FormRenderer from "../components/FormRenderer";
 import { type BpmnEditorHandle } from "../components/BpmnEditor";
 import {
@@ -56,6 +58,7 @@ export default function ProcessDetail() {
   const { getByMa, updateProcess, toggleStatus, deployVersion, setStepForm } =
     useProcesses();
   const { list: formList, getForm } = useForms();
+  const { canManageSystem } = usePermissions();
 
   const [editing, setEditing] = useState(false);
   const [deployOpen, setDeployOpen] = useState(false);
@@ -423,28 +426,57 @@ export default function ProcessDetail() {
                   cancelText="Huỷ"
                   okButtonProps={{ danger: true }}
                   onConfirm={onToggle}
+                  disabled={!canManageSystem}
                 >
-                  <Button danger icon={<PauseCircleOutlined />}>
-                    Tạm ngừng
-                  </Button>
+                  <Tooltip
+                    title={
+                      canManageSystem
+                        ? undefined
+                        : "Chỉ Quản trị hệ thống được tạm ngừng quy trình."
+                    }
+                  >
+                    <Button
+                      danger
+                      icon={<PauseCircleOutlined />}
+                      disabled={!canManageSystem}
+                    >
+                      Tạm ngừng
+                    </Button>
+                  </Tooltip>
                 </Popconfirm>
               ) : (
-                <Button
-                  icon={<PlayCircleOutlined />}
-                  disabled={p.trangThai === "planned"}
-                  onClick={onToggle}
+                <Tooltip
+                  title={
+                    canManageSystem
+                      ? undefined
+                      : "Chỉ Quản trị hệ thống được kích hoạt quy trình."
+                  }
                 >
-                  Kích hoạt
-                </Button>
+                  <Button
+                    icon={<PlayCircleOutlined />}
+                    disabled={p.trangThai === "planned" || !canManageSystem}
+                    onClick={onToggle}
+                  >
+                    Kích hoạt
+                  </Button>
+                </Tooltip>
               )}
-              <Button
-                type="primary"
-                icon={<CloudUploadOutlined />}
-                disabled={p.trangThai === "planned"}
-                onClick={() => setDeployOpen(true)}
+              <Tooltip
+                title={
+                  canManageSystem
+                    ? undefined
+                    : "Chỉ Quản trị hệ thống được deploy phiên bản mới."
+                }
               >
-                Deploy phiên bản mới
-              </Button>
+                <Button
+                  type="primary"
+                  icon={<CloudUploadOutlined />}
+                  disabled={p.trangThai === "planned" || !canManageSystem}
+                  onClick={() => setDeployOpen(true)}
+                >
+                  Ban hành phiên bản mới
+                </Button>
+              </Tooltip>
             </Space>
           )
         }
@@ -455,12 +487,12 @@ export default function ProcessDetail() {
         onChange={setActiveTab}
         items={[
           { key: "info", label: "Thông tin", children: infoTab },
+          { key: "bpmn", label: "Sơ đồ BPMN", children: bpmnTab },
           {
             key: "forms",
             label: `Biểu mẫu theo bước${p.taskSteps ? ` (${p.taskSteps.length})` : ""}`,
             children: formsTab,
           },
-          { key: "bpmn", label: "Sơ đồ BPMN", children: bpmnTab },
         ]}
       />
 

@@ -65,7 +65,7 @@ export default function IntegrationStatus() {
         ))}
       </Row>
 
-      <Paragraph type="secondary" style={{ fontSize: 12 }}>
+      {/* <Paragraph type="secondary" style={{ fontSize: 12 }}>
         Màn này là <Text strong>sức khoẻ tổng thể</Text> từng hệ (snapshot). Chi
         tiết từng lần
         <Text strong> job worker</Text> chạy xem ở{" "}
@@ -74,7 +74,7 @@ export default function IntegrationStatus() {
         worker/connector (docs/arch/camunda-design.md mục 5). Connector = cấu
         hình sẵn (đỡ code), job worker = code tay — bộ nào có trong license
         quyết định lựa chọn (OQ-CAM-COMPONENTS).
-      </Paragraph>
+      </Paragraph> */}
     </div>
   );
 }

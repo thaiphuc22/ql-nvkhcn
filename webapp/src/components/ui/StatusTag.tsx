@@ -14,7 +14,7 @@ export function ProcessStatusTag({ status }: { status: ProcessStatus }) {
   return <StatusTag color={m.color} label={m.label} />
 }
 
-/** Trạng thái hồ sơ (processing/approved/rejected) — nguồn: DOSSIER_STATUS. */
+/** Trạng thái hồ sơ (draft/processing/approved/rejected) — nguồn: DOSSIER_STATUS. */
 export function DossierStatusTag({ status }: { status: DossierStatus }) {
   const m = DOSSIER_STATUS[status]
   return <StatusTag color={m.color} label={m.label} />

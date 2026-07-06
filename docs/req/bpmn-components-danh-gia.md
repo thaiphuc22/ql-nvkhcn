@@ -145,7 +145,7 @@ và nhãn lane (component #2). Cần khách chuẩn hoá mã vai trò:
    (Intermediate Catch Timer `timeDuration=PT48H`, cho SLA). Ghi
    `bpmn:TimerEventDefinition`.
 9. ✅ **ĐÃ LÀM** — **Điều kiện rẽ nhánh (KHCN)** (`webapp/src/bpmn/khcnConditionModule.ts`):
-   nhóm "Điều kiện (KHCN)" cho SequenceFlow ra từ Gateway — dropdown preset nghiệp vụ
+   nhóm "Điều kiện" cho SequenceFlow ra từ Gateway — dropdown preset nghiệp vụ
    (Cơ sở/Tập đoàn · Đạt/Chưa đạt · các mức điều chỉnh RD04) ghi `bpmn:conditionExpression`
    FEEL dùng **BIẾN** (`=cap = "Tập đoàn"`, `=loaiDieuChinh = "vuot_chu_truong"`…),
    **không hardcode số**. Người vẽ tự thiết lập; ô Condition tự do của Zeebe vẫn dùng

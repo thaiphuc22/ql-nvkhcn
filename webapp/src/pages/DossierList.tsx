@@ -22,6 +22,7 @@ export default function DossierList() {
 
   const stats = useMemo(
     () => ({
+      draft: list.filter((d) => d.trangThai === 'draft').length,
       processing: list.filter((d) => d.trangThai === 'processing').length,
       approved: list.filter((d) => d.trangThai === 'approved').length,
       rejected: list.filter((d) => d.trangThai === 'rejected').length,
@@ -55,8 +56,15 @@ export default function DossierList() {
         </div>
       ),
     },
-    { title: 'Quy trình', dataIndex: 'quyTrinh', width: 100, render: (v: string) => <Tag>{v}</Tag> },
+    //  { title: 'Mã nhiệm vụ', dataIndex: 'maNhiemVu', width: 130, render: (v: string) => <Text code>{v}</Text> },
+    {
+      title: 'Quy trình',
+      dataIndex: 'quyTrinh',
+      width: 100,
+      render: (v: string) => (v ? <Tag>{v}</Tag> : <Text type="secondary">—</Text>),
+    },
     { title: 'Cấp', dataIndex: 'cap', width: 90 },
+    { title: 'Loại', dataIndex: 'loai', width: 120 },
     {
       title: 'Bước hiện tại',
       key: 'buoc',
@@ -64,6 +72,8 @@ export default function DossierList() {
       render: (_, r) =>
         r.trangThai === 'processing' ? (
           <Text>{r.steps[r.buocHienTai]?.ten ?? '—'}</Text>
+        ) : r.trangThai === 'draft' ? (
+          <Text type="secondary">Chờ gửi duyệt</Text>
         ) : (
           <Text type="secondary">—</Text>
         ),
@@ -82,9 +92,10 @@ export default function DossierList() {
       <PageHeader title="Hồ sơ Nhiệm vụ KHCN" style={{ marginBottom: 0 }} />
 
       <Row gutter={14} style={{ margin: '18px 0' }}>
-        <Col xs={8}><StatCard title="Đang xử lý" value={stats.processing} color="#1677ff" /></Col>
-        <Col xs={8}><StatCard title="Đã phê duyệt" value={stats.approved} color="#17935a" /></Col>
-        <Col xs={8}><StatCard title="Bị từ chối" value={stats.rejected} color="#cf1322" /></Col>
+        <Col xs={12} md={6}><StatCard title="Khởi tạo" value={stats.draft} color="#8593a3" /></Col>
+        <Col xs={12} md={6}><StatCard title="Đang xử lý" value={stats.processing} color="#1677ff" /></Col>
+        <Col xs={12} md={6}><StatCard title="Đã phê duyệt" value={stats.approved} color="#17935a" /></Col>
+        <Col xs={12} md={6}><StatCard title="Bị từ chối" value={stats.rejected} color="#cf1322" /></Col>
       </Row>
 
       <FilterBar
@@ -95,6 +106,7 @@ export default function DossierList() {
             onChange={(v) => setTab(v as DossierStatus | 'all')}
             options={[
               { label: 'Tất cả', value: 'all' },
+              { label: 'Khởi tạo', value: 'draft' },
               { label: 'Đang xử lý', value: 'processing' },
               { label: 'Đã phê duyệt', value: 'approved' },
               { label: 'Bị từ chối', value: 'rejected' },

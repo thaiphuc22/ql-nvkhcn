@@ -1,8 +1,11 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
-import { seedHoSo, joinDossiers, type Dossier, type HoSo } from '../data/dossiers'
+import { seedHoSo, joinDossiers, stepsFromTaskSteps, type Dossier, type HoSo } from '../data/dossiers'
+import type { TaskStep } from '../data/processes'
 import { useNhiemVu } from './NhiemVuContext'
 
 const NOW = '03/07/2026 10:00'
+/** Hạn xử lý mặc định cho bước đầu tiên sau Gửi duyệt: NOW + 7 ngày. */
+const HAN_XU_LY = '10/07/2026'
 
 interface DossierCtxValue {
   /** Danh sách hồ sơ dạng view (đã join Nhiệm vụ KHCN). */
@@ -10,6 +13,11 @@ interface DossierCtxValue {
   getById: (id: string) => Dossier | undefined
   /** Thêm hồ sơ mới (vd hồ sơ Chủ trương sinh cùng NV). Mới nhất lên đầu. */
   createHoSo: (h: HoSo) => void
+  /**
+   * Gửi duyệt hồ sơ Khởi tạo (draft): gắn quy trình đã chọn, dựng các bước phê
+   * duyệt từ taskSteps của quy trình → hồ sơ chuyển sang Đang xử lý.
+   */
+  submitHoSo: (id: string, quyTrinh: { ma: string; ten: string; taskSteps?: TaskStep[] }) => void
   approveStep: (id: string, actor: string, yKien?: string) => void
   rejectStep: (id: string, reason: string, actor: string) => void
 }
@@ -33,6 +41,25 @@ export function DossierProvider({ children }: { children: ReactNode }) {
   const getById = (id: string) => list.find((d) => d.id === id)
 
   const createHoSo = (h: HoSo) => setHoSo((prev) => [h, ...prev])
+
+  const submitHoSo = (id: string, quyTrinh: { ma: string; ten: string; taskSteps?: TaskStep[] }) => {
+    setHoSo((prev) =>
+      prev.map((h) => {
+        if (h.id !== id || h.trangThai !== 'draft') return h
+        const buocMoi = stepsFromTaskSteps(quyTrinh.taskSteps ?? [], { hanXuLy: HAN_XU_LY })
+        // Quy trình chưa cấu hình bước → giữ nguyên draft (UI đã lọc, đây là chốt chặn).
+        if (!buocMoi.length) return h
+        return {
+          ...h,
+          quyTrinh: quyTrinh.ma,
+          quyTrinhTen: quyTrinh.ten,
+          trangThai: 'processing' as const,
+          buocHienTai: h.steps.length,
+          steps: [...h.steps, ...buocMoi],
+        }
+      }),
+    )
+  }
 
   const approveStep = (id: string, actor: string, yKien?: string) => {
     setHoSo((prev) =>
@@ -70,7 +97,7 @@ export function DossierProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <DossierCtx.Provider value={{ list, getById, createHoSo, approveStep, rejectStep }}>
+    <DossierCtx.Provider value={{ list, getById, createHoSo, submitHoSo, approveStep, rejectStep }}>
       {children}
     </DossierCtx.Provider>
   )

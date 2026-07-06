@@ -18,9 +18,10 @@ import {
 import { ExperimentOutlined, SaveOutlined } from '@ant-design/icons'
 import dayjs, { type Dayjs } from 'dayjs'
 import { chuNhiemLabel, nextNhiemVuMa, type Cap, type ChuNhiem } from '../data/nhiemVu'
-import { createChuTruongHoSo } from '../data/dossiers'
+import { createDraftHoSo } from '../data/dossiers'
 import { useNhiemVu } from '../store/NhiemVuContext'
 import { useDossiers } from '../store/DossierContext'
+import { usePermissions } from '../store/AuthContext'
 import { PageHeader } from '../components/ui'
 
 const { Text } = Typography
@@ -49,9 +50,35 @@ export default function NhiemVuCreate() {
   const [form] = Form.useForm<FormValues>()
   const { list, create } = useNhiemVu()
   const { createHoSo } = useDossiers()
+  const { canCreateNhiemVu } = usePermissions()
 
   // Mã NV KHCN dự kiến (tạm cấp khi khởi tạo Chủ trương).
   const preview = useMemo(() => nextNhiemVuMa(list), [list])
+
+  // Chặn vào thẳng URL: khởi tạo NV (kèm hồ sơ Chủ trương) là quyền của lane PM
+  // trong BPMN RD01 (Task_1, candidateGroups="PM").
+  if (!canCreateNhiemVu) {
+    return (
+      <div>
+        <PageHeader
+          breadcrumb={[{ label: 'Quản lý NV KHCN', to: '/nhiem-vu' }, { label: 'Tạo mới' }]}
+          onBack={() => navigate('/nhiem-vu')}
+          title="Tạo Nhiệm vụ KHCN"
+        />
+        <Alert
+          type="warning"
+          showIcon
+          message="Bạn không có quyền khởi tạo Nhiệm vụ KHCN."
+          description="Chỉ Chủ nhiệm đề tài (PM/PA/NNC) — theo vai trò gán trong quy trình BPMN RD01 — được khởi tạo nhiệm vụ và hồ sơ Chủ trương."
+          action={
+            <Button size="small" onClick={() => navigate('/nhiem-vu')}>
+              Về danh sách
+            </Button>
+          }
+        />
+      </div>
+    )
+  }
 
   const onFinish = (v: FormValues) => {
     const chuNhiem: ChuNhiem = {
@@ -73,19 +100,21 @@ export default function NhiemVuCreate() {
     })
 
     // Hồ sơ Chủ trương SINH CÙNG NV (đúng trình tự RD01: NV ra đời tại hồ sơ này).
+    // Hồ sơ ở trạng thái "Khởi tạo" — PM vào chi tiết hồ sơ bấm "Gửi duyệt" để
+    // chọn quy trình (RD01.01/RD01.02) và bắt đầu luồng phê duyệt.
     const seq = /RD\.\d{4}\.(\d+)/.exec(nv.ma)?.[1] ?? '000'
     const now = dayjs()
     createHoSo(
-      createChuTruongHoSo(nv, {
+      createDraftHoSo(nv, {
         id: `HS-2026-${seq}`,
+        loai: 'Chủ trương',
         nguoiKhoiTao: chuNhiemLabel(chuNhiem),
         ngayTao: now.format('YYYY-MM-DD'),
         thoiDiemKhoiTao: now.format('DD/MM/YYYY HH:mm'),
-        hanXuLy: now.add(7, 'day').format('DD/MM/YYYY'),
       }),
     )
 
-    message.success(`Đã tạo ${nv.ma} và khởi tạo hồ sơ Chủ trương.`)
+    message.success(`Đã tạo ${nv.ma} và hồ sơ Chủ trương (trạng thái Khởi tạo — chờ Gửi duyệt).`)
     navigate(`/nhiem-vu/${encodeURIComponent(nv.ma)}`)
   }
 
@@ -105,9 +134,9 @@ export default function NhiemVuCreate() {
         message="Nhiệm vụ ra đời cùng hồ sơ Chủ trương"
         description={
           <Text type="secondary">
-            Theo quy trình RD01, tạo nhiệm vụ sẽ đồng thời khởi tạo <b>hồ sơ Chủ trương</b> (cấp Cơ sở → RD01.01,
-            cấp Tập đoàn → RD01.02). Bước “Khởi tạo hồ sơ” hoàn tất ngay, hồ sơ chuyển sang chờ <b>ký duyệt cấp
-            Trung tâm/Khối</b>.
+            Theo quy trình RD01, tạo nhiệm vụ sẽ đồng thời khởi tạo <b>hồ sơ Chủ trương</b> ở trạng thái{' '}
+            <b>Khởi tạo</b>. Sau đó vào chi tiết hồ sơ và bấm <b>Gửi duyệt</b> để chọn quy trình hồ sơ sẽ đi vào
+            (cấp Cơ sở → RD01.01, cấp Tập đoàn → RD01.02) và bắt đầu luồng phê duyệt.
           </Text>
         }
       />
