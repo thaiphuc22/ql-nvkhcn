@@ -54,3 +54,11 @@ export function canProcessStep(
 export function canManageSystem(user: AppUser | null | undefined): boolean {
   return isAdmin(user)
 }
+
+/** Nhãn vai trò "Chủ nhiệm đề tài" trong ALL_ROLES / AppUser.vaiTro. */
+export const PM_ROLE_LABEL = 'Chủ nhiệm đề tài'
+
+/** User có vai trò "Chủ nhiệm đề tài" (PM/PA/NNC) — bị giới hạn một số menu. */
+export function isChuNhiemDeTai(user: AppUser | null | undefined): boolean {
+  return user?.vaiTro.includes(PM_ROLE_LABEL) ?? false
+}

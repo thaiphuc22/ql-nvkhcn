@@ -7,6 +7,7 @@ import {
   canProcessStep,
   getUserRoleCodes,
   isAdmin,
+  isChuNhiemDeTai,
 } from '../data/permissions'
 import type { DossierStep } from '../data/dossiers'
 
@@ -45,6 +46,7 @@ export function usePermissions() {
       canCreateNhiemVu: canCreateNhiemVu(user),
       canCreateHoSo: canCreateHoSo(user),
       canManageSystem: canManageSystem(user),
+      isChuNhiemDeTai: isChuNhiemDeTai(user),
       canProcessStep: (step?: Pick<DossierStep, 'vaiTroCodes'>) => canProcessStep(user, step),
     }),
     [user],

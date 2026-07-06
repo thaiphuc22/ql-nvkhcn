@@ -98,7 +98,8 @@ export default function App() {
   const { list } = useDossiers();
   const { crumbs } = useBreadcrumb();
   const { user, logout } = useAuth();
-  const { admin, canManageSystem, canProcessStep } = usePermissions();
+  const { admin, canManageSystem, canProcessStep, isChuNhiemDeTai } =
+    usePermissions();
 
   // Badge "Việc của tôi" đồng bộ với bộ lọc Worklist: chỉ đếm bước hiện tại
   // thuộc candidate group của user (admin đếm tất cả hồ sơ đang xử lý).
@@ -190,26 +191,36 @@ export default function App() {
         { key: "ho-so", icon: null, label: "Danh sách Hồ sơ KHCN" },
       ],
     },
-    {
-      key: "quytrinh",
-      icon: <PartitionOutlined />,
-      label: "Quản lý quy trình",
-    },
-    {
-      key: "vanhanh",
-      icon: <DeploymentUnitOutlined />,
-      label: "Vận hành & Tích hợp",
-      children: [
-        {
-          key: "giamsat",
-          icon: <ThunderboltOutlined />,
-          label: "Giám sát tiến trình",
-        },
-        { key: "tichhop", icon: <ApiOutlined />, label: "Tích hợp" },
-        { key: "nhatky", icon: <HistoryOutlined />, label: "Nhật ký" },
-      ],
-    },
-    // Nhóm Quản trị tổ chức chỉ dành cho vai trò "Quản trị hệ thống".
+    // Quản lý quy trình — không hiển thị với Chủ nhiệm đề tài.
+    ...(!isChuNhiemDeTai
+      ? [
+          {
+            key: "quytrinh",
+            icon: <PartitionOutlined />,
+            label: "Quản lý quy trình",
+          },
+        ]
+      : []),
+    // Nhóm Vận hành & Tích hợp chỉ dành cho Quản trị viên hệ thống.
+    ...(canManageSystem
+      ? [
+          {
+            key: "vanhanh",
+            icon: <DeploymentUnitOutlined />,
+            label: "Vận hành & Tích hợp",
+            children: [
+              {
+                key: "giamsat",
+                icon: <ThunderboltOutlined />,
+                label: "Giám sát tiến trình",
+              },
+              { key: "tichhop", icon: <ApiOutlined />, label: "Tích hợp" },
+              { key: "nhatky", icon: <HistoryOutlined />, label: "Nhật ký" },
+            ],
+          },
+        ]
+      : []),
+    // Nhóm Quản trị tổ chức chỉ dành cho Quản trị viên hệ thống.
     ...(canManageSystem
       ? [
           {
@@ -231,7 +242,10 @@ export default function App() {
           },
         ]
       : []),
-    { key: "bieumau", icon: <FormOutlined />, label: "Thư viện biểu mẫu" },
+    // Thư viện biểu mẫu — không hiển thị với Chủ nhiệm đề tài.
+    ...(!isChuNhiemDeTai
+      ? [{ key: "bieumau", icon: <FormOutlined />, label: "Thư viện biểu mẫu" }]
+      : []),
   ];
 
   // Chưa đăng nhập → hiện màn Đăng nhập, không dựng layout ứng dụng.
@@ -430,7 +444,16 @@ export default function App() {
             <Routes>
               <Route path="/tong-quan" element={<Dashboard />} />
               <Route path="/viec-cua-toi" element={<Worklist />} />
-              <Route path="/quy-trinh" element={<ProcessCatalog />} />
+              <Route
+                path="/quy-trinh"
+                element={
+                  !isChuNhiemDeTai ? (
+                    <ProcessCatalog />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
+              />
               <Route
                 path="/quy-trinh/moi"
                 element={
@@ -441,8 +464,26 @@ export default function App() {
                   )
                 }
               />
-              <Route path="/quy-trinh/:ma" element={<ProcessDetail />} />
-              <Route path="/bieu-mau" element={<FormLibrary />} />
+              <Route
+                path="/quy-trinh/:ma"
+                element={
+                  !isChuNhiemDeTai ? (
+                    <ProcessDetail />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
+              />
+              <Route
+                path="/bieu-mau"
+                element={
+                  !isChuNhiemDeTai ? (
+                    <FormLibrary />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
+              />
               <Route path="/nhiem-vu" element={<NhiemVuList />} />
               <Route path="/nhiem-vu/moi" element={<NhiemVuCreate />} />
               <Route path="/nhiem-vu/:ma" element={<NhiemVuDetail />} />
@@ -468,9 +509,36 @@ export default function App() {
                   )
                 }
               />
-              <Route path="/giam-sat" element={<ProcessMonitor />} />
-              <Route path="/tich-hop" element={<IntegrationStatus />} />
-              <Route path="/nhat-ky" element={<ProcessEventLog />} />
+              <Route
+                path="/giam-sat"
+                element={
+                  canManageSystem ? (
+                    <ProcessMonitor />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
+              />
+              <Route
+                path="/tich-hop"
+                element={
+                  canManageSystem ? (
+                    <IntegrationStatus />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
+              />
+              <Route
+                path="/nhat-ky"
+                element={
+                  canManageSystem ? (
+                    <ProcessEventLog />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
+              />
               <Route path="*" element={<Navigate to="/tong-quan" replace />} />
             </Routes>
           </Suspense>
