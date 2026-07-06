@@ -24,9 +24,7 @@ import {
 } from "@ant-design/icons";
 import { PageHeader, StatCard } from "../components/ui";
 import {
-  INTEG_KIND_LABEL,
   INTEG_STATUS,
-  SYNC_MODE_LABEL,
   seedIntegrations,
   type IntegrationSystem,
 } from "../data/camundaOps";
@@ -282,13 +280,6 @@ function SystemCard({
         </span>
       </div>
 
-      {/* ── Tags giao thức / kiểu / đồng bộ ── */}
-      {/* <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
-        <TagStyled label={s.giaoThuc} />
-        <TagStyled label={INTEG_KIND_LABEL[s.kieu]} color="blue" />
-        <TagStyled label={SYNC_MODE_LABEL[s.syncMode]} />
-      </div> */}
-
       {/* ── Thông tin kết nối (label — value, như mẫu list-card-sample) ── */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
         <InfoRowSample
@@ -349,8 +340,6 @@ function SystemCard({
         <MetricDivider />
         <MetricSample label="Lỗi 24h" value={s.loi24h} danger={s.loi24h > 0} />
         <MetricDivider />
-        {/* <MetricSample label="Độ trễ" value={s.doTreMs ? `${s.doTreMs}ms` : "—"} danger={s.doTreMs > 1000} />
-        <MetricDivider /> */}
         <MetricSample label="Hàng đợi" value={s.hangDoi} danger={s.hangDoi > 3} />
       </div>
 
@@ -395,26 +384,6 @@ function SystemCard({
 }
 
 /* ─── component nhỏ ─── */
-
-/** Tag nhỏ gọn (kiểu sample). */
-function TagStyled({ label, color: c }: { label: string; color?: string }) {
-  return (
-    <span
-      style={{
-        display: "inline-block",
-        fontSize: 11,
-        fontWeight: 500,
-        padding: "1px 8px",
-        borderRadius: 4,
-        background: c === "blue" ? "#e6f4ff" : "#f3f4f6",
-        color: c === "blue" ? "#0958d9" : "#4b5563",
-        lineHeight: "20px",
-      }}
-    >
-      {label}
-    </span>
-  );
-}
 
 /** Dòng thông tin label — value (như mẫu list-card-sample). */
 function InfoRowSample({ label, value }: { label: string; value: ReactNode }) {
