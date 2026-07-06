@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { Badge, Card, Col, Row, Space, Tag, Tooltip, Typography } from "antd";
 import { ApiOutlined, ExclamationCircleFilled } from "@ant-design/icons";
-import { Link } from "react-router-dom";
 import { PageHeader, StatCard, StatusTag } from "../components/ui";
 import {
   INTEG_KIND_LABEL,
@@ -11,7 +10,7 @@ import {
   type IntegrationSystem,
 } from "../data/camundaOps";
 
-const { Text, Paragraph } = Typography;
+const { Text } = Typography;
 
 const BADGE_STATUS: Record<string, "success" | "warning" | "error"> = {
   healthy: "success",

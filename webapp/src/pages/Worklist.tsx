@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Alert, Button, Col, Row, Space, Switch, Tag, Tooltip, Typography } from "antd";
+import { Button, Col, Row, Space, Tag, Tooltip, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { FolderOpenOutlined, FormOutlined } from "@ant-design/icons";
 import type { Dossier, DossierStep } from "../data/dossiers";
@@ -41,7 +41,7 @@ export default function Worklist() {
   const [formTask, setFormTask] = useState<string | null>(null);
   // Admin mặc định xem toàn bộ việc đang xử lý; user thường chỉ thấy việc
   // thuộc candidate group của mình (khớp vai trò gán trong BPMN).
-  const [showAll, setShowAll] = useState(admin);
+  const [showAll] = useState(admin);
 
   const tasks: Task[] = useMemo(
     () =>
