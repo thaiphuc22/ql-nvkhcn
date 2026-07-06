@@ -226,6 +226,10 @@ export interface IntegrationSystem {
   loi24h: number;
   doTreMs: number;
   hangDoi: number;
+  /** Endpoint hệ ngoài đang trỏ tới (hiển thị ở card Tích hợp). */
+  endpoint: string;
+  /** 4 ký tự cuối API key đang dùng — rỗng/undefined khi chưa kết nối. */
+  apiKeyTail?: string;
   /** Requirement/NFR liên quan (docs/req). */
   ref: string;
 }
@@ -244,6 +248,8 @@ export const seedIntegrations: IntegrationSystem[] = [
     loi24h: 0,
     doTreMs: 210,
     hangDoi: 0,
+    endpoint: "https://qlns.vht.vn/api/v1",
+    apiKeyTail: "NS81",
     ref: "RD03.01 · NFR-INT-001",
   },
   {
@@ -259,6 +265,8 @@ export const seedIntegrations: IntegrationSystem[] = [
     loi24h: 2,
     doTreMs: 340,
     hangDoi: 1,
+    endpoint: "https://ms.vht.vn/api/v1",
+    apiKeyTail: "MS27",
     ref: "RD03.02 · NFR-INT-001",
   },
   {
@@ -274,6 +282,7 @@ export const seedIntegrations: IntegrationSystem[] = [
     loi24h: 18,
     doTreMs: 0,
     hangDoi: 7,
+    endpoint: "https://sap-gw.vht.vn/odata/v2",
     ref: "RD03.03 · NFR-INT-001",
   },
   {
@@ -289,6 +298,8 @@ export const seedIntegrations: IntegrationSystem[] = [
     loi24h: 0,
     doTreMs: 180,
     hangDoi: 0,
+    endpoint: "https://qlts.vht.vn/api/v1",
+    apiKeyTail: "TS40",
     ref: "RD06 · NFR-INT-001",
   },
   {
@@ -304,6 +315,8 @@ export const seedIntegrations: IntegrationSystem[] = [
     loi24h: 6,
     doTreMs: 1250,
     hangDoi: 3,
+    endpoint: "https://plm.vht.vn/api/v2",
+    apiKeyTail: "PL9C",
     ref: "RD03 · NFR-INT-001",
   },
   {
@@ -319,6 +332,8 @@ export const seedIntegrations: IntegrationSystem[] = [
     loi24h: 0,
     doTreMs: 95,
     hangDoi: 0,
+    endpoint: "https://sso.vht.vn/oidc",
+    apiKeyTail: "IA55",
     ref: "OQ-021 · REQ-ENG-004",
   },
 ];

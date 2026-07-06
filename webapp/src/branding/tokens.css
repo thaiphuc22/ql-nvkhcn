@@ -77,3 +77,15 @@ body {
 *::-webkit-scrollbar-thumb:hover {
   background-color: rgba(15, 23, 34, 0.38);
 }
+
+/*
+ * Card kiểu "bento" (list-card-sample.md): nhấc nhẹ + đổ bóng khi hover.
+ * Dùng cho lưới card hệ thống (màn Tích hợp...).
+ */
+.vht-bento-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.vht-bento-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
