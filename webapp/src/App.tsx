@@ -28,6 +28,9 @@ import {
   HistoryOutlined,
   ApartmentOutlined,
   TeamOutlined,
+  ClusterOutlined,
+  SolutionOutlined,
+  ControlOutlined,
 } from "@ant-design/icons";
 import {
   Routes,
@@ -57,6 +60,9 @@ const OrgStructure = lazy(() => import("./pages/OrgStructure"));
 const ProcessMonitor = lazy(() => import("./pages/ProcessMonitor"));
 const IntegrationStatus = lazy(() => import("./pages/IntegrationStatus"));
 const ProcessEventLog = lazy(() => import("./pages/ProcessEventLog"));
+const RuleManager = lazy(() => import("./pages/RuleManager"));
+const ApprovalMatrix = lazy(() => import("./pages/ApprovalMatrix"));
+const ActionStudio = lazy(() => import("./pages/ActionStudio"));
 import { useDossiers } from "./store/DossierContext";
 import { useBreadcrumb } from "./store/BreadcrumbContext";
 import { useAuth, usePermissions } from "./store/AuthContext";
@@ -88,6 +94,9 @@ const ROUTE_BY_KEY: Record<string, string> = {
   giamsat: "/giam-sat",
   tichhop: "/tich-hop",
   nhatky: "/nhat-ky",
+  luat: "/quan-ly-luat",
+  matran: "/ma-tran-phe-duyet",
+  hanhdong: "/cau-hinh-hanh-dong",
 };
 
 export default function App() {
@@ -125,6 +134,12 @@ export default function App() {
           ? "tichhop"
           : location.pathname.startsWith("/nhat-ky")
             ? "nhatky"
+            : location.pathname.startsWith("/quan-ly-luat")
+            ? "luat"
+            : location.pathname.startsWith("/ma-tran-phe-duyet")
+            ? "matran"
+            : location.pathname.startsWith("/cau-hinh-hanh-dong")
+            ? "hanhdong"
             : location.pathname.startsWith("/ho-so")
               ? "ho-so"
               : location.pathname.startsWith("/nhiem-vu")
@@ -148,6 +163,9 @@ export default function App() {
     giamsat: "Giám sát tiến trình luồng",
     tichhop: "Trạng thái Tích hợp",
     nhatky: "Nhật ký",
+    luat: "Quản lý luật nghiệp vụ",
+    matran: "Ma trận phê duyệt",
+    hanhdong: "Cấu hình Hành động",
     quytrinh: "Quản lý quy trình",
   };
   const sectionTitle = SECTION_TITLE[selectedKey] ?? "Quản lý quy trình";
@@ -216,6 +234,21 @@ export default function App() {
               },
               { key: "tichhop", icon: <ApiOutlined />, label: "Tích hợp" },
               { key: "nhatky", icon: <HistoryOutlined />, label: "Nhật ký" },
+              {
+                key: "luat",
+                icon: <ClusterOutlined />,
+                label: "Quản lý luật (Business Rule)",
+              },
+              {
+                key: "matran",
+                icon: <SolutionOutlined />,
+                label: "Ma trận phê duyệt",
+              },
+              {
+                key: "hanhdong",
+                icon: <ControlOutlined />,
+                label: "Cấu hình Hành động",
+              },
             ],
           },
         ]
@@ -534,6 +567,36 @@ export default function App() {
                 element={
                   canManageSystem ? (
                     <ProcessEventLog />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
+              />
+              <Route
+                path="/quan-ly-luat"
+                element={
+                  canManageSystem ? (
+                    <RuleManager />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
+              />
+              <Route
+                path="/ma-tran-phe-duyet"
+                element={
+                  canManageSystem ? (
+                    <ApprovalMatrix />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
+              />
+              <Route
+                path="/cau-hinh-hanh-dong"
+                element={
+                  canManageSystem ? (
+                    <ActionStudio />
                   ) : (
                     <Navigate to="/tong-quan" replace />
                   )

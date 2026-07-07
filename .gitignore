@@ -1,0 +1,9 @@
+# Secrets — never commit. Copy the example and fill locally.
+.claude/settings.local.json
+.env
+.env.local
+*.key
+
+# OS / editor noise
+.DS_Store
+Thumbs.db

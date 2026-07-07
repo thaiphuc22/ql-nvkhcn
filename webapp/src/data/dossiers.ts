@@ -37,6 +37,8 @@ export const LOAI_TO_NHOM: Record<HoSoLoai, string> = {
 }
 
 export interface DossierStep {
+  /** Key của user task trong catalog/BPMN mock, dùng để pin action policy theo bước. */
+  taskDefinitionKey?: string
   ten: string
   /** Nhãn vai trò hiển thị (tiếng Việt, tự do). */
   vaiTro: string
@@ -172,12 +174,13 @@ export function createDraftHoSo(
  * chỉ admin xử lý được — xem data/permissions.ts::canProcessStep).
  */
 export function stepsFromTaskSteps(
-  taskSteps: Pick<TaskStep, 'ten' | 'vaiTro' | 'vaiTroCodes' | 'hanhDong' | 'formKey'>[],
+  taskSteps: Pick<TaskStep, 'key' | 'ten' | 'vaiTro' | 'vaiTroCodes' | 'hanhDong' | 'formKey'>[],
   opts: { hanXuLy: string },
 ): DossierStep[] {
   return taskSteps
     .filter((t, i) => !(i === 0 && t.hanhDong === 'Khởi tạo'))
     .map((t, i) => ({
+      taskDefinitionKey: t.key,
       ten: t.ten,
       vaiTro: t.vaiTro,
       vaiTroCodes: t.vaiTroCodes ?? [],

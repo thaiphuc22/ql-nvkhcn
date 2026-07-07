@@ -1,0 +1,50 @@
+id: SKILL-AC-GENERATOR
+
+name: Acceptance Criteria Generator
+
+category: validation_modeling
+
+purpose: >
+  Generate testable validation scenarios
+  from functional requirements.
+
+supported_tasks:
+  - TASK-RADD-001
+
+supported_techniques:
+  - TECH-USER-STORY
+  - TECH-USE-CASE
+
+supported_artifacts:
+  - ART-ACCEPTANCE-CRITERIA
+
+inputs:
+  - user_story
+  - business_rules
+  - edge_cases
+
+outputs:
+  - acceptance_criteria
+  - negative_scenarios
+  - validation_conditions
+
+reasoning_pipeline:
+  - identify_main_flow
+  - identify_edge_cases
+  - identify_validation_logic
+  - identify_negative_scenarios
+  - generate_testable_conditions
+
+validators:
+  - VALIDATOR-TESTABILITY
+  - VALIDATOR-MEASURABILITY
+  - VALIDATOR-EDGECASE-COVERAGE
+
+automation_potential:
+  gherkin_generation: very_high
+  negative_case_detection: high
+
+failure_patterns:
+  - vague_conditions
+  - missing_negative_cases
+  - untestable_outputs

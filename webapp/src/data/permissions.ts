@@ -6,6 +6,7 @@
 
 import { ADMIN_ROLE_LABEL, ROLE_LABEL_TO_CODES, type AppUser } from './users'
 import type { DossierStep } from './dossiers'
+import type { ExceptionRequest } from './exceptions'
 
 /** Toàn bộ mã candidateGroup user đang nắm, suy từ nhãn vai trò. */
 export function getUserRoleCodes(user: AppUser | null | undefined): string[] {
@@ -53,6 +54,59 @@ export function canProcessStep(
 /** Trang quản trị (người dùng, cơ cấu tổ chức, tạo/deploy quy trình). */
 export function canManageSystem(user: AppUser | null | undefined): boolean {
   return isAdmin(user)
+}
+
+/**
+ * Quyền REQUEST_EXCEPTION (action-availability-model.md): người xử lý bước hiện tại
+ * mới được xin ngoại lệ trên bước đó — không mở cho toàn bộ người xem hồ sơ.
+ */
+export function canRequestException(
+  user: AppUser | null | undefined,
+  currentStep: Pick<DossierStep, 'vaiTroCodes'> | undefined,
+): boolean {
+  return canProcessStep(user, currentStep)
+}
+
+/**
+ * Quyền APPROVE_EXCEPTION: chỉ vai trò trong `approverRoleCodes` snapshot trên chính
+ * yêu cầu ngoại lệ (không phải vai trò của bước gốc) mới được duyệt/từ chối — tách
+ * biệt quyền xin và quyền duyệt (nguyên tắc trong controlled-exception-handling.md).
+ */
+export function canApproveException(
+  user: AppUser | null | undefined,
+  request: Pick<ExceptionRequest, 'approverRoleCodes'>,
+): boolean {
+  if (!user) return false
+  if (isAdmin(user)) return true
+  return hasAnyRole(user, request.approverRoleCodes)
+}
+
+/**
+ * Quyền APPLY_EXCEPTION: người xử lý bước gốc (hoặc admin) THỰC THI ngoại lệ ĐÃ được
+ * duyệt — tách khỏi quyền duyệt (canApproveException). Nhờ vậy không ai vừa duyệt vừa tự
+ * áp dụng: cấp có thẩm quyền cho phép, người vận hành bước mới bấm áp dụng vào luồng.
+ * (controlled-exception-handling.md §10 — 4 quyền REQUEST/APPROVE/APPLY/VIEW tách bạch.)
+ */
+export function canApplyException(
+  user: AppUser | null | undefined,
+  fromStep: Pick<DossierStep, 'vaiTroCodes'> | undefined,
+): boolean {
+  return canProcessStep(user, fromStep)
+}
+
+/**
+ * Quyền VIEW_EXCEPTION_AUDIT: xem lịch sử ngoại lệ của hồ sơ. Mở cho người tham gia hồ sơ
+ * (người xử lý bước hiện tại, vai trò được duyệt ngoại lệ) và admin — không mở cho người
+ * ngoài. Audit ngoại lệ luôn hiển thị công khai với các bên liên quan (không "âm thầm").
+ */
+export function canViewExceptionAudit(
+  user: AppUser | null | undefined,
+  ctx: { currentStep?: Pick<DossierStep, 'vaiTroCodes'>; approverRoleCodes: string[] },
+): boolean {
+  if (!user) return false
+  if (isAdmin(user)) return true
+  if (canProcessStep(user, ctx.currentStep)) return true
+  return hasAnyRole(user, ctx.approverRoleCodes)
 }
 
 /** Nhãn vai trò "Chủ nhiệm đề tài" trong ALL_ROLES / AppUser.vaiTro. */
