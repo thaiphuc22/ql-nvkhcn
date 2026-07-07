@@ -1,4 +1,4 @@
-import { lazy, Suspense, startTransition, useEffect, useState } from "react";
+﻿import { lazy, Suspense, startTransition, useEffect, useState } from "react";
 import {
   Layout,
   Menu,
@@ -56,6 +56,7 @@ const NhiemVuDetail = lazy(() => import("./pages/NhiemVuDetail"));
 const Worklist = lazy(() => import("./pages/Worklist"));
 const FormLibrary = lazy(() => import("./pages/FormLibrary"));
 const UserManagement = lazy(() => import("./pages/UserManagement"));
+const RolePermission = lazy(() => import("./pages/RolePermission"));
 const OrgStructure = lazy(() => import("./pages/OrgStructure"));
 const ProcessMonitor = lazy(() => import("./pages/ProcessMonitor"));
 const IntegrationStatus = lazy(() => import("./pages/IntegrationStatus"));
@@ -91,6 +92,7 @@ const ROUTE_BY_KEY: Record<string, string> = {
   "ho-so": "/ho-so",
   donvi: "/co-cau-to-chuc",
   nguoidung: "/nguoi-dung",
+  phanquyen: "/phan-quyen",
   giamsat: "/giam-sat",
   tichhop: "/tich-hop",
   nhatky: "/nhat-ky",
@@ -140,6 +142,8 @@ export default function App() {
             ? "matran"
             : location.pathname.startsWith("/cau-hinh-hanh-dong")
             ? "hanhdong"
+            : location.pathname.startsWith("/phan-quyen")
+            ? "phanquyen"
             : location.pathname.startsWith("/ho-so")
               ? "ho-so"
               : location.pathname.startsWith("/nhiem-vu")
@@ -160,6 +164,7 @@ export default function App() {
     bieumau: "Thư viện biểu mẫu",
     donvi: "Quản trị đơn vị",
     nguoidung: "Quản trị người dùng",
+    phanquyen: "Phân quyền",
     giamsat: "Giám sát tiến trình luồng",
     tichhop: "Trạng thái Tích hợp",
     nhatky: "Nhật ký",
@@ -270,6 +275,11 @@ export default function App() {
                 key: "nguoidung",
                 icon: <TeamOutlined />,
                 label: "Quản trị người dùng",
+              },
+              {
+                key: "phanquyen",
+                icon: <KeyOutlined />,
+                label: "Phân quyền",
               },
             ],
           },
@@ -543,6 +553,16 @@ export default function App() {
                 }
               />
               <Route
+                path="/phan-quyen"
+                element={
+                  canManageSystem ? (
+                    <RolePermission />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
+              />
+              <Route
                 path="/giam-sat"
                 element={
                   canManageSystem ? (
@@ -610,3 +630,4 @@ export default function App() {
     </Layout>
   );
 }
+

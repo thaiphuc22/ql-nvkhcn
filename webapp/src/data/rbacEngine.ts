@@ -1,0 +1,142 @@
+import { ADMIN_ROLE_LABEL, ROLE_LABEL_TO_CODES, type AppUser } from './users'
+import {
+  DATA_SCOPE_DEFINITIONS,
+  ROLE_PERMISSION_POLICIES,
+  type DataScopeCode,
+  type FeatureCode,
+  type PermissionCode,
+  type RolePermissionPolicy,
+  type SystemRoleCode,
+} from './rbac'
+
+export interface RbacPrincipal {
+  userId: string
+  userName: string
+  email: string
+  systemRoleCodes: SystemRoleCode[]
+  businessRoleCodes: string[]
+  roleCodes: string[]
+}
+
+export interface PermissionCheckResult {
+  allowed: boolean
+  matchedPolicies: RolePermissionPolicy[]
+  roleCodes: string[]
+  permissionCodes: PermissionCode[]
+  dataScopes: DataScopeCode[]
+  reason: string
+}
+
+export function getPrincipal(user: AppUser | null | undefined): RbacPrincipal | null {
+  if (!user) return null
+
+  const isAdmin = user.vaiTro.includes(ADMIN_ROLE_LABEL)
+  const systemRoleCodes: SystemRoleCode[] = isAdmin ? ['ADMIN'] : ['VIEWER']
+  const businessRoleCodes = [
+    ...new Set(user.vaiTro.flatMap((label) => ROLE_LABEL_TO_CODES[label] ?? [])),
+  ]
+
+  return {
+    userId: user.id,
+    userName: user.hoTen,
+    email: user.email,
+    systemRoleCodes,
+    businessRoleCodes,
+    roleCodes: [...systemRoleCodes, ...businessRoleCodes],
+  }
+}
+
+export function getMatchedPolicies(
+  user: AppUser | null | undefined,
+  featureCode: FeatureCode,
+  policies: RolePermissionPolicy[] = ROLE_PERMISSION_POLICIES,
+): RolePermissionPolicy[] {
+  const principal = getPrincipal(user)
+  if (!principal) return []
+
+  return policies.filter(
+    (policy) =>
+      policy.enabled &&
+      policy.featureCode === featureCode &&
+      principal.roleCodes.includes(policy.roleCode),
+  )
+}
+
+export function getEffectivePermissions(
+  user: AppUser | null | undefined,
+  featureCode: FeatureCode,
+  policies: RolePermissionPolicy[] = ROLE_PERMISSION_POLICIES,
+): PermissionCode[] {
+  return [
+    ...new Set(getMatchedPolicies(user, featureCode, policies).flatMap((policy) => policy.permissionCodes)),
+  ]
+}
+
+export function getEffectiveDataScopes(
+  user: AppUser | null | undefined,
+  featureCode: FeatureCode,
+  policies: RolePermissionPolicy[] = ROLE_PERMISSION_POLICIES,
+): DataScopeCode[] {
+  const scopeRank = new Map(DATA_SCOPE_DEFINITIONS.map((scope) => [scope.code, scope.rank]))
+  return [
+    ...new Set(
+      getMatchedPolicies(user, featureCode, policies)
+        .map((policy) => policy.dataScope)
+        .sort((a, b) => (scopeRank.get(b) ?? 0) - (scopeRank.get(a) ?? 0)),
+    ),
+  ]
+}
+
+export function checkPermission(
+  user: AppUser | null | undefined,
+  featureCode: FeatureCode,
+  permissionCode: PermissionCode,
+  policies: RolePermissionPolicy[] = ROLE_PERMISSION_POLICIES,
+): PermissionCheckResult {
+  const principal = getPrincipal(user)
+  if (!principal) {
+    return {
+      allowed: false,
+      matchedPolicies: [],
+      roleCodes: [],
+      permissionCodes: [],
+      dataScopes: [],
+      reason: 'Chua co user dang nhap.',
+    }
+  }
+
+  const matchedPolicies = getMatchedPolicies(user, featureCode, policies)
+  const permissionCodes = [...new Set(matchedPolicies.flatMap((policy) => policy.permissionCodes))]
+  const dataScopes = getEffectiveDataScopes(user, featureCode, policies)
+  const allowed = permissionCodes.includes(permissionCode)
+
+  return {
+    allowed,
+    matchedPolicies,
+    roleCodes: principal.roleCodes,
+    permissionCodes,
+    dataScopes,
+    reason: allowed
+      ? 'Co policy dang bat cap quyen nay cho mot trong cac role cua user.'
+      : matchedPolicies.length
+        ? 'Co policy cho feature nay nhung chua cap permission dang kiem tra.'
+        : 'Khong co policy dang bat nao khop role va feature.',
+  }
+}
+
+export function hasPermission(
+  user: AppUser | null | undefined,
+  featureCode: FeatureCode,
+  permissionCode: PermissionCode,
+  policies: RolePermissionPolicy[] = ROLE_PERMISSION_POLICIES,
+): boolean {
+  return checkPermission(user, featureCode, permissionCode, policies).allowed
+}
+
+export function canAccessFeature(
+  user: AppUser | null | undefined,
+  featureCode: FeatureCode,
+  policies: RolePermissionPolicy[] = ROLE_PERMISSION_POLICIES,
+): boolean {
+  return hasPermission(user, featureCode, 'VIEW', policies) || hasPermission(user, featureCode, 'CONFIGURE', policies)
+}
