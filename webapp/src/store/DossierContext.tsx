@@ -20,6 +20,12 @@ interface DossierCtxValue {
   submitHoSo: (id: string, quyTrinh: { ma: string; ten: string; taskSteps?: TaskStep[] }) => void
   approveStep: (id: string, actor: string, yKien?: string) => void
   rejectStep: (id: string, reason: string, actor: string) => void
+  /**
+   * Áp dụng một ngoại lệ đã được duyệt: đánh dấu bước hiện tại "done" kèm ghi chú
+   * ngoại lệ (không xoá lịch sử), rồi nhảy thẳng tới bước đích. Chỉ gọi sau khi
+   * Exception Approval Workflow (ExceptionContext) đã duyệt — không gọi trực tiếp.
+   */
+  applyExceptionSkip: (id: string, fromIdx: number, toIdx: number, note: string, actor: string) => void
 }
 
 const DossierCtx = createContext<DossierCtxValue | null>(null)
@@ -96,8 +102,25 @@ export function DossierProvider({ children }: { children: ReactNode }) {
     )
   }
 
+  const applyExceptionSkip = (id: string, fromIdx: number, toIdx: number, note: string, actor: string) => {
+    setHoSo((prev) =>
+      prev.map((h) => {
+        if (h.id !== id || h.trangThai !== 'processing' || h.buocHienTai !== fromIdx) return h
+        if (toIdx <= fromIdx || toIdx >= h.steps.length) return h
+        const steps = h.steps.map((s, i) => {
+          if (i === fromIdx) return { ...s, trangThai: 'done' as const, thoiDiem: NOW, nguoi: s.nguoi || actor, yKien: note }
+          if (i === toIdx) return { ...s, trangThai: 'current' as const }
+          return s
+        })
+        return { ...h, steps, buocHienTai: toIdx }
+      }),
+    )
+  }
+
   return (
-    <DossierCtx.Provider value={{ list, getById, createHoSo, submitHoSo, approveStep, rejectStep }}>
+    <DossierCtx.Provider
+      value={{ list, getById, createHoSo, submitHoSo, approveStep, rejectStep, applyExceptionSkip }}
+    >
       {children}
     </DossierCtx.Provider>
   )

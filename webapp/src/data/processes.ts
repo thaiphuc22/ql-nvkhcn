@@ -1,5 +1,6 @@
 import { RD0101_BPMN } from './rd0101Bpmn'
 import { RD0102_BPMN } from './rd0102Bpmn'
+import { RD0201_BPMN } from './rd0201Bpmn'
 
 // Dữ liệu mock cho màn Danh mục quy trình.
 // Seed từ catalog RD01–RD10 (docs/req) — trạng thái phản ánh đúng độ phủ RTM.
@@ -124,6 +125,7 @@ export const seedProcesses: ProcessDef[] = [
       { key: 't4', ten: 'Hội đồng KHCN phê duyệt', vaiTro: 'HĐ KHCN VHT', vaiTroCodes: ['HDKHCN'], hanhDong: 'Phê duyệt', formKey: 'phieu-phe-duyet' },
       { key: 't5', ten: 'TGĐ phê duyệt mở mới đề tài', vaiTro: 'TGĐ VHT', vaiTroCodes: ['TGD_VHT'], hanhDong: 'Phê duyệt', formKey: 'phieu-phe-duyet' },
     ],
+    bpmnXml: RD0201_BPMN,
   },
   {
     ma: 'RD02.02', ten: 'Xét duyệt NV KHCN cấp Tập đoàn', nhom: 'RD02',

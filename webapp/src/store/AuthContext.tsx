@@ -1,15 +1,20 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
 import { DEMO_PASSWORD, findUserByEmail, type AppUser } from '../data/users'
 import {
+  canApplyException,
+  canApproveException,
   canCreateHoSo,
   canCreateNhiemVu,
   canManageSystem,
   canProcessStep,
+  canRequestException,
+  canViewExceptionAudit,
   getUserRoleCodes,
   isAdmin,
   isChuNhiemDeTai,
 } from '../data/permissions'
 import type { DossierStep } from '../data/dossiers'
+import type { ExceptionRequest } from '../data/exceptions'
 
 const STORAGE_KEY = 'qtkhcn.auth.email'
 
@@ -48,6 +53,13 @@ export function usePermissions() {
       canManageSystem: canManageSystem(user),
       isChuNhiemDeTai: isChuNhiemDeTai(user),
       canProcessStep: (step?: Pick<DossierStep, 'vaiTroCodes'>) => canProcessStep(user, step),
+      canRequestException: (step?: Pick<DossierStep, 'vaiTroCodes'>) => canRequestException(user, step),
+      canApproveException: (req: Pick<ExceptionRequest, 'approverRoleCodes'>) => canApproveException(user, req),
+      canApplyException: (fromStep?: Pick<DossierStep, 'vaiTroCodes'>) => canApplyException(user, fromStep),
+      canViewExceptionAudit: (ctx: {
+        currentStep?: Pick<DossierStep, 'vaiTroCodes'>
+        approverRoleCodes: string[]
+      }) => canViewExceptionAudit(user, ctx),
     }),
     [user],
   )

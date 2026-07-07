@@ -86,6 +86,20 @@ export const PROCESS_VARIABLES: ProcessVariable[] = [
   },
   { name: 'dieuKienMacDinhDat', label: 'Đủ điều kiện mặc định (system check)', type: 'boolean' },
   { name: 'quorumDat', label: 'Đạt quorum hội đồng', type: 'boolean' },
+  // Output của DMN EPIC09 (DRD "Định tuyến thẩm định RD02") — xem
+  // docs/research/EPIC09-dmn-design.md. Là biến điều khiển do decision sinh ra,
+  // KHÔNG phải business data (tongDuToan không nằm ở đây, chỉ truyền vào lúc eval).
+  { name: 'canHoiDong', label: 'Cần Hội đồng KHCN', type: 'boolean' },
+  {
+    name: 'loaiHoiDong',
+    label: 'Loại hội đồng',
+    type: 'string',
+    values: [
+      { value: 'HD_KHCN_TD', label: 'Hội đồng KHCN Tập đoàn' },
+      { value: 'HD_CS', label: 'Hội đồng Cơ sở' },
+      { value: 'KHONG', label: 'Không cần hội đồng' },
+    ],
+  },
 ]
 
 /** Tập tên biến hợp lệ — dùng cho lint kiểm tra điều kiện FEEL. */

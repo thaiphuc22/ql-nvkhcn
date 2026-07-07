@@ -9,6 +9,7 @@ import { theme } from './theme'
 import { ProcessProvider } from './store/ProcessContext'
 import { NhiemVuProvider } from './store/NhiemVuContext'
 import { DossierProvider } from './store/DossierContext'
+import { ExceptionProvider } from './store/ExceptionContext'
 import { FormProvider } from './store/FormContext'
 import { BreadcrumbProvider } from './store/BreadcrumbContext'
 import { AuthProvider } from './store/AuthContext'
@@ -22,11 +23,13 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <FormProvider>
             <NhiemVuProvider>
               <DossierProvider>
-                <BrowserRouter>
-                  <BreadcrumbProvider>
-                    <App />
-                  </BreadcrumbProvider>
-                </BrowserRouter>
+                <ExceptionProvider>
+                  <BrowserRouter>
+                    <BreadcrumbProvider>
+                      <App />
+                    </BreadcrumbProvider>
+                  </BrowserRouter>
+                </ExceptionProvider>
               </DossierProvider>
             </NhiemVuProvider>
           </FormProvider>

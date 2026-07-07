@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "name": "product-owner",
+  "owner": "fyrsmithlabs",
+  "repo": "marketplace",
+  "path": "plugins/fs-dev/skills/product-owner",
+  "branch": "main",
+  "sha": "37b533a9434918ca8ed1557efd4fe9fc195766a0",
+  "source": "manual"
+}

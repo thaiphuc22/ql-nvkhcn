@@ -43,3 +43,16 @@ declare module 'diagram-js-minimap' {
   const MinimapModule: unknown
   export default MinimapModule
 }
+
+declare module 'dmn-js/lib/Modeler' {
+  export default class DmnModeler {
+    constructor(options: unknown)
+    importXML(xml: string): Promise<{ warnings: unknown[] }>
+    saveXML(options?: { format?: boolean }): Promise<{ xml: string }>
+    getActiveViewer(): unknown
+    getViews(): unknown[]
+    open(view: unknown): Promise<{ warnings: unknown[] }>
+    on(event: string, callback: (event?: unknown) => void): void
+    destroy(): void
+  }
+}

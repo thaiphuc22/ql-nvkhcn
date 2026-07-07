@@ -1,0 +1,138 @@
+id: SKILL-REQUIREMENT-EXTRACTOR
+
+name: Requirement Extractor
+
+category: elicitation_intelligence
+
+purpose: >
+  Extract structured requirements
+  from unstructured stakeholder communication.
+
+business_value:
+  - reduce_manual_requirement_capture
+  - improve_requirement_consistency
+  - accelerate_discovery_phase
+
+supported_tasks:
+  - TASK-ELICIT-001
+
+supported_techniques:
+  - TECH-INTERVIEW
+  - TECH-WORKSHOP
+
+supported_artifacts:
+  - ART-INITIAL-REQUIREMENTS
+  - ART-ELICITATION-NOTES
+
+trigger_conditions:
+  - meeting_transcript_uploaded
+  - interview_completed
+  - workshop_notes_available
+
+required_context:
+  - project_domain
+  - stakeholder_roles
+  - business_scope
+
+inputs:
+  - transcript
+  - notes
+  - stakeholder_context
+
+outputs:
+  - extracted_requirements
+  - assumptions
+  - open_questions
+  - ambiguities
+
+input_schema:
+  transcript:
+    type: text
+
+output_schema:
+  requirements:
+    type: structured_requirement_list
+
+reasoning_pipeline:
+  - identify_business_statements
+  - detect_user_needs
+  - identify_constraints
+  - classify_requirements
+  - detect_assumptions
+  - detect_ambiguities
+  - normalize_requirements
+
+prompt_strategy:
+  system_prompt:
+    - business_analysis_context
+    - requirement_extraction_rules
+
+  few_shot_examples:
+    - good_requirement_examples
+    - bad_requirement_examples
+
+execution_modes:
+  - batch
+  - realtime
+
+validators:
+  - VALIDATOR-REQUIREMENT-ATOMICITY
+  - VALIDATOR-NO-DUPLICATION
+  - VALIDATOR-BUSINESS-VALUE
+
+confidence_scoring:
+  high_confidence:
+    - explicit_business_language
+    - clear_actor_defined
+
+  low_confidence:
+    - vague_language
+    - conflicting_statements
+
+fallback_strategy:
+  - request_clarification
+  - escalate_to_human
+
+human_review_rules:
+  mandatory_when:
+    - confidence_below_0_8
+    - conflict_detected
+
+governance_requirements:
+  - source_traceability
+  - versioning_required
+
+failure_patterns:
+  - hallucinated_requirements
+  - merged_multiple_requirements
+  - missing_constraints
+
+observability:
+  logs:
+    - extraction_trace
+    - confidence_scores
+
+performance_metrics:
+  - extraction_precision
+  - extraction_recall
+  - ambiguity_detection_rate
+
+memory_interactions:
+  reads:
+    - stakeholder_history
+    - domain_ontology
+
+tool_dependencies:
+  - vector_retriever
+  - transcript_parser
+
+orchestration_tags:
+  - elicitation
+  - extraction
+  - requirement_discovery
+
+domain_specialization:
+  erp:
+    focus:
+      - approval_logic
+      - workflow_constraints

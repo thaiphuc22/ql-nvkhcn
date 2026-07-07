@@ -19,4 +19,12 @@ export const JOB_TYPES: JobTypeDef[] = [
     label: "Kiểm tra điều kiện mặc định (RD01.01)",
     nhom: "Worker nội bộ",
   },
+  {
+    // EPIC09 — worker đánh giá DRD "Định tuyến thẩm định RD02" qua EvaluateDecision
+    // (standalone, giữ D3: business data không vào Camunda). Xem
+    // docs/research/EPIC09-dmn-design.md §2/§6; DMN: src/dmn/rd02Routing.dmn.ts.
+    type: "khcn.rule.evaluate-routing",
+    label: "Đánh giá luật định tuyến (DMN EPIC09)",
+    nhom: "Worker nội bộ",
+  },
 ];
