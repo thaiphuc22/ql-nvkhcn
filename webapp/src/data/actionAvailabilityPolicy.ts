@@ -52,6 +52,13 @@ export interface ActionAvailabilityPolicy {
   /** Rỗng = mọi vai trò; quyền bấm vẫn do requiredPermissions quyết định. */
   allowedRoleCodes: string[]
   requiredPermissions: string[]
+  /**
+   * (D10) eForm gắn với action Ở NGỮ CẢNH NÀY — tham chiếu (formKey) vào Thư viện
+   * biểu mẫu (forms/index.ts + FormContext), KHÔNG nhúng schema. Nhờ vậy một eForm
+   * có thể được nhiều dòng policy/action dùng chung: 1 eForm : n Action. null = action
+   * không mở form (vd Tải hồ sơ / Xem lịch sử).
+   */
+  formKey?: string | null
   /** Minh hoạ điều kiện nghiệp vụ thật — mock chưa evaluate phần này. */
   conditionExpression?: string
   /** Thứ tự hiển thị khi rule này khớp; số nhỏ = trước. */
@@ -69,11 +76,13 @@ export const ACTION_AVAILABILITY_POLICIES: ActionAvailabilityPolicy[] = [
     dossierStatus: 'draft',
     allowedRoleCodes: ['PM', 'PA', 'NNC'],
     requiredPermissions: [PERMISSIONS.SUBMIT_DOSSIER],
+    formKey: 'phieu-chu-truong',
     conditionExpression: 'dossier.docsComplete = true',
     displayOrder: 10,
     enabled: true,
   },
   {
+    // (D10 legacy) Action "Xử lý" gộp — giữ tới khi DossierDetail rewire sang 3 nút outcome.
     id: 'AP-02',
     actionCode: 'PROCESS_STEP',
     surface: 'DOSSIER_DETAIL',
@@ -82,8 +91,53 @@ export const ACTION_AVAILABILITY_POLICIES: ActionAvailabilityPolicy[] = [
     dossierStatus: 'processing',
     allowedRoleCodes: [],
     requiredPermissions: [PERMISSIONS.PROCESS_STEP],
+    formKey: 'phieu-nhan-xet',
     conditionExpression: 'user in currentStep.candidateGroups',
     displayOrder: 20,
+    enabled: true,
+  },
+  // ── (D10) 3 outcome action cho bước phê duyệt — mỗi hướng một eForm riêng ──────────
+  // 1 eForm : n Action: RETURN & REJECT cùng trỏ 'phieu-y-kien' (tái dùng, không copy).
+  {
+    id: 'AP-06',
+    actionCode: 'APPROVE_STEP',
+    surface: 'DOSSIER_DETAIL',
+    processCode: null,
+    taskDefinitionKey: null,
+    dossierStatus: 'processing',
+    allowedRoleCodes: [],
+    requiredPermissions: [PERMISSIONS.PROCESS_STEP],
+    formKey: 'phieu-phe-duyet',
+    conditionExpression: 'user in currentStep.candidateGroups',
+    displayOrder: 21,
+    enabled: true,
+  },
+  {
+    id: 'AP-07',
+    actionCode: 'RETURN_STEP',
+    surface: 'DOSSIER_DETAIL',
+    processCode: null,
+    taskDefinitionKey: null,
+    dossierStatus: 'processing',
+    allowedRoleCodes: [],
+    requiredPermissions: [PERMISSIONS.PROCESS_STEP],
+    formKey: 'phieu-y-kien',
+    conditionExpression: 'user in currentStep.candidateGroups',
+    displayOrder: 22,
+    enabled: true,
+  },
+  {
+    id: 'AP-08',
+    actionCode: 'REJECT_STEP',
+    surface: 'DOSSIER_DETAIL',
+    processCode: null,
+    taskDefinitionKey: null,
+    dossierStatus: 'processing',
+    allowedRoleCodes: [],
+    requiredPermissions: [PERMISSIONS.PROCESS_STEP],
+    formKey: 'phieu-y-kien',
+    conditionExpression: 'user in currentStep.candidateGroups',
+    displayOrder: 23,
     enabled: true,
   },
   {
@@ -95,6 +149,7 @@ export const ACTION_AVAILABILITY_POLICIES: ActionAvailabilityPolicy[] = [
     dossierStatus: null,
     allowedRoleCodes: [],
     requiredPermissions: [PERMISSIONS.ADD_COMMENT],
+    formKey: 'phieu-y-kien',
     displayOrder: 60,
     enabled: true,
   },
@@ -107,6 +162,7 @@ export const ACTION_AVAILABILITY_POLICIES: ActionAvailabilityPolicy[] = [
     dossierStatus: null,
     allowedRoleCodes: [],
     requiredPermissions: [PERMISSIONS.DOWNLOAD_DOCUMENT],
+    formKey: null,
     displayOrder: 61,
     enabled: true,
   },
@@ -119,6 +175,7 @@ export const ACTION_AVAILABILITY_POLICIES: ActionAvailabilityPolicy[] = [
     dossierStatus: null,
     allowedRoleCodes: [],
     requiredPermissions: [PERMISSIONS.VIEW_AUDIT],
+    formKey: null,
     displayOrder: 62,
     enabled: true,
   },

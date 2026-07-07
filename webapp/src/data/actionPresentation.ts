@@ -50,6 +50,9 @@ export interface ActionPresentation {
 const ICON_BY_ACTION: Record<string, string> = {
   SUBMIT: 'send',
   PROCESS_STEP: 'form',
+  APPROVE_STEP: 'check',
+  RETURN_STEP: 'rollback',
+  REJECT_STEP: 'close',
   ADD_COMMENT: 'comment',
   DOWNLOAD_DOSSIER: 'download',
   VIEW_HISTORY: 'history',
@@ -58,13 +61,20 @@ const ICON_BY_ACTION: Record<string, string> = {
   REQUEST_SKIP_STEP: 'forward',
 }
 
+/** (D10) Ghi đè tone theo từng outcome action để 3 nút không cùng một màu "primary". */
+const TONE_OVERRIDE: Record<string, ActionTone> = {
+  RETURN_STEP: 'warning',
+  REJECT_STEP: 'danger',
+}
+
 function groupForType(type: ActionType): ActionUiGroup {
   if (type === 'STANDARD') return 'PRIMARY'
   if (type === 'EXCEPTION') return 'EXCEPTION'
   return 'MORE'
 }
 
-function toneForType(type: ActionType): ActionTone {
+function toneForAction(actionCode: string, type: ActionType): ActionTone {
+  if (TONE_OVERRIDE[actionCode]) return TONE_OVERRIDE[actionCode]
   if (type === 'EXCEPTION') return 'danger'
   if (type === 'STANDARD') return 'primary'
   return 'default'
@@ -86,7 +96,7 @@ export const ACTION_PRESENTATIONS: ActionPresentation[] = Object.values(ACTION_R
         : undefined,
     icon: ICON_BY_ACTION[def.actionCode] ?? 'control',
     uiGroup: groupForType(def.actionType),
-    tone: toneForType(def.actionType),
+    tone: toneForAction(def.actionCode, def.actionType),
     defaultOrder: orderForType(def.actionType, index),
     locale: 'vi-VN',
   }),
@@ -104,7 +114,7 @@ export function getActionPresentation(
     displayLabel: def?.actionName ?? actionCode,
     icon: ICON_BY_ACTION[actionCode] ?? 'control',
     uiGroup: def ? groupForType(def.actionType) : 'MORE',
-    tone: def ? toneForType(def.actionType) : 'default',
+    tone: def ? toneForAction(actionCode, def.actionType) : 'default',
     defaultOrder: 999,
     locale: 'vi-VN',
   }

@@ -139,6 +139,19 @@
 .vht-diagram .djs-element.hover .djs-outline {
   stroke: var(--vht-red-100) !important;
 }
+/* Tô sáng NODE của bước hiện tại khi xem BPMN từ Chi tiết hồ sơ (marker canvas). */
+.vht-diagram .djs-element.vht-step-active .djs-visual > :nth-child(1) {
+  stroke: var(--vht-red) !important;
+  stroke-width: 3px !important;
+  fill: var(--vht-red-050, rgba(207, 19, 34, 0.06)) !important;
+}
+/* Node ĐÍCH của một ngoại lệ đang chờ/áp dụng: viền volcano nét đứt (ngoài luồng chuẩn). */
+.vht-diagram .djs-element.vht-step-exception .djs-visual > :nth-child(1) {
+  stroke: #d4380d !important;
+  stroke-width: 3px !important;
+  stroke-dasharray: 6 3 !important;
+  fill: rgba(212, 56, 13, 0.06) !important;
+}
 /* Dấu nối trực tiếp (direct editing) & resize handles theo brand */
 .vht-diagram .djs-bendpoint,
 .vht-diagram .djs-segment-dragger .djs-visual > * {

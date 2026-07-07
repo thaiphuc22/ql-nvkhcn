@@ -21,6 +21,13 @@ interface DossierCtxValue {
   approveStep: (id: string, actor: string, yKien?: string) => void
   rejectStep: (id: string, reason: string, actor: string) => void
   /**
+   * Trả hồ sơ về một bước TRƯỚC để chỉnh sửa (rework loop — nhánh "Yêu cầu hiệu
+   * chỉnh" của các gateway RD01.01). KHÁC rejectStep: hồ sơ vẫn "Đang xử lý",
+   * không kết thúc. Ghi lý do trả lại lên bước người duyệt; mở lại các bước từ
+   * `toIdx` trở đi (toIdx thành current, phần còn lại về pending).
+   */
+  returnStep: (id: string, toIdx: number, note: string, actor: string) => void
+  /**
    * Áp dụng một ngoại lệ đã được duyệt: đánh dấu bước hiện tại "done" kèm ghi chú
    * ngoại lệ (không xoá lịch sử), rồi nhảy thẳng tới bước đích. Chỉ gọi sau khi
    * Exception Approval Workflow (ExceptionContext) đã duyệt — không gọi trực tiếp.
@@ -102,6 +109,28 @@ export function DossierProvider({ children }: { children: ReactNode }) {
     )
   }
 
+  const returnStep = (id: string, toIdx: number, note: string, actor: string) => {
+    setHoSo((prev) =>
+      prev.map((h) => {
+        if (h.id !== id || h.trangThai !== 'processing') return h
+        const idx = h.buocHienTai
+        // Chỉ trả về bước phía trước bước hiện tại.
+        if (toIdx < 0 || toIdx >= idx) return h
+        const steps = h.steps.map((s, i) => {
+          // Bước người duyệt hiện tại: ghi quyết định "trả lại" + về pending (sẽ duyệt lại sau).
+          if (i === idx)
+            return { ...s, trangThai: 'pending' as const, thoiDiem: NOW, nguoi: s.nguoi || actor, yKien: `↩ Trả lại để chỉnh sửa: ${note}` }
+          // Bước đích: thành current để vai trò phụ trách chỉnh sửa lại.
+          if (i === toIdx) return { ...s, trangThai: 'current' as const }
+          // Các bước xen giữa (đã done): mở lại về pending để đi lại tuần tự.
+          if (i > toIdx && i < idx) return { ...s, trangThai: 'pending' as const }
+          return s
+        })
+        return { ...h, steps, buocHienTai: toIdx }
+      }),
+    )
+  }
+
   const applyExceptionSkip = (id: string, fromIdx: number, toIdx: number, note: string, actor: string) => {
     setHoSo((prev) =>
       prev.map((h) => {
@@ -119,7 +148,7 @@ export function DossierProvider({ children }: { children: ReactNode }) {
 
   return (
     <DossierCtx.Provider
-      value={{ list, getById, createHoSo, submitHoSo, approveStep, rejectStep, applyExceptionSkip }}
+      value={{ list, getById, createHoSo, submitHoSo, approveStep, rejectStep, returnStep, applyExceptionSkip }}
     >
       {children}
     </DossierCtx.Provider>

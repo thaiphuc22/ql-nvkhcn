@@ -1,4 +1,11 @@
-import { useMemo, useState, type ReactNode } from "react";
+import {
+  lazy,
+  Suspense,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Alert,
@@ -9,13 +16,15 @@ import {
   Col,
   Descriptions,
   Dropdown,
+  Empty,
   Input,
   List,
   Modal,
   Row,
+  Segmented,
   Select,
   Space,
-  Steps,
+  Spin,
   Tag,
   Timeline,
   Tooltip,
@@ -27,6 +36,7 @@ import {
   CloseCircleOutlined,
   CommentOutlined,
   DownloadOutlined,
+  ApartmentOutlined,
   ExclamationCircleOutlined,
   FileExcelOutlined,
   FilePdfOutlined,
@@ -65,6 +75,19 @@ import { useExceptions } from "../store/ExceptionContext";
 import { useProcesses } from "../store/ProcessContext";
 import { useAuth, usePermissions } from "../store/AuthContext";
 import TaskFormModal from "../components/TaskFormModal";
+import FormRenderer, {
+  type FormRendererHandle,
+} from "../components/FormRenderer";
+import StepRoutingDiagram, {
+  type DiagramStep,
+} from "../components/StepRoutingDiagram";
+import { resolveRouting, ROUTING_TABLES } from "../data/stepRouting";
+import { bpmnIdsForStep, hasBpmnStepMap } from "../data/bpmnStepMap";
+import type { ProcessDef } from "../data/processes";
+import { useForms } from "../store/FormContext";
+
+// bpmn-js nặng → chỉ nạp khi mở modal "Xem BPMN quy trình".
+const BpmnViewer = lazy(() => import("../components/BpmnViewer"));
 import OfficialDocument, {
   printOfficialDoc,
 } from "../components/OfficialDocument";
@@ -77,15 +100,45 @@ import {
 
 const { Text, Paragraph } = Typography;
 
-const STEPS_STATUS: Record<
-  StepStatus,
-  "finish" | "process" | "wait" | "error"
-> = {
-  done: "finish",
-  current: "process",
-  pending: "wait",
-  rejected: "error",
-};
+/**
+ * "Toàn bộ sơ đồ nhánh": vẽ sơ đồ định tuyến cho TỪNG bước của quy trình, dùng
+ * chung `resolveRouting` + StepRoutingDiagram với chế độ xem 1-bước. Bước đang xử
+ * lý hiển thị dạng 'active' (kèm người dự kiến + nhánh ngoại lệ); các bước còn lại
+ * dạng 'reference' (viền xám). Cùng nguồn dữ liệu với nút "Xử lý" nên không lệch.
+ */
+function RoutingFlow({
+  proc,
+  steps,
+  currentTen,
+  exceptionBranches,
+}: {
+  proc: ProcessDef;
+  steps: DiagramStep[];
+  currentTen?: string;
+  exceptionBranches: { label: string; targetLabel: string }[];
+}) {
+  return (
+    <Space direction="vertical" size={20} style={{ width: "100%" }}>
+      {(proc.taskSteps ?? []).map((ts) => {
+        const r = resolveRouting(proc, steps, ts.ten);
+        if (!r.branches.length) return null;
+        const isCur = ts.ten === currentTen;
+        return (
+          <StepRoutingDiagram
+            key={ts.key}
+            currentStepTen={ts.ten}
+            currentStepRole={ts.vaiTro}
+            branches={r.branches}
+            steps={steps}
+            variant={isCur ? "active" : "reference"}
+            showApprovers={isCur}
+            exceptionBranches={isCur ? exceptionBranches : []}
+          />
+        );
+      })}
+    </Space>
+  );
+}
 
 /** Màu + nhãn tag cho trạng thái bước (1 nguồn trong màn) — thay cho Tag color rời rạc. */
 const STEP_TAG: Partial<Record<StepStatus, { color: string; label: string }>> =
@@ -221,6 +274,7 @@ export default function DossierDetail() {
     admin,
   } = usePermissions();
   const { user } = useAuth();
+  const { getForm } = useForms();
   const {
     forDossier,
     activeFor,
@@ -248,6 +302,12 @@ export default function DossierDetail() {
     { id: string; author: string; text: string; at: string }[]
   >([]);
   const [historyOpen, setHistoryOpen] = useState(false);
+  // Soạn thảo nội dung hồ sơ chủ trương (form phieu-chu-truong gắn bước Khởi tạo).
+  const [contentOpen, setContentOpen] = useState(false);
+  const contentFormRef = useRef<FormRendererHandle>(null);
+  // Card "Quy trình xử lý": sơ đồ nhánh chỉ BƯỚC HIỆN TẠI hay TOÀN BỘ quy trình.
+  const [flowScope, setFlowScope] = useState<"current" | "full">("current");
+  const [bpmnOpen, setBpmnOpen] = useState(false);
 
   const d = getById(decodeURIComponent(id));
   const docTemplates = useMemo(() => (d ? templatesFor(d) : []), [d]);
@@ -304,8 +364,25 @@ export default function DossierDetail() {
 
   const currentStep = d.steps[d.buocHienTai];
   const rejectedStep = d.steps.find((s) => s.trangThai === "rejected");
+  // Routing khai báo cho bước hiện tại (nguồn chung với nút "Xử lý" — stepRouting.ts).
+  const proc = processes.find((p) => p.ma === d.quyTrinh);
+  const routing =
+    d.trangThai === "processing"
+      ? resolveRouting(proc, d.steps, currentStep?.ten)
+      : { branches: [] };
+  const hasDiagram = routing.branches.length > 0;
+  const hasRoutingTable = !!d.quyTrinh && !!ROUTING_TABLES[d.quyTrinh];
   // Chỉ user thuộc candidateGroups của bước hiện tại (theo BPMN) mới xử lý được.
   const allowed = canProcessStep(currentStep);
+
+  // Bản đồ bước↔BPMN (bpmnStepMap.ts): node của bước HIỆN TẠI → tô sáng đỏ khi "Xem BPMN".
+  const keyOfTen = (ten?: string) =>
+    proc?.taskSteps?.find((ts) => ts.ten === ten)?.key;
+  const bpmnActiveIds =
+    d.trangThai === "processing"
+      ? bpmnIdsForStep(d.quyTrinh, keyOfTen(currentStep?.ten))
+      : [];
+  const canHighlightBpmn = hasBpmnStepMap(d.quyTrinh);
 
   // EPIC06 — Ma trận phê duyệt resolve candidateGroups của bước HIỆN TẠI → người
   // nhận việc cụ thể (+ uỷ quyền). Đây là nơi BPMN (chỉ mang candidateGroups trừu
@@ -319,6 +396,11 @@ export default function DossierDetail() {
   const excList = forDossier(d.id);
   // Yêu cầu đang "mở" (pending hoặc approved-chờ-áp-dụng) — chặn xin yêu cầu mới.
   const activeExc = activeFor(d.id);
+  // Node ĐÍCH của ngoại lệ đang mở → tô sáng nét đứt trên BPMN. Bản thân cú "nhảy"
+  // ngoại lệ KHÔNG phải một nhánh trong BPMN (chỉ có node đích là tô được).
+  const bpmnExceptionIds = activeExc
+    ? bpmnIdsForStep(d.quyTrinh, keyOfTen(d.steps[activeExc.toStepIndex]?.ten))
+    : [];
   // Số yêu cầu chưa bị từ chối theo từng loại → áp maxTimesPerDossier của policy.
   const exceptionCountByType = excList.reduce<Partial<Record<ExceptionType, number>>>(
     (acc, r) => {
@@ -374,6 +456,13 @@ export default function DossierDetail() {
     .filter(([, code]) => actionByCode.get(code)?.enabled)
     .map(([type]) => type);
   const canOpenException = enabledExceptionTypes.length > 0;
+  // Nhánh ngoại lệ (nét đứt) cho sơ đồ — 1 nhánh / loại ngoại lệ đang được phép.
+  const exceptionBranchViews = canOpenException
+    ? enabledExceptionTypes.map((t) => ({
+        label: `Ngoại lệ: ${EXCEPTION_TYPE_LABEL[t]}`,
+        targetLabel: "Chuyển thẳng tới bước sau (chọn khi xin ngoại lệ)",
+      }))
+    : [];
   // Nhóm "Thao tác khác" (doc mục 9) — gom support actions vào menu riêng, tách khỏi
   // nút chuẩn/ngoại lệ. Render động từ Action Registry, không hard-code từng mục.
   const supportActions = availableActions.filter((a) => a.type === "SUPPORT");
@@ -496,6 +585,20 @@ export default function DossierDetail() {
     else if (a.actionCode === SUPPORT_ACTION_CODES.VIEW_HISTORY) setHistoryOpen(true);
   };
 
+  // Soạn hồ sơ chủ trương: chỉ áp dụng cho hồ sơ loại "Chủ trương" (RD01).
+  const chuTruongForm =
+    d.loai === "Chủ trương" ? getForm("phieu-chu-truong") : undefined;
+  const saveContent = () => {
+    const res = contentFormRef.current?.submit();
+    if (!res) return;
+    if (res.errors && Object.keys(res.errors).length > 0) {
+      message.error("Vui lòng điền đủ các trường bắt buộc của hồ sơ.");
+      return;
+    }
+    setContentOpen(false);
+    message.success("Đã lưu nội dung hồ sơ chủ trương (mock).");
+  };
+
   const SUPPORT_ICON: Record<string, ReactNode> = {
     [SUPPORT_ACTION_CODES.ADD_COMMENT]: <CommentOutlined />,
     [SUPPORT_ACTION_CODES.DOWNLOAD_DOSSIER]: <DownloadOutlined />,
@@ -524,6 +627,16 @@ export default function DossierDetail() {
         }
         extra={
           <Space>
+            {chuTruongForm && (
+              <Tooltip title="Soạn/xem nội dung hồ sơ chủ trương (biểu mẫu bước Khởi tạo)">
+                <Button
+                  icon={<FormOutlined />}
+                  onClick={() => setContentOpen(true)}
+                >
+                  Soạn hồ sơ
+                </Button>
+              </Tooltip>
+            )}
             {submitAction && (
               <Tooltip title={submitAction.disabledReason}>
                 <Button
@@ -647,17 +760,67 @@ export default function DossierDetail() {
         />
       )}
 
-      <Card size="small" style={{ marginBottom: 16 }}>
-        <Steps
-          size="small"
-          responsive
-          current={d.buocHienTai}
-          items={d.steps.map((s) => ({
-            title: s.ten,
-            description: s.vaiTro,
-            status: STEPS_STATUS[s.trangThai],
-          }))}
-        />
+      <Card
+        size="small"
+        title="Quy trình xử lý"
+        style={{ marginBottom: 16 }}
+        extra={
+          <Space>
+            {hasDiagram && (
+              <Segmented
+                size="small"
+                value={flowScope}
+                onChange={(v) => setFlowScope(v as "current" | "full")}
+                options={[
+                  { label: "Bước hiện tại", value: "current" },
+                  { label: "Toàn bộ sơ đồ", value: "full" },
+                ]}
+              />
+            )}
+            {proc?.bpmnXml && (
+              <Tooltip title="Xem toàn bộ quy trình dạng BPMN (chỉ đọc)">
+                <Button
+                  size="small"
+                  icon={<ApartmentOutlined />}
+                  onClick={() => setBpmnOpen(true)}
+                >
+                  Xem BPMN
+                </Button>
+              </Tooltip>
+            )}
+          </Space>
+        }
+      >
+        {d.trangThai === "processing" && hasDiagram ? (
+          flowScope === "full" && proc ? (
+            <RoutingFlow
+              proc={proc}
+              steps={d.steps}
+              currentTen={currentStep!.ten}
+              exceptionBranches={exceptionBranchViews}
+            />
+          ) : (
+            <StepRoutingDiagram
+              currentStepTen={currentStep!.ten}
+              currentStepRole={currentStep!.vaiTro}
+              branches={routing.branches}
+              steps={d.steps}
+              exceptionBranches={exceptionBranchViews}
+            />
+          )
+        ) : proc && hasRoutingTable ? (
+          // Hồ sơ đã xong / bị từ chối / chưa tới lượt: xem sơ đồ nhánh dạng tham chiếu.
+          <RoutingFlow proc={proc} steps={d.steps} exceptionBranches={[]} />
+        ) : (
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={
+              d.quyTrinh
+                ? "Quy trình này chưa khai báo bảng định tuyến."
+                : "Hồ sơ chưa vào quy trình — bấm “Gửi duyệt” để bắt đầu."
+            }
+          />
+        )}
       </Card>
 
       {excList.length > 0 && canSeeExceptionAudit && (
@@ -1032,6 +1195,106 @@ export default function DossierDetail() {
         open={formOpen}
         onClose={() => setFormOpen(false)}
       />
+
+      {proc?.bpmnXml && (
+        <Modal
+          open={bpmnOpen}
+          title={
+            <Space>
+              <ApartmentOutlined />
+              Sơ đồ quy trình {d.quyTrinh} · {d.quyTrinhTen}
+            </Space>
+          }
+          width="90vw"
+          style={{ top: 24 }}
+          footer={[
+            <Button key="close" onClick={() => setBpmnOpen(false)}>
+              Đóng
+            </Button>,
+          ]}
+          destroyOnClose
+          onCancel={() => setBpmnOpen(false)}
+        >
+          <Alert
+            type={bpmnExceptionIds.length ? "warning" : "info"}
+            showIcon
+            style={{ marginBottom: 12 }}
+            message={
+              d.trangThai === "processing"
+                ? `Bước hiện tại của hồ sơ: ${currentStep?.ten ?? "—"}`
+                : "Hồ sơ không ở trạng thái đang xử lý — không tô sáng bước hiện tại."
+            }
+            description={
+              canHighlightBpmn ? (
+                <Space direction="vertical" size={2}>
+                  {bpmnActiveIds.length > 0 ? (
+                    <span>
+                      Ô <b>viền đỏ</b> là các tác vụ BPMN của bước hiện tại (bước tóm
+                      tắt gộp {bpmnActiveIds.length} tác vụ: {bpmnActiveIds.join(", ")}).
+                    </span>
+                  ) : (
+                    <span>Sơ đồ BPMN đầy đủ của quy trình (chỉ đọc).</span>
+                  )}
+                  {bpmnExceptionIds.length > 0 && (
+                    <span>
+                      Hồ sơ có <b>yêu cầu ngoại lệ</b> đang mở. Cú “nhảy” ngoại lệ{" "}
+                      <b>không</b> phải một nhánh trong BPMN, nên chỉ tô{" "}
+                      <b>viền volcano nét đứt</b> ở node ĐÍCH — không có mũi tên nối.
+                    </span>
+                  )}
+                </Space>
+              ) : (
+                "Sơ đồ BPMN đầy đủ của quy trình (chỉ đọc). Quy trình này chưa khai báo bản đồ bước↔BPMN nên chưa tô sáng được ô đang chạy."
+              )
+            }
+          />
+          <Suspense
+            fallback={
+              <div style={{ padding: 48, textAlign: "center" }}>
+                <Spin tip="Đang tải sơ đồ BPMN..." />
+              </div>
+            }
+          >
+            <BpmnViewer
+              xml={proc.bpmnXml}
+              height="70vh"
+              activeIds={bpmnActiveIds}
+              exceptionIds={bpmnExceptionIds}
+            />
+          </Suspense>
+        </Modal>
+      )}
+
+      {chuTruongForm && (
+        <Modal
+          open={contentOpen}
+          title={
+            <Space>
+              <FormOutlined />
+              Hồ sơ trình duyệt Chủ trương — {d.id}
+            </Space>
+          }
+          okText="Lưu nội dung"
+          cancelText="Đóng"
+          width={640}
+          destroyOnClose
+          onOk={saveContent}
+          onCancel={() => setContentOpen(false)}
+        >
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginBottom: 14 }}
+            message="Biểu mẫu bước Khởi tạo (Form Mapping)"
+            description="Nội dung do Chủ nhiệm đề tài soạn trước khi Gửi duyệt. Lưu trữ thật chờ backend (F1) — hiện lưu mock."
+          />
+          <FormRenderer
+            key={`${d.id}-chu-truong`}
+            ref={contentFormRef}
+            schema={chuTruongForm.schema}
+          />
+        </Modal>
+      )}
 
       <Modal
         open={excOpen}

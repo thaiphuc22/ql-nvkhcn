@@ -28,6 +28,7 @@ import {
   ControlOutlined,
   DeleteOutlined,
   EditOutlined,
+  PartitionOutlined,
   PlusOutlined,
   SafetyCertificateOutlined,
   ThunderboltOutlined,
@@ -68,6 +69,10 @@ import {
 } from '../data/actionPresentation'
 import type { DossierStatus } from '../data/dossiers'
 import { seedNhiemVu, type Cap } from '../data/nhiemVu'
+import { seedProcesses } from '../data/processes'
+import { useForms } from '../store/FormContext'
+import { ROUTING_TABLES, resolveRouting } from '../data/stepRouting'
+import StepRoutingDiagram, { type DiagramStep } from '../components/StepRoutingDiagram'
 
 const { Text, Paragraph } = Typography
 
@@ -336,6 +341,7 @@ interface AvailFormValues {
   processCode?: string | null
   dossierStatus?: DossierStatus | null
   taskDefinitionKey?: string | null
+  formKey?: string | null
   allowedRoleCodes: string[]
   requiredPermissions: string[]
   conditionExpression?: string
@@ -351,6 +357,7 @@ function AvailabilityTab({
   setPolicies: React.Dispatch<React.SetStateAction<ActionAvailabilityPolicy[]>>
 }) {
   const { message } = App.useApp()
+  const { list: formList } = useForms()
   const [editing, setEditing] = useState<ActionAvailabilityPolicy | null>(null)
   const [open, setOpen] = useState(false)
   const [form] = Form.useForm<AvailFormValues>()
@@ -360,11 +367,18 @@ function AvailabilityTab({
     .filter((d) => d.actionType !== 'EXCEPTION')
     .map((d) => ({ value: d.actionCode, label: `${d.actionName} (${d.actionCode})` }))
 
+  // Biểu mẫu để gắn theo action (từ Thư viện biểu mẫu — 1 eForm : n Action).
+  const formOptions = formList.map((f) => ({
+    value: f.key,
+    label: f.loai ? `${f.ten} · ${f.loai}` : f.ten,
+  }))
+  const formTen = (key?: string | null) => (key ? formList.find((f) => f.key === key)?.ten ?? key : null)
+
   const openCreate = () => {
     setEditing(null)
     form.setFieldsValue({
       actionCode: 'ADD_COMMENT', surface: 'DOSSIER_DETAIL', processCode: null, dossierStatus: null, taskDefinitionKey: null,
-      allowedRoleCodes: [], requiredPermissions: [], conditionExpression: '', displayOrder: 50, enabled: true,
+      formKey: null, allowedRoleCodes: [], requiredPermissions: [], conditionExpression: '', displayOrder: 50, enabled: true,
     })
     setOpen(true)
   }
@@ -869,6 +883,78 @@ function InspectorTab({
 }
 
 // ════════════════════════════════════════════════════════════════════════════
+// TAB 5 — Ma trận định tuyến (Routing Matrix) design-time: mỗi bước → nhánh kết quả.
+// Tái dùng StepRoutingDiagram (cùng component với Chi tiết hồ sơ) + resolveRouting.
+// ════════════════════════════════════════════════════════════════════════════
+function RoutingMatrixTab() {
+  const processOptions = Object.keys(ROUTING_TABLES)
+  const [ma, setMa] = useState(processOptions[0])
+  const proc = seedProcesses.find((p) => p.ma === ma)
+  // Bước "tổng hợp" từ taskSteps (design-time, không gắn hồ sơ cụ thể).
+  const steps: DiagramStep[] = (proc?.taskSteps ?? []).map((ts) => ({
+    ten: ts.ten,
+    vaiTro: ts.vaiTro,
+    vaiTroCodes: ts.vaiTroCodes ?? [],
+  }))
+  const table = ROUTING_TABLES[ma] ?? []
+
+  return (
+    <>
+      <Alert
+        type="info"
+        showIcon
+        style={{ marginBottom: 16 }}
+        message="Ma trận định tuyến — (bước, kết quả xử lý) → bước đích / điểm kết thúc"
+        description={
+          <span>
+            Cùng một <Text code>resolveRouting</Text> và <Text code>StepRoutingDiagram</Text> mà màn{' '}
+            <b>Chi tiết hồ sơ</b> dùng ở runtime — ở đây xem theo <b>loại bước</b> (design-time), không
+            gắn hồ sơ cụ thể. Sửa luồng/đích rework tại <Text code>data/stepRouting.ts</Text>.
+          </span>
+        }
+      />
+      <Space style={{ marginBottom: 16 }}>
+        <Text type="secondary">Quy trình</Text>
+        <Select
+          style={{ minWidth: 320 }}
+          value={ma}
+          onChange={setMa}
+          options={processOptions.map((code) => {
+            const p = seedProcesses.find((x) => x.ma === code)
+            return { value: code, label: p ? `${code} · ${p.ten}` : code }
+          })}
+        />
+      </Space>
+
+      {table.length === 0 ? (
+        <Empty description="Quy trình chưa có bảng định tuyến." />
+      ) : (
+        <Row gutter={[16, 16]}>
+          {table.map((r) => {
+            const ts = proc?.taskSteps?.find((t) => t.key === r.stepKey)
+            if (!ts) return null
+            const routing = resolveRouting(proc, steps, ts.ten)
+            return (
+              <Col xs={24} xl={12} key={r.stepKey}>
+                <Card size="small" title={<Space><PartitionOutlined />{ts.ten}</Space>}>
+                  <StepRoutingDiagram
+                    currentStepTen={ts.ten}
+                    currentStepRole={ts.vaiTro}
+                    branches={routing.branches}
+                    steps={steps}
+                    showApprovers={false}
+                  />
+                </Card>
+              </Col>
+            )
+          })}
+        </Row>
+      )}
+    </>
+  )
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // Trang chính — các lớp cấu hình của Action Availability Model.
 // ════════════════════════════════════════════════════════════════════════════
 /**
@@ -900,6 +986,11 @@ export default function ActionStudio() {
       key: 'exception',
       label: <Space><SafetyCertificateOutlined />Exception Policy</Space>,
       children: <ExceptionTab policies={excPolicies} setPolicies={setExcPolicies} />,
+    },
+    {
+      key: 'routing',
+      label: <Space><PartitionOutlined />Ma trận định tuyến</Space>,
+      children: <RoutingMatrixTab />,
     },
     {
       key: 'inspector',

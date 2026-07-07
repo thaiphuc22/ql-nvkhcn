@@ -14,17 +14,32 @@ interface Props {
   xml?: string
   /** Chiều cao vùng xem (mặc định 64vh). */
   height?: string
+  /** Node BPMN của bước HIỆN TẠI — tô sáng đỏ VHT (marker `vht-step-active`). */
+  activeIds?: string[]
+  /** Node ĐÍCH của ngoại lệ đang chờ/áp dụng — viền volcano nét đứt (`vht-step-exception`). */
+  exceptionIds?: string[]
+}
+
+/** Cast tối thiểu cho canvas bpmn-js (add/remove marker + zoom). */
+type BpmnCanvas = {
+  zoom: (m?: string | number) => number
+  addMarker: (id: string, cls: string) => void
+  removeMarker: (id: string, cls: string) => void
 }
 
 /**
  * Xem sơ đồ BPMN CHỈ-ĐỌC (`NavigatedViewer`): kéo/thu-phóng, không palette,
  * không sửa. Dùng cho màn Chi tiết quy trình. Tái dùng skin + toolbar + minimap.
+ *
+ * `activeIds`/`exceptionIds`: tô sáng node của bước hiện tại / đích ngoại lệ —
+ * dùng ở Chi tiết hồ sơ (bản đồ bước↔BPMN: data/bpmnStepMap.ts).
  */
-export default function BpmnViewer({ xml, height = '64vh' }: Props) {
+export default function BpmnViewer({ xml, height = '64vh', activeIds = [], exceptionIds = [] }: Props) {
   const wrapperRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const viewerRef = useRef<NavigatedViewer | null>(null)
   const [isFs, setIsFs] = useState(false)
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
     const el = containerRef.current
@@ -36,12 +51,14 @@ export default function BpmnViewer({ xml, height = '64vh' }: Props) {
       textRenderer: VHT_TEXT_RENDERER,
     } as never)
     viewerRef.current = viewer
+    setReady(false)
     viewer
       .importXML(xml || STARTER_BPMN)
       .then(() => {
         const canvas = viewer.get('canvas') as { zoom: (m?: string | number) => number }
         const fittedZoom = canvas.zoom('fit-viewport')
         if (fittedZoom < 0.42) canvas.zoom(0.42)
+        setReady(true)
       })
       .catch(() => {
         /* XML lỗi — bỏ qua */
@@ -49,8 +66,30 @@ export default function BpmnViewer({ xml, height = '64vh' }: Props) {
     return () => {
       viewer.destroy()
       viewerRef.current = null
+      setReady(false)
     }
   }, [xml])
+
+  // Tô sáng node theo bản đồ bước↔BPMN. Chỉ áp marker cho id có thật trong sơ đồ.
+  useEffect(() => {
+    if (!ready) return
+    const canvas = viewerRef.current?.get('canvas') as BpmnCanvas | undefined
+    const registry = viewerRef.current?.get('elementRegistry') as
+      | { get: (id: string) => unknown }
+      | undefined
+    if (!canvas || !registry) return
+    const applied: { id: string; cls: string }[] = []
+    const mark = (ids: string[], cls: string) =>
+      ids.forEach((id) => {
+        if (registry.get(id)) {
+          canvas.addMarker(id, cls)
+          applied.push({ id, cls })
+        }
+      })
+    mark(activeIds, 'vht-step-active')
+    mark(exceptionIds, 'vht-step-exception')
+    return () => applied.forEach(({ id, cls }) => canvas.removeMarker(id, cls))
+  }, [ready, activeIds, exceptionIds])
 
   useEffect(() => {
     const onFs = () => {

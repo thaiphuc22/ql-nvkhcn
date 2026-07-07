@@ -40,6 +40,7 @@ const FormDesigner = lazy(() => import('../components/FormDesigner'))
 const { Text, Paragraph } = Typography
 
 const LOAI_COLOR: Record<string, string> = {
+  'Soạn thảo': 'purple',
   'Góp ý': 'blue',
   'Nhận xét': 'geekblue',
   'Thẩm định': 'gold',

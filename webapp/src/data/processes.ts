@@ -77,7 +77,7 @@ export const seedProcesses: ProcessDef[] = [
       { v: '1.2', date: '2026-06-28', note: 'Chuẩn hoá bước ký TGĐ' },
     ],
     taskSteps: [
-      { key: 't1', ten: 'Khởi tạo hồ sơ', vaiTro: 'PM/PA/NNC', vaiTroCodes: ['PM', 'PA', 'NNC'], hanhDong: 'Khởi tạo' },
+      { key: 't1', ten: 'Khởi tạo hồ sơ', vaiTro: 'PM/PA/NNC', vaiTroCodes: ['PM', 'PA', 'NNC'], hanhDong: 'Khởi tạo', formKey: 'phieu-chu-truong' },
       { key: 't2', ten: 'Ký duyệt cấp Trung tâm/Khối', vaiTro: 'BGĐ TT/Khối', vaiTroCodes: ['BGD_TT', 'BGD_KHOI'], hanhDong: 'Ký duyệt', formKey: 'phieu-phe-duyet' },
       // Mở cho cả 4 TP theo nhãn hiện hành (BPMN Task_9 chỉ TP_CLKHCN — nới chủ
       // đích để tài khoản tp@ demo được đủ 4 vai), khớp bước seed trong dossiers.ts.
@@ -98,7 +98,7 @@ export const seedProcesses: ProcessDef[] = [
       { v: '1.2', date: '2026-07-06', note: 'Dựng BPMN đầy đủ 10 làn theo sơ đồ nghiệp vụ (bước 1–23)' },
     ],
     taskSteps: [
-      { key: 't1', ten: 'Khởi tạo & dự thảo HS cấp Tập đoàn', vaiTro: 'PM/PA/NNC', vaiTroCodes: ['PM', 'PA', 'NNC'], hanhDong: 'Khởi tạo' },
+      { key: 't1', ten: 'Khởi tạo & dự thảo HS cấp Tập đoàn', vaiTro: 'PM/PA/NNC', vaiTroCodes: ['PM', 'PA', 'NNC'], hanhDong: 'Khởi tạo', formKey: 'phieu-chu-truong' },
       { key: 't2', ten: 'Ký duyệt cấp Trung tâm/Khối', vaiTro: 'BGĐ TT/Khối', vaiTroCodes: ['BGD_TT', 'BGD_KHOI'], hanhDong: 'Ký duyệt', formKey: 'phieu-phe-duyet' },
       { key: 't3', ten: 'Thẩm định HS Chủ trương', vaiTro: 'HĐ KHCN VHT', vaiTroCodes: ['HDKHCN'], hanhDong: 'Thẩm định', formKey: 'phieu-nhan-xet' },
       { key: 't4', ten: 'Lập & ký CV đề nghị thẩm định', vaiTro: 'CQ QLKHCN', vaiTroCodes: ['CQ_QLKHCN'], hanhDong: 'Lập công văn', formKey: 'phieu-phe-duyet' },

@@ -9,8 +9,22 @@ export interface FormMeta {
   ten: string
   moTa: string
   /** Loại biểu mẫu — dùng để nhóm/lọc trong thư viện. */
-  loai?: 'Góp ý' | 'Nhận xét' | 'Thẩm định' | 'Phê duyệt'
+  loai?: 'Soạn thảo' | 'Góp ý' | 'Nhận xét' | 'Thẩm định' | 'Phê duyệt'
   schema: unknown
+}
+
+// Biểu mẫu SOẠN THẢO nội dung hồ sơ chủ trương (RD01) — gắn vào bước Khởi tạo.
+// Không có trường `ketLuan` (không phải bước phê duyệt): chỉ nhập liệu nội dung HS.
+const phieuChuTruongSchema = {
+  type: 'default',
+  id: 'phieu-chu-truong',
+  components: [
+    { type: 'text', id: 'h', text: '## Hồ sơ trình duyệt Chủ trương\n\nChủ nhiệm đề tài soạn nội dung hồ sơ chủ trương nhiệm vụ KHCN.' },
+    { type: 'textarea', id: 'sct', key: 'suCanThiet', label: 'Sự cần thiết / bối cảnh', validate: { required: true } },
+    { type: 'textarea', id: 'mt', key: 'mucTieu', label: 'Mục tiêu & nội dung chính', validate: { required: true } },
+    { type: 'textarea', id: 'sp', key: 'sanPham', label: 'Sản phẩm dự kiến' },
+    { type: 'textfield', id: 'dt', key: 'duToanTong', label: 'Tổng dự toán PL1–PL6 (triệu đồng)', validate: { required: true } },
+  ],
 }
 
 const phieuYKienSchema = {
@@ -73,6 +87,7 @@ const phieuPheDuyetSchema = {
 
 /** Biểu mẫu mẫu nạp sẵn vào thư viện. FormContext sẽ quản lý CRUD trên tập này. */
 export const seedForms: FormMeta[] = [
+  { key: 'phieu-chu-truong', ten: 'Hồ sơ trình duyệt Chủ trương', moTa: 'Soạn nội dung HS chủ trương: sự cần thiết + mục tiêu + dự toán', loai: 'Soạn thảo', schema: phieuChuTruongSchema },
   { key: 'phieu-y-kien', ten: 'Phiếu góp ý', moTa: 'Ghi ý kiến, không kết luận', loai: 'Góp ý', schema: phieuYKienSchema },
   { key: 'phieu-nhan-xet', ten: 'Phiếu nhận xét', moTa: 'Tiêu chí + kết luận + ý kiến', loai: 'Nhận xét', schema: phieuNhanXetSchema },
   { key: 'phieu-dat-chua-dat', ten: 'Phiếu Đạt / Chưa đạt', moTa: 'Kết luận Đạt/Chưa đạt + lý do', loai: 'Thẩm định', schema: phieuDatChuaDatSchema },

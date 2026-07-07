@@ -5,6 +5,7 @@
 // chính: Comment/Tải/Xem lịch sử) · EXCEPTION (đổi đường đi chuẩn, cần duyệt riêng).
 
 import { EXCEPTION_TYPE_LABEL, type ExceptionType } from './exceptions'
+import type { RouteOutcome } from './stepRouting'
 
 export type ActionType = 'STANDARD' | 'SUPPORT' | 'EXCEPTION'
 
@@ -12,6 +13,12 @@ export interface ActionDefinition {
   actionCode: string
   actionName: string
   actionType: ActionType
+  /**
+   * (D10) Với STANDARD action theo outcome: nhãn kết quả mà action này đại diện.
+   * Đích đến KHÔNG nằm ở đây — vẫn resolve qua `resolveRouting` (một nguồn sự thật
+   * chung với sơ đồ nhánh). Action chỉ "khai báo" mình là APPROVE/RETURN/REJECT/SUBMIT.
+   */
+  outcome?: RouteOutcome
   requiresReason?: boolean
   requiresEvidence?: boolean
   requiresConfirm?: boolean
@@ -20,7 +27,20 @@ export interface ActionDefinition {
 
 export const STANDARD_ACTION_CODES = {
   SUBMIT: 'SUBMIT',
+  /** @deprecated (D10) Action "Xử lý" gộp — đang được thay bằng OUTCOME_ACTION_CODES.
+   *  Giữ tạm để DossierDetail/TaskFormModal cũ còn chạy tới khi rewire UI (increment 2). */
   PROCESS_STEP: 'PROCESS_STEP',
+} as const
+
+/**
+ * (D10) Mỗi hướng xử lý của một bước phê duyệt là MỘT action STANDARD độc lập —
+ * thay cho một "PROCESS_STEP" gộp. Tập hữu hạn theo outcome (không nổ theo user task).
+ * Form của từng action gắn trên Availability Policy (1 eForm : n Action).
+ */
+export const OUTCOME_ACTION_CODES = {
+  APPROVE_STEP: 'APPROVE_STEP',
+  RETURN_STEP: 'RETURN_STEP',
+  REJECT_STEP: 'REJECT_STEP',
 } as const
 
 /** Support actions (doc mục 6 loại 2) — không đổi workflow chính; nguồn hiển thị = Permission + Dossier Status. */
@@ -42,6 +62,7 @@ const standardActions: ActionDefinition[] = [
     actionCode: STANDARD_ACTION_CODES.SUBMIT,
     actionName: 'Gửi duyệt',
     actionType: 'STANDARD',
+    outcome: 'SUBMIT',
     requiresConfirm: false,
     active: true,
   },
@@ -50,6 +71,32 @@ const standardActions: ActionDefinition[] = [
     actionName: 'Xử lý',
     actionType: 'STANDARD',
     requiresConfirm: false,
+    active: true,
+  },
+  // (D10) 3 outcome action — nút "chính là quyết định"; form riêng lấy qua policy.
+  {
+    actionCode: OUTCOME_ACTION_CODES.APPROVE_STEP,
+    actionName: 'Đồng ý duyệt',
+    actionType: 'STANDARD',
+    outcome: 'APPROVE',
+    requiresConfirm: true,
+    active: true,
+  },
+  {
+    actionCode: OUTCOME_ACTION_CODES.RETURN_STEP,
+    actionName: 'Yêu cầu điều chỉnh',
+    actionType: 'STANDARD',
+    outcome: 'RETURN',
+    requiresReason: true,
+    active: true,
+  },
+  {
+    actionCode: OUTCOME_ACTION_CODES.REJECT_STEP,
+    actionName: 'Từ chối duyệt',
+    actionType: 'STANDARD',
+    outcome: 'REJECT',
+    requiresReason: true,
+    requiresConfirm: true,
     active: true,
   },
 ]

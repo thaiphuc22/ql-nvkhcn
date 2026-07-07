@@ -69,6 +69,20 @@ Each entry: what was decided, when, and why.
 **Source**: `webapp/src/data/roles.ts`, `users.ts`, `permissions.ts` (currently mock/frontend-only — real enforcement must move server-side, see F3).
 **Status**: LOCKED (shape) — enforcement layer still open, see Foundation 3.
 
+## D10 — eForm binds to the Action layer (per-outcome actions, form-by-reference on Availability Policy)
+**Date**: 2026-07-07
+**Decision**: Evolves the form-binding model from D6. Instead of one form bound to each UserTask + one generic `PROCESS_STEP` action, the model becomes:
+
+1. **Per-outcome STANDARD actions.** Replace the single generic `PROCESS_STEP` with a small, fixed, semantic set of outcome actions — `SUBMIT`, `APPROVE_STEP`, `RETURN_STEP`, `REJECT_STEP` — reused across every step via policy. This generalizes per *outcome* (bounded, meaningful), **not** per user task (which would explode the Registry — explicitly rejected). A "Phê duyệt" step thus surfaces 3 buttons (Đồng ý / Từ chối / Yêu cầu điều chỉnh), not one "Xử lý".
+2. **eForm binds on `ActionAvailabilityPolicy` via `formKey`**, keyed by (action × `taskDefinitionKey` × `processCode` × `dossierStatus`). All form binding is consolidated into **Action Studio**; the "Biểu mẫu theo bước" screen no longer owns a second binding path. Form Library remains the single form authoring/CRUD source.
+3. **Binding is by reference, never embed → `1 eForm : n Action`.** Policy stores a `formKey` pointing into Form Library; many policy rows/actions may reference the same form (Action→Form is n:1, Form→Action is 1:n). Editing a form once propagates to all actions. Granularity is **whole-form-per-outcome** (option a): no base-form + delta composition; if outcomes share fields the schema content is duplicated at authoring time, but a shared form is referenced (not copied) when outcomes are identical.
+4. **Actions carry an `outcome` tag only; targets stay in `stepRouting.ts`.** An action tags itself `SUBMIT|APPROVE|RETURN|REJECT`; the destination step is still resolved by `resolveRouting`. Routing table remains the sole owner of "đi đâu", shared by both buttons and `StepRoutingDiagram` — preserves the flow-view single-source-of-truth. Forms drop the `ketLuan` decision field (the button *is* the decision; the form is only supporting data).
+5. **BPMN ↔ Action bridge = a pull-based "Đồng bộ/Đối soát từ BPMN" in Action Studio.** Admin-triggered (not an auto push-on-deploy) to avoid orphan churn across Camunda process versions. It scaffolds one policy row per outcome branch of each user task and runs a two-way coverage check: 🔴 user task with no enabled action (fail-closed = stuck step), 🟡 policy present but form/role unfilled, ⚪ policy → `taskDefinitionKey` no longer in BPMN. A "bỏ qua có chủ đích" flag suppresses intentional no-button tasks. Because the system is fail-closed, this coverage guarantee is a **correctness** mechanism, not just convenience.
+
+**Rationale**: Different outcomes genuinely need different eForms (approve = ký/ý kiến, reject = lý do bắt buộc, adjust = sửa gì + trả về đâu). The old single-form + routing-radio approach encoded the outcome twice (form `ketLuan` field *and* routing) and bolted routing UI onto the modal. Splitting removes the double representation and lets availability/tone/form be configured per outcome, while the outcome-tag + `resolveRouting` guardrail keeps buttons and the branch diagram from drifting.
+**Source**: Design session 2026-07-07 (BA/PM). Affects `webapp/src/pages/ActionStudio.tsx`, `data/actionRegistry.ts`, `data/actionAvailabilityPolicy.ts`, `components/TaskFormModal.tsx`, `data/stepRouting.ts`. Extends D6; consistent with D2/D3 (custom UI owns rendering; Camunda holds no business data) and the flow-view decision.
+**Status**: LOCKED (model shape) — implementation is frontend-mock follow-up work, not yet started.
+
 ---
 
 ## Open decisions blocking Foundation 1 (Project Scaffold)

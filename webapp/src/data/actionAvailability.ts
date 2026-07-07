@@ -10,6 +10,7 @@ import {
   type ActionUiGroup,
 } from './actionPresentation'
 import { ACTION_REGISTRY, EXCEPTION_ACTION_CODE } from './actionRegistry'
+import type { RouteOutcome } from './stepRouting'
 import {
   ACTION_AVAILABILITY_POLICIES,
   resolveActionAvailability,
@@ -39,6 +40,10 @@ export interface AvailableAction {
   requiresReason?: boolean
   requiresEvidence?: boolean
   requiresConfirm?: boolean
+  /** (D10) Nhãn kết quả của action — đích đến vẫn do resolveRouting quyết, không nằm ở đây. */
+  outcome?: RouteOutcome
+  /** (D10) eForm mà UI mở khi bấm action này — tham chiếu Thư viện biểu mẫu (1 eForm : n Action). */
+  formKey?: string | null
   /** Minh hoạ policy thật sẽ kiểm tra gì — chưa evaluate conditionExpression. */
   conditionExpression?: string
   matchedPolicyId?: string
@@ -52,6 +57,7 @@ function toAvailableAction(
   conditionExpression?: string,
   displayOrder?: number,
   matchedPolicyId?: string,
+  formKey?: string | null,
 ): AvailableAction {
   const def = ACTION_REGISTRY[actionCode]
   const presentation = getActionPresentation(presentations, actionCode)
@@ -69,6 +75,8 @@ function toAvailableAction(
     requiresReason: def.requiresReason,
     requiresEvidence: def.requiresEvidence,
     requiresConfirm: def.requiresConfirm,
+    outcome: def.outcome,
+    formKey,
     conditionExpression,
     matchedPolicyId,
   }
@@ -140,6 +148,7 @@ export function getAvailableActions(input: AvailableActionsInput): AvailableActi
         decision.matched?.conditionExpression,
         decision.matched?.displayOrder,
         decision.matched?.id,
+        decision.matched?.formKey,
       ),
     )
 
