@@ -47,12 +47,42 @@ export const SUPPORT_ACTION_CODES = {
   VIEW_HISTORY: 'VIEW_HISTORY',
 } as const
 
+/**
+ * (docs/research/action-registry-list.md — "Đề xuất Support Actions", Phase 2) Seed-only:
+ * có mặt trong Action Registry/"Danh mục nút" để admin thấy và cấu hình dần, nhưng KHÔNG có
+ * `ActionAvailabilityPolicy` nào tham chiếu các mã này — nên chưa xuất hiện trên hồ sơ/worklist
+ * thật cho tới khi ai đó tạo policy cho từng bước.
+ */
+export const PROPOSED_SUPPORT_ACTION_CODES = {
+  UPLOAD_ATTACHMENT: 'UPLOAD_ATTACHMENT',
+  VIEW_DOCUMENTS: 'VIEW_DOCUMENTS',
+  EXPORT_PDF: 'EXPORT_PDF',
+  PRINT_DOSSIER: 'PRINT_DOSSIER',
+  VIEW_AUDIT: 'VIEW_AUDIT',
+} as const
+
 /** actionCode EXCEPTION ↔ ExceptionType (exceptions.ts) — 1-1, không phát minh taxonomy mới. */
 export const EXCEPTION_ACTION_CODE: Record<ExceptionType, string> = {
   BypassCouncil: 'REQUEST_BYPASS_COUNCIL',
   JumpToHigherApprover: 'REQUEST_JUMP_TO_HIGHER_APPROVER',
   SkipStep: 'REQUEST_SKIP_STEP',
 }
+
+/**
+ * (docs/research/action-registry-list.md — "Đề xuất Exception Actions", Phase 3) Seed-only,
+ * cùng lý do như PROPOSED_SUPPORT_ACTION_CODES. Khác với `EXCEPTION_ACTION_CODE` ở trên, các
+ * mã này CHƯA có `ExceptionType` tương ứng trong `exceptions.ts` nên chưa đi qua được
+ * `getAvailableActions`/`getDebugActions` (chỉ lặp qua `EXCEPTION_ACTION_CODE`) — chỉ hiển
+ * thị ở tab "Danh mục nút" (Action Studio) cho tới khi có ExceptionType + Exception Policy
+ * riêng cho từng mã.
+ */
+export const PROPOSED_EXCEPTION_ACTION_CODES = {
+  REQUEST_ADD_REVIEWER: 'REQUEST_ADD_REVIEWER',
+  REQUEST_REPLACE_APPROVER: 'REQUEST_REPLACE_APPROVER',
+  REQUEST_REOPEN_STEP: 'REQUEST_REOPEN_STEP',
+  REQUEST_MANUAL_COMPLETION: 'REQUEST_MANUAL_COMPLETION',
+  REQUEST_EMERGENCY_APPROVAL: 'REQUEST_EMERGENCY_APPROVAL',
+} as const
 
 const standardActions: ActionDefinition[] = [
   {
@@ -116,6 +146,45 @@ const supportActions: ActionDefinition[] = [
   },
 ]
 
+/** Seed Phase 2 — xem PROPOSED_SUPPORT_ACTION_CODES. */
+const proposedSupportActions: ActionDefinition[] = [
+  {
+    actionCode: PROPOSED_SUPPORT_ACTION_CODES.UPLOAD_ATTACHMENT,
+    actionName: 'Tải lên tài liệu',
+    actionType: 'SUPPORT',
+    requiresConfirm: false,
+    active: true,
+  },
+  {
+    actionCode: PROPOSED_SUPPORT_ACTION_CODES.VIEW_DOCUMENTS,
+    actionName: 'Xem tài liệu',
+    actionType: 'SUPPORT',
+    requiresConfirm: false,
+    active: true,
+  },
+  {
+    actionCode: PROPOSED_SUPPORT_ACTION_CODES.EXPORT_PDF,
+    actionName: 'Xuất PDF',
+    actionType: 'SUPPORT',
+    requiresConfirm: false,
+    active: true,
+  },
+  {
+    actionCode: PROPOSED_SUPPORT_ACTION_CODES.PRINT_DOSSIER,
+    actionName: 'In hồ sơ',
+    actionType: 'SUPPORT',
+    requiresConfirm: false,
+    active: true,
+  },
+  {
+    actionCode: PROPOSED_SUPPORT_ACTION_CODES.VIEW_AUDIT,
+    actionName: 'Xem audit chi tiết',
+    actionType: 'SUPPORT',
+    requiresConfirm: false,
+    active: true,
+  },
+]
+
 const exceptionActions: ActionDefinition[] = (
   Object.entries(EXCEPTION_ACTION_CODE) as [ExceptionType, string][]
 ).map(([exceptionType, actionCode]) => ({
@@ -128,6 +197,61 @@ const exceptionActions: ActionDefinition[] = (
   active: true,
 }))
 
+/** Seed Phase 3 — xem PROPOSED_EXCEPTION_ACTION_CODES. */
+const proposedExceptionActions: ActionDefinition[] = [
+  {
+    actionCode: PROPOSED_EXCEPTION_ACTION_CODES.REQUEST_ADD_REVIEWER,
+    actionName: 'Yêu cầu bổ sung người thẩm định',
+    actionType: 'EXCEPTION',
+    requiresReason: true,
+    requiresEvidence: false,
+    requiresConfirm: true,
+    active: true,
+  },
+  {
+    actionCode: PROPOSED_EXCEPTION_ACTION_CODES.REQUEST_REPLACE_APPROVER,
+    actionName: 'Yêu cầu thay người xử lý/phê duyệt',
+    actionType: 'EXCEPTION',
+    requiresReason: true,
+    requiresEvidence: false,
+    requiresConfirm: true,
+    active: true,
+  },
+  {
+    actionCode: PROPOSED_EXCEPTION_ACTION_CODES.REQUEST_REOPEN_STEP,
+    actionName: 'Yêu cầu mở lại bước đã xử lý',
+    actionType: 'EXCEPTION',
+    requiresReason: true,
+    requiresEvidence: true,
+    requiresConfirm: true,
+    active: true,
+  },
+  {
+    actionCode: PROPOSED_EXCEPTION_ACTION_CODES.REQUEST_MANUAL_COMPLETION,
+    actionName: 'Yêu cầu hoàn tất thủ công',
+    actionType: 'EXCEPTION',
+    requiresReason: true,
+    requiresEvidence: true,
+    requiresConfirm: true,
+    active: true,
+  },
+  {
+    actionCode: PROPOSED_EXCEPTION_ACTION_CODES.REQUEST_EMERGENCY_APPROVAL,
+    actionName: 'Yêu cầu phê duyệt khẩn',
+    actionType: 'EXCEPTION',
+    requiresReason: true,
+    requiresEvidence: false,
+    requiresConfirm: true,
+    active: true,
+  },
+]
+
 export const ACTION_REGISTRY: Record<string, ActionDefinition> = Object.fromEntries(
-  [...standardActions, ...supportActions, ...exceptionActions].map((a) => [a.actionCode, a]),
+  [
+    ...standardActions,
+    ...supportActions,
+    ...proposedSupportActions,
+    ...exceptionActions,
+    ...proposedExceptionActions,
+  ].map((a) => [a.actionCode, a]),
 )

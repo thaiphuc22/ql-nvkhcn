@@ -1,15 +1,19 @@
 import { useMemo, useState } from 'react'
 import {
+  Button,
   Col,
   Row,
   Segmented,
+  Space,
   Tag,
   Typography,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
+import { PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { type Dossier, type DossierStatus } from '../data/dossiers'
 import { useDossiers } from '../store/DossierContext'
+import { usePermissions } from '../store/AuthContext'
 import { PageHeader, StatCard, DossierStatusTag, FilterBar, EntityTable, LIST_SCROLL_Y } from '../components/ui'
 import HelpButton from '../components/HelpButton'
 
@@ -18,6 +22,7 @@ const { Text } = Typography
 export default function DossierList() {
   const navigate = useNavigate()
   const { list } = useDossiers()
+  const { canCreateHoSo } = usePermissions()
   const [q, setQ] = useState('')
   const [tab, setTab] = useState<DossierStatus | 'all'>('all')
 
@@ -90,7 +95,23 @@ export default function DossierList() {
 
   return (
     <div>
-      <PageHeader title="Hồ sơ Nhiệm vụ KHCN" style={{ marginBottom: 0 }} extra={<HelpButton section="hoso" />} />
+      <PageHeader
+        title="Hồ sơ Nhiệm vụ KHCN"
+        style={{ marginBottom: 0 }}
+        extra={
+          <Space>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              disabled={!canCreateHoSo}
+              onClick={() => navigate('/ho-so/tao-moi')}
+            >
+              Tạo hồ sơ
+            </Button>
+            <HelpButton section="hoso" />
+          </Space>
+        }
+      />
 
       <Row gutter={14} style={{ margin: '18px 0' }}>
         <Col xs={12} md={6}><StatCard title="Khởi tạo" value={stats.draft} color="#8593a3" /></Col>

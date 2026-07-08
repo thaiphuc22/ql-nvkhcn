@@ -1,15 +1,17 @@
 // EPIC06 — Approval Matrix: bản đồ Bước → Slot + dựng context runtime (Slice G,
-// docs/research/approval-matrix-refactor-plan.md §4.G / §8).
+// docs/research/approval-matrix-refactor-plan.md §4.G / §8; Slice D,
+// docs/research/approval-slot-catalog-plan.md §4.D).
 //
-// ⚠️ GIẢ ĐỊNH DEMO (câu hỏi mở plan §8): slot phê duyệt nên đến từ BPMN extension
-// property / task metadata do Camunda cấp. Ở mock chưa có nguồn đó, nên suy slot từ
-// candidateGroups của bước. CHỈ bước map được slot mới đi qua resolveApprovers; bước
-// không map giữ nguyên resolveGroups (tránh bịa slot/hội đồng sai). Khi có BPMN thật,
-// thay bảng này bằng đọc metadata — phần còn lại của luồng không đổi.
+// Nguồn slot ưu tiên: `needRole` thật ghi trên User Task qua Properties Panel
+// (zeebe:TaskHeaders, Slice C) — hình chiếu mock ở `TaskStep.needRole`
+// (data/processes.ts). CHỈ khi bước chưa được re-author (`needRole` rỗng) mới suy
+// slot từ candidateGroups (ROLE_TO_SLOT) như cách làm cũ — giữ các quy trình chưa
+// migrate vẫn chạy được. Bước không suy được slot bằng cả 2 cách giữ nguyên
+// resolveGroups (tránh bịa slot/hội đồng sai).
 
 import { capCode, parseVND, type ResolveContext, type SlotCode } from './approvalMatrix'
 
-/** candidateGroup của bước → slot phê duyệt (suy diễn mock). */
+/** candidateGroup của bước → slot phê duyệt (suy diễn mock — chỉ dùng khi bước chưa có needRole thật). */
 const ROLE_TO_SLOT: Record<string, SlotCode> = {
   CQ_KHCN: 'THAM_DINH',
   CQ_KHCN_TD: 'THAM_DINH',
@@ -20,8 +22,13 @@ const ROLE_TO_SLOT: Record<string, SlotCode> = {
   CQNV_TD: 'PHE_DUYET',
 }
 
-/** Slot của một bước theo candidateGroups; null = không suy được (giữ resolveGroups). */
-export function slotForStep(vaiTroCodes: string[]): SlotCode | null {
+/**
+ * Slot của một bước: ưu tiên `needRole` thật (Need Role trên User Task); rơi về
+ * suy diễn theo candidateGroups nếu bước chưa được re-author. Null = không suy
+ * được bằng cả 2 cách (giữ resolveGroups).
+ */
+export function slotForStep(vaiTroCodes: string[], needRole?: string | null): SlotCode | null {
+  if (needRole) return needRole
   for (const c of vaiTroCodes) {
     if (ROLE_TO_SLOT[c]) return ROLE_TO_SLOT[c]
   }
@@ -38,8 +45,9 @@ export function buildApprovalContext(
   duToan: string,
   vaiTroCodes: string[],
   ngay?: string,
+  needRole?: string | null,
 ): ResolveContext | null {
-  const slot = slotForStep(vaiTroCodes)
+  const slot = slotForStep(vaiTroCodes, needRole)
   if (!slot) return null
   const capC = capCode(cap)
   return {

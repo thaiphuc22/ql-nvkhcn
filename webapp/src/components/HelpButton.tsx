@@ -1,6 +1,5 @@
-import { Button, Tooltip } from 'antd';
-import { QuestionCircleOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { Button, Tooltip } from "antd";
+import { QuestionCircleOutlined } from "@ant-design/icons";
 
 export interface HelpButtonProps {
   /** Section key trên trang trợ giúp (vd: "hoso", "nhiemvu", "quytrinh"). */
@@ -10,21 +9,20 @@ export interface HelpButtonProps {
 }
 
 /**
- * Nút "?" — mở trang Trợ giúp đến đúng section tương ứng.
+ * Nút "?" — mở trang Trợ giúp đến đúng section tương ứng trong tab mới.
  * Dùng trong `extra` của PageHeader hoặc bất kỳ đâu cần hỗ trợ ngữ cảnh.
  */
 export default function HelpButton({ section, tooltip }: HelpButtonProps) {
-  const navigate = useNavigate();
-  const href = section ? `/tro-giup?section=${section}` : '/tro-giup';
+  const href = section ? `/tro-giup?section=${section}` : "/tro-giup";
   return (
-    <Tooltip title={tooltip ?? 'Hướng dẫn sử dụng'}>
+    <Tooltip title={tooltip ?? "Hướng dẫn sử dụng"}>
       <Button
         type="text"
         shape="circle"
         icon={<QuestionCircleOutlined />}
-        onClick={() => navigate(href)}
+        onClick={() => window.open(href, "_blank")}
         aria-label="Trợ giúp"
-        style={{ color: 'var(--vht-red, #bf0027)' }}
+        style={{ color: "var(--vht-red, #bf0027)" }}
       />
     </Tooltip>
   );

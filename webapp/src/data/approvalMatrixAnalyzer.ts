@@ -5,7 +5,8 @@
 // che khuất (shadow) hoặc slot thiếu fallback là cơ chế ĐÚNG-SAI, không chỉ tiện lợi.
 // Analyzer thuần logic, không UI — trả cảnh báo để bảng/modal hiển thị.
 
-import { APPROVAL_SLOTS, type ApprovalRule, type SlotCode } from './approvalMatrix'
+import type { ApprovalRule, SlotCode } from './approvalMatrix'
+import { APPROVAL_SLOTS } from './approvalSlotCatalog'
 
 export type WarningLevel = 'error' | 'warning' | 'info'
 
@@ -54,8 +55,8 @@ export function analyzeRules(rules: ApprovalRule[]): RuleWarning[] {
     }
   }
 
-  // Phân tích theo slot trên luật ĐANG BẬT.
-  for (const { code: slot } of APPROVAL_SLOTS) {
+  // Phân tích theo slot trên luật ĐANG BẬT (chỉ slot còn active trong catalog).
+  for (const { code: slot } of APPROVAL_SLOTS.filter((s) => s.trangThai === 'active')) {
     const enabled = rules.filter((r) => r.slot === slot && r.enabled)
     const sorted = [...enabled].sort((a, b) => a.priority - b.priority)
 

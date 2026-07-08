@@ -21,6 +21,7 @@ import { PERMISSIONS, type ActionAvailabilityPolicy } from './actionAvailability
 import type { ProcessDef, TaskStep } from './processes'
 import { ROUTING_TABLES, type RouteOutcome } from './stepRouting'
 import { OUTCOME_ACTION_CODES, STANDARD_ACTION_CODES } from './actionRegistry'
+import { APPROVAL_SLOTS } from './approvalSlotCatalog'
 
 const SURFACE: ActionSurface = 'DOSSIER_DETAIL'
 /** Nhánh trả lại / từ chối dùng phiếu ý kiến (khớp AP-07/08 — 1 eForm : n Action). */
@@ -88,6 +89,15 @@ export interface TaskReconcile {
   outcomes: OutcomeCoverage[]
   status: ReconcileStatus
   reason: string
+  /** Need Role của bước (nếu đã re-author qua Properties Panel — Slice C). */
+  needRole?: string
+  /**
+   * 🟡 khi có needRole nhưng KHÔNG khớp mã nào trong Danh mục Slot đang active
+   * (Slice D, docs/research/approval-slot-catalog-plan.md §4.D) — vd gõ nhầm mã,
+   * hoặc slot đã bị vô hiệu hoá trong catalog. Null = không có needRole (chưa
+   * re-author — không phải lỗi) hoặc needRole hợp lệ.
+   */
+  needRoleWarning: string | null
 }
 
 export interface OrphanPolicy {
@@ -113,6 +123,15 @@ export interface ReconcileHealthSummary {
   unfilledStepCount: number
   orphanPolicyCount: number
   okStepCount: number
+  /** Số bước có needRole nhưng không khớp slot active nào trong catalog (Slice D). */
+  needRoleWarningCount: number
+}
+
+/** 🟡 nếu bước có needRole nhưng không khớp mã slot active nào trong catalog; null nếu ổn. */
+function needRoleWarningFor(ts: TaskStep): string | null {
+  if (!ts.needRole) return null
+  const known = APPROVAL_SLOTS.some((s) => s.code === ts.needRole && s.trangThai === 'active')
+  return known ? null : `Need Role "${ts.needRole}" không khớp slot active nào trong Danh mục Slot.`
 }
 
 /** Các quy trình đối soát được = có taskSteps + bảng routing (nguồn outcome). */
@@ -200,6 +219,8 @@ export function reconcileProcess(
         outcomes,
         status: base.status,
         reason: base.reason,
+        needRole: ts.needRole,
+        needRoleWarning: needRoleWarningFor(ts),
       }
     })
     // Chỉ giữ các bước thực sự có nhánh outcome (bỏ bước không nằm trong bảng routing).
@@ -245,6 +266,7 @@ export function summarizeReconcileHealth(
           (count, task) => count + task.outcomes.filter((outcome) => outcome.matched && !outcome.taskSpecific).length,
           0,
         )
+        summary.needRoleWarningCount += recon.tasks.filter((task) => task.needRoleWarning).length
         return summary
       },
       {
@@ -254,6 +276,7 @@ export function summarizeReconcileHealth(
         unfilledStepCount: 0,
         orphanPolicyCount: 0,
         okStepCount: 0,
+        needRoleWarningCount: 0,
       },
     )
 }

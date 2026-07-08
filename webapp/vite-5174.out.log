@@ -1,0 +1,179 @@
+
+> qtkhcn-webapp@0.1.0 dev
+> vite --host 127.0.0.1 --port 5174
+
+Port 5174 is in use, trying another one...
+Port 5175 is in use, trying another one...
+
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m905[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m5176[22m/[39m
+[2m8:11:50 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:18:48 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ApprovalMatrix.tsx[22m
+[2m8:18:54 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ApprovalMatrix.tsx[22m
+[2m8:19:04 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ApprovalMatrix.tsx[22m
+[2m8:19:04 PM[22m [36m[1m[vite][22m[39m [33mhmr invalidate [39m[2m/src/pages/ApprovalMatrix.tsx[22m Could not Fast Refresh (export removed)
+[2m8:19:04 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx[22m
+[2m8:19:23 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ApprovalMatrix.tsx[22m
+[2m8:19:23 PM[22m [36m[1m[vite][22m[39m [33mhmr invalidate [39m[2m/src/pages/ApprovalMatrix.tsx[22m Could not Fast Refresh ("true" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m8:19:23 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx[22m
+[2m8:19:31 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ApprovalMatrix.tsx[22m
+[2m8:19:31 PM[22m [36m[1m[vite][22m[39m [33mhmr invalidate [39m[2m/src/pages/ApprovalMatrix.tsx[22m Could not Fast Refresh ("true" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m8:19:31 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx[22m
+[2m8:20:17 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ApprovalMatrix.tsx[22m
+[2m8:20:18 PM[22m [36m[1m[vite][22m[39m [33mhmr invalidate [39m[2m/src/pages/ApprovalMatrix.tsx[22m Could not Fast Refresh (new export)
+[2m8:20:18 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx[22m
+[2m8:32:21 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/AssignmentBuilder.tsx[22m
+[2m8:33:00 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/AssignmentBuilder.tsx[22m
+[2m8:33:01 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/AssignmentBuilder.tsx[22m
+[2m8:33:11 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ApprovalMatrix.tsx[22m
+[2m8:34:08 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ApprovalMatrix.tsx[22m
+[2m8:43:43 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ApprovalMatrix.tsx[22m
+[2m8:44:08 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ApprovalMatrix.tsx[22m
+[2m8:44:20 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ApprovalMatrix.tsx[22m
+[2m8:44:24 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:44:28 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:44:40 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:44:45 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ApprovalMatrix.tsx[22m
+[2m8:44:54 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ApprovalMatrix.tsx[22m
+[2m8:45:17 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:45:23 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ApprovalMatrix.tsx[22m
+[2m8:45:31 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:45:42 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/AssignmentBuilder.tsx[22m
+[2m8:45:47 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/AssignmentBuilder.tsx[22m
+[2m8:45:53 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/AssignmentBuilder.tsx[22m
+[2m8:45:59 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:46:05 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/AssignmentBuilder.tsx[22m
+[2m8:46:11 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/AssignmentBuilder.tsx[22m
+[2m8:46:18 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/AssignmentBuilder.tsx[22m
+[2m8:46:22 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/AssignmentBuilder.tsx[22m
+[2m8:46:57 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:47:12 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:47:23 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:47:36 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:47:48 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:49:10 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:50:05 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:50:07 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ApprovalMatrix.tsx[22m
+[2m8:50:14 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:50:14 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:50:21 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ApprovalMatrix.tsx[22m
+[2m8:50:29 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:50:41 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ApprovalMatrix.tsx[22m
+[2m8:51:35 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:51:38 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:52:40 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ApprovalMatrix.tsx[22m
+[2m8:52:47 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:52:52 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:52:56 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ApprovalMatrix.tsx[22m
+[2m8:53:21 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ApprovalMatrix.tsx[22m
+[2m8:53:43 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:53:45 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:53:52 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ApprovalMatrix.tsx[22m
+[2m8:54:57 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:55:11 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:55:17 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:55:21 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:55:23 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:55:42 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:55:50 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:56:04 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:56:12 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:57:46 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:58:05 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:58:09 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:58:11 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:59:01 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:59:17 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:59:29 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:59:30 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m8:59:44 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m9:00:02 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m9:00:16 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m9:00:26 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m9:00:43 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m9:18:52 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m9:19:27 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m9:19:41 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m9:19:56 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m9:28:03 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m9:28:24 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m9:32:08 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m9:32:27 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m9:32:57 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m9:33:14 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m9:33:43 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m9:34:24 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m9:34:59 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m9:50:16 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m9:53:02 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m9:53:26 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m9:53:36 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m9:53:55 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m9:54:15 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m9:54:29 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m9:55:38 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:02:50 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:15:50 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:23:24 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/store/ExceptionContext.tsx, /src/pages/ActionStudio.tsx[22m
+[2m10:23:44 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/store/ExceptionContext.tsx, /src/pages/ActionStudio.tsx[22m
+[2m10:23:56 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:26:20 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:26:23 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:26:30 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:26:39 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:26:40 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:27:43 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:27:44 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:27:56 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:27:59 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:28:04 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:28:13 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:28:13 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:30:20 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:30:53 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:31:00 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:31:05 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:31:11 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:39:51 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx[22m
+[2m10:39:59 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx[22m
+[2m10:40:07 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx[22m
+[2m10:40:13 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx[22m
+[2m10:41:37 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/AssignmentBuilder.tsx[22m
+[2m10:41:37 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:41:37 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx[22m
+[2m10:41:37 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/AssignmentBuilder.tsx[22m
+[2m10:41:37 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/HelpButton.tsx[22m
+[2m10:41:37 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:41:37 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:41:37 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:41:37 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/store/ExceptionContext.tsx, /src/pages/ActionStudio.tsx[22m
+[2m10:41:37 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/store/ApprovalMatrixContext.tsx, /src/pages/ApprovalMatrix.tsx, /src/components/StepRoutingDiagram.tsx[22m
+[2m10:41:37 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ApprovalMatrix.tsx[22m
+[2m10:41:37 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx[22m
+[2m10:41:37 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:41:37 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:41:37 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/store/DossierContext.tsx, /src/store/IntegrationMappingContext.tsx, /src/components/ui/StatusTag.tsx[22m
+[2m10:41:37 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/store/ProcessContext.tsx, /src/components/ui/StatusTag.tsx, /src/pages/ProcessCatalog.tsx, /src/pages/ActionStudio.tsx[22m
+[2m10:41:37 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:41:37 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/main.tsx[22m
+[2m10:41:37 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ApprovalMatrix.tsx[22m
+[2m10:41:37 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/main.tsx[22m
+[2m10:42:20 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/AssignmentBuilder.tsx[22m
+[2m10:42:20 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:42:20 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/HelpButton.tsx[22m
+[2m10:42:20 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx[22m
+[2m10:42:20 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx[22m
+[2m10:42:20 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:42:20 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:42:20 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:42:20 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/store/ExceptionContext.tsx, /src/pages/ActionStudio.tsx[22m
+[2m10:42:20 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/store/ApprovalMatrixContext.tsx, /src/pages/ApprovalMatrix.tsx, /src/components/StepRoutingDiagram.tsx[22m
+[2m10:42:20 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ApprovalMatrix.tsx[22m
+[2m10:42:20 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:42:20 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/store/DossierContext.tsx, /src/store/IntegrationMappingContext.tsx, /src/components/ui/StatusTag.tsx[22m
+[2m10:42:20 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/store/ProcessContext.tsx, /src/components/ui/StatusTag.tsx, /src/pages/ProcessCatalog.tsx, /src/pages/ActionStudio.tsx[22m
+[2m10:42:20 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:42:20 PM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/main.tsx[22m
+[2m10:42:20 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ActionStudio.tsx[22m
+[2m10:42:20 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/ApprovalMatrix.tsx[22m

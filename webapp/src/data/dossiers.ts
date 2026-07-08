@@ -122,6 +122,15 @@ export function joinDossiers(
   })
 }
 
+export function nextHoSoId(existing: Pick<HoSo, 'id'>[], year = 2026): string {
+  let max = 0
+  for (const h of existing) {
+    const m = /HS-\d{4}-(\d+)/.exec(h.id)
+    if (m) max = Math.max(max, parseInt(m[1], 10))
+  }
+  return `HS-${year}-${String(max + 1).padStart(3, '0')}`
+}
+
 /**
  * Dựng hồ sơ MỚI ở trạng thái "Khởi tạo" (draft) — CHƯA gắn quy trình.
  * Hồ sơ Chủ trương SINH RA CÙNG Nhiệm vụ mới (RD01 · "Sự kiện bắt đầu: Khởi tạo

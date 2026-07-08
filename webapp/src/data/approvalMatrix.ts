@@ -20,6 +20,9 @@ import {
   type ConditionGroup,
   type EvalContext,
 } from './approvalConditions'
+import type { SlotCode } from './approvalSlotCatalog'
+
+export type { SlotCode } from './approvalSlotCatalog'
 
 export const VND = new Intl.NumberFormat('vi-VN')
 
@@ -30,24 +33,9 @@ export const VND = new Intl.NumberFormat('vi-VN')
  */
 export const DEMO_TODAY = '2026-07-07'
 
-/**
- * "Slot phê duyệt" = Need Role mà BPMN ghi vào User Task (doc §"BPMN chỉ ghi: Need
- * Role = FINANCE_APPROVER"). BPMN KHÔNG ghi người/nhóm cụ thể — chỉ ghi slot trừu
- * tượng này, rồi Approval Matrix resolve ra người. Đây là các slot xuất hiện trong
- * luồng RD01/RD02/RD05.
- */
-export const APPROVAL_SLOTS = [
-  { code: 'THAM_DINH', ten: 'Thẩm định hồ sơ (Cơ quan nghiệp vụ)' },
-  { code: 'HOI_DONG', ten: 'Phê duyệt Hội đồng KHCN' },
-  { code: 'PHE_DUYET', ten: 'Phê duyệt / Ký duyệt (Ban TGĐ)' },
-] as const
-
-export type SlotCode = (typeof APPROVAL_SLOTS)[number]['code']
-
-const SLOT_LABEL = new Map(APPROVAL_SLOTS.map((s) => [s.code, s.ten]))
-export function slotLabel(code: string): string {
-  return SLOT_LABEL.get(code as SlotCode) ?? code
-}
+// "Slot phê duyệt" (APPROVAL_SLOTS/SlotCode/slotLabel) chuyển sang
+// data/approvalSlotCatalog.ts (Slice A, docs/research/approval-slot-catalog-plan.md) —
+// catalog quản lý (trạng thái/thứ tự/usage), không còn là mảng cứng ở đây.
 
 /** Nhãn tiếng Việt cho `loaiHoiDong` (đồng bộ variableContract.ts). */
 export const LOAI_HOI_DONG_LABEL: Record<string, string> = {

@@ -21,6 +21,13 @@ export interface TaskStep {
   vaiTroCodes?: string[]
   hanhDong: string
   formKey?: string
+  /**
+   * Slot phê duyệt (Need Role) — hình chiếu mock của `zeebe:TaskHeaders["needRole"]`
+   * ghi qua Properties Panel (Slice C, docs/research/approval-slot-catalog-plan.md
+   * §4.C). Trống = quy trình CHƯA re-author bằng Need Role — approvalSlotMap.ts sẽ
+   * dùng ROLE_TO_SLOT suy từ vaiTroCodes như cũ (Slice D §4.D).
+   */
+  needRole?: string
 }
 
 export interface ProcessDef {
@@ -81,11 +88,14 @@ export const seedProcesses: ProcessDef[] = [
       { key: 't2', ten: 'Ký duyệt cấp Trung tâm/Khối', vaiTro: 'BGĐ TT/Khối', vaiTroCodes: ['BGD_TT', 'BGD_KHOI'], hanhDong: 'Ký duyệt', formKey: 'phieu-phe-duyet' },
       // Mở cho cả 4 TP theo nhãn hiện hành (BPMN Task_9 chỉ TP_CLKHCN — nới chủ
       // đích để tài khoản tp@ demo được đủ 4 vai), khớp bước seed trong dossiers.ts.
-      { key: 't3', ten: 'Thẩm định Cơ quan nghiệp vụ', vaiTro: 'TP CLKHCN, TCKT, NS, GĐ TTMS', vaiTroCodes: ['TP_CLKHCN', 'TP_TCKT', 'TP_NS', 'GD_TTMS'], hanhDong: 'Thẩm định', formKey: 'phieu-nhan-xet' },
+      { key: 't3', ten: 'Thẩm định Cơ quan nghiệp vụ', vaiTro: 'TP CLKHCN, TCKT, NS, GĐ TTMS', vaiTroCodes: ['TP_CLKHCN', 'TP_TCKT', 'TP_NS', 'GD_TTMS'], hanhDong: 'Thẩm định', formKey: 'phieu-nhan-xet', needRole: 'THAM_DINH' },
       { key: 't4', ten: 'Lập Báo cáo thẩm định', vaiTro: 'CQ QLKHCN', vaiTroCodes: ['CQ_QLKHCN'], hanhDong: 'Lập báo cáo', formKey: 'bao-cao-tham-dinh' },
-      { key: 't5', ten: 'Hội đồng KHCN phê duyệt', vaiTro: 'HĐ KHCN VHT', vaiTroCodes: ['HDKHCN'], hanhDong: 'Phê duyệt', formKey: 'phieu-phe-duyet' },
-      { key: 't6', ten: 'TGĐ phê duyệt Quyết định chủ trương', vaiTro: 'TGĐ VHT', vaiTroCodes: ['TGD_VHT'], hanhDong: 'Phê duyệt', formKey: 'phieu-phe-duyet' },
+      { key: 't5', ten: 'Hội đồng KHCN phê duyệt', vaiTro: 'HĐ KHCN VHT', vaiTroCodes: ['HDKHCN'], hanhDong: 'Phê duyệt', formKey: 'phieu-phe-duyet', needRole: 'HOI_DONG' },
+      { key: 't6', ten: 'TGĐ phê duyệt Quyết định chủ trương', vaiTro: 'TGĐ VHT', vaiTroCodes: ['TGD_VHT'], hanhDong: 'Phê duyệt', formKey: 'phieu-phe-duyet', needRole: 'PHE_DUYET' },
     ],
+    // RD01.01 = process ĐÃ re-author Need Role (Slice C) cho cả 3 bước phê duyệt —
+    // ví dụ "đã migrate" trong bản mock. RD01.02/RD02.01/RD05.01 CHƯA re-author,
+    // minh hoạ fallback ROLE_TO_SLOT (approvalSlotMap.ts) vẫn hoạt động song song.
     bpmnXml: RD0101_BPMN,
   },
   {

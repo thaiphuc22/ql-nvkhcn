@@ -13,6 +13,8 @@ import { ExceptionProvider } from './store/ExceptionContext'
 import { RuleProvider } from './store/RuleContext'
 import { RbacProvider } from './store/RbacContext'
 import { ApprovalMatrixProvider } from './store/ApprovalMatrixContext'
+import { ApprovalSlotCatalogProvider } from './store/ApprovalSlotCatalogContext'
+import { IntegrationMappingProvider } from './store/IntegrationMappingContext'
 import { FormProvider } from './store/FormContext'
 import { BreadcrumbProvider } from './store/BreadcrumbContext'
 import { AuthProvider } from './store/AuthContext'
@@ -29,13 +31,17 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
                 <ExceptionProvider>
                   <RuleProvider>
                     <RbacProvider>
-                      <ApprovalMatrixProvider>
-                        <BrowserRouter>
-                          <BreadcrumbProvider>
-                            <App />
-                          </BreadcrumbProvider>
-                        </BrowserRouter>
-                      </ApprovalMatrixProvider>
+                      <ApprovalSlotCatalogProvider>
+                        <ApprovalMatrixProvider>
+                          <IntegrationMappingProvider>
+                            <BrowserRouter>
+                              <BreadcrumbProvider>
+                                <App />
+                              </BreadcrumbProvider>
+                            </BrowserRouter>
+                          </IntegrationMappingProvider>
+                        </ApprovalMatrixProvider>
+                      </ApprovalSlotCatalogProvider>
                     </RbacProvider>
                   </RuleProvider>
                 </ExceptionProvider>

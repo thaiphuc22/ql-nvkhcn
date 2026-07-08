@@ -48,7 +48,12 @@ import {
   khcnFormPropertiesModule,
   type FormLite,
 } from "../bpmn/khcnFormModule";
-import { khcnAssignmentPropertiesModule } from "../bpmn/khcnAssignmentModule";
+import {
+  khcnAssignmentPropertiesModule,
+  type CreateSlotResult,
+} from "../bpmn/khcnAssignmentModule";
+import { useApprovalSlotCatalog } from "../store/ApprovalSlotCatalogContext";
+import type { ApprovalSlot } from "../data/approvalSlotCatalog";
 import { khcnLanePropertiesModule } from "../bpmn/khcnLaneModule";
 import { khcnDecisionModule } from "../bpmn/khcnDecisionModule";
 import { khcnConditionPropertiesModule } from "../bpmn/khcnConditionModule";
@@ -115,6 +120,14 @@ const BpmnEditor = forwardRef<BpmnEditorHandle, Props>(
     const modelerRef = useRef<BpmnModeler | null>(null);
     const formsRef = useRef<FormLite[]>(forms ?? []);
     formsRef.current = forms ?? [];
+    // Bridge ApprovalSlotCatalogContext (React) vào properties panel (preact,
+    // container DI riêng — không đọc được React hook) qua ref + getter, cùng khuôn
+    // với formsRef ở trên (xem khcnFormModule.ts).
+    const { slots: catalogSlots, create: createCatalogSlot } = useApprovalSlotCatalog();
+    const slotsRef = useRef<ApprovalSlot[]>(catalogSlots);
+    slotsRef.current = catalogSlots;
+    const createSlotRef = useRef(createCatalogSlot);
+    createSlotRef.current = createCatalogSlot;
     // Chế độ nâng cao — các module didi đọc qua ref để không phải dựng lại modeler.
     const advancedRef = useRef(false);
     const lintTimerRef = useRef<number>(0);
@@ -196,7 +209,10 @@ const BpmnEditor = forwardRef<BpmnEditorHandle, Props>(
           BpmnPropertiesProviderModule,
           ZeebePropertiesProviderModule,
           khcnFormPropertiesModule(() => formsRef.current),
-          khcnAssignmentPropertiesModule(),
+          khcnAssignmentPropertiesModule(
+            () => slotsRef.current,
+            (input): CreateSlotResult => createSlotRef.current(input),
+          ),
           khcnLanePropertiesModule(),
           khcnDecisionModule(),
           khcnConditionPropertiesModule(),

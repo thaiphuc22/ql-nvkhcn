@@ -674,3 +674,32 @@ export const seedEvents: ProcessEvent[] = [
 export const eventDossiers = Array.from(
   new Set(seedEvents.map((e) => e.maHoSo)),
 );
+
+/* ────────────────── Dẫn xuất cho màn Tích hợp (drawer chi tiết) ────────────────── */
+
+/** Tỷ lệ thành công 24h (%) suy từ banGhi24h/loi24h — null nếu chưa có bản ghi nào. */
+export function integrationSuccessRate(s: IntegrationSystem): number | null {
+  if (s.banGhi24h <= 0) return null;
+  return Math.round(((s.banGhi24h - s.loi24h) / s.banGhi24h) * 1000) / 10;
+}
+
+/** Job của một hệ, mới nhất lên đầu (dùng cho card + drawer chi tiết). */
+export function jobRunsForSystem(he: string): JobRun[] {
+  return seedJobRuns
+    .filter((j) => j.he === he)
+    .slice()
+    .sort((a, b) => b.thoiDiem.localeCompare(a.thoiDiem));
+}
+
+/** Số job đang ở trạng thái lỗi (chưa retry thành công) — mock cho "incident đang mở". */
+export function openIncidentCount(he: string): number {
+  return seedJobRuns.filter((j) => j.he === he && j.ketQua === "failed").length;
+}
+
+/** Thời điểm lỗi/thử lại gần nhất của một hệ, undefined nếu chưa từng lỗi. */
+export function lastErrorAt(he: string): string | undefined {
+  const failing = seedJobRuns
+    .filter((j) => j.he === he && j.ketQua !== "success")
+    .sort((a, b) => b.thoiDiem.localeCompare(a.thoiDiem));
+  return failing[0]?.thoiDiem;
+}

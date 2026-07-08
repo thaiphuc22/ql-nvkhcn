@@ -1,7 +1,19 @@
 # Delivery State
 
 **Owner**: Delivery Manager
-**Last updated**: 2026-07-08 (**EPIC06 Approval Matrix refactor Đợt 1 + Đợt 2 DONE** — Slices A–I: condition engine + registry + seed migration (**parity 216 ctx, 0 mismatch**) + Condition Builder + audit; assignment model (GROUP/USER + placeholders + modes) + AssignmentBuilder + shared `ApprovalMatrixContext` + conflict/coverage analyzer + full audit payload + `DossierDetail` runtime wiring + persistence DTOs. **Full `npm run build` GREEN**; 3 harnesses green (engine 35/35, parity 216-ctx, analyzer). Fixed 2 pre-existing mojibake compile bugs + unused-var cleanup in `RolePermission.tsx` to get green. **Mojibake encoding repair DONE** — scanned all 119 src files, fixed the 5 double-encoded (CP1252) ones (`actionAvailability`/`actionAvailabilityPolicy`/`bpmnReconcile`/`exceptionPolicy`/`DossierDetail`) with a guarded Node un-double-encoder; build green, 0/119 remaining, Vietnamese readable. Earlier: D11 + D10 DONE.)
+**Last updated**: 2026-07-08 (**Action Studio Simulator UI upgrade Đợt 1–5 (Slice A–P) DONE**
+— tab Mô phỏng upgraded from debug API inspector to business simulation preview. Đợt 1: 3-card
+context form + summary bar + task dropdown + collapsible guide. Đợt 2: `SimulatorPreview.tsx`
+renders buttons like real dossier detail (PRIMARY/MORE dropdown/EXCEPTION dashed), Payload API
+tab. Đợt 3: `getDebugActions()` in `actionAvailability.ts` returns hidden actions with role/
+permission checks; `ActionExplainDrawer.tsx` explains each action's display decision. Đợt 4:
+`simulatorPresets.ts` data layer + `SimulatorPresets.tsx` with 4 built-in presets (Người nộp /
+Chuyên viên / Lãnh đạo / Admin), localStorage save/load/delete scenarios, copy-context-to-
+clipboard. Đợt 5: `SimulatorCompare.tsx` side-by-side diff table + `RegressionRunner` runs all
+saved scenarios. All 7 files type-clean; `npm run build` green. Plan:
+`docs/research/action-studio-simulation-coding-plan.md`. Earlier same day: **Integration
+screen (`/tich-hop`) upgrade Đợt 1+2 (Slice A-G) DONE** + **EPIC06 Approval Matrix refactor
+Đợt 1+2 DONE** + **Mojibake encoding repair DONE** + **D11 + D10 DONE**.)
 
 ---
 
@@ -12,6 +24,14 @@
 > in the frontend mock that still need to be formalized server-side. F4 not started.
 > **Do not start EPIC work (Configuration Service EPICs or further RD flows) until F1–F5
 > are COMPLETE.** See `active-task.md` for the concrete next step.
+>
+> **Integration screen upgrade Đợt 1+2 (Slice A-G, frontend-mock) — DONE 2026-07-08.** Tab split +
+> richer cards + drawer chi tiết (Đợt 1); Mapping Studio — field/value mapping editor, JSON
+> payload preview, fail-closed validate-before-Active (Đợt 2) — on `/tich-hop`. New
+> `data/integrationMapping.ts` + `store/IntegrationMappingContext.tsx`. Build green. Slice H
+> (version/rollback, reuse `RuleContext` pattern) + Slice I (audit + permissions, reuse
+> `RbacContext`/`actionAvailabilityPolicy`) deferred to Đợt 3. Plan:
+> `docs/research/integration-screen-upgrade-notes.md`.
 >
 > **EPIC06 Approval Matrix refactor Đợt 1 + Đợt 2 (frontend-mock) — DONE 2026-07-08** (Slices
 > A–I: dynamic conditions, assignment model + builder, shared store, conflict analyzer, audit
@@ -56,6 +76,20 @@ If you are ever unsure what to do, read this section._
 ## Active Feature Workstreams
 
 <!-- No feature/EPIC work starts until F1–F5 above are COMPLETE. -->
+
+- [x] **Action Studio Simulator UI upgrade (`docs/research/action-studio-simulation-coding-plan.md`)** — `DONE (frontend mock, Đợt 1–5 Slice A–P, 2026-07-08)` — nâng cấp tab "Mô phỏng" (`InspectorTab`) trong Action Studio từ debug API inspector thành phòng thử nghiệp vụ. Same carve-out category as D10/D11/EPIC06/Integration (frontend-mock refactor of a built module, does not touch F1).
+  - **Đợt 1 (Slice A–D)**: Chia form input 1 card dài → 3 card (Ngữ cảnh hồ sơ / Người dùng / Ngoại lệ); summary bar `RD01.01 / Đang xử lý / t2 · Ký duyệt / CQ_KHCN`; `taskDefinitionKey` từ Input → Select dropdown theo `processCode.taskSteps` (reset khi đổi quy trình); Alert hướng dẫn collapse (nút "Xem hướng dẫn"/"Thu gọn").
+  - **Đợt 2 (Slice E–G)**: `components/SimulatorPreview.tsx` (mới) — render action dạng button runtime thật: PRIMARY = button row (primary/danger/default theo tone), MORE = Dropdown "Thao tác khác ▾", EXCEPTION = vùng riêng viền dashed đỏ; disabled hiện button khoá + tooltip; badge metadata (Cần lý do/căn cứ/xác nhận + formKey); Tabs "Xem trước giao diện" / "Payload API".
+  - **Đợt 3 (Slice H–J)**: `getDebugActions()` trong `data/actionAvailability.ts` — trả về TẤT CẢ action kể cả bị loại với `roleCheck`/`permissionCheck`/`hideReasons`; `components/ActionExplainDrawer.tsx` (mới) — drawer Descriptions giải thích từng action (mã, luật khớp, role/permission check, lý do ẩn/khoá); SimulatorPreview thêm toggle "Không hiển thị" (hiện action bị ẩn kèm lý do).
+  - **Đợt 4 (Slice K–M)**: `data/simulatorPresets.ts` (mới) — 4 preset built-in (Người nộp/Chuyên viên/Lãnh đạo/Admin) + localStorage save/load/delete scenarios + `exportContext()` copy JSON; `components/SimulatorPresets.tsx` (mới) — row preset buttons + "Lưu kịch bản" modal + danh sách kịch bản đã lưu + copy context.
+  - **Đợt 5 (Slice N–P)**: `components/SimulatorCompare.tsx` (mới) — side-by-side diff table (A vs B) với stats card (thêm/mất/thay đổi) + `RegressionRunner` chạy `getAvailableActions` cho tất cả kịch bản đã lưu, hiển thị bảng pass/fail với expandable JSON payload.
+  - **Verified**: `npm run build` green; all 7 files type-clean (0 errors). No browser click-through (Playwright not installed).
+
+- [ ] **Integration screen (`/tich-hop`) upgrade (`docs/research/integration-screen-upgrade-notes.md`)** — `IN PROGRESS (frontend mock, Đợt 1+2 Slice A-G DONE, 2026-07-08)` — evolves the already-built `IntegrationStatus.tsx` (KPI + card grid + connect modal) toward the doc's "Trung tâm quản trị tích hợp" vision (tabs, mapping studio, drawer, preview payload, versioning, audit). Same carve-out category as D10/D11/EPIC06 (frontend-mock refactor of a built module, does not touch F1).
+  - **Đợt 1 (Slice A-C)**: `IntegrationStatus.tsx` wrapped in `Tabs` ("Tổng quan" live + placeholder tabs); `SystemCard` metric row upgraded (độ trễ TB, tỷ lệ thành công 24h, hàng đợi, lỗi mở — all derived from existing seed fields, no new seed data); new `SystemDetailDrawer` ("Xem chi tiết") reusing `seedJobRuns`/`seedEvents` already surfaced on `/nhat-ky` instead of duplicating a job-log table. New pure helpers in `data/camundaOps.ts`: `integrationSuccessRate()`, `jobRunsForSystem()`, `openIncidentCount()`, `lastErrorAt()`.
+  - **Đợt 2 (Slice D-G)**: new `data/integrationMapping.ts` — `MappingConfig`/`FieldMapping`/`ValueMapping` model, status Draft/Ready/Active/Deprecated/Error, a **closed transform enum** (no free-text script per the doc's "Transform có kiểm soát"), `validateMappingConfig()` (5 pre-Active checks), `previewMapping()`, `sampleRecordsFor()` (pulls real records from `nhiemVu.ts`/`dossiers.ts`, returns `[]` for `TaiSan` rather than fabricating data). 3 seed configs grounded in real mock data (SAP·Dự toán, QLNS·Nhân sự, MS·Hồ sơ — the last one deliberately invalid to exercise the validate gate). New `store/IntegrationMappingContext.tsx` (mounted `main.tsx`, `RuleContext`-style) — **`setStatus('active')` re-validates inside the context itself** (fail-closed defense in depth, flips to `error` + returns errors on failure rather than silently no-op). New `components/MappingFieldEditor.tsx` + `components/MappingStudio.tsx` wired into the "Mapping dữ liệu" tab (list/filter/create/edit/preview-JSON/activate/delete); `SystemDetailDrawer` updated to show real active mappings per system instead of a placeholder note.
+  - **Deferred to Đợt 3**: version/rollback (Slice H, reuse `RuleContext`'s save-bump-version pattern but keep history instead of discarding), audit log + granular permissions (Slice I, hang off existing `RbacContext`/`actionAvailabilityPolicy` rather than a new permission table), retry-policy config ("Cấu hình kết nối" tab, still a disabled placeholder), "Kiểm thử" tab (test-connection, separate from mapping preview).
+  - **Verified**: `npm run build` GREEN (tsc + vite, confirmed clean on a re-run with explicit exit-code + error-grep check both đợt). No in-browser click-through — Playwright not installed this session; Đợt 2 additionally smoke-tested via Vite's dev transform pipeline (fetched the new/changed modules, confirmed no parse errors) before stopping the throwaway dev server.
 
 - [ ] **RD01/RD02/RD05 dossier flows (EP-05, `docs/req/EPIC-QLNVKHCN-backlog.md`)** — `IN PROGRESS (frontend mock)` — 20 US / 102 pts scoped, ~10 US flagged blocked on OQ-001/002/003/006. Tracked in `docs/req/RTM.md`. Real backend/Camunda wiring waits on F1–F5.
   - **RD01.01 end-to-end demo wiring (Action→Routing + Form Mapping, 2026-07-07)**: nối hành động "Xử lý" với định tuyến đa nhánh thay vì chỉ forward/terminate. Thêm `returnStep(id,toIdx,note,actor)` vào `store/DossierContext.tsx` (rework loop — nhánh "Yêu cầu hiệu chỉnh" của Gateway_5/6/9/11 trong `rd0101Bpmn.ts`): trả hồ sơ về một bước trước, mở lại các bước xen giữa về pending, hồ sơ vẫn `processing` (khác `rejectStep` = kết thúc). `components/TaskFormModal.tsx` giờ tách 2 tầng: Form (data, theo `formKey` bước) vs Routing (Đồng ý→approveStep / Trả lại→returnStep + chọn bước đích / Từ chối→rejectStep). Form Mapping: thêm biểu mẫu soạn thảo `phieu-chu-truong` (sự cần thiết/mục tiêu/dự toán PL1–PL6, không có `ketLuan`) vào `forms/index.ts`, gán `formKey` cho bước Khởi tạo RD01.01/RD01.02 trong `processes.ts`, và nút "Soạn hồ sơ" + modal trong `pages/DossierDetail.tsx` (loại Chủ trương). Lưu trữ/enforcement thật chờ F1. Verified `npm run build` ✓. **Giả định demo (chưa chốt khách)**: OQ-002 (bước quay lại của rework) do người xử lý chọn trong modal; OQ-001 (phân cấp CS/TĐ) chưa đụng.

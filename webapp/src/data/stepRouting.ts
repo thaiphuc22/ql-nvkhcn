@@ -90,8 +90,92 @@ const RD0101_ROUTING: StepRouting[] = [
 ]
 
 /** Bảng routing theo mã quy trình. Thêm RD khác tại đây khi mở rộng. */
+// RD02.01 — Xét duyệt NV KHCN cấp Cơ sở. Mock tuyến tính để demo đối soát BPMN
+// cho nhóm quy trình khác RD01: chuyên quản → HĐXD → HĐ KHCN → TGĐ.
+const RD0201_ROUTING: StepRouting[] = [
+  {
+    stepKey: 't1',
+    branches: [{ outcome: 'SUBMIT', label: 'Gửi hồ sơ xét duyệt', kind: 'forward', toStepKey: 't2' }],
+  },
+  {
+    stepKey: 't2',
+    branches: [
+      { outcome: 'APPROVE', label: 'Đạt — chuyển HĐXD', kind: 'forward', toStepKey: 't3' },
+      { outcome: 'RETURN', label: 'Chưa đạt — yêu cầu bổ sung', kind: 'rework', toStepKey: 't1' },
+      { outcome: 'REJECT', label: 'Không đủ điều kiện mở mới', kind: 'reject', terminalLabel: TERMINAL_LUU },
+    ],
+  },
+  {
+    stepKey: 't3',
+    branches: [
+      { outcome: 'APPROVE', label: 'HĐXD thống nhất đề xuất', kind: 'forward', toStepKey: 't4' },
+      { outcome: 'RETURN', label: 'Yêu cầu làm rõ hồ sơ', kind: 'rework', toStepKey: 't2' },
+      { outcome: 'REJECT', label: 'HĐXD không thông qua', kind: 'reject', terminalLabel: TERMINAL_LUU },
+    ],
+  },
+  {
+    stepKey: 't4',
+    branches: [
+      { outcome: 'APPROVE', label: 'HĐ KHCN phê duyệt', kind: 'forward', toStepKey: 't5' },
+      { outcome: 'RETURN', label: 'Trả lại HĐXD rà soát', kind: 'rework', toStepKey: 't3' },
+      { outcome: 'REJECT', label: 'HĐ KHCN không phê duyệt', kind: 'reject', terminalLabel: TERMINAL_LUU },
+    ],
+  },
+  {
+    stepKey: 't5',
+    branches: [
+      { outcome: 'APPROVE', label: 'TGĐ phê duyệt mở mới', kind: 'complete', terminalLabel: 'Hoàn tất — mở mới nhiệm vụ' },
+      { outcome: 'RETURN', label: 'Yêu cầu hiệu chỉnh quyết định', kind: 'rework', toStepKey: 't4' },
+      { outcome: 'REJECT', label: 'TGĐ không phê duyệt', kind: 'reject', terminalLabel: TERMINAL_LUU },
+    ],
+  },
+]
+
+// RD05.01 — Nghiệm thu NV KHCN cấp Cơ sở. Dùng để demo quy trình có bước lập
+// quyết định chưa gắn form ở seed, giúp tab Đối soát BPMN có cảnh báo biểu mẫu rõ ràng.
+const RD0501_ROUTING: StepRouting[] = [
+  {
+    stepKey: 't1',
+    branches: [{ outcome: 'SUBMIT', label: 'Gửi hồ sơ nghiệm thu', kind: 'forward', toStepKey: 't2' }],
+  },
+  {
+    stepKey: 't2',
+    branches: [
+      { outcome: 'APPROVE', label: 'Đạt điều kiện nghiệm thu', kind: 'forward', toStepKey: 't3' },
+      { outcome: 'RETURN', label: 'Yêu cầu bổ sung minh chứng', kind: 'rework', toStepKey: 't1' },
+      { outcome: 'REJECT', label: 'Không đủ điều kiện nghiệm thu', kind: 'reject', terminalLabel: TERMINAL_LUU },
+    ],
+  },
+  {
+    stepKey: 't3',
+    branches: [
+      { outcome: 'APPROVE', label: 'Trình HĐ nghiệm thu', kind: 'forward', toStepKey: 't4' },
+      { outcome: 'RETURN', label: 'Trả lại chuyên quản rà soát', kind: 'rework', toStepKey: 't2' },
+      { outcome: 'REJECT', label: 'Không thành lập HĐ nghiệm thu', kind: 'reject', terminalLabel: TERMINAL_LUU },
+    ],
+  },
+  {
+    stepKey: 't4',
+    branches: [
+      { outcome: 'APPROVE', label: 'HĐ nghiệm thu đạt', kind: 'forward', toStepKey: 't5' },
+      { outcome: 'RETURN', label: 'Yêu cầu hoàn thiện kết quả', kind: 'rework', toStepKey: 't1' },
+      { outcome: 'REJECT', label: 'HĐ nghiệm thu không đạt', kind: 'reject', terminalLabel: TERMINAL_LUU },
+    ],
+  },
+  {
+    stepKey: 't5',
+    branches: [
+      { outcome: 'APPROVE', label: 'TGĐ công nhận kết quả', kind: 'complete', terminalLabel: 'Hoàn tất — công nhận nghiệm thu' },
+      { outcome: 'RETURN', label: 'Yêu cầu hiệu chỉnh biên bản', kind: 'rework', toStepKey: 't4' },
+      { outcome: 'REJECT', label: 'Không công nhận kết quả', kind: 'reject', terminalLabel: TERMINAL_LUU },
+    ],
+  },
+]
+
 export const ROUTING_TABLES: Record<string, StepRouting[]> = {
   'RD01.01': RD0101_ROUTING,
+  'RD02.01': RD0201_ROUTING,
+  'RD05.01': RD0501_ROUTING,
 }
 
 /** Một nhánh đã resolve sang tên + index bước đích để UI hiển thị trực tiếp. */

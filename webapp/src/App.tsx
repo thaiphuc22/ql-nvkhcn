@@ -1,4 +1,11 @@
-﻿import { lazy, Suspense, startTransition, useEffect, useState } from "react";
+﻿import {
+  lazy,
+  Suspense,
+  startTransition,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   Layout,
   Menu,
@@ -47,6 +54,7 @@ const ProcessCatalog = lazy(() => import("./pages/ProcessCatalog"));
 const ProcessCreate = lazy(() => import("./pages/ProcessCreate"));
 const ProcessDetail = lazy(() => import("./pages/ProcessDetail"));
 const DossierList = lazy(() => import("./pages/DossierList"));
+const DossierCreate = lazy(() => import("./pages/DossierCreate"));
 const DossierDetail = lazy(() => import("./pages/DossierDetail"));
 const NhiemVuList = lazy(() => import("./pages/NhiemVuList"));
 const NhiemVuCreate = lazy(() => import("./pages/NhiemVuCreate"));
@@ -67,6 +75,7 @@ const TroGiup = lazy(() => import("./pages/TroGiup"));
 import { useDossiers } from "./store/DossierContext";
 import { useBreadcrumb } from "./store/BreadcrumbContext";
 import { useAuth, usePermissions } from "./store/AuthContext";
+import { BREAKPOINTS, useViewportBelow } from "./theme/breakpoints";
 
 /** Chữ cái đầu của họ tên → nhãn avatar (tối đa 2 ký tự). */
 function initials(name: string): string {
@@ -105,6 +114,16 @@ const ROUTE_BY_KEY: Record<string, string> = {
 export default function App() {
   const [collapsed, setCollapsed] = useState(false);
   const screens = Grid.useBreakpoint();
+  // Tự thu/mở sider khi vượt ngưỡng BREAKPOINTS.lg (1280px, MacBook Air 13"),
+  // chỉ tại thời điểm vượt ngưỡng — không ghi đè thao tác thu/mở tay của user.
+  const isNarrow = useViewportBelow(BREAKPOINTS.lg);
+  const wasNarrowRef = useRef(isNarrow);
+  useEffect(() => {
+    if (isNarrow !== wasNarrowRef.current) {
+      setCollapsed(isNarrow);
+      wasNarrowRef.current = isNarrow;
+    }
+  }, [isNarrow]);
   const navigate = useNavigate();
   const location = useLocation();
   const { list } = useDossiers();
@@ -138,28 +157,28 @@ export default function App() {
           : location.pathname.startsWith("/nhat-ky")
             ? "nhatky"
             : location.pathname.startsWith("/quy-trinh")
-            ? "quytrinh"
-            : location.pathname.startsWith("/quan-ly-luat")
-            ? "luat"
-            : location.pathname.startsWith("/ma-tran-phe-duyet")
-            ? "matran"
-            : location.pathname.startsWith("/cau-hinh-hanh-dong")
-            ? "hanhdong"
-            : location.pathname.startsWith("/phan-quyen")
-            ? "phanquyen"
-            : location.pathname.startsWith("/ho-so")
-              ? "ho-so"
-              : location.pathname.startsWith("/nhiem-vu")
-                ? "nhiem-vu"
-              : location.pathname.startsWith("/bieu-mau")
-                ? "bieumau"
-                : location.pathname.startsWith("/co-cau-to-chuc")
-                  ? "donvi"
-                  : location.pathname.startsWith("/nguoi-dung")
-                    ? "nguoidung"
-                    : location.pathname.startsWith("/tro-giup")
-                    ? "trogiup"
-                    : "quytrinh";
+              ? "quytrinh"
+              : location.pathname.startsWith("/quan-ly-luat")
+                ? "luat"
+                : location.pathname.startsWith("/ma-tran-phe-duyet")
+                  ? "matran"
+                  : location.pathname.startsWith("/cau-hinh-hanh-dong")
+                    ? "hanhdong"
+                    : location.pathname.startsWith("/phan-quyen")
+                      ? "phanquyen"
+                      : location.pathname.startsWith("/ho-so")
+                        ? "ho-so"
+                        : location.pathname.startsWith("/nhiem-vu")
+                          ? "nhiem-vu"
+                          : location.pathname.startsWith("/bieu-mau")
+                            ? "bieumau"
+                            : location.pathname.startsWith("/co-cau-to-chuc")
+                              ? "donvi"
+                              : location.pathname.startsWith("/nguoi-dung")
+                                ? "nguoidung"
+                                : location.pathname.startsWith("/tro-giup")
+                                  ? "trogiup"
+                                  : "quytrinh";
   const SECTION_TITLE: Record<string, string> = {
     dashboard: "Tổng quan",
     worklist: "Việc của tôi",
@@ -251,7 +270,6 @@ export default function App() {
               },
               { key: "tichhop", icon: <ApiOutlined />, label: "Tích hợp" },
               { key: "nhatky", icon: <HistoryOutlined />, label: "Nhật ký" },
-
             ],
           },
         ]
@@ -301,7 +319,6 @@ export default function App() {
         collapsed={collapsed}
         onCollapse={setCollapsed}
         trigger={null}
-        breakpoint="lg"
         collapsedWidth={SIDER_COLLAPSED_W}
         width={SIDER_W}
         style={{
@@ -366,40 +383,38 @@ export default function App() {
         </div>
       </Sider>
 
-        {/* Ghim Hướng dẫn sử dụng sticky dưới cùng góc trái màn hình */}
-        <div
-          onClick={() => startTransition(() => navigate("/tro-giup"))}
-          style={{
-            position: "fixed",
-            insetInlineStart: 8,
-            bottom: 16,
-            width: collapsed
-              ? SIDER_COLLAPSED_W - 16
-              : SIDER_W - 16,
-            height: 48,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: collapsed ? "center" : undefined,
-            gap: collapsed ? undefined : 10,
-            padding: collapsed ? 0 : "0 8px",
-            cursor: "pointer",
-            background: "var(--vht-red-chrome, #bf0027)",
-            color: "#fff",
-            userSelect: "none",
-            transition: "background 0.2s, width 0.2s",
-            zIndex: 101,
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLElement).style.background = "#a00022";
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLElement).style.background =
-              "var(--vht-red-chrome, #bf0027)";
-          }}
-        >
-          <BookOutlined />
-          {!collapsed && <span>Hướng dẫn sử dụng</span>}
-        </div>
+      {/* Ghim Hướng dẫn sử dụng sticky dưới cùng góc trái màn hình */}
+      <div
+        onClick={() => window.open("/tro-giup", "_blank")}
+        style={{
+          position: "fixed",
+          insetInlineStart: 8,
+          bottom: 16,
+          width: collapsed ? SIDER_COLLAPSED_W - 16 : SIDER_W - 16,
+          height: 48,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: collapsed ? "center" : undefined,
+          gap: collapsed ? undefined : 10,
+          padding: collapsed ? 0 : "0 8px",
+          cursor: "pointer",
+          background: "var(--vht-red-chrome, #bf0027)",
+          color: "#fff",
+          userSelect: "none",
+          transition: "background 0.2s, width 0.2s",
+          zIndex: 101,
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLElement).style.background = "#a00022";
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLElement).style.background =
+            "var(--vht-red-chrome, #bf0027)";
+        }}
+      >
+        <BookOutlined />
+        {!collapsed && <span>Hướng dẫn sử dụng</span>}
+      </div>
 
       <Layout
         style={{
@@ -569,6 +584,7 @@ export default function App() {
               <Route path="/nhiem-vu/moi" element={<NhiemVuCreate />} />
               <Route path="/nhiem-vu/:ma" element={<NhiemVuDetail />} />
               <Route path="/ho-so" element={<DossierList />} />
+              <Route path="/ho-so/tao-moi" element={<DossierCreate />} />
               <Route path="/ho-so/:id" element={<DossierDetail />} />
               <Route
                 path="/co-cau-to-chuc"
@@ -679,4 +695,3 @@ export default function App() {
     </Layout>
   );
 }
-

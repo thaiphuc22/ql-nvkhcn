@@ -1,4 +1,4 @@
-# Review va ke hoach nang cap popup Them luat anh xa
+# Review va ke hoach nang cap popup Them luat hien thi action
 
 Ngay review: 2026-07-08
 
@@ -7,217 +7,231 @@ Pham vi review:
 - `webapp/src/pages/ApprovalMatrix.tsx`
 - `webapp/src/components/ConditionBuilder.tsx`
 - `webapp/src/components/AssignmentBuilder.tsx`
+- `webapp/src/data/approvalMatrixAnalyzer.ts`
 
-Yeu cau: chi review va lap ke hoach nang cap mockup popup `Them luat anh xa`, khong sua code ung dung.
+Yeu cau: review va lap ke hoach nang cap UI cho popup `Them luat anh xa` / hien thi action, khong sua code ung dung trong buoc nay.
 
-## Tong quan hien trang
+## 1. Tong quan hien trang
 
-Popup `Them luat anh xa` hien nam trong `ApprovalMatrix.tsx`, dung Ant Design `Modal` va `Form` layout doc. Noi dung popup gom:
+Popup `Them luat anh xa` hien nam trong tab Ma tran cua `ApprovalMatrix.tsx`, dung Ant Design `Modal` + `Form`, va da duoc nang cap so voi form doc ban dau:
 
-- Ten luat
-- Slot phe duyet
-- Dieu kien ap dung, thong qua `ConditionBuilder`
-- Ket qua phan cong, thong qua `AssignmentBuilder`
-- Uu tien
-- Kich hoat
+- Modal da co `width={1040}` va body scroll rieng bang `styles.body.maxHeight`.
+- Noi dung da chia thanh 2 cot desktop:
+  - Cot trai: `Thong tin luat`, `Dieu kien ap dung`, `Ket qua phan cong`.
+  - Cot phai: `Preview luat` + `Kiem tra nhanh`.
+- `ConditionBuilder` soan cay dieu kien AND/OR, ho tro nhom con, field/operator/value, va dien giai dieu kien realtime.
+- `AssignmentBuilder` soan che do phan cong va danh sach dich phan cong theo nhom hoac nguoi cu the.
+- Popup da co canh bao realtime trong `draftWarnings` cho cac truong hop:
+  - Chua nhap ten luat.
+  - Dieu kien rong, tuc rule khop moi ho so trong slot.
+  - Condition leaf thieu value.
+  - Chua co dich phan cong hop le.
+  - Trung priority voi rule khac cung slot.
+  - Co nguy co bi fallback wildcard uu tien cao hon che khuat, hoac wildcard moi che rule uu tien thap hon.
+- Khi luu, `saveRule()` da chan condition thieu value va assignment khong co target hop le.
 
-Hai phan phuc tap nhat cua popup la:
+Ket luan hien trang: popup da qua giai doan "form cau hinh tho". UI hien tai da co bo cuc, preview va guardrail co ban. Phan nang cap tiep theo nen tap trung vao tinh ro rang cua action/assignment, kha nang doc nhanh tac dong cua rule, va canh bao conflict sau hon.
 
-- `ConditionBuilder`: soan cay dieu kien AND/OR, ho tro nhom con, field/operator/value va dien giai dieu kien.
-- `AssignmentBuilder`: soan che do phan cong va danh sach dich phan cong theo nhom hoac nguoi cu the.
+## 2. Diem manh can giu
 
-Mockup hien tai da co du chuc nang loi de tao/sua rule, nhung trai nghiem van nghieng ve form cau hinh ky thuat hon la mot cong cu soan luat nghiep vu.
+- Bo cuc 2 cot dung huong: nguoi dung vua soan vua doc preview.
+- Section hoa theo ngon ngu nghiep vu giup doc rule theo cau "Khi nao" -> "Thi ai xu ly" -> "Uu tien the nao".
+- `draftWarnings` da dua loi ve som hon, khong doi den bang tong hop sau khi luu.
+- `ConditionBuilder` va `AssignmentBuilder` tach rieng hop ly; chua can tach them abstraction lon neu chi polish UI.
+- Analyzer o `approvalMatrixAnalyzer.ts` da co nen tang de tiep tuc day canh bao vao popup.
 
-## Cac diem can nang cap
+## 3. Van de UI con lai
 
-### 1. Modal qua hep cho nghiep vu phuc tap
+### 3.1 Preview action chua noi thanh cau nghiep vu hoan chinh
 
-Modal hien chua set `width`, nen voi condition tree, segmented control va multi-select trong assignment, noi dung rat de bi wrap nhieu dong. Khi luat co nhieu dieu kien hoac nhieu dich phan cong, nguoi dung kho scan cau truc tong the.
+Preview hien dang tach cac dong:
 
-De xuat:
+- Ten rule
+- Khi dieu kien
+- Thi phan cong
+- Che do
 
-- Tang width modal khoang `880px` den `1040px`.
-- Body modal co scroll rieng khi noi dung dai.
-- Giu footer hanh dong co dinh de nut luu/huy khong bi day xuong qua sau.
-
-### 2. Luong nhap chua co cau truc theo buoc
-
-Nguoi dung hien phai hieu cung luc nhieu khai niem: metadata, slot, cay dieu kien, assignment mode, target, priority va trang thai kich hoat.
-
-De xuat chia popup thanh cac vung ro:
-
-- Thong tin luat
-- Khi nao ap dung
-- Ai phe duyet
-- Uu tien va hieu luc
-- Preview va canh bao
-
-Viec chia section giup nguoi dung nghiep vu doc popup nhu mot cau luat: "Khi nao" -> "Thi ai xu ly" -> "Uu tien the nao".
-
-### 3. Thieu preview tong hop truoc khi luu
-
-`ConditionBuilder` da co dong dien giai dieu kien, nhung popup chua co preview hoan chinh cua ca rule.
-
-De xuat them preview realtime dang:
-
-> Neu slot = Tham dinh va dieu kien = cap Tap doan, ngan sach > 5 ty thi phan cong cho Nhom Tham dinh theo che do Mot nguoi bat ky, uu tien #50.
-
-Preview nen hien:
-
-- Slot
-- Dieu kien
-- Dich phan cong
-- Che do phan cong
-- Priority
-- Trang thai kich hoat
-
-### 4. Validation con mong
-
-Validation hien co:
-
-- Bat buoc ten luat
-- Bat buoc slot
-- Bat buoc priority
-- Kiem tra co it nhat mot target hop le khi luu
-
-Chua thay validation/canh bao ro cho:
-
-- Dieu kien thieu value
-- Rule khong co dieu kien, tuc khop moi ho so
-- Priority trung voi rule khac
-- Ten rule trung hoac qua chung chung
-- Rule co kha nang che/ghi de rule khac theo first-match priority
-- Assignment target da them nhung chua chon nhom/nguoi
+Cach nay dung, nhung chua tao cam giac "day la action se xay ra". Nguoi dung van phai ghep slot, dieu kien, assignment mode va target bang mat.
 
 De xuat:
 
-- Dua loi target rong ve gan `AssignmentBuilder`, thay vi chi bao message khi bam luu.
-- Canh bao inline neu condition rong: "Rule nay se khop moi ho so trong slot da chon".
-- Canh bao priority trung/gan voi rule cung slot.
-- Canh bao condition leaf thieu value neu operator can value.
+- Them mot dong summary noi thanh cau:
+  - "Khi slot la Tham dinh va dieu kien khop, he thong se giao action phe duyet cho Nhom Tham dinh theo che do Mot nguoi bat ky."
+- Neu rule dang tat, preview can noi ro:
+  - "Rule dang tat nen se khong sinh action trong runtime."
+- Neu assignment rong, hien message gan action:
+  - "Chua co action/nguoi nhan nen rule chua the tao cong viec phe duyet."
 
-### 5. Assignment builder con nhieu nhan ky thuat
+### 3.2 Assignment/action con hien nhu cau hinh, chua nhu ket qua hanh dong
 
-Mot so nhan nhu `candidateGroup`, `GROUP`, `USER`, hoac mode he thong co the dung ve mat thiet ke, nhung chua that than thien voi nguoi dung nghiep vu.
-
-De xuat:
-
-- Dung nhan nghiep vu lam chinh, technical hint lam phu.
-- Vi du:
-  - "Nhom phe duyet" thay vi "Nhom (candidateGroup)"
-  - "Nguoi cu the" thay vi "USER"
-  - "Mot nguoi bat ky phe duyet" thay vi chi hien mode ngan
-- Bo sung mo ta ngan cho tung che do phan cong.
-
-### 6. Thieu canh bao xung dot ngay trong popup
-
-Trang chinh da co analyzer de canh bao xung dot/do phu rule. Tuy nhien popup chua dua canh bao som trong luc nguoi dung soan rule.
+`AssignmentBuilder` da co nhan nghiep vu hon, nhung UI van la tap hop Select + Segmented. Voi nguoi cau hinh, cau hoi chinh la "action nay se hien cho ai, theo cach nao".
 
 De xuat:
 
-- Khi nguoi dung chon slot/priority/condition, tinh nhanh cac canh bao co lien quan.
-- Hien warning trong panel preview.
-- Neu rule co kha nang shadow rule khac, hien danh sach rule bi anh huong.
+- Doi section title tu `Ket qua phan cong` sang huong action ro hon, vi du:
+  - `Action se hien cho ai`
+  - `Nguoi/nhom nhan action`
+- Trong preview, tach ro:
+  - Action outcome: phe duyet/xu ly theo slot.
+  - Target: nhom/nguoi nhan.
+  - Resolution mode: mot nguoi bat ky / tat ca / lan luot.
+- Neu target la GROUP, hien them hint:
+  - "Runtime se resolve thanh candidateUsers theo thanh vien nhom va uy quyen."
 
-## Ke hoach nang cap mockup
+### 3.3 Loi assignment rong chua gan truc tiep vao tung target row
 
-### P1 - Nang layout modal va preview
+`saveRule()` va `draftWarnings` da bat assignment khong hop le, nhung `AssignmentBuilder` chua tu highlight row da them ma chua chon nhom/nguoi.
 
-Muc tieu: lam popup de doc va de tu kiem tra hon ma chua thay doi logic luu.
+De xuat:
+
+- Cho `AssignmentBuilder` nhan props `issues` hoac `validate`.
+- Neu target GROUP rong: hien `status="error"` tren Select role + text "Chon it nhat mot nhom".
+- Neu target USER rong: hien `status="error"` tren Select user + text "Chon it nhat mot nguoi".
+- Nut `Them dich phan cong` nen them row co focus vao Select moi.
+
+### 3.4 Canh bao conflict trong popup moi o muc heuristic
+
+`draftWarnings` da check trung priority va wildcard shadow. Tuy nhien `approvalMatrixAnalyzer.ts` dang phan tich toan bo rules da luu, con draft rule trong popup chua duoc dua vao analyzer nhu mot rule tam.
+
+De xuat:
+
+- Tao `draftRule` tu form + `condDraft` + `asgDraft`.
+- Chay analyzer voi `rules` thay rule dang edit bang `draftRule`, hoac append neu tao moi.
+- Hien canh bao gan popup theo 3 nhom:
+  - Loi khong luu duoc.
+  - Canh bao first-match / shadow.
+  - Thong tin do phu fallback cua slot.
+
+### 3.5 Thieu quick test/simulation trong chinh popup
+
+Trang chinh da co panel Simulation. Khi dang soan rule, nguoi dung van phai luu/thoat de test tac dong voi context mau.
+
+De xuat:
+
+- Them compact "Thu voi ho so mau" trong cot preview, sau P1/P2.
+- Mac dinh lay slot tu form, cho nhap nhanh `cap`, `loaiHoiDong`, `tongDuToan`.
+- Hien:
+  - Draft rule co match mau khong.
+  - Neu khong phai rule nay, rule nao se thang theo priority.
+
+### 3.6 Footer action cua modal co the ro hon
+
+Nut `Luu` va `Huy` dung chuan, nhung popup cau hinh rule co rui ro cao hon form thuong.
+
+De xuat:
+
+- Disable nut Luu khi co error hard: thieu condition value, assignment rong, ten rong.
+- Doi ok text theo trang thai:
+  - Tao moi: `Them luat`
+  - Sua: `Luu thay doi`
+- Neu rule khop moi ho so va dang bat, confirm truoc khi luu:
+  - "Rule nay se khop moi ho so trong slot. Ban co muon dung lam fallback khong?"
+
+## 4. Ke hoach nang cap
+
+### P1 - Lam ro preview action va wording
+
+Muc tieu: nguoi dung doc cot phai la hieu action se hien cho ai va trong dieu kien nao.
 
 Cong viec:
 
-- Set width modal lon hon.
-- Chia noi dung thanh section ro rang.
-- Them panel preview ben phai hoac cuoi popup.
-- Hien tom tat rule realtime.
-- Giu nut luu/huy ro rang, de bam.
+- Doi/bo sung title section assignment theo huong action.
+- Them summary sentence trong `Preview luat`.
+- Neu rule tat, preview hien tac dong runtime = khong ap dung.
+- Hien action target theo card nho: Mode, Target, Priority, Enabled.
+- Chuan hoa wording trong mode/target de giam thuat ngu ky thuat.
 
 Ket qua mong doi:
 
-- Nguoi dung nhin duoc rule dang tao co nghia la gi.
-- Giam cam giac popup la mot form ky thuat dai.
+- Preview doc nhu mot cau nghiep vu, khong chi la tong hop field.
+- Giam nham lan giua "slot phe duyet" va "nhom/nguoi nhan action".
 
-### P2 - Validation va guardrail trong popup
+### P2 - Inline validation trong AssignmentBuilder
 
-Muc tieu: bao loi dung cho va canh bao truoc khi luu.
+Muc tieu: loi nam dung o control can sua.
 
 Cong viec:
 
-- Hien loi target rong ngay trong khu vuc assignment.
-- Hien canh bao condition rong.
-- Hien canh bao condition leaf thieu value.
-- Hien canh bao priority trung hoac qua gan rule cung slot.
-- Them confirm khi luu rule khop moi ho so.
+- Them helper tinh issue theo tung `ApprovalTarget`.
+- Truyen issue vao `AssignmentBuilder` hoac tinh local neu component du context.
+- Gan `status="error"` cho Select GROUP/USER rong.
+- Them help text ngan duoi row loi.
+- Disable Save khi co hard error, giu message error khi user bam Save nhu fallback.
 
 Ket qua mong doi:
 
-- Nguoi dung it gap loi muon sau khi bam luu.
-- Rule tao ra co chat luong cao hon.
+- Khong con tinh huong user chi thay loi o preview/message ma khong biet row nao can sua.
 
-### P3 - Canh bao conflict/shadow rule trong khi soan
+### P3 - Dua analyzer vao draft popup
 
-Muc tieu: dua kha nang phan tich rule vao popup, khong chi sau khi da luu.
+Muc tieu: canh bao first-match/chong che khuat ngay luc soan.
 
 Cong viec:
 
-- Tai su dung logic analyzer hien co neu phu hop.
-- So sanh draft rule voi danh sach rule hien tai.
-- Hien canh bao rule nao co the bi che hoac trung y nghia.
-- Phan biet warning va error de nguoi dung biet muc do nghiem trong.
+- Tao util build `draftRule` tu form state.
+- Chay `analyzeRules()` tren tap rules gom draft.
+- Loc warning lien quan toi draft rule va slot hien tai.
+- Hien canh bao theo muc do trong preview panel.
+- Neu draft che cac rule uu tien thap hon, hien danh sach rule bi anh huong.
 
 Ket qua mong doi:
 
-- Giam rui ro tao rule dung cu phap nhung sai thu tu uu tien.
-- Phu hop voi co che first-match theo priority.
+- Nguoi cau hinh thay duoc tac dong cua priority truoc khi luu.
+- Giam rule dung cu phap nhung sai thu tu.
 
-### P4 - Preset nghiep vu va polish wording
+### P4 - Quick simulation trong popup
 
-Muc tieu: tang toc tao rule cho cac truong hop pho bien.
+Muc tieu: test nhanh "action co hien khong" voi context mau.
+
+Cong viec:
+
+- Them block compact trong preview: `Thu voi ho so mau`.
+- Reuse logic `resolveApprovers()` voi rules tam co draft.
+- Hien matched rule, skipped reason, approvers/action target.
+- Neu draft khong thang, noi ro rule nao thang va vi sao.
+
+Ket qua mong doi:
+
+- BA/admin co the tu tin hon truoc khi luu rule.
+- Popup tro thanh rule composer day du, khong chi form tao record.
+
+### P5 - Preset va polish thao tac
+
+Muc tieu: tang toc tao rule pho bien.
 
 Cong viec:
 
 - Them preset theo slot: Tham dinh, Phe duyet, Hoi dong.
-- Them preset dieu kien pho bien: cap Tap doan, ngan sach lon hon nguong, loai hoi dong.
-- Them preset assignment theo nhom/chuc danh hay dung.
-- Doi nhan ky thuat thanh nhan nghiep vu de doc hon.
+- Them preset dieu kien: cap Tap doan, ngan sach lon hon nguong, loai hoi dong.
+- Them preset target theo role hay dung.
+- Nut them target focus vao field moi.
+- Can nhac duplicate target/rule tu popup neu nhu cau lap lai cao.
 
 Ket qua mong doi:
 
-- Tao rule nhanh hon.
-- Giam phu thuoc vao viec nguoi dung phai hieu cau truc ky thuat ben duoi.
+- Tao rule nhanh hon, it phai bat dau tu form rong.
 
-## Goi y thiet ke UI
+## 5. Uu tien de lam gan nhat
 
-Huong layout de xuat:
+Nen lam theo thu tu:
 
-- Modal rong, chia 2 cot tren desktop.
-- Cot trai: form soan rule.
-- Cot phai: preview, warning va checklist tinh hop le.
-- Tren mobile hoac man hinh hep: cac section xep doc.
+1. P1 - Preview action va wording: tac dong UX cao, rui ro code thap.
+2. P2 - Inline validation assignment: giam loi cau hinh that.
+3. P3 - Analyzer tren draft: dung nen tang san co, nang chat luong rule.
+4. P4 - Quick simulation: huu ich nhung can them UI va state, de sau khi guardrail on dinh.
+5. P5 - Preset: polish/tang toc, khong phai blocker.
 
-Thu tu section:
+## 6. Acceptance criteria de kiem tra
 
-1. Thong tin luat
-2. Dieu kien ap dung
-3. Ket qua phan cong
-4. Uu tien va kich hoat
-5. Preview va canh bao
+- Tao rule moi rong: popup hien ro chua co ten, chua co target/action hop le, nut luu bi chan.
+- Them target GROUP nhung chua chon role: row do duoc highlight loi tai cho.
+- Rule khong co condition: preview noi ro day la fallback/khop moi ho so.
+- Rule dang tat: preview noi ro khong anh huong runtime.
+- Trung priority cung slot: preview canh bao ten rule dang trung.
+- Wildcard priority cao hon: rule bi shadow duoc canh bao truoc khi luu.
+- Sua rule hien co: analyzer khong tu so sanh rule voi chinh no.
+- Man hinh hep: cot preview xep doc duoi form, khong bi overflow ngang.
 
-Thanh preview nen co cac trang thai:
+## 7. Ket luan
 
-- Hop le
-- Can canh bao
-- Chua du thong tin
-- Co loi can sua truoc khi luu
-
-## Ket luan
-
-Popup hien tai da du chuc nang loi cho prototype mock, nhung con thien ve form cau hinh ky thuat. Huong nang cap nen bien popup thanh mot `rule composer`: co bo cuc rong hon, section ro hon, preview realtime, validation tai cho va canh bao xung dot som.
-
-Thu tu uu tien nen la:
-
-1. Nang layout modal va them preview tong hop.
-2. Them validation/canh bao inline.
-3. Dua analyzer vao popup de canh bao conflict/shadow rule.
-4. Them preset va polish wording theo ngon ngu nghiep vu.
+Popup hien tai da co nen tot: modal rong, section ro, preview realtime, validation co ban va canh bao draft. Huong nang cap dung nhat la day UI tu "form cau hinh rule" thanh "rule/action composer": preview noi thanh cau, assignment hien nhu action runtime, loi gan dung control, va analyzer/simulation chay ngay tren draft truoc khi luu.

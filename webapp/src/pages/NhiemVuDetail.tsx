@@ -1,12 +1,13 @@
 import { useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Card, Col, Descriptions, Row, Steps, Tag, Typography } from 'antd'
+import { Button, Card, Col, Descriptions, Row, Space, Steps, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { ExperimentOutlined } from '@ant-design/icons'
+import { ExperimentOutlined, FileAddOutlined } from '@ant-design/icons'
 import { GIAI_DOAN, GIAI_DOAN_COLOR, GIAI_DOAN_ORDER } from '../data/nhiemVu'
 import { LOAI_TO_GIAIDOAN, type Dossier } from '../data/dossiers'
 import { useNhiemVu } from '../store/NhiemVuContext'
 import { useDossiers } from '../store/DossierContext'
+import { usePermissions } from '../store/AuthContext'
 import { PageHeader, NotFound, EntityTable, DossierStatusTag } from '../components/ui'
 import HelpButton from '../components/HelpButton'
 
@@ -19,6 +20,7 @@ export default function NhiemVuDetail() {
   const navigate = useNavigate()
   const { getByMa } = useNhiemVu()
   const { list } = useDossiers()
+  const { canCreateHoSo } = usePermissions()
 
   const nv = getByMa(decodeURIComponent(ma))
   const hoSo = useMemo(
@@ -99,7 +101,19 @@ export default function NhiemVuDetail() {
             <Text type="secondary">· cấp {nv.cap} · {nv.donViChuTri}</Text>
           </>
         }
-        extra={<HelpButton section="nhiemvu" />}
+        extra={
+          <Space>
+            <Button
+              type="primary"
+              icon={<FileAddOutlined />}
+              disabled={!canCreateHoSo}
+              onClick={() => navigate(`/ho-so/tao-moi?maNV=${encodeURIComponent(nv.ma)}`)}
+            >
+              Tạo hồ sơ
+            </Button>
+            <HelpButton section="nhiemvu" />
+          </Space>
+        }
       />
 
       <Card title="Vòng đời nhiệm vụ (Chủ trương → Quyết toán)" size="small" style={{ marginBottom: 16 }}>

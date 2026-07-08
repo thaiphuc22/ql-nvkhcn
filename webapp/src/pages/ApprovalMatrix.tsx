@@ -18,11 +18,13 @@ import {
   Space,
   Switch,
   Table,
+  Tabs,
   Tag,
   Tooltip,
   Typography,
 } from 'antd'
 import {
+  AppstoreOutlined,
   ClusterOutlined,
   DeleteOutlined,
   EditOutlined,
@@ -34,11 +36,10 @@ import {
 } from '@ant-design/icons'
 import HelpButton from '../components/HelpButton'
 import ConditionBuilder from '../components/ConditionBuilder'
-import AssignmentBuilder from '../components/AssignmentBuilder'
+import AssignmentBuilder, { type AssignmentTargetIssue } from '../components/AssignmentBuilder'
 import { PageHeader } from '../components/ui'
 import { roleLabel } from '../data/roles'
 import {
-  APPROVAL_SLOTS,
   DELEGATIONS,
   LOAI_HOI_DONG_LABEL,
   MODE_LABEL,
@@ -46,21 +47,27 @@ import {
   describeTarget,
   groupAssignment,
   resolveApprovers,
-  slotLabel,
   type ApprovalAssignment,
   type ApprovalRule,
   type ResolveResult,
   type SlotCode,
 } from '../data/approvalMatrix'
+import { APPROVAL_SLOTS, slotLabel, usageForSlot, type ApprovalSlot } from '../data/approvalSlotCatalog'
 import {
   anyCondition,
   describeConditionTree,
+  leaf,
   type ConditionGroup,
   type ConditionNode,
 } from '../data/approvalConditions'
 import { describeHelpers } from '../data/approvalVariableRegistry'
 import { analyzeRules, warningsByRule } from '../data/approvalMatrixAnalyzer'
 import { useApprovalMatrix } from '../store/ApprovalMatrixContext'
+import {
+  useApprovalSlotCatalog,
+  type CreateApprovalSlotInput,
+  type UpdateApprovalSlotInput,
+} from '../store/ApprovalSlotCatalogContext'
 import { users } from '../data/users'
 
 const { Text, Paragraph } = Typography
@@ -95,6 +102,31 @@ const DEFAULT_RULE_FORM_VALUES: RuleFormValues = {
   enabled: true,
 }
 
+/** Preset điều kiện hay dùng — thêm nhanh 1 leaf vào cây điều kiện đang soạn. */
+const CONDITION_PRESETS: { label: string; make: () => ConditionNode }[] = [
+  { label: 'Cấp Tập đoàn', make: () => leaf('capNhiemVu', 'eq', 'TD') },
+  { label: 'Cấp Cơ sở', make: () => leaf('capNhiemVu', 'eq', 'CS') },
+  { label: 'Ngân sách ≥ 5 tỷ', make: () => leaf('tongDuToan', 'gte', 5_000_000_000) },
+  { label: 'Hội đồng KHCN Tập đoàn', make: () => leaf('loaiHoiDong', 'eq', 'HD_KHCN_TD') },
+]
+
+/** Preset target theo role hay dùng nhất mỗi slot (đối chiếu seed AM-01…AM-07). */
+const TARGET_PRESETS_BY_SLOT: Partial<Record<SlotCode, { label: string; roleCode: string }[]>> = {
+  THAM_DINH: [
+    { label: 'Chuyên quản KHCN (cơ sở)', roleCode: 'CQ_KHCN' },
+    { label: 'Cơ quan KHCN Tập đoàn', roleCode: 'CQ_KHCN_TD' },
+  ],
+  HOI_DONG: [
+    { label: 'Hội đồng KHCN VHT', roleCode: 'HDKHCN' },
+    { label: 'Hội đồng KHCN Tập đoàn', roleCode: 'HDKHCN_TD' },
+  ],
+  PHE_DUYET: [
+    { label: 'Tổng Giám đốc VHT', roleCode: 'TGD_VHT' },
+    { label: 'Ban TGĐ Tập đoàn', roleCode: 'BTGD_TD' },
+    { label: 'Cơ quan nghiệp vụ Tập đoàn', roleCode: 'CQNV_TD' },
+  ],
+}
+
 function ruleToFormValues(rule: ApprovalRule): RuleFormValues {
   return {
     ten: rule.ten,
@@ -110,6 +142,18 @@ function hasAssignmentTarget(assignment: ApprovalAssignment): boolean {
       (t.type === 'USER' && t.userIds.length > 0) ||
       (t.type !== 'GROUP' && t.type !== 'USER'),
   )
+}
+
+function collectAssignmentTargetIssues(assignment: ApprovalAssignment): AssignmentTargetIssue[] {
+  return assignment.targets.flatMap((target, index) => {
+    if (target.type === 'GROUP' && target.roleCodes.length === 0) {
+      return [{ index, message: 'Chọn ít nhất một nhóm phê duyệt.' }]
+    }
+    if (target.type === 'USER' && target.userIds.length === 0) {
+      return [{ index, message: 'Chọn ít nhất một người cụ thể.' }]
+    }
+    return []
+  })
 }
 
 function isBlankValue(value: unknown): boolean {
@@ -133,12 +177,12 @@ function collectConditionValueIssues(node: ConditionNode, path = 'Điều kiện
   return isBlankValue(node.value) ? [`${path}: thiếu giá trị so sánh`] : []
 }
 /**
- * EPIC06 — Ma trận phê duyệt (Approval Matrix). Prototype mock: quản lý luật ánh xạ
- * (slot phê duyệt + điều kiện) → người phê duyệt cụ thể, + Rule Builder (thêm/sửa)
- * + Simulation (resolve người) + Uỷ quyền theo hiệu lực. Xem
- * docs/research/configuration-service-EPIC06.md. State giữ in-memory (mock).
+ * Tab "Ma trận" — quản lý luật ánh xạ (slot phê duyệt + điều kiện) → người phê
+ * duyệt cụ thể, + Rule Builder (thêm/sửa) + Simulation (resolve người) + Uỷ quyền
+ * theo hiệu lực. Xem docs/research/configuration-service-EPIC06.md. State giữ
+ * in-memory (mock).
  */
-export default function ApprovalMatrix() {
+function MatrixTab() {
   const { message } = App.useApp()
   // Nguồn luật CHUNG (store) — sửa ở đây lan sang runtime hồ sơ (Slice G).
   const { rules, upsertRule, removeRule: removeRuleCtx, toggleRule } = useApprovalMatrix()
@@ -169,6 +213,49 @@ export default function ApprovalMatrix() {
     [asgDraft],
   )
   const assignmentHasTarget = useMemo(() => hasAssignmentTarget(asgDraft), [asgDraft])
+  const assignmentTargetIssues = useMemo(() => collectAssignmentTargetIssues(asgDraft), [asgDraft])
+  const draftRule = useMemo<ApprovalRule>(() => ({
+    id: editing?.id ?? '__DRAFT_RULE__',
+    ten: String(watchedTen ?? '').trim() || 'Luật chưa đặt tên',
+    slot: draftSlot,
+    conditions: condDraft,
+    assignment: asgDraft,
+    priority: draftPriority,
+    enabled: draftEnabled,
+    version: editing?.version,
+  }), [asgDraft, condDraft, draftEnabled, draftPriority, draftSlot, editing?.id, editing?.version, watchedTen])
+  const rulesWithDraft = useMemo(
+    () => editing
+      ? rules.map((r) => (r.id === editing.id ? draftRule : r))
+      : [...rules, draftRule],
+    [draftRule, editing, rules],
+  )
+  const draftAnalysisWarnings = useMemo(() => {
+    if (!modalOpen) return []
+    return analyzeRules(rulesWithDraft).filter(
+      (w) => w.ruleId === draftRule.id || (!w.ruleId && w.slot === draftSlot),
+    )
+  }, [draftRule.id, draftSlot, modalOpen, rulesWithDraft])
+  const draftShadowedRules = useMemo(() => {
+    if (!draftEnabled || condDraft.items.length > 0) return []
+    return rules
+      .filter((r) => r.id !== editing?.id && r.enabled && r.slot === draftSlot && r.priority > draftPriority)
+      .sort((a, b) => a.priority - b.priority)
+  }, [condDraft.items.length, draftEnabled, draftPriority, draftSlot, editing?.id, rules])
+  const actionSummary = useMemo(() => {
+    const name = String(watchedTen ?? '').trim() || 'Luật chưa đặt tên'
+    if (!draftEnabled) {
+      return `${name}: luật đang tắt nên runtime sẽ không tạo action từ cấu hình này.`
+    }
+    if (!assignmentHasTarget) {
+      return `${name}: chưa có người/nhóm nhận action nên chưa thể tạo công việc phê duyệt.`
+    }
+    return `${name}: khi slot "${slotLabel(draftSlot)}" và điều kiện khớp, hệ thống sẽ hiện action cho ${assignmentPreview} theo chế độ ${MODE_LABEL[asgDraft.mode]}.`
+  }, [asgDraft.mode, assignmentHasTarget, assignmentPreview, draftEnabled, draftSlot, watchedTen])
+  // Cảnh báo mà analyzer không phủ được: tên rỗng, giá trị điều kiện thiếu. Trùng
+  // priority / bị wildcard ưu tiên cao hơn che khuất đã do `draftAnalysisWarnings`
+  // (analyzeRules chạy trên `rulesWithDraft`) đảm nhiệm — không tính lại ở đây để
+  // tránh 2 nguồn sự thật lệch nhau khi analyzer thay đổi.
   const draftWarnings = useMemo(() => {
     if (!modalOpen) return []
     const out: { level: 'error' | 'warning' | 'info'; message: string }[] = []
@@ -179,54 +266,41 @@ export default function ApprovalMatrix() {
       out.push({ level: 'warning', message: 'Điều kiện đang để trống, rule sẽ khớp mọi hồ sơ trong slot đã chọn.' })
     }
     conditionValueIssues.forEach((issue) => out.push({ level: 'error', message: issue }))
-    if (!assignmentHasTarget) {
-      out.push({ level: 'error', message: 'Chưa có đích phân công hợp lệ.' })
-    }
-
-    const otherRules = rules.filter((r) => r.id !== editing?.id && r.slot === draftSlot)
-    const samePriority = otherRules.filter((r) => r.enabled && r.priority === draftPriority)
-    if (samePriority.length > 0) {
-      out.push({
-        level: 'warning',
-        message: `Trùng ưu tiên ${draftPriority} với ${samePriority.map((r) => r.ten).join(', ')} trong cùng slot.`,
-      })
-    }
-
-    if (draftEnabled) {
-      const higherWildcard = otherRules
-        .filter((r) => r.enabled && r.conditions.items.length === 0 && r.priority < draftPriority)
-        .sort((a, b) => a.priority - b.priority)[0]
-      if (higherWildcard) {
-        out.push({
-          level: 'warning',
-          message: `Có thể bị luật "${higherWildcard.ten}" che khuất vì luật đó khớp mọi hồ sơ và ưu tiên cao hơn.`,
-        })
-      }
-      if (condDraft.items.length === 0) {
-        const lowerRules = otherRules.filter((r) => r.enabled && r.priority > draftPriority)
-        if (lowerRules.length > 0) {
-          out.push({
-            level: 'warning',
-            message: `Rule khớp mọi hồ sơ này có thể che ${lowerRules.length} luật ưu tiên thấp hơn cùng slot.`,
-          })
-        }
-      }
-    }
 
     return out
-  }, [
-    asgDraft,
-    assignmentHasTarget,
-    condDraft,
-    conditionValueIssues,
-    draftEnabled,
-    draftPriority,
-    draftSlot,
-    editing?.id,
-    modalOpen,
-    rules,
-    watchedTen,
-  ])
+  }, [condDraft.items.length, conditionValueIssues, modalOpen, watchedTen])
+  // Panel "Kiểm tra nhanh" hiển thị gộp: heuristic riêng của draft (tên, giá trị
+  // điều kiện) + cảnh báo analyzer thật (trùng priority, wildcard che khuất, thiếu
+  // đích phân công) tính trên `rulesWithDraft`.
+  const previewWarnings = useMemo(
+    () => [...draftWarnings, ...draftAnalysisWarnings],
+    [draftAnalysisWarnings, draftWarnings],
+  )
+
+  // ── Thử nhanh với hồ sơ mẫu ngay trong popup (dùng rulesWithDraft, không cần lưu) ──
+  const [draftSimCap, setDraftSimCap] = useState<'CS' | 'TD'>('TD')
+  const [draftSimLoaiHD, setDraftSimLoaiHD] = useState<string>('HD_KHCN_TD')
+  const [draftSimBudget, setDraftSimBudget] = useState<number>(12_000_000_000)
+  const [draftSimResult, setDraftSimResult] = useState<ResolveResult | null>(null)
+  const runDraftSim = useCallback(() => {
+    setDraftSimResult(
+      resolveApprovers(rulesWithDraft, {
+        slot: draftSlot,
+        cap: draftSimCap,
+        loaiHoiDong: draftSimLoaiHD,
+        tongDuToan: draftSimBudget,
+      }),
+    )
+  }, [draftSimBudget, draftSimCap, draftSimLoaiHD, draftSlot, rulesWithDraft])
+
+  const addConditionPreset = (make: () => ConditionNode) => {
+    setCondDraft((prev) => ({ ...prev, items: [...prev.items, make()] }))
+  }
+  const addTargetPreset = (roleCode: string) => {
+    setAsgDraft((prev) => ({ ...prev, targets: [...prev.targets, { type: 'GROUP', roleCodes: [roleCode] }] }))
+  }
+  const targetPresets = TARGET_PRESETS_BY_SLOT[draftSlot] ?? []
+
   const openCreate = () => {
     const seed = DEFAULT_RULE_FORM_VALUES
     setEditing(null)
@@ -235,6 +309,7 @@ export default function ApprovalMatrix() {
     form.setFieldsValue(seed)
     setCondDraft(anyCondition())
     setAsgDraft(groupAssignment([]))
+    setDraftSimResult(null)
     setModalOpen(true)
   }
   const openEdit = (r: ApprovalRule) => {
@@ -245,6 +320,7 @@ export default function ApprovalMatrix() {
     form.setFieldsValue(seed)
     setCondDraft(structuredClone(r.conditions))
     setAsgDraft(structuredClone(r.assignment))
+    setDraftSimResult(null)
     setModalOpen(true)
   }
 
@@ -367,20 +443,6 @@ export default function ApprovalMatrix() {
 
   return (
     <div>
-      <PageHeader
-        icon={<ClusterOutlined style={{ fontSize: 24, color: 'var(--vht-red)' }} />}
-        title="Ma trận phê duyệt"
-        // tag={<Tag color="processing">EPIC06 · Approval Matrix</Tag>}
-        // code={<Text type="secondary">Ánh xạ “slot phê duyệt + điều kiện” → người phê duyệt cụ thể — prototype mock</Text>}
-        breadcrumb={[{ label: 'Hệ thống QTKHCN' }, { label: 'Ma trận phê duyệt' }]}
-        extra={
-          <Space>
-            <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>Thêm luật</Button>
-            <HelpButton section="matran" />
-          </Space>
-        }
-      />
-
       {/* <Alert
         type="info"
         showIcon
@@ -417,7 +479,11 @@ export default function ApprovalMatrix() {
 
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={15}>
-          <Card size="small" title={<Space><SolutionOutlined />Bảng luật ánh xạ (first-match theo ưu tiên)</Space>}>
+          <Card
+            size="small"
+            title={<Space><SolutionOutlined />Bảng luật ánh xạ (first-match theo ưu tiên)</Space>}
+            extra={<Button type="primary" size="small" icon={<PlusOutlined />} onClick={openCreate}>Thêm luật</Button>}
+          >
             <Table
               size="small"
               rowKey="id"
@@ -464,7 +530,7 @@ export default function ApprovalMatrix() {
                   style={{ width: '100%', marginTop: 4 }}
                   value={simSlot}
                   onChange={setSimSlot}
-                  options={APPROVAL_SLOTS.map((s) => ({ value: s.code, label: s.ten }))}
+                  options={APPROVAL_SLOTS.filter((s) => s.trangThai === 'active').map((s) => ({ value: s.code, label: s.ten }))}
                 />
               </div>
               <div>
@@ -627,7 +693,7 @@ export default function ApprovalMatrix() {
                   <Row gutter={12}>
                     <Col xs={24} md={12}>
                       <Form.Item name="slot" label="Slot phê duyệt" rules={[{ required: true }]}>
-                        <Select options={APPROVAL_SLOTS.map((s) => ({ value: s.code, label: s.ten }))} />
+                        <Select options={APPROVAL_SLOTS.filter((s) => s.trangThai === 'active').map((s) => ({ value: s.code, label: s.ten }))} />
                       </Form.Item>
                     </Col>
                     <Col xs={12} md={6}>
@@ -656,6 +722,14 @@ export default function ApprovalMatrix() {
                       description="Thêm điều kiện nếu rule này không phải fallback."
                     />
                   )}
+                  <Space size={[8, 8]} wrap style={{ marginBottom: 12 }}>
+                    <Text type="secondary" style={{ fontSize: 12 }}>Thêm nhanh:</Text>
+                    {CONDITION_PRESETS.map((p) => (
+                      <Button key={p.label} size="small" onClick={() => addConditionPreset(p.make)}>
+                        {p.label}
+                      </Button>
+                    ))}
+                  </Space>
                   <Form.Item
                     tooltip="Cây điều kiện AND/OR — để trống = khớp mọi hồ sơ. Slot khớp riêng ở phần thông tin luật."
                     style={{ marginBottom: 0 }}
@@ -664,12 +738,22 @@ export default function ApprovalMatrix() {
                   </Form.Item>
                 </Card>
 
-                <Card size="small" title="Kết quả phân công">
+                <Card size="small" title="Action sẽ hiện cho ai">
+                  {targetPresets.length > 0 && (
+                    <Space size={[8, 8]} wrap style={{ marginBottom: 12 }}>
+                      <Text type="secondary" style={{ fontSize: 12 }}>Thêm nhanh:</Text>
+                      {targetPresets.map((p) => (
+                        <Button key={p.roleCode} size="small" onClick={() => addTargetPreset(p.roleCode)}>
+                          {p.label}
+                        </Button>
+                      ))}
+                    </Space>
+                  )}
                   <Form.Item
                     tooltip="Ai/nhóm nào phê duyệt và chế độ phê duyệt. GROUP/USER đang resolve thật; chức danh, hội đồng và biểu thức là placeholder cho backend."
                     style={{ marginBottom: 0 }}
                   >
-                    <AssignmentBuilder value={asgDraft} onChange={setAsgDraft} />
+                    <AssignmentBuilder value={asgDraft} onChange={setAsgDraft} issues={assignmentTargetIssues} />
                   </Form.Item>
                 </Card>
               </Space>
@@ -690,29 +774,40 @@ export default function ApprovalMatrix() {
                     <Text strong>{String(watchedTen ?? '').trim() || 'Luật chưa đặt tên'}</Text>
                   </Paragraph>
 
+                  <Alert
+                    type={!draftEnabled ? 'warning' : !assignmentHasTarget ? 'error' : 'success'}
+                    showIcon
+                    message={<span style={{ fontSize: 13 }}>{actionSummary}</span>}
+                  />
+
                   <div>
-                    <Text type="secondary" style={{ fontSize: 12 }}>Khi điều kiện</Text>
+                    <Text type="secondary" style={{ fontSize: 12 }}>Điều kiện áp dụng</Text>
                     <Paragraph style={{ marginBottom: 0, fontSize: 13 }}>{conditionPreview}</Paragraph>
                   </div>
 
                   <div>
-                    <Text type="secondary" style={{ fontSize: 12 }}>Thì phân công</Text>
+                    <Text type="secondary" style={{ fontSize: 12 }}>Action sẽ hiện cho ai</Text>
                     <Paragraph style={{ marginBottom: 0, fontSize: 13 }}>{assignmentPreview}</Paragraph>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      Chế độ: {MODE_LABEL[asgDraft.mode]}
-                    </Text>
+                    <Space size={4} wrap>
+                      <Tag>Chế độ: {MODE_LABEL[asgDraft.mode]}</Tag>
+                    </Space>
+                    {asgDraft.targets.some((t) => t.type === 'GROUP') && (
+                      <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
+                        Runtime sẽ resolve thành candidateUsers theo thành viên nhóm và uỷ quyền hiện hành.
+                      </Text>
+                    )}
                   </div>
 
                   <Divider style={{ margin: '4px 0' }} />
 
                   <Alert
-                    type={draftWarnings.some((w) => w.level === 'error') ? 'error' : draftWarnings.length > 0 ? 'warning' : 'success'}
+                    type={previewWarnings.some((w) => w.level === 'error') ? 'error' : previewWarnings.length > 0 ? 'warning' : 'success'}
                     showIcon
-                    message={draftWarnings.length > 0 ? 'Kiểm tra nhanh' : 'Rule đã đủ thông tin cơ bản'}
+                    message={previewWarnings.length > 0 ? 'Kiểm tra nhanh' : 'Rule đã đủ thông tin cơ bản'}
                     description={
-                      draftWarnings.length > 0 ? (
+                      previewWarnings.length > 0 ? (
                         <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12 }}>
-                          {draftWarnings.map((w, i) => (
+                          {previewWarnings.map((w, i) => (
                             <li key={i} style={{ color: w.level === 'error' ? '#cf1322' : undefined }}>
                               {w.message}
                             </li>
@@ -723,12 +818,343 @@ export default function ApprovalMatrix() {
                       )
                     }
                   />
+
+                  {draftShadowedRules.length > 0 && (
+                    <Alert
+                      type="warning"
+                      showIcon
+                      message={`Luật này sẽ che khuất ${draftShadowedRules.length} luật ưu tiên thấp hơn cùng slot`}
+                      description={
+                        <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12 }}>
+                          {draftShadowedRules.map((r) => (
+                            <li key={r.id}>{r.ten} (ưu tiên #{r.priority})</li>
+                          ))}
+                        </ul>
+                      }
+                    />
+                  )}
+
+                  <Divider style={{ margin: '4px 0' }} />
+
+                  <div>
+                    <Text type="secondary" style={{ fontSize: 12 }}>Thử với hồ sơ mẫu</Text>
+                    <Row gutter={8} style={{ marginTop: 4 }}>
+                      <Col span={10}>
+                        <Select
+                          size="small"
+                          style={{ width: '100%' }}
+                          value={draftSimCap}
+                          onChange={setDraftSimCap}
+                          options={[
+                            { value: 'CS', label: 'Cơ sở' },
+                            { value: 'TD', label: 'Tập đoàn' },
+                          ]}
+                        />
+                      </Col>
+                      <Col span={14}>
+                        <InputNumber<number>
+                          size="small"
+                          style={{ width: '100%' }}
+                          min={0}
+                          step={1_000_000_000}
+                          value={draftSimBudget}
+                          onChange={(v) => setDraftSimBudget(v ?? 0)}
+                          formatter={(v) => VND.format(Number(v ?? 0))}
+                          parser={(s) => Number((s ?? '').replace(/\D/g, ''))}
+                        />
+                      </Col>
+                    </Row>
+                    {draftSlot === 'HOI_DONG' && (
+                      <Select
+                        size="small"
+                        style={{ width: '100%', marginTop: 8 }}
+                        value={draftSimLoaiHD}
+                        onChange={setDraftSimLoaiHD}
+                        options={Object.entries(LOAI_HOI_DONG_LABEL).map(([v, l]) => ({ value: v, label: l }))}
+                      />
+                    )}
+                    <Button
+                      size="small"
+                      type="dashed"
+                      icon={<ThunderboltOutlined />}
+                      block
+                      style={{ marginTop: 8 }}
+                      onClick={runDraftSim}
+                    >
+                      Chạy thử
+                    </Button>
+
+                    {draftSimResult && (
+                      <div style={{ marginTop: 8 }}>
+                        {draftSimResult.matchedRule?.id === draftRule.id ? (
+                          <Alert
+                            type="success"
+                            showIcon
+                            message="Luật này khớp và thắng với hồ sơ mẫu"
+                            description={<span style={{ fontSize: 12 }}>{draftSimResult.reason}</span>}
+                          />
+                        ) : draftSimResult.matchedRule ? (
+                          <Alert
+                            type="warning"
+                            showIcon
+                            message={`Luật "${draftSimResult.matchedRule.ten}" (ưu tiên #${draftSimResult.matchedRule.priority}) thắng, không phải luật đang soạn`}
+                            description={<span style={{ fontSize: 12 }}>{draftSimResult.reason}</span>}
+                          />
+                        ) : (
+                          <Alert type="warning" showIcon message="Không có luật nào khớp hồ sơ mẫu trong slot này" />
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </Space>
               </Card>
             </Col>
           </Row>
         </Form>
       </Modal>
+    </div>
+  )
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Tab "Danh mục Slot" (Slice E, docs/research/approval-slot-catalog-plan.md §4.E) —
+// CRUD trên ApprovalSlotCatalogContext (Slice B): mã/tên/mô tả/nhóm quy trình/thứ
+// tự/trạng thái + số luật đang tham chiếu. Đây là nơi BA thêm slot mới (vd
+// TAI_CHINH_RASOAT thật khi có luồng rà soát tài chính) thay vì sửa code.
+// ════════════════════════════════════════════════════════════════════════════
+interface SlotFormValues {
+  code: string
+  ten: string
+  moTa?: string
+  nhomQuyTrinh?: string[]
+  thuTu?: number
+}
+
+function SlotCatalogTab() {
+  const { message } = App.useApp()
+  const { slots, create, update, setStatus } = useApprovalSlotCatalog()
+  const { rules } = useApprovalMatrix()
+
+  const [editing, setEditing] = useState<ApprovalSlot | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [form] = Form.useForm<SlotFormValues>()
+
+  const sortedSlots = useMemo(() => [...slots].sort((a, b) => a.thuTu - b.thuTu), [slots])
+
+  const openCreate = () => {
+    setEditing(null)
+    form.resetFields()
+    form.setFieldsValue({ code: '', ten: '', moTa: '', nhomQuyTrinh: [] })
+    setModalOpen(true)
+  }
+  const openEdit = (s: ApprovalSlot) => {
+    setEditing(s)
+    form.resetFields()
+    form.setFieldsValue({
+      code: s.code,
+      ten: s.ten,
+      moTa: s.moTa ?? '',
+      nhomQuyTrinh: s.nhomQuyTrinh ?? [],
+      thuTu: s.thuTu,
+    })
+    setModalOpen(true)
+  }
+
+  const save = async () => {
+    const v = await form.validateFields()
+    if (editing) {
+      const patch: UpdateApprovalSlotInput = {
+        ten: v.ten.trim(),
+        moTa: v.moTa?.trim() || undefined,
+        nhomQuyTrinh: v.nhomQuyTrinh?.length ? v.nhomQuyTrinh : undefined,
+        thuTu: v.thuTu,
+      }
+      update(editing.code, patch)
+      setModalOpen(false)
+      message.success('Đã cập nhật slot.')
+      return
+    }
+    const input: CreateApprovalSlotInput = {
+      code: v.code,
+      ten: v.ten.trim(),
+      moTa: v.moTa?.trim() || undefined,
+      nhomQuyTrinh: v.nhomQuyTrinh?.length ? v.nhomQuyTrinh : undefined,
+    }
+    const result = create(input)
+    if (!result.ok) {
+      message.error(result.errors.join(' '))
+      return
+    }
+    setModalOpen(false)
+    message.success('Đã thêm slot mới.')
+  }
+
+  const toggleStatus = (s: ApprovalSlot, checked: boolean) => {
+    const usage = usageForSlot(s.code, rules)
+    const apply = () => {
+      setStatus(s.code, checked ? 'active' : 'inactive')
+      message.success(checked ? `Đã kích hoạt lại "${s.code}".` : `Đã huỷ kích hoạt "${s.code}".`)
+    }
+    if (!checked && usage > 0) {
+      Modal.confirm({
+        title: 'Huỷ kích hoạt slot đang được luật tham chiếu?',
+        content: `Slot "${s.code}" đang có ${usage} luật ánh xạ tham chiếu. Huỷ kích hoạt sẽ ẩn slot này khỏi các danh sách chọn (luật mới, mô phỏng) nhưng KHÔNG xoá hay tắt các luật hiện có.`,
+        okText: 'Vẫn huỷ kích hoạt',
+        cancelText: 'Huỷ bỏ',
+        okButtonProps: { danger: true },
+        onOk: apply,
+      })
+      return
+    }
+    apply()
+  }
+
+  const columns = [
+    {
+      title: 'Slot', key: 'slot',
+      render: (_: unknown, s: ApprovalSlot) => (
+        <div>
+          <Text strong>{s.ten}</Text>
+          <div><Text code style={{ fontSize: 11 }}>{s.code}</Text></div>
+          {s.moTa && <div><Text type="secondary" style={{ fontSize: 12 }}>{s.moTa}</Text></div>}
+        </div>
+      ),
+    },
+    {
+      title: 'Nhóm quy trình', key: 'nhom', width: 200,
+      render: (_: unknown, s: ApprovalSlot) =>
+        s.nhomQuyTrinh?.length ? (
+          <Space size={4} wrap>
+            {s.nhomQuyTrinh.map((n) => <Tag key={n}>{n}</Tag>)}
+          </Space>
+        ) : (
+          <Text type="secondary" style={{ fontSize: 12 }}>Mọi quy trình</Text>
+        ),
+    },
+    {
+      title: 'Thứ tự', dataIndex: 'thuTu', width: 84,
+      render: (n: number) => <Tag>{n}</Tag>,
+    },
+    {
+      title: 'Luật tham chiếu', key: 'usage', width: 120,
+      render: (_: unknown, s: ApprovalSlot) => {
+        const n = usageForSlot(s.code, rules)
+        return <Tag color={n > 0 ? 'blue' : 'default'}>{n} luật</Tag>
+      },
+    },
+    {
+      title: 'Trạng thái', key: 'status', width: 110,
+      render: (_: unknown, s: ApprovalSlot) => (
+        <Switch
+          size="small"
+          checked={s.trangThai === 'active'}
+          onChange={(checked) => toggleStatus(s, checked)}
+        />
+      ),
+    },
+    {
+      title: '', key: 'act', width: 56,
+      render: (_: unknown, s: ApprovalSlot) => (
+        <Button size="small" type="text" icon={<EditOutlined />} onClick={() => openEdit(s)} />
+      ),
+    },
+  ]
+
+  return (
+    <>
+      <Alert
+        type="info"
+        showIcon
+        style={{ marginBottom: 16 }}
+        message="Danh mục Slot phê duyệt (Need Role)"
+        description={
+          <span>
+            Nguồn duy nhất cho các slot mà BPMN có thể gán qua Need Role (Properties Panel) và
+            Ma trận phê duyệt dùng để ánh xạ luật. Thêm slot ở đây trước khi gán trên BPMN —
+            tránh gõ tự do sinh mã trôi (vd <Text code>XYZ</Text>/<Text code>xyz</Text>).
+          </span>
+        }
+      />
+      <Card
+        size="small"
+        title={<Space><AppstoreOutlined />Danh sách slot</Space>}
+        extra={<Button type="primary" size="small" icon={<PlusOutlined />} onClick={openCreate}>Thêm slot</Button>}
+      >
+        <Table size="small" rowKey="code" pagination={false} dataSource={sortedSlots} columns={columns} />
+      </Card>
+
+      <Modal
+        title={editing ? `Sửa slot "${editing.code}"` : 'Thêm slot mới'}
+        open={modalOpen}
+        onOk={save}
+        onCancel={() => setModalOpen(false)}
+        okText="Lưu"
+        cancelText="Huỷ"
+        forceRender
+        width={520}
+      >
+        <Form form={form} layout="vertical" preserve={false}>
+          <Form.Item
+            name="code"
+            label="Mã slot"
+            tooltip="Chuẩn hoá tự động về UPPER_SNAKE khi lưu (vd 'rà soát' → 'RA_SOAT')."
+            rules={[{ required: true, message: 'Nhập mã slot' }]}
+          >
+            <Input placeholder="VD: TAI_CHINH_RASOAT" disabled={!!editing} />
+          </Form.Item>
+          <Form.Item name="ten" label="Tên hiển thị" rules={[{ required: true, message: 'Nhập tên hiển thị' }]}>
+            <Input placeholder="VD: Rà soát tài chính" />
+          </Form.Item>
+          <Form.Item name="moTa" label="Mô tả nghiệp vụ">
+            <Input.TextArea rows={2} placeholder="Slot này dùng cho bước nào, khi nào?" />
+          </Form.Item>
+          <Form.Item
+            name="nhomQuyTrinh"
+            label="Nhóm quy trình áp dụng"
+            tooltip="Để trống = áp dụng mọi quy trình."
+          >
+            <Select mode="tags" placeholder="VD: RD01, RD02" options={[]} />
+          </Form.Item>
+          {editing && (
+            <Form.Item name="thuTu" label="Thứ tự hiển thị">
+              <InputNumber style={{ width: '100%' }} min={0} />
+            </Form.Item>
+          )}
+        </Form>
+      </Modal>
+    </>
+  )
+}
+
+/**
+ * EPIC06 — Ma trận phê duyệt (Approval Matrix). Prototype mock: 2 tab — "Ma trận"
+ * (luật ánh xạ slot + điều kiện → người phê duyệt, xem MatrixTab) và "Danh mục
+ * Slot" (catalog quản lý các slot khả dụng, Slice E — xem SlotCatalogTab). Xem
+ * docs/research/approval-slot-catalog-plan.md.
+ */
+export default function ApprovalMatrix() {
+  const items = [
+    {
+      key: 'matrix',
+      label: <Space><SolutionOutlined />Ma trận</Space>,
+      children: <MatrixTab />,
+    },
+    {
+      key: 'catalog',
+      label: <Space><AppstoreOutlined />Danh mục Slot</Space>,
+      children: <SlotCatalogTab />,
+    },
+  ]
+
+  return (
+    <div>
+      <PageHeader
+        icon={<ClusterOutlined style={{ fontSize: 24, color: 'var(--vht-red)' }} />}
+        title="Ma trận phê duyệt"
+        breadcrumb={[{ label: 'Hệ thống QTKHCN' }, { label: 'Ma trận phê duyệt' }]}
+        extra={<HelpButton section="matran" />}
+      />
+      <Tabs items={items} />
     </div>
   )
 }

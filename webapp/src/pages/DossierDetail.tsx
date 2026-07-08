@@ -402,10 +402,21 @@ export default function DossierDetail() {
   // luat CHUNG (store), nen sua luat o /ma-tran-phe-duyet doi luon nguoi du kien +
   // hien thi "khop luat nao". Buoc khong suy duoc slot (approvalSlotMap) giu
   // resolveGroups nhu cu. Xem docs/.../approval-matrix-refactor-plan §4.G.
+  // Slice D (approval-slot-catalog-plan.md §4.D): needRole thật của bước (nếu quy
+  // trình đã re-author qua Properties Panel) ưu tiên hơn suy diễn candidateGroups.
   const isCurrentApproval =
     d.trangThai === "processing" && !!currentStep && isApprovalStep(currentStep);
+  const currentNeedRole = proc?.taskSteps?.find(
+    (ts) => ts.ten === currentStep?.ten,
+  )?.needRole;
   const amCtx = isCurrentApproval
-    ? buildApprovalContext(d.cap, d.duToan, currentStep!.vaiTroCodes)
+    ? buildApprovalContext(
+        d.cap,
+        d.duToan,
+        currentStep!.vaiTroCodes,
+        undefined,
+        currentNeedRole,
+      )
     : null;
   const amResult = amCtx ? resolveApprovers(amRules, amCtx) : null;
   const currentApprovers = amResult
@@ -498,6 +509,10 @@ export default function DossierDetail() {
   const excPolicy = resolveExceptionPolicy(EXCEPTION_POLICIES, {
     exceptionType: excType,
     cap: d.cap,
+    processCode: d.quyTrinh,
+    taskDefinitionKey: currentStep?.taskDefinitionKey,
+    objectType: 'DOSSIER',
+    objectStatus: d.trangThai,
   });
   const excEvidenceRequired = !!excPolicy?.requireEvidence;
   const excFormInvalid =

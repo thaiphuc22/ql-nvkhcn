@@ -2,10 +2,16 @@ import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import {
   App,
   Col,
+  Drawer,
+  Empty,
   Form,
   Input,
   Modal,
   Row,
+  Space,
+  Table,
+  Tabs,
+  Tag,
   Tooltip,
   Typography,
 } from "antd";
@@ -22,12 +28,26 @@ import {
   ShoppingCartOutlined,
   TeamOutlined,
 } from "@ant-design/icons";
+import type { ColumnsType } from "antd/es/table";
 import HelpButton from '../components/HelpButton'
-import { PageHeader, StatCard } from "../components/ui";
+import MappingStudio from "../components/MappingStudio";
+import { PageHeader, StatCard, StatusTag } from "../components/ui";
+import { useIntegrationMapping } from "../store/IntegrationMappingContext";
+import {
+  BUSINESS_OBJECT_LABEL,
+  MAPPING_STATUS_META,
+} from "../data/integrationMapping";
 import {
   INTEG_STATUS,
+  JOB_OUTCOME,
+  integrationSuccessRate,
+  jobRunsForSystem,
+  lastErrorAt,
+  openIncidentCount,
   seedIntegrations,
   type IntegrationSystem,
+  type JobOutcome,
+  type JobRun,
 } from "../data/camundaOps";
 
 const { Text } = Typography;
@@ -54,6 +74,8 @@ export default function IntegrationStatus() {
   const [systems, setSystems] = useState<IntegrationSystem[]>(seedIntegrations);
   /** Hệ đang mở popup Kết nối/Cấu hình (null = đóng). */
   const [target, setTarget] = useState<IntegrationSystem | null>(null);
+  /** Hệ đang mở drawer "Xem chi tiết" (null = đóng). */
+  const [detail, setDetail] = useState<IntegrationSystem | null>(null);
   const [form] = Form.useForm<ConnectFormValues>();
 
   const stats = useMemo(() => {
@@ -133,51 +155,88 @@ export default function IntegrationStatus() {
         extra={<HelpButton section="tichhop" />}
       />
 
-      {/* Dải KPI kiểu bento: vạch nhấn trái theo ngữ nghĩa (list-card-sample.md). */}
-      <Row gutter={[14, 14]} style={{ marginBottom: 18 }}>
-        <Col xs={12} md={6}>
-          <StatCard
-            title="Đã kết nối"
-            value={`${stats.connected} / ${stats.total}`}
-            style={{ borderLeft: "4px solid #ee0033" }}
-          />
-        </Col>
-        <Col xs={12} md={6}>
-          <StatCard
-            title="Hệ tích hợp"
-            value={stats.total}
-            style={{ borderLeft: "4px solid #1c1c1c" }}
-          />
-        </Col>
-        <Col xs={12} md={6}>
-          <StatCard
-            title="Lỗi 24h"
-            value={stats.errors}
-            color="#cf1322"
-            style={{ borderLeft: "4px solid #cf1322" }}
-          />
-        </Col>
-        <Col xs={12} md={6}>
-          <StatCard
-            title="Job trong hàng đợi"
-            value={stats.queued}
-            color="#b06f00"
-            style={{ borderLeft: "4px solid #daa520" }}
-          />
-        </Col>
-      </Row>
+      <Tabs
+        defaultActiveKey="tongquan"
+        items={[
+          {
+            key: "tongquan",
+            label: "Tổng quan",
+            children: (
+              <>
+                {/* Dải KPI kiểu bento: vạch nhấn trái theo ngữ nghĩa (list-card-sample.md). */}
+                <Row gutter={[14, 14]} style={{ marginBottom: 18 }}>
+                  <Col xs={12} md={6}>
+                    <StatCard
+                      title="Đã kết nối"
+                      value={`${stats.connected} / ${stats.total}`}
+                      style={{ borderLeft: "4px solid #ee0033" }}
+                    />
+                  </Col>
+                  <Col xs={12} md={6}>
+                    <StatCard
+                      title="Hệ tích hợp"
+                      value={stats.total}
+                      style={{ borderLeft: "4px solid #1c1c1c" }}
+                    />
+                  </Col>
+                  <Col xs={12} md={6}>
+                    <StatCard
+                      title="Lỗi 24h"
+                      value={stats.errors}
+                      color="#cf1322"
+                      style={{ borderLeft: "4px solid #cf1322" }}
+                    />
+                  </Col>
+                  <Col xs={12} md={6}>
+                    <StatCard
+                      title="Job trong hàng đợi"
+                      value={stats.queued}
+                      color="#b06f00"
+                      style={{ borderLeft: "4px solid #daa520" }}
+                    />
+                  </Col>
+                </Row>
 
-      <Row gutter={[14, 14]} style={{ marginBottom: 20 }}>
-        {systems.map((s) => (
-          <Col xs={24} sm={12} xl={8} key={s.key}>
-            <SystemCard
-              s={s}
-              onConnect={() => openConnect(s)}
-              onDisconnect={() => handleDisconnect(s)}
-            />
-          </Col>
-        ))}
-      </Row>
+                <Row gutter={[14, 14]} style={{ marginBottom: 20 }}>
+                  {systems.map((s) => (
+                    <Col xs={24} sm={12} xl={8} key={s.key}>
+                      <SystemCard
+                        s={s}
+                        onConnect={() => openConnect(s)}
+                        onDisconnect={() => handleDisconnect(s)}
+                        onDetail={() => setDetail(s)}
+                      />
+                    </Col>
+                  ))}
+                </Row>
+              </>
+            ),
+          },
+          {
+            key: "mapping",
+            label: "Mapping dữ liệu",
+            children: <MappingStudio />,
+          },
+          {
+            key: "joblog",
+            label: "Job & lỗi (sắp có)",
+            disabled: true,
+            children: null,
+          },
+          {
+            key: "cauhinh",
+            label: "Cấu hình kết nối (sắp có)",
+            disabled: true,
+            children: null,
+          },
+          {
+            key: "kiemthu",
+            label: "Kiểm thử (sắp có)",
+            disabled: true,
+            children: null,
+          },
+        ]}
+      />
 
       {/* Popup Kết nối / Cấu hình lại: nhập API key + endpoint. */}
       <Modal
@@ -224,7 +283,200 @@ export default function IntegrationStatus() {
           </Form.Item>
         </Form>
       </Modal>
+
+      <SystemDetailDrawer system={detail} onClose={() => setDetail(null)} />
     </div>
+  );
+}
+
+/** Drawer "Xem chi tiết" một hệ tích hợp — thông tin kết nối + job/lỗi gần nhất. */
+function SystemDetailDrawer({
+  system,
+  onClose,
+}: {
+  system: IntegrationSystem | null;
+  onClose: () => void;
+}) {
+  const { listForSystem } = useIntegrationMapping();
+  const jobs = useMemo(
+    () => (system ? jobRunsForSystem(system.key).slice(0, 5) : []),
+    [system],
+  );
+  const mappings = useMemo(
+    () => (system ? listForSystem(system.key) : []),
+    [system, listForSystem],
+  );
+
+  if (!system) return null;
+  const visual = SYS_VISUAL[system.key] ?? SYS_VISUAL_FALLBACK;
+  const m = INTEG_STATUS[system.trangThai];
+  const rate = integrationSuccessRate(system);
+  const errAt = lastErrorAt(system.key);
+
+  const columns: ColumnsType<JobRun> = [
+    {
+      title: "Job type",
+      dataIndex: "jobType",
+      render: (v: string) => (
+        <Text code style={{ fontSize: 12 }}>
+          {v}
+        </Text>
+      ),
+    },
+    { title: "Mã hồ sơ", dataIndex: "maHoSo", width: 120 },
+    { title: "Thời điểm", dataIndex: "thoiDiem", width: 140 },
+    {
+      title: "Kết quả",
+      dataIndex: "ketQua",
+      width: 110,
+      render: (v: JobOutcome) => (
+        <StatusTag color={JOB_OUTCOME[v].color} label={JOB_OUTCOME[v].label} />
+      ),
+    },
+  ];
+
+  return (
+    <Drawer
+      title={
+        <Space>
+          <span
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 8,
+              background: visual.bg,
+              color: visual.color,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 15,
+            }}
+          >
+            {visual.icon}
+          </span>
+          {system.key} — {system.ten}
+        </Space>
+      }
+      open={!!system}
+      onClose={onClose}
+      width={480}
+    >
+      <Space direction="vertical" size={20} style={{ width: "100%" }}>
+        <div>
+          <Tag color={m.color === "success" ? "success" : m.color === "warning" ? "warning" : "error"}>
+            {m.label}
+          </Tag>
+          <Text type="secondary" style={{ fontSize: 12, display: "block", marginTop: 8 }}>
+            {system.moTa}
+          </Text>
+        </div>
+
+        <div>
+          <Text strong style={{ fontSize: 13 }}>
+            Thông tin kết nối
+          </Text>
+          <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+            <InfoRowSample label="Giao thức" value={<Text style={{ fontSize: 12 }}>{system.giaoThuc}</Text>} />
+            <InfoRowSample
+              label="Endpoint"
+              value={
+                <Text style={{ fontSize: 12, fontFamily: "monospace" }}>{system.endpoint}</Text>
+              }
+            />
+            <InfoRowSample
+              label="API Key"
+              value={
+                <Text style={{ fontSize: 12, fontFamily: "monospace" }}>
+                  {system.apiKeyTail ? `•••• ${system.apiKeyTail}` : "Chưa thiết lập"}
+                </Text>
+              }
+            />
+            <InfoRowSample
+              label="Đồng bộ cuối"
+              value={<Text style={{ fontSize: 12 }}>{system.lanDongBoCuoi}</Text>}
+            />
+          </div>
+        </div>
+
+        <div>
+          <Text strong style={{ fontSize: 13 }}>
+            Chỉ số 24h
+          </Text>
+          <Row gutter={10} style={{ marginTop: 8 }}>
+            <Col span={8}>
+              <StatCard title="Độ trễ TB" value={`${system.doTreMs} ms`} />
+            </Col>
+            <Col span={8}>
+              <StatCard
+                title="Tỷ lệ thành công"
+                value={rate === null ? "—" : `${rate}%`}
+                color={rate !== null && rate < 100 ? "#cf1322" : undefined}
+              />
+            </Col>
+            <Col span={8}>
+              <StatCard title="Hàng đợi" value={system.hangDoi} color={system.hangDoi > 3 ? "#b06f00" : undefined} />
+            </Col>
+          </Row>
+          <Text type="secondary" style={{ fontSize: 12, display: "block", marginTop: 8 }}>
+            Lỗi gần nhất: {errAt ? errAt : "Chưa ghi nhận lỗi"}
+          </Text>
+        </div>
+
+        <div>
+          <Text strong style={{ fontSize: 13 }}>
+            Job gần nhất
+          </Text>
+          {jobs.length === 0 ? (
+            <Empty
+              description="Chưa có job nào ghi nhận cho hệ này."
+              style={{ marginTop: 8 }}
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+            />
+          ) : (
+            <Table
+              size="small"
+              rowKey="id"
+              columns={columns}
+              dataSource={jobs}
+              pagination={false}
+              style={{ marginTop: 8 }}
+            />
+          )}
+        </div>
+
+        <div style={{ borderTop: "1px dashed #e2e2e5", paddingTop: 12 }}>
+          <Text strong style={{ fontSize: 13 }}>
+            Mapping dữ liệu
+          </Text>
+          {mappings.length === 0 ? (
+            <Text type="secondary" style={{ fontSize: 12, display: "block", marginTop: 6 }}>
+              Chưa có mapping nào cho hệ này. Xem tab "Mapping dữ liệu".
+            </Text>
+          ) : (
+            <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 6 }}>
+              {mappings.map((m) => (
+                <div key={m.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <Text style={{ fontSize: 12 }}>
+                    {BUSINESS_OBJECT_LABEL[m.doiTuong]} · v{m.version}
+                  </Text>
+                  <Tag color={MAPPING_STATUS_META[m.trangThai].color}>
+                    {MAPPING_STATUS_META[m.trangThai].label}
+                  </Tag>
+                </div>
+              ))}
+            </div>
+          )}
+          <Text type="secondary" style={{ fontSize: 12, display: "block", marginTop: 10 }}>
+            Các quy trình/service task dùng hệ này chưa được liên kết — xem lộ
+            trình nâng cấp tại
+            <Text code style={{ fontSize: 11 }}>
+              {" "}docs/research/integration-screen-upgrade-notes.md
+            </Text>
+            .
+          </Text>
+        </div>
+      </Space>
+    </Drawer>
   );
 }
 
@@ -232,14 +484,18 @@ function SystemCard({
   s,
   onConnect,
   onDisconnect,
+  onDetail,
 }: {
   s: IntegrationSystem;
   onConnect: () => void;
   onDisconnect: () => void;
+  onDetail: () => void;
 }) {
   const m = INTEG_STATUS[s.trangThai];
   const visual = SYS_VISUAL[s.key] ?? SYS_VISUAL_FALLBACK;
   const connected = s.trangThai !== "down";
+  const rate = integrationSuccessRate(s);
+  const openIncidents = openIncidentCount(s.key);
 
   return (
     <div className="vht-bento-card" style={cardOuterStyle}>
@@ -338,43 +594,54 @@ function SystemCard({
 
       {/* ── Dải chỉ số 24h — border-top thay bg (như sample) ── */}
       <div style={metricRowStyle}>
-        <MetricSample label="Bản ghi 24h" value={s.banGhi24h.toLocaleString("vi-VN")} />
+        <MetricSample label="Độ trễ TB" value={`${s.doTreMs}ms`} />
         <MetricDivider />
-        <MetricSample label="Lỗi 24h" value={s.loi24h} danger={s.loi24h > 0} />
+        <MetricSample
+          label="TL thành công"
+          value={rate === null ? "—" : `${rate}%`}
+          danger={rate !== null && rate < 100}
+        />
         <MetricDivider />
         <MetricSample label="Hàng đợi" value={s.hangDoi} danger={s.hangDoi > 3} />
+        <MetricDivider />
+        <MetricSample label="Lỗi mở" value={openIncidents} danger={openIncidents > 0} />
       </div>
 
       {/* ── Đường kẻ chia ── */}
       <div style={{ borderTop: "1px solid #e2e2e5", margin: "14px 0 12px" }} />
 
       {/* ── Chân card: nút hành động ── */}
-      {connected ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <button type="button" onClick={onDetail} style={btnOutlineStyle}>
+          Xem chi tiết
+        </button>
+        {connected ? (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <button
+              type="button"
+              onClick={onConnect}
+              style={btnOutlineStyle}
+            >
+              <SettingOutlined style={{ fontSize: 14 }} /> Cấu hình
+            </button>
+            <button
+              type="button"
+              onClick={onDisconnect}
+              style={btnDangerStyle}
+            >
+              <DisconnectOutlined style={{ fontSize: 14 }} /> Ngắt kết nối
+            </button>
+          </div>
+        ) : (
           <button
             type="button"
             onClick={onConnect}
-            style={btnOutlineStyle}
+            style={btnPrimaryStyle}
           >
-            <SettingOutlined style={{ fontSize: 14 }} /> Cấu hình
+            <LinkOutlined style={{ fontSize: 14 }} /> Kết nối
           </button>
-          <button
-            type="button"
-            onClick={onDisconnect}
-            style={btnDangerStyle}
-          >
-            <DisconnectOutlined style={{ fontSize: 14 }} /> Ngắt kết nối
-          </button>
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={onConnect}
-          style={btnPrimaryStyle}
-        >
-          <LinkOutlined style={{ fontSize: 14 }} /> Kết nối
-        </button>
-      )}
+        )}
+      </div>
 
       <div style={{ marginTop: 10 }}>
         <Tooltip title="Requirement/NFR liên quan">
