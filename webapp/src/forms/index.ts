@@ -1,7 +1,7 @@
 // Thư viện biểu mẫu (Camunda Forms / form-js) — DỮ LIỆU SEED + tiện ích xử lý kết quả.
 //
 // Nguồn sống của thư viện là `store/FormContext` (cho phép CRUD). File này chỉ
-// giữ: (1) các schema mẫu ban đầu, (2) helper thuần (isApprove / buildYKien).
+// giữ: (1) các schema mẫu ban đầu, (2) helper thuần (buildYKien).
 import { phieuNhanXetSchema } from './phieuNhanXet'
 
 export interface FormMeta {
@@ -69,19 +69,14 @@ const baoCaoThamDinhSchema = {
   ],
 }
 
+// (D10) Gắn với action APPROVE_STEP — nút đã LÀ quyết định "Phê duyệt", nên form không
+// còn trường `ketLuan` (tránh encode kết luận hai lần: nút + form).
 const phieuPheDuyetSchema = {
   type: 'default',
   id: 'phieu-phe-duyet',
   components: [
     { type: 'text', id: 'h', text: '## Phiếu phê duyệt' },
-    {
-      type: 'radio', id: 'kl', key: 'ketLuan', label: 'Quyết định', validate: { required: true },
-      values: [
-        { value: 'phe_duyet', label: 'Phê duyệt' },
-        { value: 'tu_choi', label: 'Từ chối' },
-      ],
-    },
-    { type: 'textarea', id: 'yk', key: 'yKien', label: 'Ý kiến' },
+    { type: 'textarea', id: 'yk', key: 'yKien', label: 'Ý kiến phê duyệt' },
   ],
 }
 
@@ -108,11 +103,6 @@ export function emptySchema(key: string, ten: string): unknown {
 export function countFields(schema: unknown): number {
   const comps = (schema as { components?: { key?: string }[] })?.components
   return Array.isArray(comps) ? comps.filter((c) => !!c.key).length : 0
-}
-
-const APPROVE = new Set(['dong_y', 'dat', 'thong_qua', 'phe_duyet'])
-export function isApprove(ketLuan?: unknown): boolean {
-  return ketLuan === undefined || (typeof ketLuan === 'string' && APPROVE.has(ketLuan))
 }
 
 const TIEU_CHI: Record<string, string> = {

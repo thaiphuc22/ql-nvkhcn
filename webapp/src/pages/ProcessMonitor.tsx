@@ -6,6 +6,7 @@ import {
   ClockCircleOutlined,
   ThunderboltOutlined,
 } from "@ant-design/icons";
+import HelpButton from '../components/HelpButton'
 import {
   PageHeader,
   StatCard,
@@ -154,6 +155,7 @@ export default function ProcessMonitor() {
         icon={
           <ThunderboltOutlined style={{ fontSize: 26, color: "#ee0033" }} />
         }
+        extra={<HelpButton section="giamsat" />}
       />
 
       {/* <Alert

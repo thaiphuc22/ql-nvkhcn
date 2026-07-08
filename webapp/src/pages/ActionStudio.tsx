@@ -31,9 +31,11 @@ import {
   PartitionOutlined,
   PlusOutlined,
   SafetyCertificateOutlined,
+  SyncOutlined,
   ThunderboltOutlined,
   WarningOutlined,
 } from '@ant-design/icons'
+import HelpButton from '../components/HelpButton'
 import { PageHeader } from '../components/ui'
 import { ROLES, roleLabel } from '../data/roles'
 import {
@@ -47,14 +49,15 @@ import {
   DOSSIER_STATUS_LABEL,
   PERMISSIONS,
   PERMISSION_LABEL,
-  PROCESS_CODES,
   type ActionAvailabilityPolicy,
 } from '../data/actionAvailabilityPolicy'
 import {
   EXCEPTION_POLICIES,
   type ExceptionActionPolicy,
+  type ExceptionObjectType,
+  type ExceptionTargetType,
 } from '../data/exceptionPolicy'
-import { EXCEPTION_TYPE_LABEL } from '../data/exceptions'
+import { EXCEPTION_TYPE_LABEL, type ExceptionType } from '../data/exceptions'
 import { getAvailableActions, type AvailableAction } from '../data/actionAvailability'
 import {
   ACTION_PRESENTATIONS,
@@ -73,9 +76,118 @@ import { seedProcesses } from '../data/processes'
 import { useForms } from '../store/FormContext'
 import { ROUTING_TABLES, resolveRouting } from '../data/stepRouting'
 import StepRoutingDiagram, { type DiagramStep } from '../components/StepRoutingDiagram'
+import {
+  reconcilableProcesses,
+  reconcileProcess,
+  scaffoldPoliciesFromBpmn,
+  summarizeReconcileHealth,
+  type OutcomeCoverage,
+  type ReconcileStatus,
+  type TaskReconcile,
+} from '../data/bpmnReconcile'
 
 const { Text, Paragraph } = Typography
 
+const TAB_FLOW = [
+  {
+    key: 'reconcile',
+    title: '1. Lấy bước từ quy trình',
+    description: 'Bấm đồng bộ để hệ thống đọc các bước xử lý và nhánh kết quả từ BPMN, tránh thiếu nút ở một bước.',
+  },
+  {
+    key: 'routing',
+    title: '2. Xem đường đi của hồ sơ',
+    description: 'Kiểm tra mỗi lựa chọn như Đồng ý, Trả lại, Từ chối sẽ đưa hồ sơ tới đâu.',
+  },
+  {
+    key: 'availability',
+    title: '3. Quy định ai được thấy nút',
+    description: 'Gắn nút với quy trình, trạng thái hồ sơ, vai trò, quyền và biểu mẫu cần điền.',
+  },
+  {
+    key: 'exception',
+    title: '4. Kiểm soát xử lý ngoại lệ',
+    description: 'Quy định trường hợp nào được xin đi khác luồng chuẩn, ai duyệt, có cần căn cứ hay không.',
+  },
+  {
+    key: 'inspector',
+    title: '5. Thử như người dùng thật',
+    description: 'Chọn vai trò và trạng thái hồ sơ để xem màn chi tiết hồ sơ sẽ hiện những nút nào.',
+  },
+]
+
+function FlowOverviewTab() {
+  return (
+    <>
+      {/* <Alert
+        type="info"
+        showIcon
+        style={{ marginBottom: 16 }}
+        message="Màn hình chức năng này dùng để trả lời một câu hỏi đơn giản: ở từng bước hồ sơ, người dùng được bấm nút nào?"
+        description={
+          <span>
+            Người dùng nghiệp vụ không cần bắt đầu từ các bảng kỹ thuật. Hãy đi theo luồng dưới đây:
+            lấy bước từ quy trình, xem đường đi, quy định người được bấm, rồi thử lại bằng mô phỏng.
+          </span>
+        }
+      /> */}
+
+      <Row gutter={[16, 16]}>
+        <Col xs={24} lg={10}>
+          <Card size="small" title={<Space><ControlOutlined />Luồng cấu hình khuyến nghị</Space>}>
+            <Space direction="vertical" size={12} style={{ width: '100%' }}>
+              {TAB_FLOW.map((step) => (
+                <div
+                  key={step.key}
+                  style={{
+                    padding: 12,
+                    border: '1px solid var(--vht-border)',
+                    borderRadius: 8,
+                    background: 'var(--vht-surface-1)',
+                  }}
+                >
+                  <Text strong>{step.title}</Text>
+                  <div style={{ marginTop: 4 }}>
+                    <Text type="secondary">{step.description}</Text>
+                  </div>
+                </div>
+              ))}
+            </Space>
+          </Card>
+        </Col>
+
+        <Col xs={24} lg={14}>
+          <Card size="small" title={<Space><ThunderboltOutlined />Các phần trên màn nên hiểu như thế nào?</Space>}>
+            <Space direction="vertical" size={10} style={{ width: '100%' }}>
+              <Alert
+                type="success"
+                showIcon
+                message="Luật hiển thị nút"
+                description="Nơi cấu hình chính cho nghiệp vụ: nút nào hiện ở quy trình nào, trạng thái nào, cho vai trò nào, và có mở biểu mẫu nào."
+              />
+              <Alert
+                type="warning"
+                showIcon
+                message="Ngoại lệ"
+                description="Tách riêng vì đây là hành động đi khác luồng chuẩn. Nếu cấu hình lỏng, hồ sơ có thể đi sai tuyến duyệt."
+              />
+              <Alert
+                type="info"
+                showIcon
+                message="Mô phỏng"
+                description="Sau mỗi lần chỉnh, vào đây thử ngay bằng một vai trò cụ thể để biết người dùng cuối sẽ thấy gì."
+              />
+              <Paragraph type="secondary" style={{ marginBottom: 0 }}>
+                Các tab “Danh mục nút” và “Luồng xử lý” phục vụ người cấu hình nâng cao. Khi demo cho người
+                ít kỹ thuật, nên bắt đầu từ tab này rồi đi thẳng tới “Đồng bộ BPMN” và “Mô phỏng”.
+              </Paragraph>
+            </Space>
+          </Card>
+        </Col>
+      </Row>
+    </>
+  )
+}
 // ── Nhãn & màu cho 3 loại action ────────────────────────────────────────────
 const TYPE_META: Record<ActionType, { label: string; color: string; hint: string }> = {
   STANDARD: { label: 'Chuẩn (Standard)', color: 'blue', hint: 'Đi theo BPMN — Camunda Active User Task + Permission' },
@@ -84,7 +196,177 @@ const TYPE_META: Record<ActionType, { label: string; color: string; hint: string
 }
 
 const ALL_PERMISSIONS = Object.values(PERMISSIONS)
+const BUSINESS_OBJECT_LABEL: Record<ExceptionObjectType, string> = {
+  DOSSIER: 'Hồ sơ',
+  MISSION: 'Nhiệm vụ',
+  PROPOSAL: 'Đề xuất',
+}
+const EXCEPTION_TARGET_LABEL: Record<ExceptionTargetType, string> = {
+  STEP: 'Chuyển tới bước BPMN',
+  STATUS: 'Đổi trạng thái đối tượng',
+  COMPLETE: 'Kết thúc xử lý',
+}
+const PROCESS_OPTIONS = seedProcesses.map((p) => ({ value: p.ma, label: `${p.ma} · ${p.ten}` }))
 
+const ACTION_CODE_TO_EXCEPTION_TYPE = Object.fromEntries(
+  (Object.entries(EXCEPTION_ACTION_CODE) as [ExceptionType, string][]).map(([type, code]) => [code, type]),
+) as Record<string, ExceptionType>
+const EXCEPTION_ACTION_OPTIONS = ACTION_PRESENTATIONS
+  .filter((p) => ACTION_REGISTRY[p.actionCode]?.actionType === 'EXCEPTION')
+  .map((p) => ({ value: p.actionCode, label: p.displayLabel }))
+
+function processByCode(processCode?: string | null) {
+  return processCode ? seedProcesses.find((p) => p.ma === processCode) : undefined
+}
+
+function diagramStepsForProcess(processCode?: string | null): DiagramStep[] {
+  return (processByCode(processCode)?.taskSteps ?? []).map((ts) => ({
+    ten: ts.ten,
+    vaiTro: ts.vaiTro,
+    vaiTroCodes: ts.vaiTroCodes ?? [],
+  }))
+}
+
+function stepOptionsForProcess(processCode?: string | null) {
+  return (processByCode(processCode)?.taskSteps ?? []).map((ts) => ({
+    value: ts.key,
+    label: `${ts.key} · ${ts.ten}`,
+  }))
+}
+
+function stepLabel(processCode?: string | null, stepKey?: string | null) {
+  if (!stepKey) return null
+  const step = processByCode(processCode)?.taskSteps?.find((ts) => ts.key === stepKey)
+  return step ? `${step.key} · ${step.ten}` : stepKey
+}
+
+function exceptionTargetText(
+  processCode?: string | null,
+  targetType?: ExceptionTargetType,
+  targetTaskKey?: string | null,
+  targetStatus?: DossierStatus | null,
+) {
+  if (targetType === 'STATUS') return targetStatus ? `Đổi trạng thái: ${DOSSIER_STATUS_LABEL[targetStatus]}` : 'Chưa chọn trạng thái đích'
+  if (targetType === 'COMPLETE') return 'Kết thúc xử lý ngoại lệ'
+  return targetTaskKey ? `Chuyển tới: ${stepLabel(processCode, targetTaskKey)}` : 'Chưa chọn bước đích'
+}
+
+function RoutingPreviewCard({
+  processCode,
+  taskDefinitionKey,
+  actionCode,
+  exceptionTarget,
+}: {
+  processCode?: string | null
+  taskDefinitionKey?: string | null
+  actionCode?: string | null
+  exceptionTarget?: {
+    targetType?: ExceptionTargetType
+    targetTaskKey?: string | null
+    targetStatus?: DossierStatus | null
+  }
+}) {
+  const proc = processByCode(processCode)
+  const source = proc?.taskSteps?.find((ts) => ts.key === taskDefinitionKey)
+  const steps = diagramStepsForProcess(processCode)
+  const routing = source ? resolveRouting(proc, steps, source.ten) : { branches: [] }
+  const def = actionCode ? ACTION_REGISTRY[actionCode] : undefined
+  const selectedBranch = def?.outcome ? routing.branches.find((b) => b.outcome === def.outcome) : undefined
+  const exceptionLabel = exceptionTarget
+    ? exceptionTargetText(processCode, exceptionTarget.targetType, exceptionTarget.targetTaskKey, exceptionTarget.targetStatus)
+    : null
+
+  return (
+    <Card size="small" title={<Space><PartitionOutlined />Xem trước luồng xử lý</Space>}>
+      {!proc ? (
+        <Empty description="Chọn quy trình cụ thể để xem luồng." image={Empty.PRESENTED_IMAGE_SIMPLE} />
+      ) : !source ? (
+        <Empty description="Chọn bước phát sinh để xem nút này nằm ở đâu trong luồng." image={Empty.PRESENTED_IMAGE_SIMPLE} />
+      ) : (
+        <Space direction="vertical" size={12} style={{ width: '100%' }}>
+          <Space size={6} wrap>
+            <Tag color="geekblue">{proc.ma}</Tag>
+            <Tag>{source.key}</Tag>
+            {def?.outcome && selectedBranch && (
+              <Tag color="blue">Nút này đi theo nhánh: {selectedBranch.label}</Tag>
+            )}
+            {def?.outcome && !selectedBranch && (
+              <Tag color="orange">Chưa có nhánh routing cho outcome {def.outcome}</Tag>
+            )}
+          </Space>
+          {exceptionLabel && <Alert type="warning" showIcon message="Đích đến khi ngoại lệ được duyệt" description={exceptionLabel} />}
+          <StepRoutingDiagram
+            currentStepTen={source.ten}
+            currentStepRole={source.vaiTro}
+            branches={routing.branches}
+            steps={steps}
+            showApprovers={false}
+            exceptionBranches={exceptionLabel ? [{ label: 'Ngoại lệ được duyệt', targetLabel: exceptionLabel }] : []}
+            variant="reference"
+          />
+        </Space>
+      )}
+    </Card>
+  )
+}
+function ButtonPreviewCard({
+  actionCode,
+  visible = true,
+  displayOrder,
+  roleCodes = [],
+}: {
+  actionCode?: string | null
+  visible?: boolean
+  displayOrder?: number
+  roleCodes?: string[]
+}) {
+  const presentation = actionCode ? ACTION_PRESENTATIONS.find((p) => p.actionCode === actionCode) : undefined
+  const def = actionCode ? ACTION_REGISTRY[actionCode] : undefined
+  const color = presentation?.tone === 'danger' ? 'danger' : presentation?.tone === 'primary' ? 'primary' : 'default'
+
+  return (
+    <Card size="small" title={<Space><ThunderboltOutlined />Preview hiển thị nút trên Hồ sơ</Space>}>
+      {!presentation || !def ? (
+        <Empty description="Chọn nút xin ngoại lệ để xem preview." image={Empty.PRESENTED_IMAGE_SIMPLE} />
+      ) : (
+        <Space direction="vertical" size={12} style={{ width: '100%' }}>
+          <div
+            style={{
+              padding: 12,
+              border: '1px solid var(--vht-border)',
+              borderRadius: 8,
+              background: 'var(--vht-surface-1)',
+            }}
+          >
+            <Space wrap>
+              <Button danger={color === 'danger'} type={color === 'primary' ? 'primary' : 'default'} disabled={!visible}>
+                {presentation.displayLabel}
+              </Button>
+              {!visible && <Tag>Đang tắt</Tag>}
+              <Tag color="volcano">Ngoại lệ</Tag>
+            </Space>
+            {presentation.tooltip && (
+              <div style={{ marginTop: 8 }}>
+                <Text type="secondary">Tooltip: {presentation.tooltip}</Text>
+              </div>
+            )}
+          </div>
+          <Space size={4} wrap>
+            <Tag color="geekblue">Action code: {actionCode}</Tag>
+            <Tag>{ACTION_UI_GROUP_LABEL[presentation.uiGroup]}</Tag>
+            <Tag>{ACTION_TONE_LABEL[presentation.tone]}</Tag>
+            {displayOrder ? <Tag>Thứ tự: {displayOrder}</Tag> : null}
+          </Space>
+          <div>
+            <Text type="secondary">
+              Vai trò thấy nút: {roleCodes.length ? roleCodes.map(roleLabel).join(', ') : 'mọi vai trò được xử lý bước'}
+            </Text>
+          </div>
+        </Space>
+      )}
+    </Card>
+  )
+}
 function boolTag(v: boolean | undefined, yes = 'Có', no = '—') {
   return v ? <Tag color="green">{yes}</Tag> : <Text type="secondary">{no}</Text>
 }
@@ -252,7 +534,7 @@ function RegistryTab({
 
   return (
     <>
-      <Alert
+      {/* <Alert
         type="info"
         showIcon
         style={{ marginBottom: 16 }}
@@ -263,7 +545,7 @@ function RegistryTab({
             admin vừa xem được phần nghiệp vụ, vừa chỉnh được nhãn hiển thị, icon, nhóm UI và thứ tự xuất hiện.
           </span>
         }
-      />
+      /> */}
 
       <Card
         size="small"
@@ -352,9 +634,11 @@ interface AvailFormValues {
 function AvailabilityTab({
   policies,
   setPolicies,
+  onOpenReconcile,
 }: {
   policies: ActionAvailabilityPolicy[]
   setPolicies: React.Dispatch<React.SetStateAction<ActionAvailabilityPolicy[]>>
+  onOpenReconcile: () => void
 }) {
   const { message } = App.useApp()
   const { list: formList } = useForms()
@@ -362,11 +646,12 @@ function AvailabilityTab({
   const [open, setOpen] = useState(false)
   const [form] = Form.useForm<AvailFormValues>()
 
-  // Chỉ STANDARD/SUPPORT — EXCEPTION do Exception Policy phụ trách (tab kế).
-  const actionOptions = Object.values(ACTION_REGISTRY)
-    .filter((d) => d.actionType !== 'EXCEPTION')
-    .map((d) => ({ value: d.actionCode, label: `${d.actionName} (${d.actionCode})` }))
+  const watchedActionCode = Form.useWatch('actionCode', form)
+  const watchedProcessCode = Form.useWatch('processCode', form)
+  const watchedTaskKey = Form.useWatch('taskDefinitionKey', form)
 
+  const actionOptions = Object.values(ACTION_REGISTRY)
+    .map((d) => ({ value: d.actionCode, label: `${d.actionName} (${d.actionCode})` }))
   // Biểu mẫu để gắn theo action (từ Thư viện biểu mẫu — 1 eForm : n Action).
   const formOptions = formList.map((f) => ({
     value: f.key,
@@ -396,6 +681,7 @@ function AvailabilityTab({
       processCode: v.processCode ?? null,
       taskDefinitionKey: v.taskDefinitionKey?.trim() || null,
       dossierStatus: v.dossierStatus ?? null,
+      formKey: v.formKey ?? null,
       allowedRoleCodes: v.allowedRoleCodes,
       requiredPermissions: v.requiredPermissions,
       conditionExpression: v.conditionExpression?.trim() || undefined,
@@ -414,6 +700,9 @@ function AvailabilityTab({
     setPolicies((prev) => prev.map((p) => (p.id === id ? { ...p, enabled } : p)))
 
   const sorted = useMemo(() => [...policies].sort((a, b) => a.displayOrder - b.displayOrder), [policies])
+  const health = useMemo(() => summarizeReconcileHealth(seedProcesses, policies), [policies])
+  const hasBlockingIssues = health.missingStepCount > 0
+  const hasWarnings = health.genericCoverageCount > 0 || health.unfilledStepCount > 0 || health.orphanPolicyCount > 0
 
   const columns = [
     { title: 'Thứ tự', dataIndex: 'displayOrder', width: 76, render: (n: number) => <Tag>{n}</Tag> },
@@ -448,6 +737,11 @@ function AvailabilityTab({
             <Tag>vai trò: mọi</Tag>
           )}
           {p.conditionExpression && <Tag color="gold">{p.conditionExpression}</Tag>}
+          {p.formKey ? (
+            <Tag color="cyan">Biểu mẫu: {formTen(p.formKey)}</Tag>
+          ) : (
+            <Tag>không form</Tag>
+          )}
         </Space>
       ),
     },
@@ -485,18 +779,38 @@ function AvailabilityTab({
 
   return (
     <>
-      <Alert
+      {/* <Alert
         type="info"
         showIcon
         style={{ marginBottom: 16 }}
         message="Admin cấu hình “action nào được hiển thị, ở đâu, cho ai” — không sửa & deploy lại BPMN"
         description={
           <span>
-            Bảng này chỉ chi phối action <b>STANDARD + SUPPORT</b>. Không có luật khớp = nút
-            không hiện (fail-closed). Sửa ở đây sẽ phản ánh ngay ở tab <b>Simulator</b>.
-            Action <b>EXCEPTION</b> nằm ở tab kế (Exception Policy).
-          </span>
+            Bảng này chi phối nút nào được hiển thị ở quy trình/bước/vai trò nào. Với action ngoại lệ,
+            luật này là phần <b>nút xin ngoại lệ hiện ở đâu</b>; tab Luật ngoại lệ quyết định ai duyệt và sau khi duyệt đi đâu.          </span>
         }
+      /> */}
+      <Alert
+        type={hasBlockingIssues ? 'error' : hasWarnings ? 'warning' : 'success'}
+        showIcon
+        style={{ marginBottom: 16 }}
+        message={
+          hasBlockingIssues
+            ? 'Đối soát BPMN phát hiện bước có nguy cơ bị kẹt vì thiếu nút xử lý'
+            : hasWarnings
+              ? 'Đối soát BPMN còn một số cấu hình nên rà soát'
+              : 'Đối soát BPMN ổn: các bước đã có luật hiển thị nút phù hợp'
+        }
+        description={
+          <Space size={[8, 8]} wrap>
+            <Tag color={health.missingStepCount ? 'red' : 'green'}>Thiếu nút: {health.missingStepCount} bước</Tag>
+            <Tag color={health.genericCoverageCount ? 'gold' : 'green'}>Wildcard: {health.genericCoverageCount} nhánh</Tag>
+            <Tag color={health.unfilledStepCount ? 'orange' : 'green'}>Thiếu biểu mẫu: {health.unfilledStepCount} bước</Tag>
+            <Tag color={health.orphanPolicyCount ? 'warning' : 'green'}>Orphan: {health.orphanPolicyCount} luật</Tag>
+            <Text type="secondary">Đang đối soát {health.processCount} quy trình có BPMN/routing.</Text>
+          </Space>
+        }
+        action={<Button size="small" icon={<SyncOutlined />} onClick={onOpenReconcile}>Xem đối soát BPMN</Button>}
       />
       <Card
         size="small"
@@ -516,7 +830,10 @@ function AvailabilityTab({
         okText="Lưu"
         cancelText="Huỷ"
         destroyOnClose
+        width={1060}
       >
+        <Row gutter={16}>
+          <Col xs={24} lg={14}>
         <Form form={form} layout="vertical" preserve={false}>
           <Form.Item name="actionCode" label="Action (từ Registry)" rules={[{ required: true }]}>
             <Select options={actionOptions} />
@@ -529,7 +846,7 @@ function AvailabilityTab({
             <Col span={12}>
               <Form.Item name="processCode" label="Điều kiện: Quy trình">
                 <Select allowClear placeholder="Mọi quy trình"
-                  options={PROCESS_CODES.map((c) => ({ value: c, label: c }))} />
+                  options={PROCESS_OPTIONS} />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -541,8 +858,15 @@ function AvailabilityTab({
               </Form.Item>
             </Col>
           </Row>
-          <Form.Item name="taskDefinitionKey" label="Điều kiện: Task key (BPMN, tuỳ chọn)">
-            <Input placeholder="VD: COUNCIL_REVIEW — để trống = mọi bước" />
+          <Form.Item name="taskDefinitionKey" label="Điều kiện: Bước BPMN">
+            <Select allowClear placeholder="Mọi bước" optionFilterProp="label" options={stepOptionsForProcess(watchedProcessCode)} />
+          </Form.Item>
+          <Form.Item
+            name="formKey"
+            label="Biểu mẫu gắn theo action (D10 — 1 eForm : n Action)"
+            tooltip="Tham chiếu vào Thư viện biểu mẫu, không nhúng schema. Để trống = action không mở form."
+          >
+            <Select allowClear placeholder="Không gắn biểu mẫu" optionFilterProp="label" options={formOptions} />
           </Form.Item>
           <Form.Item name="allowedRoleCodes" label="Vai trò được thấy (để trống = mọi vai trò / theo bước)">
             <Select mode="multiple" placeholder="Chọn vai trò" optionFilterProp="label"
@@ -568,6 +892,15 @@ function AvailabilityTab({
             </Col>
           </Row>
         </Form>
+          </Col>
+          <Col xs={24} lg={10}>
+            <RoutingPreviewCard
+              processCode={watchedProcessCode}
+              taskDefinitionKey={watchedTaskKey}
+              actionCode={watchedActionCode}
+            />
+          </Col>
+        </Row>
       </Modal>
     </>
   )
@@ -576,13 +909,57 @@ function AvailabilityTab({
 // ════════════════════════════════════════════════════════════════════════════
 // TAB 3 — Exception Policy (doc §8 exception_action_policy) — view + chỉnh nhanh.
 // ════════════════════════════════════════════════════════════════════════════
+interface ExceptionFormValues {
+  exceptionName: string
+  description?: string
+  actionCode: string
+  exceptionType?: ExceptionType
+  cap?: Cap | null
+  processCode?: string | null
+  objectType: ExceptionObjectType
+  objectStatus?: DossierStatus | null
+  sourceTaskKey?: string | null
+  targetType: ExceptionTargetType
+  targetTaskKey?: string | null
+  targetStatus?: DossierStatus | null
+  visibilityRoleCodes: string[]
+  visibilityDisplayOrder: number
+  visibilityEnabled: boolean
+  requiredApproverRoleCodes: string[]
+  requireReason: boolean
+  requireEvidence: boolean
+  maxTimesPerDossier: number
+  priority: number
+  enabled: boolean
+}
+
 function ExceptionTab({
   policies,
   setPolicies,
+  availPolicies,
+  setAvailPolicies,
 }: {
   policies: ExceptionActionPolicy[]
   setPolicies: React.Dispatch<React.SetStateAction<ExceptionActionPolicy[]>>
+  availPolicies: ActionAvailabilityPolicy[]
+  setAvailPolicies: React.Dispatch<React.SetStateAction<ActionAvailabilityPolicy[]>>
 }) {
+  const { message } = App.useApp()
+  const [editing, setEditing] = useState<ExceptionActionPolicy | null>(null)
+  const [open, setOpen] = useState(false)
+  const [form] = Form.useForm<ExceptionFormValues>()
+
+  const watchedExceptionName = Form.useWatch('exceptionName', form)
+  const watchedActionCode = Form.useWatch('actionCode', form)
+  const watchedProcessCode = Form.useWatch('processCode', form)
+  const watchedSourceTaskKey = Form.useWatch('sourceTaskKey', form)
+  const watchedTargetType = Form.useWatch('targetType', form)
+  const watchedTargetTaskKey = Form.useWatch('targetTaskKey', form)
+  const watchedTargetStatus = Form.useWatch('targetStatus', form)
+  const watchedVisibilityEnabled = Form.useWatch('visibilityEnabled', form)
+  const watchedVisibilityOrder = Form.useWatch('visibilityDisplayOrder', form)
+  const watchedVisibilityRoleCodes = Form.useWatch('visibilityRoleCodes', form) ?? []
+
   const patch = (id: string, p: Partial<ExceptionActionPolicy>) =>
     setPolicies((prev) => prev.map((x) => (x.id === id ? { ...x, ...p } : x)))
 
@@ -591,46 +968,224 @@ function ExceptionTab({
     [policies],
   )
 
+  const findLinkedAvailability = (p: ExceptionActionPolicy | null) =>
+    p?.availabilityPolicyId ? availPolicies.find((a) => a.id === p.availabilityPolicyId) : undefined
+
+  const openCreate = () => {
+    setEditing(null)
+    const processCode = 'RD01.01'
+    form.setFieldsValue({
+      exceptionName: 'Xin bỏ qua Hội đồng KHCN',
+      description: '',
+      actionCode: EXCEPTION_ACTION_CODE.BypassCouncil,
+      exceptionType: 'BypassCouncil',
+      cap: null,
+      processCode,
+      objectType: 'DOSSIER',
+      objectStatus: 'processing',
+      sourceTaskKey: 't5',
+      targetType: 'STEP',
+      targetTaskKey: 't6',
+      targetStatus: null,
+      visibilityRoleCodes: [],
+      visibilityDisplayOrder: 90,
+      visibilityEnabled: true,
+      requiredApproverRoleCodes: [],
+      requireReason: true,
+      requireEvidence: true,
+      maxTimesPerDossier: 1,
+      priority: 20,
+      enabled: true,
+    })
+    setOpen(true)
+  }
+
+  const openEdit = (p: ExceptionActionPolicy) => {
+    setEditing(p)
+    const linked = findLinkedAvailability(p)
+    form.setFieldsValue({
+      ...p,
+      exceptionName: p.exceptionName ?? EXCEPTION_TYPE_LABEL[p.exceptionType],
+      description: p.description ?? '',
+      actionCode: p.actionCode ?? EXCEPTION_ACTION_CODE[p.exceptionType],
+      cap: p.cap ?? null,
+      processCode: p.processCode ?? linked?.processCode ?? null,
+      objectType: p.objectType ?? 'DOSSIER',
+      objectStatus: p.objectStatus ?? linked?.dossierStatus ?? 'processing',
+      sourceTaskKey: p.sourceTaskKey ?? linked?.taskDefinitionKey ?? null,
+      targetType: p.targetType ?? 'STEP',
+      targetTaskKey: p.targetTaskKey ?? null,
+      targetStatus: p.targetStatus ?? null,
+      visibilityRoleCodes: linked?.allowedRoleCodes ?? [],
+      visibilityDisplayOrder: linked?.displayOrder ?? 90,
+      visibilityEnabled: linked?.enabled ?? p.enabled,
+    })
+    setOpen(true)
+  }
+
+  const save = async () => {
+    const v = await form.validateFields()
+    const cap = v.cap ?? null
+    const processCode = v.processCode ?? null
+    const sourceTaskKey = v.sourceTaskKey ?? null
+    const objectStatus = v.objectStatus ?? null
+    const duplicated = policies.some(
+      (p) =>
+        p.id !== editing?.id &&
+        (p.actionCode ?? EXCEPTION_ACTION_CODE[p.exceptionType]) === v.actionCode &&
+        (p.cap ?? null) === cap &&
+        (p.processCode ?? null) === processCode &&
+        (p.sourceTaskKey ?? null) === sourceTaskKey &&
+        (p.objectStatus ?? null) === objectStatus,
+    )
+    if (duplicated) {
+      message.warning('Đã có luật ngoại lệ cho cùng nút, cấp, quy trình, bước và trạng thái này.')
+      return
+    }
+
+    const id = editing?.id ?? `EP-${Date.now().toString().slice(-5)}`
+    const actionCode = v.actionCode
+    const exceptionType = ACTION_CODE_TO_EXCEPTION_TYPE[actionCode] ?? editing?.exceptionType ?? 'SkipStep'
+    const availabilityPolicyId = editing?.availabilityPolicyId ?? `AP-EX-${Date.now().toString().slice(-5)}`
+    const next: ExceptionActionPolicy = {
+      id,
+      exceptionName: v.exceptionName.trim(),
+      description: v.description?.trim() || undefined,
+      actionCode,
+      exceptionType,
+      cap,
+      processCode,
+      objectType: v.objectType,
+      objectStatus,
+      sourceTaskKey,
+      targetType: v.targetType,
+      targetTaskKey: v.targetType === 'STEP' ? v.targetTaskKey ?? null : null,
+      targetStatus: v.targetType === 'STATUS' ? v.targetStatus ?? null : null,
+      availabilityPolicyId,
+      requiredApproverRoleCodes: v.requiredApproverRoleCodes,
+      requireReason: v.requireReason,
+      requireEvidence: v.requireEvidence,
+      maxTimesPerDossier: v.maxTimesPerDossier,
+      priority: v.priority,
+      enabled: v.enabled,
+    }
+
+    const linkedAvailability: ActionAvailabilityPolicy = {
+      id: availabilityPolicyId,
+      actionCode,
+      surface: 'DOSSIER_DETAIL',
+      processCode,
+      taskDefinitionKey: sourceTaskKey,
+      dossierStatus: objectStatus,
+      formKey: null,
+      allowedRoleCodes: v.visibilityRoleCodes,
+      requiredPermissions: [PERMISSIONS.REQUEST_EXCEPTION],
+      conditionExpression: `exceptionPolicy = ${id}`,
+      displayOrder: v.visibilityDisplayOrder,
+      enabled: v.enabled && v.visibilityEnabled,
+    }
+
+    setPolicies((prev) => (editing ? prev.map((p) => (p.id === editing.id ? next : p)) : [...prev, next]))
+    setAvailPolicies((prev) =>
+      prev.some((p) => p.id === availabilityPolicyId)
+        ? prev.map((p) => (p.id === availabilityPolicyId ? linkedAvailability : p))
+        : [...prev, linkedAvailability],
+    )
+    setOpen(false)
+    message.success(editing ? 'Đã cập nhật luật ngoại lệ và luật hiển thị nút liên quan.' : 'Đã thêm luật ngoại lệ và luật hiển thị nút liên quan.')
+  }
+
+  const remove = (p: ExceptionActionPolicy) => {
+    setPolicies((prev) => prev.filter((x) => x.id !== p.id))
+    if (p.availabilityPolicyId) {
+      setAvailPolicies((prev) => prev.filter((a) => a.id !== p.availabilityPolicyId))
+    }
+    message.success('Đã xoá luật ngoại lệ và luật hiển thị nút liên quan.')
+  }
+
   const columns = [
     {
-      title: 'Loại ngoại lệ', key: 'type',
+      title: 'Ngoại lệ', key: 'type', width: 250,
       render: (_: unknown, p: ExceptionActionPolicy) => (
         <div>
-          <Text strong>{EXCEPTION_TYPE_LABEL[p.exceptionType]}</Text>
-          <div><Text code style={{ fontSize: 11 }}>{EXCEPTION_ACTION_CODE[p.exceptionType]}</Text></div>
+          <Text strong>{p.exceptionName ?? EXCEPTION_TYPE_LABEL[p.exceptionType]}</Text>
+          <div><Text code style={{ fontSize: 11 }}>{p.actionCode ?? EXCEPTION_ACTION_CODE[p.exceptionType]}</Text></div>
+          {p.description && <div><Text type="secondary" style={{ fontSize: 12 }}>{p.description}</Text></div>}
         </div>
       ),
     },
     {
-      title: 'Cấp', dataIndex: 'cap', width: 110,
-      render: (c: Cap | null | undefined) =>
-        c ? <Tag>{c}</Tag> : <Tag>mọi cấp</Tag>,
-    },
-    {
-      title: 'Người duyệt ngoại lệ', key: 'approver',
+      title: 'Xảy ra ở đâu', key: 'scope',
       render: (_: unknown, p: ExceptionActionPolicy) => (
         <Space size={4} wrap>
-          {p.requiredApproverRoleCodes.map((c) => <Tag key={c} color="green">{roleLabel(c)}</Tag>)}
+          <Tag color={p.processCode ? 'geekblue' : undefined}>{p.processCode ?? 'mọi quy trình'}</Tag>
+          <Tag>{BUSINESS_OBJECT_LABEL[p.objectType ?? 'DOSSIER']}</Tag>
+          <Tag color="purple">{p.objectStatus ? DOSSIER_STATUS_LABEL[p.objectStatus] : 'mọi trạng thái'}</Tag>
+          <Tag color={p.sourceTaskKey ? 'blue' : undefined}>{stepLabel(p.processCode, p.sourceTaskKey) ?? 'mọi bước'}</Tag>
+          {p.cap ? <Tag>{p.cap}</Tag> : <Tag>mọi cấp</Tag>}
         </Space>
       ),
     },
     {
-      title: 'Bắt buộc căn cứ', dataIndex: 'requireEvidence', width: 130,
-      render: (v: boolean, p: ExceptionActionPolicy) => (
-        <Switch size="small" checked={v} onChange={(c) => patch(p.id, { requireEvidence: c })} />
+      title: 'Đích đến khi duyệt', key: 'target',
+      render: (_: unknown, p: ExceptionActionPolicy) => (
+        <Space direction="vertical" size={2}>
+          <Tag color="volcano">{EXCEPTION_TARGET_LABEL[p.targetType ?? 'STEP']}</Tag>
+          <Text type="secondary">{exceptionTargetText(p.processCode, p.targetType, p.targetTaskKey, p.targetStatus)}</Text>
+        </Space>
       ),
     },
     {
-      title: 'Tối đa / hồ sơ', dataIndex: 'maxTimesPerDossier', width: 130,
-      render: (v: number, p: ExceptionActionPolicy) => (
-        <InputNumber size="small" min={1} max={9} value={v}
-          onChange={(n) => patch(p.id, { maxTimesPerDossier: n ?? 1 })} />
+      title: 'Người duyệt', key: 'approver',
+      render: (_: unknown, p: ExceptionActionPolicy) => (
+        <Space size={4} wrap>
+          {p.requiredApproverRoleCodes.length ? (
+            p.requiredApproverRoleCodes.map((c) => <Tag key={c} color="green">{roleLabel(c)}</Tag>)
+          ) : (
+            <Text type="danger">Chưa chọn người duyệt</Text>
+          )}
+        </Space>
       ),
+    },
+    {
+      title: 'Kiểm soát', key: 'requirements', width: 190,
+      render: (_: unknown, p: ExceptionActionPolicy) => (
+        <Space size={4} wrap>
+          {boolTag(p.requireReason, 'Lý do')}
+          {boolTag(p.requireEvidence, 'Căn cứ')}
+          <Tag>Tối đa {p.maxTimesPerDossier} lần/hồ sơ</Tag>
+        </Space>
+      ),
+    },
+    {
+      title: 'Nút hiển thị', key: 'availability', width: 170,
+      render: (_: unknown, p: ExceptionActionPolicy) => {
+        const linked = findLinkedAvailability(p)
+        return linked ? (
+          <Space direction="vertical" size={2}>
+            <Tag color={linked.enabled ? 'green' : undefined}>{linked.enabled ? 'Đã nối' : 'Đang tắt'}</Tag>
+            <Text type="secondary" style={{ fontSize: 12 }}>{linked.id}</Text>
+          </Space>
+        ) : (
+          <Tag color="orange">Chưa nối</Tag>
+        )
+      },
     },
     {
       title: 'Bật', dataIndex: 'enabled', width: 60,
       render: (v: boolean, p: ExceptionActionPolicy) => (
         <Switch size="small" checked={v} onChange={(c) => patch(p.id, { enabled: c })} />
+      ),
+    },
+    {
+      title: '', key: 'act', width: 88,
+      render: (_: unknown, p: ExceptionActionPolicy) => (
+        <Space size={2}>
+          <Button size="small" type="text" icon={<EditOutlined />} onClick={() => openEdit(p)} />
+          <Popconfirm title="Xoá luật ngoại lệ này?" onConfirm={() => remove(p)} okText="Xoá" cancelText="Huỷ">
+            <Button size="small" type="text" danger icon={<DeleteOutlined />} />
+          </Popconfirm>
+        </Space>
       ),
     },
   ]
@@ -642,23 +1197,187 @@ function ExceptionTab({
         showIcon
         icon={<WarningOutlined />}
         style={{ marginBottom: 16 }}
-        message="Exception Action được kiểm soát bằng Exception Policy Engine"
+        message="Luật ngoại lệ = nơi phát sinh + nút xin ngoại lệ + kiểm soát duyệt + đích đến sau khi duyệt"
         description={
           <span>
-            Rule tồn tại (khớp loại × cấp) = ngoại lệ được PHÉP; không rule = không cho xin
-            (fail-closed). Ngoài ra còn cần: user xử lý đúng bước · không có yêu cầu ngoại lệ
-            khác đang mở · chưa đạt “tối đa/hồ sơ”. Chỉnh ở đây phản ánh ngay ở tab API.
+            Khi lưu luật ngoại lệ, hệ thống đồng thời tạo/cập nhật một <b>Luật hiển thị nút</b> cho action ngoại lệ tương ứng.
+            Nhờ vậy admin cấu hình một lần nhưng vẫn thấy rõ: nút hiện ở đâu, ai được xin, ai duyệt và hồ sơ đi đâu.
           </span>
         }
       />
-      <Card size="small" title={<Space><SafetyCertificateOutlined />Bảng chính sách ngoại lệ (exception_action_policy)</Space>}>
+      <Card
+        size="small"
+        title={<Space><SafetyCertificateOutlined />Danh sách luật ngoại lệ</Space>}
+        extra={<Button type="primary" size="small" icon={<PlusOutlined />} onClick={openCreate}>Thêm luật</Button>}
+      >
         <Table<ExceptionActionPolicy>
           size="small" rowKey="id" pagination={false} dataSource={sorted} columns={columns} />
       </Card>
+
+      <Modal
+        title={editing ? 'Sửa luật ngoại lệ' : 'Thêm luật ngoại lệ'}
+        open={open}
+        onOk={save}
+        onCancel={() => setOpen(false)}
+        okText="Lưu"
+        cancelText="Huỷ"
+        destroyOnClose
+        width={1160}
+      >
+        <Row gutter={16}>
+          <Col xs={24} lg={14}>
+            <Form form={form} layout="vertical" preserve={false}>
+              <Divider orientation="left">1. Ngoại lệ xảy ra ở đâu?</Divider>
+              <Form.Item name="exceptionName" label="Tên ngoại lệ" rules={[{ required: true, whitespace: true, message: 'Nhập tên ngoại lệ.' }]}>
+                <Input placeholder="VD: Xin bỏ qua Hội đồng KHCN" />
+              </Form.Item>
+              <Form.Item name="description" label="Mô tả ngắn">
+                <Input.TextArea rows={2} placeholder="Ghi chú nghiệp vụ để người cấu hình hiểu khi nào dùng ngoại lệ này." />
+              </Form.Item>
+              <Row gutter={12}>
+                <Col span={14}>
+                  <Form.Item name="processCode" label="Quy trình áp dụng" rules={[{ required: true, message: 'Chọn quy trình áp dụng.' }]}>
+                    <Select placeholder="Chọn quy trình" optionFilterProp="label" options={PROCESS_OPTIONS} />
+                  </Form.Item>
+                </Col>
+                <Col span={10}>
+                  <Form.Item name="objectType" label="Đối tượng" rules={[{ required: true }]}>
+                    <Select options={(Object.keys(BUSINESS_OBJECT_LABEL) as ExceptionObjectType[]).map((k) => ({ value: k, label: BUSINESS_OBJECT_LABEL[k] }))} />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Row gutter={12}>
+                <Col span={12}>
+                  <Form.Item name="objectStatus" label="Trạng thái đối tượng">
+                    <Select allowClear placeholder="Mọi trạng thái" options={(Object.keys(DOSSIER_STATUS_LABEL) as DossierStatus[]).map((s) => ({ value: s, label: DOSSIER_STATUS_LABEL[s] }))} />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item name="sourceTaskKey" label="Bước phát sinh ngoại lệ" rules={[{ required: true, message: 'Chọn bước phát sinh ngoại lệ.' }]}>
+                    <Select placeholder="Chọn bước BPMN" optionFilterProp="label" options={stepOptionsForProcess(watchedProcessCode)} />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Divider orientation="left">2. Nút xin ngoại lệ trên hồ sơ</Divider>
+              <Form.Item name="actionCode" label="Chọn nút theo tên hiển thị" rules={[{ required: true, message: 'Chọn nút xin ngoại lệ.' }]}>
+                <Select placeholder="Chọn nút" optionFilterProp="label" options={EXCEPTION_ACTION_OPTIONS} />
+              </Form.Item>
+              <Row gutter={12}>
+                <Col span={12}>
+                  <Form.Item label="Action code">
+                    <Input value={watchedActionCode ?? ''} readOnly />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item label="Tooltip">
+                    <Input value={ACTION_PRESENTATIONS.find((p) => p.actionCode === watchedActionCode)?.tooltip ?? '—'} readOnly />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Row gutter={12}>
+                <Col span={14}>
+                  <Form.Item name="visibilityRoleCodes" label="Vai trò được thấy nút">
+                    <Select mode="multiple" placeholder="Để trống = mọi vai trò ở bước" optionFilterProp="label" options={ROLES.map((r) => ({ value: r.code, label: `${r.ten} (${r.code})` }))} />
+                  </Form.Item>
+                </Col>
+                <Col span={5}>
+                  <Form.Item name="visibilityDisplayOrder" label="Thứ tự" rules={[{ required: true }]}>
+                    <InputNumber min={1} style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+                <Col span={5}>
+                  <Form.Item name="visibilityEnabled" label="Hiện nút" valuePropName="checked">
+                    <Switch />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Divider orientation="left">3. Ai duyệt và cần căn cứ gì?</Divider>
+              <Form.Item name="cap" label="Cấp nhiệm vụ">
+                <Select allowClear placeholder="Mọi cấp" options={[{ value: 'Cơ sở', label: 'Cơ sở' }, { value: 'Tập đoàn', label: 'Tập đoàn' }]} />
+              </Form.Item>
+              <Form.Item name="requiredApproverRoleCodes" label="Vai trò được duyệt ngoại lệ" rules={[{ required: true, message: 'Chọn ít nhất một vai trò duyệt ngoại lệ.' }]}>
+                <Select mode="multiple" placeholder="Chọn vai trò duyệt" optionFilterProp="label" options={ROLES.map((r) => ({ value: r.code, label: `${r.ten} (${r.code})` }))} />
+              </Form.Item>
+              <Row gutter={12}>
+                <Col span={8}>
+                  <Form.Item name="requireReason" label="Bắt buộc lý do" valuePropName="checked"><Switch /></Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item name="requireEvidence" label="Bắt buộc căn cứ" valuePropName="checked"><Switch /></Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item name="enabled" label="Kích hoạt luật" valuePropName="checked"><Switch /></Form.Item>
+                </Col>
+              </Row>
+              <Row gutter={12}>
+                <Col span={12}>
+                  <Form.Item name="maxTimesPerDossier" label="Tối đa mỗi hồ sơ" rules={[{ required: true }]}>
+                    <InputNumber min={1} max={9} style={{ width: '100%' }} addonAfter="lần" />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item name="priority" label="Độ ưu tiên" tooltip="Số nhỏ được xét trước khi có nhiều luật cùng khớp." rules={[{ required: true }]}>
+                    <InputNumber min={1} style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Divider orientation="left">4. Nếu được duyệt thì đi đâu?</Divider>
+              <Row gutter={12}>
+                <Col span={10}>
+                  <Form.Item name="targetType" label="Kiểu đích đến" rules={[{ required: true }]}>
+                    <Select options={(Object.keys(EXCEPTION_TARGET_LABEL) as ExceptionTargetType[]).map((k) => ({ value: k, label: EXCEPTION_TARGET_LABEL[k] }))} />
+                  </Form.Item>
+                </Col>
+                <Col span={14}>
+                  {watchedTargetType === 'STATUS' ? (
+                    <Form.Item name="targetStatus" label="Trạng thái đích" rules={[{ required: true, message: 'Chọn trạng thái đích.' }]}>
+                      <Select options={(Object.keys(DOSSIER_STATUS_LABEL) as DossierStatus[]).map((s) => ({ value: s, label: DOSSIER_STATUS_LABEL[s] }))} />
+                    </Form.Item>
+                  ) : watchedTargetType === 'COMPLETE' ? (
+                    <Alert type="success" showIcon message="Ngoại lệ được duyệt sẽ kết thúc xử lý đối tượng." />
+                  ) : (
+                    <Form.Item name="targetTaskKey" label="Bước BPMN đích" rules={[{ required: true, message: 'Chọn bước đích.' }]}>
+                      <Select placeholder="Chọn bước đích" optionFilterProp="label" options={stepOptionsForProcess(watchedProcessCode)} />
+                    </Form.Item>
+                  )}
+                </Col>
+              </Row>
+            </Form>
+          </Col>
+          <Col xs={24} lg={10}>
+            <Space direction="vertical" size={12} style={{ width: '100%' }}>
+              <Alert
+                type="info"
+                showIcon
+                message="Luật hiển thị nút sinh kèm"
+                description={`Ngoại lệ: ${watchedExceptionName || '—'} · Action: ${watchedActionCode || '—'} · Quyền: ${PERMISSION_LABEL[PERMISSIONS.REQUEST_EXCEPTION]}`}
+              />
+              <RoutingPreviewCard
+                processCode={watchedProcessCode}
+                taskDefinitionKey={watchedSourceTaskKey}
+                actionCode={watchedActionCode}
+                exceptionTarget={{
+                  targetType: watchedTargetType,
+                  targetTaskKey: watchedTargetTaskKey,
+                  targetStatus: watchedTargetStatus,
+                }}
+              />
+              <ButtonPreviewCard
+                actionCode={watchedActionCode}
+                visible={watchedVisibilityEnabled}
+                displayOrder={watchedVisibilityOrder}
+                roleCodes={watchedVisibilityRoleCodes}
+              />
+            </Space>
+          </Col>
+        </Row>
+      </Modal>
     </>
   )
 }
-
 // ════════════════════════════════════════════════════════════════════════════
 // TAB 4 — available-actions API inspector (doc §4 + §9): render động từ policy.
 // ════════════════════════════════════════════════════════════════════════════
@@ -672,7 +1391,7 @@ function InspectorTab({
   presentations: ActionPresentation[]
 }) {
   const [surface, setSurface] = useState<ActionSurface>('DOSSIER_DETAIL')
-  const [processCode, setProcessCode] = useState<string>('RD02')
+  const [processCode, setProcessCode] = useState<string>('RD01.01')
   const [dossierStatus, setDossierStatus] = useState<DossierStatus>('processing')
   const [taskDefinitionKey, setTaskDefinitionKey] = useState<string>()
   const [cap, setCap] = useState<Cap>(seedNhiemVu[0].cap)
@@ -770,7 +1489,7 @@ function InspectorTab({
             <div>
               <Text type="secondary">Quy trình (processCode)</Text>
               <Select style={{ width: '100%', marginTop: 4 }} value={processCode} onChange={setProcessCode}
-                options={PROCESS_CODES.map((c) => ({ value: c, label: c }))} />
+                options={PROCESS_OPTIONS} />
             </div>
             <div>
               <Text type="secondary">Trạng thái hồ sơ (dossierStatus)</Text>
@@ -900,7 +1619,7 @@ function RoutingMatrixTab() {
 
   return (
     <>
-      <Alert
+      {/* <Alert
         type="info"
         showIcon
         style={{ marginBottom: 16 }}
@@ -912,7 +1631,7 @@ function RoutingMatrixTab() {
             gắn hồ sơ cụ thể. Sửa luồng/đích rework tại <Text code>data/stepRouting.ts</Text>.
           </span>
         }
-      />
+      /> */}
       <Space style={{ marginBottom: 16 }}>
         <Text type="secondary">Quy trình</Text>
         <Select
@@ -955,6 +1674,214 @@ function RoutingMatrixTab() {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
+// TAB 6 — Đồng bộ / Đối soát từ BPMN (D10 điểm 5): mỗi user task × nhánh outcome
+// → scaffold 1 dòng Availability Policy + coverage check 🔴/🟡/⚪ (fail-closed).
+// ════════════════════════════════════════════════════════════════════════════
+const RECONCILE_META: Record<ReconcileStatus, { color: string; label: string; dot: string }> = {
+  ok: { color: 'green', label: 'Đã ghim đủ', dot: '🟢' },
+  generic: { color: 'gold', label: 'Luật chung', dot: '🟡' },
+  unfilled: { color: 'orange', label: 'Thiếu biểu mẫu', dot: '🟡' },
+  missing: { color: 'red', label: 'Thiếu action', dot: '🔴' },
+  skipped: { color: 'default', label: 'Bỏ qua có chủ đích', dot: '⚪' },
+}
+
+function coverageColor(c: OutcomeCoverage): string {
+  if (!c.matched) return 'red'
+  if (!c.formFilled) return 'orange'
+  if (!c.taskSpecific) return 'gold'
+  return 'green'
+}
+
+function ReconcileTab({
+  policies,
+  setPolicies,
+}: {
+  policies: ActionAvailabilityPolicy[]
+  setPolicies: React.Dispatch<React.SetStateAction<ActionAvailabilityPolicy[]>>
+}) {
+  const { message } = App.useApp()
+  const { list: formList } = useForms()
+  const options = reconcilableProcesses()
+  const [ma, setMa] = useState(options[0])
+  // Cờ "bỏ qua có chủ đích" — key theo `${procMa}:${stepKey}` để giữ khi đổi quy trình.
+  const [skipped, setSkipped] = useState<Set<string>>(new Set())
+
+  const proc = seedProcesses.find((p) => p.ma === ma)
+  const skipKey = (stepKey: string) => `${ma}:${stepKey}`
+  const skippedForProc = useMemo(
+    () => new Set((proc?.taskSteps ?? []).map((t) => t.key).filter((k) => skipped.has(skipKey(k)))),
+    [proc, skipped, ma],
+  )
+
+  const recon = useMemo(
+    () => (proc ? reconcileProcess(proc, policies, skippedForProc) : null),
+    [proc, policies, skippedForProc],
+  )
+
+  const formTen = (key?: string | null) => (key ? formList.find((f) => f.key === key)?.ten ?? key : '—')
+
+  const toggleSkip = (stepKey: string) =>
+    setSkipped((prev) => {
+      const next = new Set(prev)
+      const k = skipKey(stepKey)
+      if (next.has(k)) next.delete(k)
+      else next.add(k)
+      return next
+    })
+
+  const doSync = () => {
+    if (!proc) return
+    const res = scaffoldPoliciesFromBpmn(proc, policies, skippedForProc)
+    setPolicies(res.next)
+    message.success(
+      `Đã đồng bộ từ BPMN ${proc.ma}: thêm ${res.added} luật, cập nhật ${res.updated} luật ghim theo bước.`,
+    )
+  }
+
+  const columns = [
+    {
+      title: 'Trạng thái', key: 'status', width: 150,
+      render: (_: unknown, t: TaskReconcile) => {
+        const m = RECONCILE_META[t.status]
+        return (
+          <Tooltip title={t.reason}>
+            <Tag color={m.color} style={{ cursor: 'help' }}>{m.dot} {m.label}</Tag>
+          </Tooltip>
+        )
+      },
+    },
+    {
+      title: 'User task (BPMN)', key: 'task',
+      render: (_: unknown, t: TaskReconcile) => (
+        <div>
+          <Text strong>{t.ten}</Text>
+          <div style={{ marginTop: 2 }}>
+            <Text code style={{ fontSize: 11 }}>{t.stepKey}</Text>
+            {t.vaiTroCodes.map((c) => <Tag key={c} style={{ marginLeft: 4 }}>{c}</Tag>)}
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: 'Nhánh outcome → policy + biểu mẫu', key: 'outcomes',
+      render: (_: unknown, t: TaskReconcile) => (
+        <Space direction="vertical" size={4} style={{ width: '100%' }}>
+          {t.outcomes.map((c) => (
+            <Tooltip
+              key={c.outcome}
+              title={
+                c.matched
+                  ? `Luật ${c.matched.id}${c.taskSpecific ? ' (ghim theo bước)' : ' (luật chung — wildcard)'} · biểu mẫu: ${formTen(c.matched.formKey)}`
+                  : 'Chưa có luật enabled cho nhánh này → nút sẽ không hiện (fail-closed).'
+              }
+            >
+              <Tag color={coverageColor(c)} style={{ cursor: 'help' }}>
+                {c.outcome} · {c.branchLabel}
+                {c.matched ? ` → ${formTen(c.matched.formKey)}` : ' → (không có luật)'}
+              </Tag>
+            </Tooltip>
+          ))}
+        </Space>
+      ),
+    },
+    {
+      title: 'Bỏ qua có chủ đích', key: 'skip', width: 130,
+      render: (_: unknown, t: TaskReconcile) => (
+        <Switch
+          size="small"
+          checked={t.status === 'skipped'}
+          onChange={() => toggleSkip(t.stepKey)}
+        />
+      ),
+    },
+  ]
+
+  return (
+    <>
+      <Alert
+        type="info"
+        showIcon
+        style={{ marginBottom: 16 }}
+        message="Đồng bộ / Đối soát từ BPMN — pull-based, admin bấm (không auto push khi deploy)"
+        description={
+          <span>
+            Từ mỗi <b>user task</b> trong BPMN, sinh MỘT dòng Availability Policy cho MỖI{' '}
+            <b>nhánh outcome</b> (SUBMIT/APPROVE/RETURN/REJECT), rồi đối soát 2 chiều. Vì hệ{' '}
+            <b>fail-closed</b> nên đây là kiểm tra <b>đúng-sai</b>:{' '}
+            <Tag color="red">🔴 Thiếu action</Tag> = bước bị kẹt ·{' '}
+            <Tag color="gold">🟡 Luật chung / thiếu biểu mẫu</Tag> = nên ghim theo bước ·{' '}
+            <Tag>⚪ Orphan</Tag> = policy trỏ task không còn trong BPMN. Bấm <b>Đồng bộ</b> để
+            scaffold/upsert — id tất định nên chạy lại không đẻ trùng.
+          </span>
+        }
+      />
+
+      <Space style={{ marginBottom: 16 }} wrap>
+        <Text type="secondary">Quy trình (có BPMN + bảng định tuyến)</Text>
+        <Select
+          style={{ minWidth: 320 }}
+          value={ma}
+          onChange={setMa}
+          options={options.map((code) => {
+            const p = seedProcesses.find((x) => x.ma === code)
+            return { value: code, label: p ? `${code} · ${p.ten}` : code }
+          })}
+        />
+        <Button type="primary" icon={<SyncOutlined />} onClick={doSync}>
+          Đồng bộ / Đối soát từ BPMN
+        </Button>
+      </Space>
+
+      {!recon ? (
+        <Empty description="Không tìm thấy quy trình." />
+      ) : (
+        <>
+          <Space style={{ marginBottom: 12 }} wrap size={[8, 8]}>
+            {(Object.keys(RECONCILE_META) as ReconcileStatus[]).map((s) =>
+              recon.counts[s] ? (
+                <Tag key={s} color={RECONCILE_META[s].color}>
+                  {RECONCILE_META[s].dot} {RECONCILE_META[s].label}: {recon.counts[s]}
+                </Tag>
+              ) : null,
+            )}
+          </Space>
+
+          <Card size="small" title={<Space><PartitionOutlined />Đối soát user task ↔ Availability Policy</Space>}>
+            <Table<TaskReconcile>
+              size="small"
+              rowKey="stepKey"
+              pagination={false}
+              dataSource={recon.tasks}
+              columns={columns}
+            />
+          </Card>
+
+          {recon.orphans.length > 0 && (
+            <Card
+              size="small"
+              style={{ marginTop: 16 }}
+              title={<Space><WarningOutlined />⚪ Policy orphan (task không còn trong BPMN)</Space>}
+            >
+              <Space direction="vertical" style={{ width: '100%' }}>
+                {recon.orphans.map((o) => (
+                  <Alert
+                    key={o.policy.id}
+                    type="warning"
+                    showIcon
+                    message={<Text code>{o.policy.id} · {o.policy.actionCode}</Text>}
+                    description={o.reason}
+                  />
+                ))}
+              </Space>
+            </Card>
+          )}
+        </>
+      )}
+    </>
+  )
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // Trang chính — các lớp cấu hình của Action Availability Model.
 // ════════════════════════════════════════════════════════════════════════════
 /**
@@ -970,43 +1897,55 @@ export default function ActionStudio() {
   const [presentations, setPresentations] = useState<ActionPresentation[]>(ACTION_PRESENTATIONS)
   const [availPolicies, setAvailPolicies] = useState<ActionAvailabilityPolicy[]>(ACTION_AVAILABILITY_POLICIES)
   const [excPolicies, setExcPolicies] = useState<ExceptionActionPolicy[]>(EXCEPTION_POLICIES)
+  const [activeTab, setActiveTab] = useState('overview')
 
   const items = [
     {
-      key: 'registry',
-      label: <Space><AppstoreOutlined />Action Registry</Space>,
-      children: <RegistryTab presentations={presentations} setPresentations={setPresentations} />,
+      key: 'overview',
+      label: <Space><ControlOutlined />Tổng quan luồng</Space>,
+      children: <FlowOverviewTab />,
     },
-    {
+     {
       key: 'availability',
-      label: <Space><ControlOutlined />Availability Policy</Space>,
-      children: <AvailabilityTab policies={availPolicies} setPolicies={setAvailPolicies} />,
+      label: <Space><ControlOutlined />Luật hiển thị nút</Space>,
+      children: <AvailabilityTab policies={availPolicies} setPolicies={setAvailPolicies} onOpenReconcile={() => setActiveTab('reconcile')} />,
     },
-    {
+        {
+      key: 'reconcile',
+      label: <Space><SyncOutlined />Đối soát BPMN</Space>,
+      children: <ReconcileTab policies={availPolicies} setPolicies={setAvailPolicies} />,
+    },
+     {
       key: 'exception',
-      label: <Space><SafetyCertificateOutlined />Exception Policy</Space>,
-      children: <ExceptionTab policies={excPolicies} setPolicies={setExcPolicies} />,
+      label: <Space><SafetyCertificateOutlined />Luồng ngoại lệ</Space>,
+      children: <ExceptionTab policies={excPolicies} setPolicies={setExcPolicies} availPolicies={availPolicies} setAvailPolicies={setAvailPolicies} />,
     },
     {
       key: 'routing',
-      label: <Space><PartitionOutlined />Ma trận định tuyến</Space>,
+      label: <Space><PartitionOutlined />Luồng xử lý</Space>,
       children: <RoutingMatrixTab />,
     },
-    {
+  
+       {
       key: 'inspector',
-      label: <Space><ApiOutlined />Simulator</Space>,
+      label: <Space><ApiOutlined />Mô phỏng</Space>,
       children: <InspectorTab availPolicies={availPolicies} excPolicies={excPolicies} presentations={presentations} />,
     },
+    {
+      key: 'registry',
+      label: <Space><AppstoreOutlined />Danh mục nút</Space>,
+      children: <RegistryTab presentations={presentations} setPresentations={setPresentations} />,
+    },
   ]
-
   return (
     <div>
       <PageHeader
         icon={<ControlOutlined style={{ fontSize: 24, color: 'var(--vht-red)' }} />}
-        title="Cấu hình Hành động (Action Studio)"
-        tag={<Tag color="processing">Action Availability Model</Tag>}
-        code={<Text type="secondary">Registry / Availability Policy / Exception Policy / Simulator</Text>}
-        breadcrumb={[{ label: 'Hệ thống QTKHCN' }, { label: 'Cấu hình Hành động' }]}
+        title="Ma trận Hành động"
+        // tag={<Tag color="processing">Action Availability Model</Tag>}
+        // code={<Text type="secondary">Đồng bộ quy trình / Luật hiển thị / Ngoại lệ / Mô phỏng</Text>}
+        breadcrumb={[{ label: 'Hệ thống QTKHCN' }, { label: 'Ma trận Hành động' }]}
+        extra={<HelpButton section="hanhdong" />}
       />
       {/* <Alert
         type="info"
@@ -1023,8 +1962,27 @@ export default function ActionStudio() {
                 </div>
         }
       /> */}
-      <Tabs defaultActiveKey="registry" items={items} />
+      <Tabs activeKey={activeTab} onChange={setActiveTab} items={items} />
     </div>
   )
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

@@ -1,4 +1,4 @@
-// Action Availability Policy (action-availability-model.md §8 `action_availability_policy`)
+﻿// Action Availability Policy (action-availability-model.md §8 `action_availability_policy`)
 // MOCK: bảng luật trả lời action nào được phép xuất hiện ở surface/quy trình/bước/trạng thái nào,
 // cho vai trò và quyền nào. STANDARD/SUPPORT dùng bảng này; EXCEPTION dùng exceptionPolicy.ts.
 
@@ -27,7 +27,7 @@ export const PERMISSION_LABEL: Record<string, string> = {
 }
 
 /** Quy trình có thể gắn điều kiện policy (khớp NHOM trong data/processes.ts). */
-export const PROCESS_CODES = ['RD01', 'RD02', 'RD05'] as const
+export const PROCESS_CODES = ['RD01.01', 'RD01.02', 'RD02.01', 'RD05.01'] as const
 
 export const DOSSIER_STATUS_LABEL: Record<DossierStatus, string> = {
   draft: 'Khởi tạo',
@@ -79,21 +79,6 @@ export const ACTION_AVAILABILITY_POLICIES: ActionAvailabilityPolicy[] = [
     formKey: 'phieu-chu-truong',
     conditionExpression: 'dossier.docsComplete = true',
     displayOrder: 10,
-    enabled: true,
-  },
-  {
-    // (D10 legacy) Action "Xử lý" gộp — giữ tới khi DossierDetail rewire sang 3 nút outcome.
-    id: 'AP-02',
-    actionCode: 'PROCESS_STEP',
-    surface: 'DOSSIER_DETAIL',
-    processCode: null,
-    taskDefinitionKey: null,
-    dossierStatus: 'processing',
-    allowedRoleCodes: [],
-    requiredPermissions: [PERMISSIONS.PROCESS_STEP],
-    formKey: 'phieu-nhan-xet',
-    conditionExpression: 'user in currentStep.candidateGroups',
-    displayOrder: 20,
     enabled: true,
   },
   // ── (D10) 3 outcome action cho bước phê duyệt — mỗi hướng một eForm riêng ──────────

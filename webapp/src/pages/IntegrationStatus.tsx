@@ -22,6 +22,7 @@ import {
   ShoppingCartOutlined,
   TeamOutlined,
 } from "@ant-design/icons";
+import HelpButton from '../components/HelpButton'
 import { PageHeader, StatCard } from "../components/ui";
 import {
   INTEG_STATUS,
@@ -129,6 +130,7 @@ export default function IntegrationStatus() {
             và theo dõi đồng bộ.
           </Text>
         }
+        extra={<HelpButton section="tichhop" />}
       />
 
       {/* Dải KPI kiểu bento: vạch nhấn trái theo ngữ nghĩa (list-card-sample.md). */}

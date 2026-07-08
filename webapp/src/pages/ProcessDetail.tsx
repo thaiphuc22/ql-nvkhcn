@@ -45,6 +45,7 @@ import {
   ProcessStatusTag,
   EntityTable,
 } from "../components/ui";
+import HelpButton from "../components/HelpButton";
 
 const BpmnViewer = lazy(() => import("../components/BpmnViewer"));
 const BpmnEditor = lazy(() => import("../components/BpmnEditor"));
@@ -477,6 +478,7 @@ export default function ProcessDetail() {
                   Ban hành phiên bản mới
                 </Button>
               </Tooltip>
+              <HelpButton section="quytrinh" />
             </Space>
           )
         }

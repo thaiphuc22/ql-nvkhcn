@@ -19,6 +19,7 @@ import {
   Switch,
   Table,
   Tag,
+  Tooltip,
   Typography,
 } from 'antd'
 import {
@@ -29,26 +30,39 @@ import {
   SolutionOutlined,
   SwapOutlined,
   ThunderboltOutlined,
+  WarningOutlined,
 } from '@ant-design/icons'
+import HelpButton from '../components/HelpButton'
+import ConditionBuilder from '../components/ConditionBuilder'
+import AssignmentBuilder from '../components/AssignmentBuilder'
 import { PageHeader } from '../components/ui'
-import { ROLES, roleLabel } from '../data/roles'
+import { roleLabel } from '../data/roles'
 import {
-  APPROVAL_MATRIX,
   APPROVAL_SLOTS,
   DELEGATIONS,
   LOAI_HOI_DONG_LABEL,
+  MODE_LABEL,
   VND,
+  describeTarget,
+  groupAssignment,
   resolveApprovers,
   slotLabel,
+  type ApprovalAssignment,
   type ApprovalRule,
   type ResolveResult,
   type SlotCode,
 } from '../data/approvalMatrix'
+import {
+  anyCondition,
+  describeConditionTree,
+  type ConditionGroup,
+} from '../data/approvalConditions'
+import { describeHelpers } from '../data/approvalVariableRegistry'
+import { analyzeRules, warningsByRule } from '../data/approvalMatrixAnalyzer'
+import { useApprovalMatrix } from '../store/ApprovalMatrixContext'
 import { users } from '../data/users'
 
 const { Text, Paragraph } = Typography
-
-const CAP_LABEL: Record<string, string> = { CS: 'Cơ sở', TD: 'Tập đoàn' }
 
 /** Chữ cái đầu họ tên → nhãn avatar. */
 function initials(name: string): string {
@@ -56,28 +70,19 @@ function initials(name: string): string {
   return ((p[0]?.[0] ?? '') + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase()
 }
 
-/** Gói điều kiện của một rule thành các Tag để hiển thị trong bảng. */
-function conditionTags(r: ApprovalRule) {
-  const tags: React.ReactNode[] = []
-  if (r.cap) tags.push(<Tag key="cap" color={r.cap === 'TD' ? 'red' : 'blue'}>Cấp: {CAP_LABEL[r.cap]}</Tag>)
-  if (r.loaiHoiDong) tags.push(<Tag key="hd" color="geekblue">HĐ: {LOAI_HOI_DONG_LABEL[r.loaiHoiDong] ?? r.loaiHoiDong}</Tag>)
-  if (r.budgetMin != null || r.budgetMax != null) {
-    const lo = r.budgetMin != null ? `≥ ${VND.format(r.budgetMin)}` : ''
-    const hi = r.budgetMax != null ? `< ${VND.format(r.budgetMax)}` : ''
-    tags.push(<Tag key="bud" color="gold">Ngân sách: {[lo, hi].filter(Boolean).join(' & ')} đ</Tag>)
-  }
-  if (tags.length === 0) tags.push(<Tag key="any">Mọi hồ sơ</Tag>)
-  return <Space size={4} wrap>{tags}</Space>
+/** Diễn giải điều kiện của một rule thành câu đọc được (bảng). */
+function conditionSummary(r: ApprovalRule) {
+  const empty = r.conditions.items.length === 0
+  return empty ? (
+    <Tag>Mọi hồ sơ</Tag>
+  ) : (
+    <Text style={{ fontSize: 12 }}>{describeConditionTree(r.conditions, describeHelpers)}</Text>
+  )
 }
 
 interface RuleFormValues {
   ten: string
   slot: SlotCode
-  cap?: 'CS' | 'TD' | null
-  loaiHoiDong?: string | null
-  budgetMin?: number | null
-  budgetMax?: number | null
-  approverRoleCodes: string[]
   priority: number
   enabled: boolean
 }
@@ -90,57 +95,73 @@ interface RuleFormValues {
  */
 export default function ApprovalMatrix() {
   const { message } = App.useApp()
-  const [rules, setRules] = useState<ApprovalRule[]>(APPROVAL_MATRIX)
+  // Nguồn luật CHUNG (store) — sửa ở đây lan sang runtime hồ sơ (Slice G).
+  const { rules, upsertRule, removeRule: removeRuleCtx, toggleRule } = useApprovalMatrix()
 
   // ── Rule Builder (modal) ────────────────────────────────────────────────
   const [editing, setEditing] = useState<ApprovalRule | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [form] = Form.useForm<RuleFormValues>()
+  // Cây điều kiện + kết quả phân công soạn tách khỏi antd Form (Form giữ trường phẳng).
+  const [condDraft, setCondDraft] = useState<ConditionGroup>(anyCondition())
+  const [asgDraft, setAsgDraft] = useState<ApprovalAssignment>(groupAssignment([]))
 
   const openCreate = () => {
     setEditing(null)
-    form.setFieldsValue({
-      ten: '', slot: 'THAM_DINH', cap: null, loaiHoiDong: null,
-      budgetMin: null, budgetMax: null, approverRoleCodes: [], priority: 50, enabled: true,
-    })
+    form.setFieldsValue({ ten: '', slot: 'THAM_DINH', priority: 50, enabled: true })
+    setCondDraft(anyCondition())
+    setAsgDraft(groupAssignment([]))
     setModalOpen(true)
   }
   const openEdit = (r: ApprovalRule) => {
     setEditing(r)
-    form.setFieldsValue({ ...r })
+    form.setFieldsValue({ ten: r.ten, slot: r.slot, priority: r.priority, enabled: r.enabled })
+    setCondDraft(structuredClone(r.conditions))
+    setAsgDraft(structuredClone(r.assignment))
     setModalOpen(true)
   }
   const saveRule = async () => {
     const v = await form.validateFields()
+    // Validate: cần ít nhất một target có nội dung (GROUP có nhóm / USER có người).
+    const hasTarget = asgDraft.targets.some(
+      (t) =>
+        (t.type === 'GROUP' && t.roleCodes.length > 0) ||
+        (t.type === 'USER' && t.userIds.length > 0) ||
+        (t.type !== 'GROUP' && t.type !== 'USER'),
+    )
+    if (!hasTarget) {
+      message.error('Cần ít nhất một đích phân công (nhóm hoặc người).')
+      return
+    }
     const next: ApprovalRule = {
       id: editing?.id ?? `AM-${Date.now().toString().slice(-5)}`,
       ten: v.ten.trim(),
       slot: v.slot,
-      cap: v.cap ?? null,
-      loaiHoiDong: v.slot === 'HOI_DONG' ? v.loaiHoiDong ?? null : null,
-      budgetMin: v.budgetMin ?? null,
-      budgetMax: v.budgetMax ?? null,
-      approverRoleCodes: v.approverRoleCodes,
+      conditions: condDraft,
+      assignment: asgDraft,
       priority: v.priority,
       enabled: v.enabled,
+      version: (editing?.version ?? 0) + 1,
     }
-    setRules((prev) =>
-      editing ? prev.map((r) => (r.id === editing.id ? next : r)) : [...prev, next],
-    )
+    upsertRule(next)
     setModalOpen(false)
     message.success(editing ? 'Đã cập nhật luật.' : 'Đã thêm luật mới.')
   }
   const removeRule = (id: string) => {
-    setRules((prev) => prev.filter((r) => r.id !== id))
+    removeRuleCtx(id)
     message.success('Đã xoá luật.')
   }
-  const toggle = (id: string, enabled: boolean) =>
-    setRules((prev) => prev.map((r) => (r.id === id ? { ...r, enabled } : r)))
+  const toggle = (id: string, enabled: boolean) => toggleRule(id, enabled)
 
   const sortedRules = useMemo(
     () => [...rules].sort((a, b) => a.priority - b.priority),
     [rules],
   )
+
+  // ── Phân tích xung đột / độ phủ (Slice F) ────────────────────────────────
+  const warnings = useMemo(() => analyzeRules(rules), [rules])
+  const warnByRule = useMemo(() => warningsByRule(warnings), [warnings])
+  const slotWarnings = useMemo(() => warnings.filter((w) => !w.ruleId), [warnings])
 
   // ── Simulation ──────────────────────────────────────────────────────────
   const [simSlot, setSimSlot] = useState<SlotCode>('PHE_DUYET')
@@ -167,19 +188,36 @@ export default function ApprovalMatrix() {
     },
     {
       title: 'Luật', key: 'ten',
-      render: (_: unknown, r: ApprovalRule) => (
-        <div>
-          <Text strong>{r.ten}</Text>
-          <div><Tag color="purple" style={{ marginTop: 4 }}>{slotLabel(r.slot)}</Tag></div>
-        </div>
-      ),
+      render: (_: unknown, r: ApprovalRule) => {
+        const rw = warnByRule.get(r.id) ?? []
+        return (
+          <div>
+            <Space size={4}>
+              <Text strong>{r.ten}</Text>
+              {rw.length > 0 && (
+                <Tooltip title={<div>{rw.map((w, i) => <div key={i}>• {w.message}</div>)}</div>}>
+                  <WarningOutlined style={{ color: rw.some((w) => w.level === 'error') ? '#cf1322' : '#d48806' }} />
+                </Tooltip>
+              )}
+            </Space>
+            <div><Tag color="purple" style={{ marginTop: 4 }}>{slotLabel(r.slot)}</Tag></div>
+          </div>
+        )
+      },
     },
-    { title: 'Điều kiện', key: 'dk', render: (_: unknown, r: ApprovalRule) => conditionTags(r) },
+    { title: 'Điều kiện', key: 'dk', render: (_: unknown, r: ApprovalRule) => conditionSummary(r) },
     {
-      title: 'Người / nhóm phê duyệt', key: 'approver',
+      title: 'Kết quả phân công', key: 'approver',
       render: (_: unknown, r: ApprovalRule) => (
-        <Space size={4} wrap>
-          {r.approverRoleCodes.map((c) => <Tag key={c} color="green">{roleLabel(c)}</Tag>)}
+        <Space direction="vertical" size={2}>
+          <Space size={4} wrap>
+            {r.assignment.targets.map((t, i) => (
+              <Tag key={i} color={t.type === 'GROUP' ? 'green' : t.type === 'USER' ? 'blue' : 'default'}>
+                {describeTarget(t)}
+              </Tag>
+            ))}
+          </Space>
+          <Text type="secondary" style={{ fontSize: 11 }}>Chế độ: {MODE_LABEL[r.assignment.mode]}</Text>
         </Space>
       ),
     },
@@ -210,7 +248,12 @@ export default function ApprovalMatrix() {
         tag={<Tag color="processing">EPIC06 · Approval Matrix</Tag>}
         code={<Text type="secondary">Ánh xạ “slot phê duyệt + điều kiện” → người phê duyệt cụ thể — prototype mock</Text>}
         breadcrumb={[{ label: 'Hệ thống QTKHCN' }, { label: 'Ma trận phê duyệt' }]}
-        extra={<Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>Thêm luật</Button>}
+        extra={
+          <Space>
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>Thêm luật</Button>
+            <HelpButton section="matran" />
+          </Space>
+        }
       />
 
       <Alert
@@ -228,6 +271,24 @@ export default function ApprovalMatrix() {
           </span>
         }
       />
+
+      {warnings.length > 0 && (
+        <Alert
+          type={warnings.some((w) => w.level === 'error') ? 'error' : 'warning'}
+          showIcon
+          style={{ marginBottom: 16 }}
+          message={`Phân tích ma trận: ${warnings.length} cảnh báo (${warnings.filter((w) => w.level === 'error').length} lỗi)`}
+          description={
+            slotWarnings.length > 0 ? (
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12 }}>
+                {slotWarnings.map((w, i) => <li key={i}>{w.message}</li>)}
+              </ul>
+            ) : (
+              <span style={{ fontSize: 12 }}>Xem chi tiết ở biểu tượng cảnh báo từng dòng.</span>
+            )
+          }
+        />
+      )}
 
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={15}>
@@ -327,9 +388,22 @@ export default function ApprovalMatrix() {
                   <Alert
                     type={result.matchedRule ? 'success' : 'warning'}
                     showIcon
-                    message={result.matchedRule ? 'Đã resolve' : 'Không có luật khớp'}
+                    message={result.matchedRule ? `Đã resolve · ${result.mode ? MODE_LABEL[result.mode] : ''}` : 'Không có luật khớp'}
                     description={<span style={{ fontSize: 12 }}>{result.reason}</span>}
                   />
+                  {result.warnings.length > 0 && (
+                    <Alert
+                      type="warning"
+                      showIcon
+                      style={{ fontSize: 12 }}
+                      message="Cảnh báo"
+                      description={
+                        <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12 }}>
+                          {result.warnings.map((w, i) => <li key={i}>{w}</li>)}
+                        </ul>
+                      }
+                    />
+                  )}
                   {result.approvers.length > 0 && (
                     <Card size="small" style={{ background: 'var(--vht-surface-2)' }}>
                       <Space direction="vertical" size={8} style={{ width: '100%' }}>
@@ -355,6 +429,36 @@ export default function ApprovalMatrix() {
                   )}
                   {result.approvers.length === 0 && result.matchedRule == null && (
                     <Empty description="Không có người phê duyệt" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                  )}
+
+                  {result.evaluatedRules.length > 0 && (
+                    <div>
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        Đã xét {result.evaluatedRules.length} luật cùng slot (vì sao chọn/loại):
+                      </Text>
+                      <Space direction="vertical" size={4} style={{ width: '100%', marginTop: 6 }}>
+                        {result.evaluatedRules.map((e) => (
+                          <div
+                            key={e.rule.id}
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              gap: 8,
+                              fontSize: 12,
+                              opacity: e.matched ? 1 : 0.6,
+                            }}
+                          >
+                            <Space size={4}>
+                              <Tag color={e.chosen ? 'green' : e.matched ? 'blue' : 'default'}>
+                                #{e.rule.priority}
+                              </Tag>
+                              <Text delete={!e.matched && !e.chosen}>{e.rule.ten}</Text>
+                            </Space>
+                            <Text type="secondary">{e.note}</Text>
+                          </div>
+                        ))}
+                      </Space>
+                    </div>
                   )}
                 </>
               )}
@@ -385,66 +489,17 @@ export default function ApprovalMatrix() {
           <Form.Item name="slot" label="Slot phê duyệt" rules={[{ required: true }]}>
             <Select options={APPROVAL_SLOTS.map((s) => ({ value: s.code, label: s.ten }))} />
           </Form.Item>
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item name="cap" label="Điều kiện: Cấp nhiệm vụ">
-                <Select
-                  allowClear
-                  placeholder="Bất kỳ"
-                  options={[
-                    { value: 'CS', label: 'Cơ sở' },
-                    { value: 'TD', label: 'Tập đoàn' },
-                  ]}
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item noStyle shouldUpdate={(p, c) => p.slot !== c.slot}>
-                {({ getFieldValue }) =>
-                  getFieldValue('slot') === 'HOI_DONG' ? (
-                    <Form.Item name="loaiHoiDong" label="Điều kiện: Loại hội đồng">
-                      <Select
-                        allowClear
-                        placeholder="Bất kỳ"
-                        options={Object.entries(LOAI_HOI_DONG_LABEL).map(([v, l]) => ({ value: v, label: l }))}
-                      />
-                    </Form.Item>
-                  ) : null
-                }
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item name="budgetMin" label="Ngân sách tối thiểu (đ)">
-                <InputNumber<number>
-                  style={{ width: '100%' }}
-                  min={0}
-                  step={1_000_000_000}
-                  formatter={(v) => (v == null ? '' : VND.format(Number(v)))}
-                  parser={(s) => Number((s ?? '').replace(/\D/g, ''))}
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="budgetMax" label="Ngân sách tối đa (đ, exclusive)">
-                <InputNumber<number>
-                  style={{ width: '100%' }}
-                  min={0}
-                  step={1_000_000_000}
-                  formatter={(v) => (v == null ? '' : VND.format(Number(v)))}
-                  parser={(s) => Number((s ?? '').replace(/\D/g, ''))}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Form.Item name="approverRoleCodes" label="Người / nhóm phê duyệt (candidateGroup)" rules={[{ required: true, message: 'Chọn ít nhất một nhóm' }]}>
-            <Select
-              mode="multiple"
-              placeholder="Chọn nhóm phê duyệt"
-              optionFilterProp="label"
-              options={ROLES.map((r) => ({ value: r.code, label: `${r.ten} (${r.code})` }))}
-            />
+          <Form.Item
+            label="Điều kiện áp dụng"
+            tooltip="Cây điều kiện AND/OR — để trống = khớp mọi hồ sơ. Slot khớp riêng (chọn ở trên)."
+          >
+            <ConditionBuilder value={condDraft} onChange={setCondDraft} />
+          </Form.Item>
+          <Form.Item
+            label="Kết quả phân công"
+            tooltip="Ai/nhóm nào phê duyệt + chế độ. Đợt 2: GROUP/USER resolve thật; Chức danh/Hội đồng/Biểu thức sắp có."
+          >
+            <AssignmentBuilder value={asgDraft} onChange={setAsgDraft} />
           </Form.Item>
           <Row gutter={12}>
             <Col span={12}>

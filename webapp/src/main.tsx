@@ -10,6 +10,9 @@ import { ProcessProvider } from './store/ProcessContext'
 import { NhiemVuProvider } from './store/NhiemVuContext'
 import { DossierProvider } from './store/DossierContext'
 import { ExceptionProvider } from './store/ExceptionContext'
+import { RuleProvider } from './store/RuleContext'
+import { RbacProvider } from './store/RbacContext'
+import { ApprovalMatrixProvider } from './store/ApprovalMatrixContext'
 import { FormProvider } from './store/FormContext'
 import { BreadcrumbProvider } from './store/BreadcrumbContext'
 import { AuthProvider } from './store/AuthContext'
@@ -24,11 +27,17 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <NhiemVuProvider>
               <DossierProvider>
                 <ExceptionProvider>
-                  <BrowserRouter>
-                    <BreadcrumbProvider>
-                      <App />
-                    </BreadcrumbProvider>
-                  </BrowserRouter>
+                  <RuleProvider>
+                    <RbacProvider>
+                      <ApprovalMatrixProvider>
+                        <BrowserRouter>
+                          <BreadcrumbProvider>
+                            <App />
+                          </BreadcrumbProvider>
+                        </BrowserRouter>
+                      </ApprovalMatrixProvider>
+                    </RbacProvider>
+                  </RuleProvider>
                 </ExceptionProvider>
               </DossierProvider>
             </NhiemVuProvider>

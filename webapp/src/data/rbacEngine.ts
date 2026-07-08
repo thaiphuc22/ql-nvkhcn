@@ -2,11 +2,13 @@ import { ADMIN_ROLE_LABEL, ROLE_LABEL_TO_CODES, type AppUser } from './users'
 import {
   DATA_SCOPE_DEFINITIONS,
   ROLE_PERMISSION_POLICIES,
+  USER_ROLE_ASSIGNMENTS,
   type DataScopeCode,
   type FeatureCode,
   type PermissionCode,
   type RolePermissionPolicy,
   type SystemRoleCode,
+  type UserRoleAssignment,
 } from './rbac'
 
 export interface RbacPrincipal {
@@ -72,16 +74,45 @@ export function getEffectivePermissions(
   ]
 }
 
+/** Assignment còn hiệu lực tại thời điểm `at` (mặc định: bây giờ). */
+function isAssignmentEffective(assignment: UserRoleAssignment, at: Date = new Date()): boolean {
+  if (assignment.effectiveFrom && at < new Date(assignment.effectiveFrom)) return false
+  if (assignment.effectiveTo && at > new Date(assignment.effectiveTo)) return false
+  return true
+}
+
+/**
+ * Assignment còn hiệu lực của user, lọc theo role user thực sự đang giữ (fail-safe:
+ * assignment cho role đã gỡ khỏi vaiTro sẽ không được tính). Membership role vẫn
+ * suy từ `user.vaiTro` — assignment chỉ phủ scope. Xem D11.
+ */
+export function getUserAssignments(
+  user: AppUser | null | undefined,
+  assignments: UserRoleAssignment[] = USER_ROLE_ASSIGNMENTS,
+): UserRoleAssignment[] {
+  const principal = getPrincipal(user)
+  if (!principal) return []
+  return assignments.filter(
+    (assignment) =>
+      assignment.userId === principal.userId &&
+      principal.roleCodes.includes(assignment.roleCode) &&
+      isAssignmentEffective(assignment),
+  )
+}
+
+/**
+ * Phạm vi dữ liệu hiệu lực của user — lấy từ UserRoleAssignment, KHÔNG còn từ policy.
+ * Scope không còn phụ thuộc feature (một user có 1 tập scope chung theo các role được gán).
+ */
 export function getEffectiveDataScopes(
   user: AppUser | null | undefined,
-  featureCode: FeatureCode,
-  policies: RolePermissionPolicy[] = ROLE_PERMISSION_POLICIES,
+  assignments: UserRoleAssignment[] = USER_ROLE_ASSIGNMENTS,
 ): DataScopeCode[] {
   const scopeRank = new Map(DATA_SCOPE_DEFINITIONS.map((scope) => [scope.code, scope.rank]))
   return [
     ...new Set(
-      getMatchedPolicies(user, featureCode, policies)
-        .map((policy) => policy.dataScope)
+      getUserAssignments(user, assignments)
+        .map((assignment) => assignment.dataScope)
         .sort((a, b) => (scopeRank.get(b) ?? 0) - (scopeRank.get(a) ?? 0)),
     ),
   ]
@@ -107,7 +138,7 @@ export function checkPermission(
 
   const matchedPolicies = getMatchedPolicies(user, featureCode, policies)
   const permissionCodes = [...new Set(matchedPolicies.flatMap((policy) => policy.permissionCodes))]
-  const dataScopes = getEffectiveDataScopes(user, featureCode, policies)
+  const dataScopes = getEffectiveDataScopes(user)
   const allowed = permissionCodes.includes(permissionCode)
 
   return {

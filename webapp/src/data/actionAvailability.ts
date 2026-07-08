@@ -1,4 +1,4 @@
-// Action Availability Model (docs/research/action-availability-model.md mục 4-8) — mock/prototype.
+﻿// Action Availability Model (docs/research/action-availability-model.md mục 4-8) — mock/prototype.
 // Một hàm thuần duy nhất thay cho các điều kiện JSX rời rạc trong UI: UI chỉ render theo kết quả này.
 
 import {
@@ -172,8 +172,29 @@ export function getAvailableActions(input: AvailableActionsInput): AvailableActi
     const def = ACTION_REGISTRY[actionCode]
     if (!def?.active) continue
 
-    const policy = resolveExceptionPolicy(exceptionPolicies, { exceptionType, cap })
+    const policy = resolveExceptionPolicy(exceptionPolicies, {
+      exceptionType,
+      cap,
+      processCode,
+      taskDefinitionKey,
+      objectType: 'DOSSIER',
+      objectStatus: dossierStatus,
+    })
     const count = exceptionCountByType[exceptionType] ?? 0
+
+    const availabilityExists = policies.some((p) => p.actionCode === actionCode)
+    const availability = availabilityExists
+      ? resolveActionAvailability(policies, {
+          actionCode,
+          surface,
+          processCode,
+          dossierStatus,
+          taskDefinitionKey,
+          userRoleCodes,
+          userPermissions,
+          isAdmin,
+        })
+      : null
 
     let enabled = gateBaseEnabled
     let reason = gateBaseReason
@@ -185,14 +206,20 @@ export function getAvailableActions(input: AvailableActionsInput): AvailableActi
       reason = `Đã đạt số lần tối đa cho loại này trên hồ sơ (${policy.maxTimesPerDossier}).`
     }
 
+    if (enabled && availability && !availability.enabled) {
+      enabled = false
+      reason = availability.reasons.join(' ')
+    }
+
     const action = toAvailableAction(
       actionCode,
       enabled,
       presentations,
       reason,
       policy ? exceptionConditionExpression(policy) : undefined,
-      undefined,
+      availability?.matched?.displayOrder,
       policy?.id,
+      availability?.matched?.formKey,
     )
     if (policy) {
       action.requiresReason = policy.requireReason

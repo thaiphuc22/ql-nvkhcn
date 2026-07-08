@@ -27,6 +27,7 @@ import {
 import { useProcesses } from '../store/ProcessContext'
 import { usePermissions } from '../store/AuthContext'
 import { PageHeader, StatCard, ProcessStatusTag, FilterBar, EntityTable, LIST_SCROLL_Y } from '../components/ui'
+import HelpButton from '../components/HelpButton'
 
 const { Text } = Typography
 
@@ -136,6 +137,7 @@ export default function ProcessCatalog() {
                 Tạo & vẽ BPMN
               </Button>
             </Tooltip>
+            <HelpButton section="quytrinh" />
           </Space>
         }
       />

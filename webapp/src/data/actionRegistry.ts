@@ -27,9 +27,6 @@ export interface ActionDefinition {
 
 export const STANDARD_ACTION_CODES = {
   SUBMIT: 'SUBMIT',
-  /** @deprecated (D10) Action "Xử lý" gộp — đang được thay bằng OUTCOME_ACTION_CODES.
-   *  Giữ tạm để DossierDetail/TaskFormModal cũ còn chạy tới khi rewire UI (increment 2). */
-  PROCESS_STEP: 'PROCESS_STEP',
 } as const
 
 /**
@@ -63,13 +60,6 @@ const standardActions: ActionDefinition[] = [
     actionName: 'Gửi duyệt',
     actionType: 'STANDARD',
     outcome: 'SUBMIT',
-    requiresConfirm: false,
-    active: true,
-  },
-  {
-    actionCode: STANDARD_ACTION_CODES.PROCESS_STEP,
-    actionName: 'Xử lý',
-    actionType: 'STANDARD',
     requiresConfirm: false,
     active: true,
   },

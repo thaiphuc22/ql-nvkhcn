@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom'
 import { type Dossier, type DossierStatus } from '../data/dossiers'
 import { useDossiers } from '../store/DossierContext'
 import { PageHeader, StatCard, DossierStatusTag, FilterBar, EntityTable, LIST_SCROLL_Y } from '../components/ui'
+import HelpButton from '../components/HelpButton'
 
 const { Text } = Typography
 
@@ -89,7 +90,7 @@ export default function DossierList() {
 
   return (
     <div>
-      <PageHeader title="Hồ sơ Nhiệm vụ KHCN" style={{ marginBottom: 0 }} />
+      <PageHeader title="Hồ sơ Nhiệm vụ KHCN" style={{ marginBottom: 0 }} extra={<HelpButton section="hoso" />} />
 
       <Row gutter={14} style={{ margin: '18px 0' }}>
         <Col xs={12} md={6}><StatCard title="Khởi tạo" value={stats.draft} color="#8593a3" /></Col>

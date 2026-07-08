@@ -37,6 +37,7 @@ import {
   type OrgUnit,
 } from '../data/orgUnits'
 import { users as seedAppUsers, type AppUser } from '../data/users'
+import HelpButton from '../components/HelpButton'
 import { PageHeader, StatCard, EntityTable } from '../components/ui'
 
 const { Text } = Typography
@@ -312,6 +313,7 @@ export default function OrgStructure() {
         title="Cơ cấu tổ chức"
         icon={<ApartmentOutlined style={{ fontSize: 26, color: 'var(--vht-red)' }} />}
         style={{ marginBottom: 0 }}
+        extra={<HelpButton section="donvi" />}
       />
 
       <Row gutter={14} style={{ margin: '18px 0' }}>

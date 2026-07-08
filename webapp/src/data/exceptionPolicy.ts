@@ -1,4 +1,4 @@
-// Exception Policy Engine (mock) — controlled-exception-handling.md §4.2 (Exception Policy
+﻿// Exception Policy Engine (mock) — controlled-exception-handling.md §4.2 (Exception Policy
 // Engine), §9 (workflow_exception_policy) và action-availability-model.md §8 (exception_action_policy).
 //
 // Cùng khuôn với approvalMatrix.ts: một bảng luật CÓ THỂ CẤU HÌNH + resolver first-match,
@@ -11,7 +11,9 @@
 // thêm khi có Exception Policy Engine thật (F4).
 
 import type { Cap } from './nhiemVu'
-import type { ExceptionType } from './exceptions'
+import type { DossierStatus } from './dossiers'
+import { EXCEPTION_TYPE_LABEL, type ExceptionType } from './exceptions'
+import { EXCEPTION_ACTION_CODE } from './actionRegistry'
 
 /** Ai được quyền DUYỆT ngoại lệ theo cấp nhiệm vụ — khớp role code trong data/roles.ts. */
 const APPROVER_BY_CAP: Record<Cap, string[]> = {
@@ -24,11 +26,34 @@ const APPROVER_BY_CAP: Record<Cap, string[]> = {
  * rule khớp khi mọi điều kiện được khai báo đều thoả context. Rule TỒN TẠI = loại ngoại
  * lệ này được PHÉP tại context đó (không có rule khớp = không cho xin — fail-closed).
  */
+export type ExceptionObjectType = 'DOSSIER' | 'MISSION' | 'PROPOSAL'
+export type ExceptionTargetType = 'STEP' | 'STATUS' | 'COMPLETE'
+
 export interface ExceptionActionPolicy {
   id: string
+  /** Ten nghiep vu cua ngoai le do admin dat. */
+  exceptionName: string
+  description?: string
+  /** Action button tu Action Registry duoc dung de xin ngoai le. */
+  actionCode?: string
+  /** Phan loai ky thuat noi bo, suy ra tu actionCode de giu runtime mock hien co. */
   exceptionType: ExceptionType
   // ── Điều kiện ────────────────────────────────────────────────────────────
   cap?: Cap | null
+  /** Quy trinh ap dung; null = moi quy trinh. */
+  processCode?: string | null
+  /** Doi tuong nghiep vu phat sinh ngoai le; mock hien tap trung vao ho so. */
+  objectType?: ExceptionObjectType
+  /** Trang thai doi tuong khi duoc xin ngoai le; null = moi trang thai. */
+  objectStatus?: DossierStatus | null
+  /** BPMN/user-task noi nut xin ngoai le xuat hien; null = moi buoc. */
+  sourceTaskKey?: string | null
+  /** Dich den khi ngoai le duoc duyet. */
+  targetType?: ExceptionTargetType
+  targetTaskKey?: string | null
+  targetStatus?: DossierStatus | null
+  /** Dong ActionAvailabilityPolicy sinh kem de hien nut xin ngoai le. */
+  availabilityPolicyId?: string | null
   // ── Kết quả ──────────────────────────────────────────────────────────────
   /** Vai trò được duyệt ngoại lệ (snapshot vào ExceptionRequest.approverRoleCodes). */
   requiredApproverRoleCodes: string[]
@@ -61,7 +86,18 @@ export const EXCEPTION_POLICIES: ExceptionActionPolicy[] = (
   (Object.keys(APPROVER_BY_CAP) as Cap[]).map((cap, ci) => ({
     id: `EP-${String(ti * 10 + ci + 1).padStart(2, '0')}`,
     exceptionType,
+    exceptionName: EXCEPTION_TYPE_LABEL[exceptionType],
+    description: undefined,
+    actionCode: EXCEPTION_ACTION_CODE[exceptionType],
     cap,
+    processCode: null,
+    objectType: 'DOSSIER',
+    objectStatus: 'processing',
+    sourceTaskKey: null,
+    targetType: 'STEP',
+    targetTaskKey: null,
+    targetStatus: null,
+    availabilityPolicyId: null,
     requiredApproverRoleCodes: APPROVER_BY_CAP[cap],
     requireReason: true,
     requireEvidence: cfg.requireEvidence,
@@ -74,6 +110,10 @@ export const EXCEPTION_POLICIES: ExceptionActionPolicy[] = (
 export interface ExceptionPolicyContext {
   exceptionType: ExceptionType
   cap: Cap
+  processCode?: string
+  taskDefinitionKey?: string
+  objectType?: ExceptionObjectType
+  objectStatus?: DossierStatus
 }
 
 /**
@@ -91,7 +131,11 @@ export function resolveExceptionPolicy(
         (p) =>
           p.enabled &&
           p.exceptionType === ctx.exceptionType &&
-          (p.cap == null || p.cap === ctx.cap),
+          (p.cap == null || p.cap === ctx.cap) &&
+          (p.processCode == null || p.processCode === ctx.processCode) &&
+          (p.sourceTaskKey == null || p.sourceTaskKey === ctx.taskDefinitionKey) &&
+          (p.objectType == null || p.objectType === (ctx.objectType ?? 'DOSSIER')) &&
+          (p.objectStatus == null || ctx.objectStatus == null || p.objectStatus === ctx.objectStatus),
       )
       .sort((a, b) => a.priority - b.priority)[0] ?? null
   )
@@ -103,6 +147,10 @@ export function exceptionConditionExpression(p: ExceptionActionPolicy): string {
     'dossierStatus = processing',
     'no pending/approved exception request',
     'user in currentStep.vaiTroCodes',
+    p.processCode ? `process = ${p.processCode}` : 'process = any',
+    p.sourceTaskKey ? `task = ${p.sourceTaskKey}` : 'task = any',
+    p.objectType ? `object = ${p.objectType}` : 'object = DOSSIER',
+    p.objectStatus ? `status = ${p.objectStatus}` : 'status = any',
     p.cap ? `cap = ${p.cap}` : 'cap = any',
     `appliedCount < maxTimesPerDossier(${p.maxTimesPerDossier})`,
   ]
@@ -119,3 +167,7 @@ export function exceptionApproverCodesForCap(cap: Cap): string[] {
     ),
   ]
 }
+
+
+
+

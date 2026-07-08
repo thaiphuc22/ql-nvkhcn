@@ -14,7 +14,7 @@ export const ACTION_SURFACE_LABEL: Record<ActionSurface, string> = {
   WORKLIST: 'Việc của tôi',
   PROCESS_DETAIL: 'Chi tiết quy trình',
   EXCEPTION_REVIEW: 'Duyệt ngoại lệ',
-  ACTION_STUDIO: 'Cấu hình hành động',
+  ACTION_STUDIO: 'Ma trận Hành động',
 }
 
 export const ACTION_SURFACES = Object.keys(ACTION_SURFACE_LABEL) as ActionSurface[]
@@ -49,7 +49,6 @@ export interface ActionPresentation {
 
 const ICON_BY_ACTION: Record<string, string> = {
   SUBMIT: 'send',
-  PROCESS_STEP: 'form',
   APPROVE_STEP: 'check',
   RETURN_STEP: 'rollback',
   REJECT_STEP: 'close',

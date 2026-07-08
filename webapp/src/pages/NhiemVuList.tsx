@@ -15,6 +15,7 @@ import { useNhiemVu } from '../store/NhiemVuContext'
 import { useDossiers } from '../store/DossierContext'
 import { usePermissions } from '../store/AuthContext'
 import { PageHeader, StatCard, FilterBar, EntityTable, LIST_SCROLL_Y } from '../components/ui'
+import HelpButton from '../components/HelpButton'
 
 const { Text } = Typography
 
@@ -114,6 +115,7 @@ export default function NhiemVuList() {
                 Tạo Nhiệm vụ KHCN mới
               </Button>
             </Tooltip>
+            <HelpButton section="nhiemvu" />
           </Space>
         }
       />

@@ -18,6 +18,7 @@ import { NHOM, type ProcessDef } from '../data/processes'
 import { useProcesses } from '../store/ProcessContext'
 import { useForms } from '../store/FormContext'
 import { type BpmnEditorHandle } from '../components/BpmnEditor'
+import HelpButton from '../components/HelpButton'
 import { PageHeader } from '../components/ui'
 
 const { Text } = Typography
@@ -108,6 +109,7 @@ export default function ProcessCreate() {
             <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={handleSave}>
               Lưu & tạo quy trình
             </Button>
+            <HelpButton section="quytrinh" />
           </Space>
         }
       />

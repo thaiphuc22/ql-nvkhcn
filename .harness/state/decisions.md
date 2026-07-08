@@ -81,7 +81,21 @@ Each entry: what was decided, when, and why.
 
 **Rationale**: Different outcomes genuinely need different eForms (approve = ký/ý kiến, reject = lý do bắt buộc, adjust = sửa gì + trả về đâu). The old single-form + routing-radio approach encoded the outcome twice (form `ketLuan` field *and* routing) and bolted routing UI onto the modal. Splitting removes the double representation and lets availability/tone/form be configured per outcome, while the outcome-tag + `resolveRouting` guardrail keeps buttons and the branch diagram from drifting.
 **Source**: Design session 2026-07-07 (BA/PM). Affects `webapp/src/pages/ActionStudio.tsx`, `data/actionRegistry.ts`, `data/actionAvailabilityPolicy.ts`, `components/TaskFormModal.tsx`, `data/stepRouting.ts`. Extends D6; consistent with D2/D3 (custom UI owns rendering; Camunda holds no business data) and the flow-view decision.
-**Status**: LOCKED (model shape) — implementation is frontend-mock follow-up work, not yet started.
+**Status**: LOCKED (model shape) — frontend-mock implementation DONE 2026-07-08 (all 5 points): points 1–4 via the UI cut-over (DossierDetail/TaskFormModal/Worklist, 3 outcome buttons, form-by-reference on policy); point 5 via `data/bpmnReconcile.ts` + the "Đồng bộ BPMN" tab in Action Studio (pull-based scaffold + 🔴/🟡/⚪ coverage check). See the D10 bullet in `DELIVERY_STATE.md`. Real DB-backed policy tables + a real BPMN/Camunda parse still wait on F1.
+
+## D11 — Data scope is a per-user overlay (`UserRoleAssignment`), not a field on `RolePermissionPolicy`
+**Date**: 2026-07-08
+**Decision**: Refactor of the `/phan-quyen` + `/nguoi-dung` RBAC-mock module. Splits the two concerns the old model conflated:
+
+1. **`RolePermissionPolicy` = role + feature + permission + enabled only.** The `dataScope` field is removed from the policy row. A policy now answers "which role may do what on which feature" — nothing about how far a given person can see.
+2. **`UserRoleAssignment` = user + role + dataScope + orgUnit + effectiveFrom/To** is the new home for data scope. Two users holding the same role (e.g. `CQ_KHCN`) can now have different scopes — impossible under scope-on-policy. `getEffectiveDataScopes(user, assignments)` reads from assignments, filtered by effective date, not from policies.
+3. **Scope-overlay, not full assignment.** Role *membership* still derives from `user.vaiTro` via `ROLE_LABEL_TO_CODES` (D9 unchanged); the assignment only *overlays* scope + org unit onto roles the user already holds. `getUserAssignments` fail-safe-filters to roles present in the principal, so a stale assignment for a removed role grants nothing. Minimal blast radius: `getPrincipal`, `permissions.ts`, `DossierDetail`, and login are untouched.
+4. **The "Danh sách Policy" tab becomes a "Chi tiết policy" drawer** opened by clicking a matrix row. The drawer is where raw permissions are shown and the per-policy `enabled` toggle lives — closing the old gap where the matrix had no disable-without-delete control. `/phan-quyen` is now 3 tabs: Danh mục vai trò (CRUD), Ma trận quyền (+ drawer), Mô phỏng (split "Quyền thao tác (Role)" vs "Phạm vi dữ liệu (Assignment)").
+5. **`RbacContext` (`store/RbacContext.tsx`) is the single source** for roles/policies/assignments, mounted in `main.tsx`. `/nguoi-dung` gains a per-user "Phân quyền" drawer that writes assignments into the same context, so scope edited there shows up live in the Simulator.
+
+**Rationale**: The old coupling forced every holder of a role into one scope, which is wrong for VHT (same nghiệp-vụ role, different org reach). Scope is inherently a property of the person-in-a-unit, not of the role's capability. Keeping membership on `vaiTro` (scope-overlay) delivers the correct model with almost no change to the enforcement path, which stays mock until F3.
+**Source**: `docs/research/recfactor-module-user-role.md` + design session 2026-07-08. Affects `webapp/src/data/rbac.ts`, `data/rbacEngine.ts`, `store/RbacContext.tsx`, `pages/RolePermission.tsx`, `pages/UserManagement.tsx`. Extends D9; consistent with D3 (Camunda holds no business data). Frontend-mock only — real DB-backed RBAC still waits on F3.
+**Status**: LOCKED (model shape) — frontend-mock implementation DONE 2026-07-08; `npm run build` green. Server-side enforcement still open (F3).
 
 ---
 

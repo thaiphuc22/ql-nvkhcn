@@ -1,4 +1,5 @@
 import { ROLES } from './roles'
+import { users, ROLE_LABEL_TO_CODES, ADMIN_ROLE_LABEL } from './users'
 
 export type SystemRoleCode = 'ADMIN' | 'OPERATOR' | 'VIEWER'
 export type RoleKind = 'SYSTEM' | 'BUSINESS'
@@ -66,33 +67,50 @@ export interface RolePermissionPolicy {
   roleCode: string
   featureCode: FeatureCode
   permissionCodes: PermissionCode[]
-  dataScope: DataScopeCode
   enabled: boolean
+}
+
+/**
+ * Phạm vi dữ liệu gán theo user (scope-overlay), tách khỏi RolePermissionPolicy.
+ * Role định nghĩa "được làm gì"; assignment định nghĩa "trên phạm vi dữ liệu nào".
+ * Hai user cùng role vẫn có thể có scope khác nhau — điều policy-theo-role không làm được.
+ * Membership role vẫn suy từ `user.vaiTro`; assignment chỉ phủ thêm scope + đơn vị.
+ */
+export interface UserRoleAssignment {
+  id: string
+  userId: string
+  roleCode: string
+  dataScope: DataScopeCode
+  /** Đơn vị/phạm vi áp dụng (mock: nhãn donVi của user). */
+  orgUnitId?: string
+  /** Hiệu lực (ISO date) — bỏ trống = vô thời hạn. */
+  effectiveFrom?: string
+  effectiveTo?: string
 }
 
 export const SYSTEM_ROLES: RbacRole[] = [
   {
     code: 'ADMIN',
-    name: 'Quan tri he thong',
+    name: 'Quản trị hệ thống',
     kind: 'SYSTEM',
     group: 'System Role',
-    description: 'Toan quyen cau hinh, van hanh va quan tri he thong.',
+    description: 'Toàn quyền cấu hình, vận hành và quản trị hệ thống.',
     active: true,
   },
   {
     code: 'OPERATOR',
-    name: 'Van hanh',
+    name: 'Vận hành',
     kind: 'SYSTEM',
     group: 'System Role',
-    description: 'Van hanh quy trinh, theo doi tich hop, xu ly su co nghiep vu.',
+    description: 'Vận hành quy trình, theo dõi tích hợp, xử lý sự cố nghiệp vụ.',
     active: true,
   },
   {
     code: 'VIEWER',
-    name: 'Nguoi xem',
+    name: 'Người xem',
     kind: 'SYSTEM',
     group: 'System Role',
-    description: 'Quyen xem mac dinh cho user dang hoat dong.',
+    description: 'Quyền xem mặc định cho user đang hoạt động.',
     active: true,
   },
 ]
@@ -109,39 +127,39 @@ export const BUSINESS_ROLES: RbacRole[] = ROLES.map((role) => ({
 export const RBAC_ROLES: RbacRole[] = [...SYSTEM_ROLES, ...BUSINESS_ROLES]
 
 export const PERMISSION_DEFINITIONS: PermissionDefinition[] = [
-  { code: 'VIEW', name: 'Xem', description: 'Duoc xem du lieu/chuc nang.' },
-  { code: 'CREATE', name: 'Tao moi', description: 'Duoc tao ban ghi hoac khoi tao ho so.' },
-  { code: 'EDIT', name: 'Chinh sua', description: 'Duoc cap nhat du lieu trong pham vi cho phep.' },
-  { code: 'APPROVE', name: 'Phe duyet', description: 'Duoc phe duyet task hoac ho so.' },
-  { code: 'REJECT', name: 'Tu choi', description: 'Duoc tu choi ho so/task va ghi ly do.' },
-  { code: 'RETURN', name: 'Tra lai', description: 'Duoc tra ho so ve buoc truoc hoac yeu cau sua.' },
-  { code: 'EXPORT', name: 'Xuat du lieu', description: 'Duoc tai/xuat file, PDF, bao cao.' },
-  { code: 'COMMENT', name: 'Binh luan', description: 'Duoc them y kien trao doi.' },
-  { code: 'SIGN', name: 'Ky duyet', description: 'Duoc thuc hien hanh dong ky duyet.' },
-  { code: 'CONFIGURE', name: 'Cau hinh', description: 'Duoc thay doi cau hinh he thong.' },
-  { code: 'AUDIT', name: 'Xem audit', description: 'Duoc xem nhat ky/audit chi tiet.' },
+  { code: 'VIEW', name: 'Xem', description: 'Được xem dữ liệu/chức năng.' },
+  { code: 'CREATE', name: 'Tạo mới', description: 'Được tạo bản ghi hoặc khởi tạo hồ sơ.' },
+  { code: 'EDIT', name: 'Chỉnh sửa', description: 'Được cập nhật dữ liệu trong phạm vi cho phép.' },
+  { code: 'APPROVE', name: 'Phê duyệt', description: 'Được phê duyệt task hoặc hồ sơ.' },
+  { code: 'REJECT', name: 'Từ chối', description: 'Được từ chối hồ sơ/task và ghi lý do.' },
+  { code: 'RETURN', name: 'Trả lại', description: 'Được trả hồ sơ về bước trước hoặc yêu cầu sửa.' },
+  { code: 'EXPORT', name: 'Xuất dữ liệu', description: 'Được tải/xuất file, PDF, báo cáo.' },
+  { code: 'COMMENT', name: 'Bình luận', description: 'Được thêm ý kiến trao đổi.' },
+  { code: 'SIGN', name: 'Ký duyệt', description: 'Được thực hiện hành động ký duyệt.' },
+  { code: 'CONFIGURE', name: 'Cấu hình', description: 'Được thay đổi cấu hình hệ thống.' },
+  { code: 'AUDIT', name: 'Xem audit', description: 'Được xem nhật ký/audit chi tiết.' },
 ]
 
 export const FEATURE_DEFINITIONS: FeatureDefinition[] = [
-  { code: 'DASHBOARD', name: 'Tong quan', group: 'Workspace', description: 'Trang tong quan he thong.' },
-  { code: 'WORKLIST', name: 'Viec cua toi', group: 'Workspace', description: 'Danh sach task can xu ly.' },
-  { code: 'MISSION', name: 'Nhiem vu KHCN', group: 'Core', description: 'Quan ly master Nhiem vu KHCN.' },
-  { code: 'DOSSIER', name: 'Ho so KHCN', group: 'Core', description: 'Quan ly ho so va vong doi xu ly.' },
-  { code: 'PROCESS', name: 'Quy trinh', group: 'Configuration', description: 'Danh muc va phien ban quy trinh BPMN.' },
-  { code: 'FORM', name: 'Bieu mau', group: 'Configuration', description: 'Thu vien bieu mau gan vao task.' },
-  { code: 'ACTION_CONFIG', name: 'Cau hinh hanh dong', group: 'Configuration', description: 'Action Registry va policy hien thi action.' },
-  { code: 'USER_ADMIN', name: 'Nguoi dung', group: 'Administration', description: 'Quan tri tai khoan nguoi dung.' },
-  { code: 'ORG_ADMIN', name: 'Co cau to chuc', group: 'Administration', description: 'Quan tri don vi va phan bo nguoi dung.' },
-  { code: 'RBAC_ADMIN', name: 'Phan quyen', group: 'Administration', description: 'Role, permission, policy va data scope.' },
-  { code: 'REPORT', name: 'Bao cao', group: 'Operation', description: 'Bao cao va xuat du lieu tong hop.' },
-  { code: 'AUDIT', name: 'Nhat ky/Audit', group: 'Operation', description: 'Nhat ky he thong, su kien va audit.' },
+  { code: 'DASHBOARD', name: 'Tổng quan', group: 'Workspace', description: 'Trang tổng quan hệ thống.' },
+  { code: 'WORKLIST', name: 'Việc của tôi', group: 'Workspace', description: 'Danh sách task cần xử lý.' },
+  { code: 'MISSION', name: 'Nhiệm vụ KHCN', group: 'Core', description: 'Quản lý master Nhiệm vụ KHCN.' },
+  { code: 'DOSSIER', name: 'Hồ sơ KHCN', group: 'Core', description: 'Quản lý hồ sơ và vòng đời xử lý.' },
+  { code: 'PROCESS', name: 'Quy trình', group: 'Configuration', description: 'Danh mục và phiên bản quy trình BPMN.' },
+  { code: 'FORM', name: 'Biểu mẫu', group: 'Configuration', description: 'Thư viện biểu mẫu gắn vào task.' },
+  { code: 'ACTION_CONFIG', name: 'Ma trận Hành động', group: 'Configuration', description: 'Action Registry và policy hiển thị action.' },
+  { code: 'USER_ADMIN', name: 'Người dùng', group: 'Administration', description: 'Quản trị tài khoản người dùng.' },
+  { code: 'ORG_ADMIN', name: 'Cơ cấu tổ chức', group: 'Administration', description: 'Quản trị đơn vị và phân bổ người dùng.' },
+  { code: 'RBAC_ADMIN', name: 'Phân quyền', group: 'Administration', description: 'Role, permission, policy và data scope.' },
+  { code: 'REPORT', name: 'Báo cáo', group: 'Operation', description: 'Báo cáo và xuất dữ liệu tổng hợp.' },
+  { code: 'AUDIT', name: 'Nhật ký/Audit', group: 'Operation', description: 'Nhật ký hệ thống, sự kiện và audit.' },
 ]
 
 export const DATA_SCOPE_DEFINITIONS: DataScopeDefinition[] = [
-  { code: 'OWN_MISSION', name: 'Nhiem vu cua toi', description: 'Chi du lieu user tham gia/phu trach.', rank: 1 },
-  { code: 'OWN_DEPARTMENT', name: 'Don vi cua toi', description: 'Du lieu trong don vi cua user.', rank: 2 },
-  { code: 'OWN_CENTER', name: 'Trung tam/Khoi cua toi', description: 'Du lieu trong trung tam hoac khoi.', rank: 3 },
-  { code: 'ALL', name: 'Toan he thong', description: 'Khong gioi han pham vi du lieu.', rank: 4 },
+  { code: 'OWN_MISSION', name: 'Nhiệm vụ của tôi', description: 'Chỉ dữ liệu user tham gia/phụ trách.', rank: 1 },
+  { code: 'OWN_DEPARTMENT', name: 'Đơn vị của tôi', description: 'Dữ liệu trong đơn vị của user.', rank: 2 },
+  { code: 'OWN_CENTER', name: 'Trung tâm/Khối của tôi', description: 'Dữ liệu trong trung tâm hoặc khối.', rank: 3 },
+  { code: 'ALL', name: 'Toàn hệ thống', description: 'Không giới hạn phạm vi dữ liệu.', rank: 4 },
 ]
 
 const ADMIN_PERMISSIONS: PermissionCode[] = [
@@ -166,7 +184,6 @@ export const ROLE_PERMISSION_POLICIES: RolePermissionPolicy[] = [
     roleCode: 'ADMIN',
     featureCode: feature.code,
     permissionCodes: ADMIN_PERMISSIONS,
-    dataScope: 'ALL' as DataScopeCode,
     enabled: true,
   })),
   ...OPERATOR_FEATURES.map((feature, index) => ({
@@ -174,7 +191,6 @@ export const ROLE_PERMISSION_POLICIES: RolePermissionPolicy[] = [
     roleCode: 'OPERATOR',
     featureCode: feature,
     permissionCodes: ['VIEW', 'EDIT', 'EXPORT', 'AUDIT'] as PermissionCode[],
-    dataScope: 'ALL' as DataScopeCode,
     enabled: true,
   })),
   {
@@ -182,7 +198,6 @@ export const ROLE_PERMISSION_POLICIES: RolePermissionPolicy[] = [
     roleCode: 'VIEWER',
     featureCode: 'DASHBOARD',
     permissionCodes: ['VIEW'],
-    dataScope: 'OWN_MISSION',
     enabled: true,
   },
   {
@@ -190,7 +205,6 @@ export const ROLE_PERMISSION_POLICIES: RolePermissionPolicy[] = [
     roleCode: 'VIEWER',
     featureCode: 'WORKLIST',
     permissionCodes: ['VIEW'],
-    dataScope: 'OWN_MISSION',
     enabled: true,
   },
   {
@@ -198,7 +212,6 @@ export const ROLE_PERMISSION_POLICIES: RolePermissionPolicy[] = [
     roleCode: 'PM',
     featureCode: 'MISSION',
     permissionCodes: ['VIEW', 'CREATE', 'EDIT', 'COMMENT', 'EXPORT'],
-    dataScope: 'OWN_MISSION',
     enabled: true,
   },
   {
@@ -206,7 +219,6 @@ export const ROLE_PERMISSION_POLICIES: RolePermissionPolicy[] = [
     roleCode: 'PM',
     featureCode: 'DOSSIER',
     permissionCodes: ['VIEW', 'CREATE', 'EDIT', 'COMMENT', 'EXPORT'],
-    dataScope: 'OWN_MISSION',
     enabled: true,
   },
   {
@@ -214,7 +226,6 @@ export const ROLE_PERMISSION_POLICIES: RolePermissionPolicy[] = [
     roleCode: 'CQ_KHCN',
     featureCode: 'DOSSIER',
     permissionCodes: ['VIEW', 'EDIT', 'APPROVE', 'REJECT', 'RETURN', 'COMMENT', 'EXPORT'],
-    dataScope: 'OWN_DEPARTMENT',
     enabled: true,
   },
   {
@@ -222,7 +233,6 @@ export const ROLE_PERMISSION_POLICIES: RolePermissionPolicy[] = [
     roleCode: 'CQ_QLKHCN',
     featureCode: 'DOSSIER',
     permissionCodes: ['VIEW', 'EDIT', 'APPROVE', 'REJECT', 'RETURN', 'COMMENT', 'EXPORT', 'AUDIT'],
-    dataScope: 'OWN_CENTER',
     enabled: true,
   },
   {
@@ -230,7 +240,6 @@ export const ROLE_PERMISSION_POLICIES: RolePermissionPolicy[] = [
     roleCode: 'HDKHCN',
     featureCode: 'DOSSIER',
     permissionCodes: ['VIEW', 'APPROVE', 'REJECT', 'COMMENT', 'SIGN'],
-    dataScope: 'OWN_CENTER',
     enabled: true,
   },
   {
@@ -238,10 +247,75 @@ export const ROLE_PERMISSION_POLICIES: RolePermissionPolicy[] = [
     roleCode: 'TGD_VHT',
     featureCode: 'DOSSIER',
     permissionCodes: ['VIEW', 'APPROVE', 'REJECT', 'SIGN', 'AUDIT'],
-    dataScope: 'ALL',
     enabled: true,
   },
 ]
+
+/** Scope mặc định theo role khi seed assignment (mock). Fallback = OWN_DEPARTMENT. */
+const DEFAULT_SCOPE_BY_ROLE: Record<string, DataScopeCode> = {
+  ADMIN: 'ALL',
+  OPERATOR: 'ALL',
+  VIEWER: 'OWN_MISSION',
+  PM: 'OWN_MISSION',
+  PA: 'OWN_MISSION',
+  NNC: 'OWN_MISSION',
+  CQ_KHCN: 'OWN_DEPARTMENT',
+  CQ_MS: 'OWN_DEPARTMENT',
+  CQ_NS: 'OWN_DEPARTMENT',
+  CQ_TCKT: 'OWN_DEPARTMENT',
+  CQ_QLKHCN: 'OWN_CENTER',
+  BGD_TT: 'OWN_CENTER',
+  BGD_KHOI: 'OWN_CENTER',
+  HDKHCN: 'OWN_CENTER',
+  HDXD: 'OWN_CENTER',
+  HDXD_DC: 'OWN_CENTER',
+  HDNT: 'OWN_CENTER',
+  HD_DGHT: 'OWN_CENTER',
+  PTGD_CT: 'ALL',
+  TGD_VHT: 'ALL',
+  TP_CLKHCN: 'OWN_DEPARTMENT',
+  TP_TCKT: 'OWN_DEPARTMENT',
+  TP_NS: 'OWN_DEPARTMENT',
+  GD_TTMS: 'OWN_DEPARTMENT',
+  CQ_KHCN_TD: 'ALL',
+  CQNV_TD: 'ALL',
+  HDKHCN_TD: 'ALL',
+  HDXD_TD: 'ALL',
+  HDNT_TD: 'ALL',
+  BTGD_TD: 'ALL',
+}
+
+export function defaultScopeForRole(roleCode: string): DataScopeCode {
+  return DEFAULT_SCOPE_BY_ROLE[roleCode] ?? 'OWN_DEPARTMENT'
+}
+
+/**
+ * Seed assignment suy từ users × role đang giữ (qua ROLE_LABEL_TO_CODES).
+ * Mỗi (user, businessRole) → 1 assignment với scope mặc định + đơn vị = donVi của user.
+ * Admin (isAdmin) → 1 assignment ADMIN/ALL. Đây là nguồn phạm vi dữ liệu mới,
+ * thay cho dataScope cũ nằm trong policy — xem D11.
+ */
+export const USER_ROLE_ASSIGNMENTS: UserRoleAssignment[] = users.flatMap((user) => {
+  if (user.vaiTro.includes(ADMIN_ROLE_LABEL)) {
+    return [
+      {
+        id: `URA-${user.id}-ADMIN`,
+        userId: user.id,
+        roleCode: 'ADMIN',
+        dataScope: 'ALL',
+        orgUnitId: user.donVi,
+      },
+    ]
+  }
+  const roleCodes = [...new Set(user.vaiTro.flatMap((label) => ROLE_LABEL_TO_CODES[label] ?? []))]
+  return roleCodes.map((roleCode) => ({
+    id: `URA-${user.id}-${roleCode}`,
+    userId: user.id,
+    roleCode,
+    dataScope: defaultScopeForRole(roleCode),
+    orgUnitId: user.donVi,
+  }))
+})
 
 export const ROLE_LABEL: Record<string, string> = Object.fromEntries(RBAC_ROLES.map((role) => [role.code, role.name]))
 export const FEATURE_LABEL: Record<FeatureCode, string> = Object.fromEntries(

@@ -31,6 +31,7 @@ import {
   ClusterOutlined,
   SolutionOutlined,
   ControlOutlined,
+  BookOutlined,
 } from "@ant-design/icons";
 import {
   Routes,
@@ -61,9 +62,11 @@ const OrgStructure = lazy(() => import("./pages/OrgStructure"));
 const ProcessMonitor = lazy(() => import("./pages/ProcessMonitor"));
 const IntegrationStatus = lazy(() => import("./pages/IntegrationStatus"));
 const ProcessEventLog = lazy(() => import("./pages/ProcessEventLog"));
-const RuleManager = lazy(() => import("./pages/RuleManager"));
+const RuleList = lazy(() => import("./pages/RuleList"));
+const RuleDetail = lazy(() => import("./pages/RuleDetail"));
 const ApprovalMatrix = lazy(() => import("./pages/ApprovalMatrix"));
 const ActionStudio = lazy(() => import("./pages/ActionStudio"));
+const TroGiup = lazy(() => import("./pages/TroGiup"));
 import { useDossiers } from "./store/DossierContext";
 import { useBreadcrumb } from "./store/BreadcrumbContext";
 import { useAuth, usePermissions } from "./store/AuthContext";
@@ -99,6 +102,7 @@ const ROUTE_BY_KEY: Record<string, string> = {
   luat: "/quan-ly-luat",
   matran: "/ma-tran-phe-duyet",
   hanhdong: "/cau-hinh-hanh-dong",
+  trogiup: "/tro-giup",
 };
 
 export default function App() {
@@ -154,6 +158,8 @@ export default function App() {
                   ? "donvi"
                   : location.pathname.startsWith("/nguoi-dung")
                     ? "nguoidung"
+                    : location.pathname.startsWith("/tro-giup")
+                    ? "trogiup"
                     : "quytrinh";
   const SECTION_TITLE: Record<string, string> = {
     dashboard: "Tổng quan",
@@ -168,9 +174,10 @@ export default function App() {
     giamsat: "Giám sát tiến trình luồng",
     tichhop: "Trạng thái Tích hợp",
     nhatky: "Nhật ký",
-    luat: "Quản lý luật nghiệp vụ",
+    luat: "Ma trận quyết định",
     matran: "Ma trận phê duyệt",
-    hanhdong: "Cấu hình Hành động",
+    hanhdong: "Ma trận Hành động",
+    trogiup: "Hướng dẫn sử dụng",
     quytrinh: "Quản lý quy trình",
   };
   const sectionTitle = SECTION_TITLE[selectedKey] ?? "Quản lý quy trình";
@@ -186,7 +193,7 @@ export default function App() {
     key: `${i}-${c.label}`,
   }));
 
-  const menuItems = [
+  const menuItems: any[] = [
     { key: "dashboard", icon: <DashboardOutlined />, label: "Tổng quan" },
     {
       key: "worklist",
@@ -242,7 +249,7 @@ export default function App() {
               {
                 key: "luat",
                 icon: <ClusterOutlined />,
-                label: "Quản lý luật (Business Rule)",
+                label: "Ma trận quyết định",
               },
               {
                 key: "matran",
@@ -252,7 +259,7 @@ export default function App() {
               {
                 key: "hanhdong",
                 icon: <ControlOutlined />,
-                label: "Cấu hình Hành động",
+                label: "Ma trận Hành động",
               },
             ],
           },
@@ -289,7 +296,9 @@ export default function App() {
     ...(!isChuNhiemDeTai
       ? [{ key: "bieumau", icon: <FormOutlined />, label: "Thư viện biểu mẫu" }]
       : []),
-  ];
+  ] as const;
+
+  const menuItemsMain = menuItems.filter((i) => i.key !== "trogiup");
 
   // Chưa đăng nhập → hiện màn Đăng nhập, không dựng layout ứng dụng.
   if (!user) return <Login />;
@@ -310,13 +319,15 @@ export default function App() {
           top: 0,
           bottom: 0,
           height: "100vh",
-          overflow: "auto",
+          display: "flex",
+          flexDirection: "column",
           zIndex: 100,
         }}
       >
         <div
           style={{
             height: 58,
+            flexShrink: 0,
             display: "flex",
             alignItems: "center",
             gap: 10,
@@ -348,20 +359,56 @@ export default function App() {
             </div>
           )}
         </div>
-        <Menu
-          theme="dark"
-          mode="inline"
-          selectedKeys={[selectedKey]}
-          defaultOpenKeys={["nvkhcn", "vanhanh", "toChuc"]}
-          items={menuItems}
-          onClick={({ key }) => {
-            const to = ROUTE_BY_KEY[key];
-            // startTransition: điều hướng là non-urgent → React paint highlight menu
-            // ngay, render trang đích ở nền, không chặn UI (giảm INP).
-            if (to) startTransition(() => navigate(to));
-          }}
-        />
+        <div style={{ flex: 1, overflow: "auto" }}>
+          <Menu
+            theme="dark"
+            mode="inline"
+            selectedKeys={[selectedKey]}
+            items={menuItemsMain}
+            onClick={({ key }) => {
+              const to = ROUTE_BY_KEY[key];
+              // startTransition: điều hướng là non-urgent → React paint highlight menu
+              // ngay, render trang đích ở nền, không chặn UI (giảm INP).
+              if (to) startTransition(() => navigate(to));
+            }}
+          />
+        </div>
       </Sider>
+
+        {/* Ghim Hướng dẫn sử dụng sticky dưới cùng góc trái màn hình */}
+        <div
+          onClick={() => startTransition(() => navigate("/tro-giup"))}
+          style={{
+            position: "fixed",
+            insetInlineStart: 8,
+            bottom: 16,
+            width: collapsed
+              ? SIDER_COLLAPSED_W - 16
+              : SIDER_W - 16,
+            height: 48,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: collapsed ? "center" : undefined,
+            gap: collapsed ? undefined : 10,
+            padding: collapsed ? 0 : "0 8px",
+            cursor: "pointer",
+            background: "var(--vht-red-chrome, #bf0027)",
+            color: "#fff",
+            userSelect: "none",
+            transition: "background 0.2s, width 0.2s",
+            zIndex: 101,
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLElement).style.background = "#a00022";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLElement).style.background =
+              "var(--vht-red-chrome, #bf0027)";
+          }}
+        >
+          <BookOutlined />
+          {!collapsed && <span>Hướng dẫn sử dụng</span>}
+        </div>
 
       <Layout
         style={{
@@ -596,7 +643,17 @@ export default function App() {
                 path="/quan-ly-luat"
                 element={
                   canManageSystem ? (
-                    <RuleManager />
+                    <RuleList />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
+              />
+              <Route
+                path="/quan-ly-luat/:id"
+                element={
+                  canManageSystem ? (
+                    <RuleDetail />
                   ) : (
                     <Navigate to="/tong-quan" replace />
                   )
@@ -622,6 +679,7 @@ export default function App() {
                   )
                 }
               />
+              <Route path="/tro-giup" element={<TroGiup />} />
               <Route path="*" element={<Navigate to="/tong-quan" replace />} />
             </Routes>
           </Suspense>

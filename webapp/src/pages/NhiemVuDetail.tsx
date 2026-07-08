@@ -8,6 +8,7 @@ import { LOAI_TO_GIAIDOAN, type Dossier } from '../data/dossiers'
 import { useNhiemVu } from '../store/NhiemVuContext'
 import { useDossiers } from '../store/DossierContext'
 import { PageHeader, NotFound, EntityTable, DossierStatusTag } from '../components/ui'
+import HelpButton from '../components/HelpButton'
 
 const { Text, Paragraph } = Typography
 
@@ -98,6 +99,7 @@ export default function NhiemVuDetail() {
             <Text type="secondary">· cấp {nv.cap} · {nv.donViChuTri}</Text>
           </>
         }
+        extra={<HelpButton section="nhiemvu" />}
       />
 
       <Card title="Vòng đời nhiệm vụ (Chủ trương → Quyết toán)" size="small" style={{ marginBottom: 16 }}>

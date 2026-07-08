@@ -7,6 +7,7 @@ import { useDossiers } from '../store/DossierContext'
 import { useAuth } from '../store/AuthContext'
 import { type Dossier, type DossierStatus } from '../data/dossiers'
 import { PageHeader, StatCard, DossierStatusTag, EntityTable } from '../components/ui'
+import HelpButton from '../components/HelpButton'
 
 const { Text } = Typography
 
@@ -111,6 +112,7 @@ export default function Dashboard() {
         title="Tổng quan"
         style={{ marginBottom: 0 }}
         code={<Text type="secondary">Xin chào, {user?.hoTen} — đây là bức tranh chung hệ thống QTKHCN.</Text>}
+        extra={<HelpButton section="dashboard" />}
       />
 
       {/* KPI */}

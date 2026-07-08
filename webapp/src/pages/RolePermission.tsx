@@ -5,7 +5,9 @@ import {
   Card,
   Checkbox,
   Col,
+  Drawer,
   Form,
+  Input,
   Modal,
   Row,
   Select,
@@ -19,6 +21,7 @@ import {
 import {
   ApartmentOutlined,
   DeleteOutlined,
+  EditOutlined,
   KeyOutlined,
   PlusOutlined,
   ReloadOutlined,
@@ -26,44 +29,37 @@ import {
   TeamOutlined,
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
-import { PageHeader, StatCard, FilterBar, EntityTable, LIST_SCROLL_Y } from '../components/ui'
+import HelpButton from '../components/HelpButton'
+import { PageHeader, FilterBar, EntityTable, LIST_SCROLL_Y } from '../components/ui'
 import { useToast, useConfirm } from '../components/ui/feedback'
 import { users } from '../data/users'
 import {
-  DATA_SCOPE_DEFINITIONS,
   DATA_SCOPE_LABEL,
   FEATURE_DEFINITIONS,
-  FEATURE_LABEL,
   PERMISSION_DEFINITIONS,
   PERMISSION_LABEL,
   RBAC_ROLES,
   ROLE_LABEL,
-  ROLE_PERMISSION_POLICIES,
-  type DataScopeCode,
   type FeatureCode,
   type PermissionCode,
   type RbacRole,
   type RoleKind,
   type RolePermissionPolicy,
+  type UserRoleAssignment,
 } from '../data/rbac'
 import {
   checkPermission,
   getEffectiveDataScopes,
   getPrincipal,
+  getUserAssignments,
 } from '../data/rbacEngine'
+import { useRbac } from '../store/RbacContext'
 
-const { Text, Paragraph } = Typography
+const { Text } = Typography
 
 const ROLE_KIND_LABEL: Record<RoleKind, string> = {
-  SYSTEM: 'System Role',
-  BUSINESS: 'Business Role',
-}
-
-const SYSTEM_ROLE_CODES = new Set(['ADMIN', 'OPERATOR', 'VIEWER'])
-
-/** Scope mặc định khi cấp quyền lần đầu: role hệ thống rộng, role nghiệp vụ hẹp. */
-function defaultScopeFor(roleCode: string): DataScopeCode {
-  return SYSTEM_ROLE_CODES.has(roleCode) ? 'ALL' : 'OWN_MISSION'
+  SYSTEM: 'Vai trò hệ thống',
+  BUSINESS: 'Vai trò nghiệp vụ',
 }
 
 /** Id ổn định theo (role, feature) — bảo đảm bất biến "1 policy / role / feature". */
@@ -79,27 +75,33 @@ function permissionColor(code: PermissionCode): string {
   return 'blue'
 }
 
-function scopeColor(scope: DataScopeCode): string {
-  if (scope === 'ALL') return 'red'
-  if (scope === 'OWN_CENTER') return 'purple'
-  if (scope === 'OWN_DEPARTMENT') return 'geekblue'
-  return 'default'
-}
-
 const ROLE_OPTIONS = RBAC_ROLES.map((role) => ({ value: role.code, label: `${role.name} (${role.code})` }))
-const SCOPE_OPTIONS = DATA_SCOPE_DEFINITIONS.map((scope) => ({ value: scope.code, label: scope.name }))
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tab 1 · Role Catalog (đọc)
+// Tab 1 · Danh mục Role (CRUD)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function RoleCatalogTab() {
+function RoleCatalogTab({
+  roles,
+  setRoles,
+  policies,
+  assignments,
+}: {
+  roles: RbacRole[]
+  setRoles: React.Dispatch<React.SetStateAction<RbacRole[]>>
+  policies: RolePermissionPolicy[]
+  assignments: UserRoleAssignment[]
+}) {
   const [q, setQ] = useState('')
   const [kind, setKind] = useState<RoleKind | undefined>()
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editing, setEditing] = useState<RbacRole | null>(null)
+  const toast = useToast()
+  const confirm = useConfirm()
 
   const rows = useMemo(
     () =>
-      RBAC_ROLES.filter((role) => {
+      roles.filter((role) => {
         if (kind && role.kind !== kind) return false
         if (!q) return true
         const s = q.toLowerCase()
@@ -109,12 +111,67 @@ function RoleCatalogTab() {
           role.group.toLowerCase().includes(s)
         )
       }),
-    [q, kind],
+    [q, kind, roles],
   )
+
+  const roleInUse = (code: string) =>
+    policies.some((p) => p.roleCode === code) || assignments.some((a) => a.roleCode === code)
+
+  const openCreate = () => {
+    setEditing(null)
+    setModalOpen(true)
+  }
+
+  const openEdit = (role: RbacRole) => {
+    setEditing(role)
+    setModalOpen(true)
+  }
+
+  const handleDelete = (role: RbacRole) => {
+    if (role.kind === 'SYSTEM') {
+      toast.warning('Không thể xoá', 'Vai trò hệ thống không được phép xoá.')
+      return
+    }
+    if (roleInUse(role.code)) {
+      toast.warning('Không thể xoá', `Vai trò ${role.code} đang được sử dụng trong policy hoặc gán quyền.`)
+      return
+    }
+    confirm({
+      title: `Xoá vai trò ${role.name}?`,
+      content: `Mã: ${role.code}`,
+      danger: true,
+      okText: 'Xoá',
+      onOk: () => {
+        setRoles((prev) => prev.filter((r) => r.code !== role.code))
+        toast.warning('Đã xoá vai trò', role.code)
+      },
+    })
+  }
+
+  const handleSubmit = (values: { code: string; name: string; group: string; description: string }) => {
+    if (editing) {
+      setRoles((prev) =>
+        prev.map((r) => (r.code === editing.code ? { ...r, ...values, kind: 'BUSINESS' as const, active: true } : r)),
+      )
+      toast.success('Đã cập nhật vai trò', values.code)
+    } else {
+      if (roles.some((r) => r.code === values.code.toUpperCase())) {
+        toast.warning('Trùng mã', 'Mã role đã tồn tại.')
+        return
+      }
+      setRoles((prev) => [
+        ...prev,
+        { ...values, code: values.code.toUpperCase(), kind: 'BUSINESS' as const, active: true },
+      ])
+      toast.success('Đã thêm vai trò', values.code.toUpperCase())
+    }
+    setModalOpen(false)
+    setEditing(null)
+  }
 
   const columns: ColumnsType<RbacRole> = [
     {
-      title: 'Role',
+      title: 'Vai trò',
       key: 'role',
       width: 260,
       render: (_, role) => (
@@ -138,23 +195,45 @@ function RoleCatalogTab() {
       title: 'Trạng thái',
       dataIndex: 'active',
       width: 110,
-      render: (active: boolean) => active ? <Tag color="green">active</Tag> : <Tag>off</Tag>,
+      render: (active: boolean) => (active ? <Tag color="green">active</Tag> : <Tag>off</Tag>),
+    },
+    {
+      title: '',
+      key: 'action',
+      width: 100,
+      render: (_, role) => (
+        <Space size={4}>
+          <Button type="link" size="small" onClick={() => openEdit(role)}><EditOutlined /></Button>
+          <Button
+            type="link"
+            size="small"
+            danger
+            disabled={role.kind === 'SYSTEM'}
+            onClick={() => handleDelete(role)}
+          ><DeleteOutlined /></Button>
+        </Space>
+      ),
     },
   ]
 
   return (
     <>
       <FilterBar
-        search={{ placeholder: 'Tìm role code / tên / nhóm...', onChange: setQ }}
+        search={{ placeholder: 'Tìm mã vai trò / tên / nhóm...', onChange: setQ }}
         selects={[
           {
             key: 'kind',
-            placeholder: 'Loại role',
+            placeholder: 'Loại vai trò',
             value: kind,
             onChange: setKind,
             options: (Object.keys(ROLE_KIND_LABEL) as RoleKind[]).map((k) => ({ value: k, label: ROLE_KIND_LABEL[k] })),
           },
         ]}
+        right={
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+            Thêm vai trò
+          </Button>
+        }
       />
       <EntityTable<RbacRole>
         rowKey="code"
@@ -162,18 +241,132 @@ function RoleCatalogTab() {
         dataSource={rows}
         scroll={{ y: LIST_SCROLL_Y }}
       />
+
+      <Modal
+        title={editing ? 'Sửa vai trò' : 'Thêm vai trò mới'}
+        open={modalOpen}
+        destroyOnClose
+        onCancel={() => { setModalOpen(false); setEditing(null) }}
+        okText={editing ? 'Lưu' : 'Thêm'}
+        cancelText="Huỷ"
+        onOk={() => {
+          const form = (window as any).__roleForm
+          if (form) form.submit()
+        }}
+      >
+        <RoleForm initial={editing} onSubmit={handleSubmit} />
+      </Modal>
     </>
   )
 }
 
+function RoleForm({
+  initial,
+  onSubmit,
+}: {
+  initial: RbacRole | null
+  onSubmit: (values: { code: string; name: string; group: string; description: string }) => void
+}) {
+  const [form] = Form.useForm()
+  ;(window as any).__roleForm = form
+
+  return (
+    <Form
+      form={form}
+      layout="vertical"
+      preserve={false}
+      initialValues={initial ? { code: initial.code, name: initial.name, group: initial.group, description: initial.description } : { group: 'Custom' }}
+      onFinish={onSubmit}
+    >
+      <Form.Item name="code" label="Mã vai trò" rules={[{ required: true, message: 'Nhập mã vai trò' }]}>
+        <Input placeholder="VD: CUSTOM_ROLE" disabled={!!initial} style={{ textTransform: 'uppercase' }} />
+      </Form.Item>
+      <Form.Item name="name" label="Tên vai trò" rules={[{ required: true, message: 'Nhập tên vai trò' }]}>
+        <Input placeholder="VD: Vai trò tuỳ chỉnh" />
+      </Form.Item>
+      <Form.Item name="group" label="Nhóm" rules={[{ required: true }]}>
+        <Input placeholder="VD: Custom" />
+      </Form.Item>
+      <Form.Item name="description" label="Mô tả">
+        <Input.TextArea rows={2} placeholder="Mô tả ngắn về role này" />
+      </Form.Item>
+    </Form>
+  )
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Tab 2 · Ma trận phân quyền (CRUD bằng checkbox)
+// Tab 2 · Ma trận quyền (checkbox matrix + drawer chi tiết)
 // ─────────────────────────────────────────────────────────────────────────────
+// Click 1 dòng → Drawer "Chi tiết policy": xem raw permissions + toggle enabled.
 
 interface FeatureState {
   perms: PermissionCode[]
-  scope: DataScopeCode
   enabled: boolean
+}
+
+function PolicyDrawer({
+  open,
+  policy,
+  onClose,
+  onToggleEnabled,
+}: {
+  open: boolean
+  policy: { feature: (typeof FEATURE_DEFINITIONS)[number]; state: FeatureState; roleCode: string } | null
+  onClose: () => void
+  onToggleEnabled: (featureCode: FeatureCode, enabled: boolean) => void
+}) {
+  if (!policy) return null
+  const { feature, state, roleCode } = policy
+  const policyIdStr = policyId(roleCode, feature.code)
+
+  return (
+    <Drawer
+      title={`Chi tiết policy: ${feature.name}`}
+      open={open}
+      onClose={onClose}
+      width={400}
+    >
+      <Space direction="vertical" size={16} style={{ width: '100%' }}>
+        <div>
+          <Text type="secondary">Chức năng</Text>
+          <div><Text strong>{feature.name}</Text> <Text code>{feature.code}</Text></div>
+        </div>
+        <div>
+          <Text type="secondary">Vai trò</Text>
+          <div><Text code>{roleCode}</Text></div>
+        </div>
+        <div>
+          <Text type="secondary">Mã policy</Text>
+          <div><Text code>{policyIdStr}</Text></div>
+        </div>
+
+        <div>
+          <Text type="secondary">Bật policy</Text>
+          <div style={{ marginTop: 4 }}>
+            <Switch
+              checked={state.enabled}
+              onChange={(checked) => onToggleEnabled(feature.code, checked)}
+            />
+          </div>
+        </div>
+
+        <div>
+          <Text type="secondary">Quyền ({state.perms.length})</Text>
+          <div style={{ marginTop: 8 }}>
+            <Space size={[4, 4]} wrap>
+              {state.perms.length
+                ? state.perms.map((code) => (
+                    <Tag key={code} color={permissionColor(code)}>
+                      {PERMISSION_LABEL[code]} ({code})
+                    </Tag>
+                  ))
+                : <Text type="secondary">Chưa có permission nào.</Text>}
+            </Space>
+          </div>
+        </div>
+      </Space>
+    </Drawer>
+  )
 }
 
 function MatrixTab({
@@ -184,6 +377,11 @@ function MatrixTab({
   setPolicies: React.Dispatch<React.SetStateAction<RolePermissionPolicy[]>>
 }) {
   const [roleCode, setRoleCode] = useState('ADMIN')
+  const [drawerPolicy, setDrawerPolicy] = useState<{
+    feature: (typeof FEATURE_DEFINITIONS)[number]
+    state: FeatureState
+    roleCode: string
+  } | null>(null)
   const toast = useToast()
   const confirm = useConfirm()
 
@@ -200,14 +398,14 @@ function MatrixTab({
           ex.perms = [...new Set([...ex.perms, ...p.permissionCodes])]
           ex.enabled = ex.enabled || p.enabled
         } else {
-          m.set(p.featureCode, { perms: [...p.permissionCodes], scope: p.dataScope, enabled: p.enabled })
+          m.set(p.featureCode, { perms: [...p.permissionCodes], enabled: p.enabled })
         }
       })
     return m
   }, [policies, roleCode])
 
-  const stateOf = (feature: FeatureCode): FeatureState =>
-    roleMap.get(feature) ?? { perms: [], scope: defaultScopeFor(roleCode), enabled: true }
+  const stateOf = (feat: FeatureCode): FeatureState =>
+    roleMap.get(feat) ?? { perms: [], enabled: true }
 
   /**
    * Mọi thao tác sửa đi qua đây: dựng lại toàn bộ policy của role từ map (gộp
@@ -230,25 +428,24 @@ function MatrixTab({
     })
   }
 
-  const ensure = (map: Map<FeatureCode, RolePermissionPolicy>, feature: FeatureCode): RolePermissionPolicy => {
-    let p = map.get(feature)
+  const ensure = (map: Map<FeatureCode, RolePermissionPolicy>, feat: FeatureCode): RolePermissionPolicy => {
+    let p = map.get(feat)
     if (!p) {
       p = {
-        id: policyId(roleCode, feature),
+        id: policyId(roleCode, feat),
         roleCode,
-        featureCode: feature,
+        featureCode: feat,
         permissionCodes: [],
-        dataScope: defaultScopeFor(roleCode),
         enabled: true,
       }
-      map.set(feature, p)
+      map.set(feat, p)
     }
     return p
   }
 
-  const togglePerm = (feature: FeatureCode, perm: PermissionCode, checked: boolean) =>
+  const togglePerm = (feat: FeatureCode, perm: PermissionCode, checked: boolean) =>
     mutateRole((map) => {
-      const p = ensure(map, feature)
+      const p = ensure(map, feat)
       p.permissionCodes = checked
         ? [...new Set([...p.permissionCodes, perm])]
         : p.permissionCodes.filter((c) => c !== perm)
@@ -267,23 +464,23 @@ function MatrixTab({
       })
     })
 
-  const toggleRow = (feature: FeatureCode, checked: boolean) =>
+  const toggleRow = (feat: FeatureCode, checked: boolean) =>
     mutateRole((map) => {
       if (checked) {
-        const p = ensure(map, feature)
+        const p = ensure(map, feat)
         p.permissionCodes = PERMISSION_DEFINITIONS.map((d) => d.code)
       } else {
-        map.delete(feature)
+        map.delete(feat)
       }
     })
 
-  const setScope = (feature: FeatureCode, scope: DataScopeCode) =>
-    mutateRole((map) => {
-      const p = map.get(feature)
-      if (p) p.dataScope = scope
-    })
+  const clearRow = (feat: FeatureCode) => mutateRole((map) => map.delete(feat))
 
-  const clearRow = (feature: FeatureCode) => mutateRole((map) => map.delete(feature))
+  const toggleEnabled = (feat: FeatureCode, enabled: boolean) =>
+    mutateRole((map) => {
+      const p = ensure(map, feat)
+      p.enabled = enabled
+    })
 
   const grantAll = () =>
     mutateRole((map) => {
@@ -295,7 +492,7 @@ function MatrixTab({
   const clearAll = () =>
     confirm({
       title: `Xoá toàn bộ quyền của ${role?.name ?? roleCode}?`,
-      content: 'Mọi policy của role này (trong phiên demo) sẽ bị gỡ. Có thể khôi phục mặc định sau.',
+      content: 'Mọi policy của role này trong phiên demo sẽ bị gỡ.',
       danger: true,
       okText: 'Xoá hết',
       onOk: () => {
@@ -304,7 +501,7 @@ function MatrixTab({
       },
     })
 
-  // Cột: Feature (fixed) + mỗi permission 1 cột checkbox + Data scope + xoá dòng.
+  // Cột: Feature (fixed) + mỗi permission 1 cột checkbox
   const permColumns: ColumnsType<(typeof FEATURE_DEFINITIONS)[number]> = PERMISSION_DEFINITIONS.map((perm) => {
     const withPerm = FEATURE_DEFINITIONS.filter((f) => stateOf(f.code).perms.includes(perm.code)).length
     const all = withPerm === FEATURE_DEFINITIONS.length
@@ -350,7 +547,7 @@ function MatrixTab({
               indeterminate={st.perms.length > 0 && !all}
               onChange={(e) => toggleRow(f.code, e.target.checked)}
             />
-            <div>
+            <div style={{ cursor: 'pointer' }} onClick={() => setDrawerPolicy({ feature: f, state: st, roleCode })}>
               <Text strong>{f.name}</Text>
               <div><Text type="secondary" style={{ fontSize: 12 }}>{f.group}</Text></div>
             </div>
@@ -360,31 +557,11 @@ function MatrixTab({
     },
     ...permColumns,
     {
-      title: 'Phạm vi dữ liệu',
-      key: 'scope',
-      width: 180,
-      fixed: 'right',
-      render: (_, f) => {
-        const st = stateOf(f.code)
-        return (
-          <Select<DataScopeCode>
-            size="small"
-            style={{ width: 160 }}
-            value={st.perms.length ? st.scope : undefined}
-            placeholder="—"
-            disabled={st.perms.length === 0}
-            options={SCOPE_OPTIONS}
-            onChange={(v) => setScope(f.code, v)}
-          />
-        )
-      },
-    },
-    {
       title: '',
       key: 'action',
       width: 48,
-      fixed: 'right',
-      align: 'center',
+      fixed: 'right' as const,
+      align: 'center' as const,
       render: (_, f) =>
         stateOf(f.code).perms.length ? (
           <Tooltip title="Xoá quyền của chức năng này">
@@ -398,18 +575,17 @@ function MatrixTab({
 
   return (
     <>
-      <Alert
-        type="info"
-        showIcon
-        style={{ marginBottom: 12 }}
-        message="Ma trận phân quyền — tích để cấp, bỏ tích để thu hồi"
-        description="Chọn role, rồi tích ô [chức năng × quyền]. Tích tiêu đề cột để cấp cả cột, tích ô đầu dòng để cấp cả dòng. Mỗi thay đổi ghi ngay vào policy in-memory của phiên demo."
-      />
+      <div style={{ marginBottom: 12 }}>
+        <Text type="secondary">
+          Chọn role → tích ô [chức năng × quyền]. Tích tiêu đề cột để cấp cả cột, tích ô đầu dòng để cấp cả dòng.
+          Bấm vào <Text strong>tên chức năng</Text> để xem chi tiết policy + bật/tắt.
+        </Text>
+      </div>
 
       <FilterBar
         left={
           <Space wrap>
-            <Text type="secondary">Role:</Text>
+            <Text type="secondary">Vai trò:</Text>
             <Select
               showSearch
               value={roleCode}
@@ -437,279 +613,28 @@ function MatrixTab({
         pagination={false}
         scroll={{ x: 'max-content', y: LIST_SCROLL_Y }}
       />
+
+      <PolicyDrawer
+        open={!!drawerPolicy}
+        policy={drawerPolicy}
+        onClose={() => setDrawerPolicy(null)}
+        onToggleEnabled={toggleEnabled}
+      />
     </>
   )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tab 3 · Danh sách policy (CRUD dạng bảng + form)
+// Tab 3 · Mô phỏng — 2 khối: Quyền thao tác (từ Role) + Phạm vi dữ liệu (từ Assignment)
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface PolicyFormValues {
-  roleCode: string
-  featureCode: FeatureCode
-  permissionCodes: PermissionCode[]
-  dataScope: DataScopeCode
-  enabled: boolean
-}
-
-function PolicyFormModal({
-  open,
-  editing,
-  onCancel,
-  onSubmit,
-}: {
-  open: boolean
-  editing: RolePermissionPolicy | null
-  onCancel: () => void
-  onSubmit: (values: PolicyFormValues) => void
-}) {
-  const [form] = Form.useForm<PolicyFormValues>()
-
-  return (
-    <Modal
-      title={editing ? 'Sửa policy' : 'Thêm policy'}
-      open={open}
-      destroyOnClose
-      onCancel={onCancel}
-      okText={editing ? 'Lưu' : 'Thêm'}
-      cancelText="Huỷ"
-      className="vht-modal-topred"
-      onOk={() => form.validateFields().then(onSubmit)}
-    >
-      <Form<PolicyFormValues>
-        form={form}
-        layout="vertical"
-        preserve={false}
-        initialValues={
-          editing
-            ? {
-                roleCode: editing.roleCode,
-                featureCode: editing.featureCode,
-                permissionCodes: editing.permissionCodes,
-                dataScope: editing.dataScope,
-                enabled: editing.enabled,
-              }
-            : { permissionCodes: ['VIEW'], dataScope: 'OWN_MISSION', enabled: true }
-        }
-      >
-        <Form.Item name="roleCode" label="Role" rules={[{ required: true, message: 'Chọn role' }]}>
-          <Select showSearch optionFilterProp="label" options={ROLE_OPTIONS} disabled={!!editing} />
-        </Form.Item>
-        <Form.Item name="featureCode" label="Feature" rules={[{ required: true, message: 'Chọn feature' }]}>
-          <Select
-            options={FEATURE_DEFINITIONS.map((f) => ({ value: f.code, label: `${f.name} (${f.code})` }))}
-            disabled={!!editing}
-          />
-        </Form.Item>
-        <Form.Item
-          name="permissionCodes"
-          label="Permissions"
-          rules={[{ required: true, message: 'Chọn ít nhất 1 permission' }]}
-        >
-          <Select
-            mode="multiple"
-            allowClear
-            options={PERMISSION_DEFINITIONS.map((p) => ({ value: p.code, label: `${p.name} (${p.code})` }))}
-          />
-        </Form.Item>
-        <Form.Item name="dataScope" label="Data scope" rules={[{ required: true }]}>
-          <Select options={SCOPE_OPTIONS} />
-        </Form.Item>
-        <Form.Item name="enabled" label="Bật" valuePropName="checked">
-          <Switch />
-        </Form.Item>
-      </Form>
-    </Modal>
-  )
-}
-
-function PolicyTab({
+function SimulatorTab({
   policies,
-  setPolicies,
+  assignments,
 }: {
   policies: RolePermissionPolicy[]
-  setPolicies: React.Dispatch<React.SetStateAction<RolePermissionPolicy[]>>
+  assignments: UserRoleAssignment[]
 }) {
-  const [roleCode, setRoleCode] = useState<string>()
-  const [featureCode, setFeatureCode] = useState<FeatureCode>()
-  const [modalOpen, setModalOpen] = useState(false)
-  const [editing, setEditing] = useState<RolePermissionPolicy | null>(null)
-  const toast = useToast()
-  const confirm = useConfirm()
-
-  const rows = useMemo(
-    () =>
-      policies.filter((policy) => {
-        if (roleCode && policy.roleCode !== roleCode) return false
-        if (featureCode && policy.featureCode !== featureCode) return false
-        return true
-      }),
-    [policies, roleCode, featureCode],
-  )
-
-  const toggle = (id: string, enabled: boolean) => {
-    setPolicies((prev) => prev.map((policy) => policy.id === id ? { ...policy, enabled } : policy))
-  }
-
-  const openCreate = () => {
-    setEditing(null)
-    setModalOpen(true)
-  }
-
-  const openEdit = (policy: RolePermissionPolicy) => {
-    setEditing(policy)
-    setModalOpen(true)
-  }
-
-  const remove = (policy: RolePermissionPolicy) =>
-    confirm({
-      title: 'Xoá policy này?',
-      content: `${ROLE_LABEL[policy.roleCode] ?? policy.roleCode} · ${FEATURE_LABEL[policy.featureCode]}`,
-      danger: true,
-      okText: 'Xoá',
-      onOk: () => {
-        setPolicies((prev) => prev.filter((p) => p.id !== policy.id))
-        toast.warning('Đã xoá policy', policy.id)
-      },
-    })
-
-  const handleSubmit = (values: PolicyFormValues) => {
-    if (editing) {
-      setPolicies((prev) => prev.map((p) => p.id === editing.id ? { ...p, ...values } : p))
-      toast.success('Đã lưu policy', editing.id)
-    } else {
-      const dup = policies.some((p) => p.roleCode === values.roleCode && p.featureCode === values.featureCode)
-      const id = dup
-        ? `${policyId(values.roleCode, values.featureCode)}-${Date.now().toString().slice(-4)}`
-        : policyId(values.roleCode, values.featureCode)
-      setPolicies((prev) => [...prev, { id, ...values }])
-      toast.success('Đã thêm policy', id)
-    }
-    setModalOpen(false)
-    setEditing(null)
-  }
-
-  const columns: ColumnsType<RolePermissionPolicy> = [
-    {
-      title: 'Role',
-      dataIndex: 'roleCode',
-      width: 220,
-      render: (code: string) => (
-        <div>
-          <Text code>{code}</Text>
-          <div><Text type="secondary">{ROLE_LABEL[code] ?? code}</Text></div>
-        </div>
-      ),
-    },
-    {
-      title: 'Feature',
-      dataIndex: 'featureCode',
-      width: 180,
-      render: (code: FeatureCode) => (
-        <div>
-          <Text strong>{FEATURE_LABEL[code]}</Text>
-          <div><Text code style={{ fontSize: 11 }}>{code}</Text></div>
-        </div>
-      ),
-    },
-    {
-      title: 'Permissions',
-      dataIndex: 'permissionCodes',
-      render: (permissionCodes: PermissionCode[]) => (
-        <Space size={[4, 4]} wrap>
-          {permissionCodes.map((code) => (
-            <Tag key={code} color={permissionColor(code)}>{PERMISSION_LABEL[code]}</Tag>
-          ))}
-        </Space>
-      ),
-    },
-    {
-      title: 'Data scope',
-      dataIndex: 'dataScope',
-      width: 170,
-      render: (scope: DataScopeCode) => (
-        <Tag color={scopeColor(scope)}>{DATA_SCOPE_LABEL[scope]}</Tag>
-      ),
-    },
-    {
-      title: 'Bật',
-      dataIndex: 'enabled',
-      width: 70,
-      render: (enabled: boolean, policy) => (
-        <Switch size="small" checked={enabled} onChange={(checked) => toggle(policy.id, checked)} />
-      ),
-    },
-    {
-      title: '',
-      key: 'action',
-      width: 110,
-      align: 'right',
-      render: (_, policy) => (
-        <Space size={4}>
-          <Button type="link" size="small" style={{ paddingInline: 4 }} onClick={() => openEdit(policy)}>Sửa</Button>
-          <Button type="link" size="small" danger style={{ paddingInline: 4 }} onClick={() => remove(policy)}>Xoá</Button>
-        </Space>
-      ),
-    },
-  ]
-
-  return (
-    <>
-      <Alert
-        type="info"
-        showIcon
-        style={{ marginBottom: 12 }}
-        message="Danh sách policy in-memory"
-        description="Mỗi dòng = role nào có permission nào trên feature nào và trong data scope nào. Thêm / Sửa / Xoá / bật-tắt chỉ tác động trong phiên demo."
-      />
-      <FilterBar
-        selects={[
-          {
-            key: 'role',
-            placeholder: 'Lọc role',
-            value: roleCode,
-            onChange: setRoleCode,
-            width: 240,
-            options: ROLE_OPTIONS,
-          },
-          {
-            key: 'feature',
-            placeholder: 'Lọc feature',
-            value: featureCode,
-            onChange: setFeatureCode,
-            width: 220,
-            options: FEATURE_DEFINITIONS.map((feature) => ({ value: feature.code, label: feature.name })),
-          },
-        ]}
-        right={
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>Thêm policy</Button>
-        }
-      />
-      <EntityTable<RolePermissionPolicy>
-        rowKey="id"
-        columns={columns}
-        dataSource={rows}
-        scroll={{ y: LIST_SCROLL_Y }}
-      />
-      <PolicyFormModal
-        open={modalOpen}
-        editing={editing}
-        onCancel={() => {
-          setModalOpen(false)
-          setEditing(null)
-        }}
-        onSubmit={handleSubmit}
-      />
-    </>
-  )
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Tab 4 · Simulator (đọc)
-// ─────────────────────────────────────────────────────────────────────────────
-
-function SimulatorTab({ policies }: { policies: RolePermissionPolicy[] }) {
   const [userId, setUserId] = useState(users[0]?.id)
   const [featureCode, setFeatureCode] = useState<FeatureCode>('DOSSIER')
   const [permissionCode, setPermissionCode] = useState<PermissionCode>('VIEW')
@@ -717,7 +642,8 @@ function SimulatorTab({ policies }: { policies: RolePermissionPolicy[] }) {
   const user = users.find((u) => u.id === userId)
   const principal = getPrincipal(user)
   const result = checkPermission(user, featureCode, permissionCode, policies)
-  const scopes = getEffectiveDataScopes(user, featureCode, policies)
+  const userAssignments = getUserAssignments(user, assignments)
+  const dataScopes = getEffectiveDataScopes(user, assignments)
 
   return (
     <Row gutter={[16, 16]}>
@@ -725,7 +651,7 @@ function SimulatorTab({ policies }: { policies: RolePermissionPolicy[] }) {
         <Card size="small" title={<Space><SafetyCertificateOutlined />Ngữ cảnh kiểm tra</Space>}>
           <Space direction="vertical" size={12} style={{ width: '100%' }}>
             <div>
-              <Text type="secondary">User</Text>
+              <Text type="secondary">Người dùng</Text>
               <Select
                 showSearch
                 value={userId}
@@ -736,7 +662,7 @@ function SimulatorTab({ policies }: { policies: RolePermissionPolicy[] }) {
               />
             </div>
             <div>
-              <Text type="secondary">Feature</Text>
+              <Text type="secondary">Chức năng</Text>
               <Select
                 value={featureCode}
                 onChange={setFeatureCode}
@@ -745,7 +671,7 @@ function SimulatorTab({ policies }: { policies: RolePermissionPolicy[] }) {
               />
             </div>
             <div>
-              <Text type="secondary">Permission</Text>
+              <Text type="secondary">Quyền</Text>
               <Select
                 value={permissionCode}
                 onChange={setPermissionCode}
@@ -758,117 +684,129 @@ function SimulatorTab({ policies }: { policies: RolePermissionPolicy[] }) {
       </Col>
 
       <Col xs={24} lg={15}>
-        <Card size="small" title="Kết quả policy engine">
-          <Alert
-            type={result.allowed ? 'success' : 'warning'}
-            showIcon
-            message={result.allowed ? 'Được phép' : 'Không được phép'}
-            description={result.reason}
-            style={{ marginBottom: 12 }}
-          />
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+          {/* Khối 1: Quyền thao tác (từ Role) */}
+          <Card size="small" title={<Space><KeyOutlined />Quyền thao tác (từ Role)</Space>}>
+            <Alert
+              type={result.allowed ? 'success' : 'warning'}
+              showIcon
+              message={result.allowed ? 'Được phép' : 'Không được phép'}
+              description={result.reason}
+              style={{ marginBottom: 12 }}
+            />
 
-          <Space direction="vertical" size={10} style={{ width: '100%' }}>
-            <div>
-              <Text type="secondary">Role hiệu lực</Text>
-              <div style={{ marginTop: 4 }}>
-                <Space size={[4, 4]} wrap>
-                  {principal?.roleCodes.map((code) => (
-                    <Tag key={code} color={code === 'ADMIN' ? 'volcano' : 'blue'}>{ROLE_LABEL[code] ?? code}</Tag>
-                  ))}
-                </Space>
+            <Space direction="vertical" size={10} style={{ width: '100%' }}>
+              <div>
+                <Text type="secondary">Vai trò hiệu lực</Text>
+                <div style={{ marginTop: 4 }}>
+                  <Space size={[4, 4]} wrap>
+                    {principal?.roleCodes.map((code) => (
+                      <Tag key={code} color={code === 'ADMIN' ? 'volcano' : 'blue'}>{ROLE_LABEL[code] ?? code}</Tag>
+                    ))}
+                  </Space>
+                </div>
               </div>
-            </div>
 
-            <div>
-              <Text type="secondary">Permission trên feature</Text>
-              <div style={{ marginTop: 4 }}>
-                <Space size={[4, 4]} wrap>
-                  {result.permissionCodes.length ? result.permissionCodes.map((code) => (
-                    <Tag key={code} color={permissionColor(code)}>{PERMISSION_LABEL[code]}</Tag>
-                  )) : <Text type="secondary">Không có permission nào.</Text>}
-                </Space>
+              <div>
+                <Text type="secondary">Quyền trên chức năng</Text>
+                <div style={{ marginTop: 4 }}>
+                  <Space size={[4, 4]} wrap>
+                    {result.permissionCodes.length
+                      ? result.permissionCodes.map((code) => (
+                          <Tag key={code} color={permissionColor(code)}>{PERMISSION_LABEL[code]}</Tag>
+                        ))
+                      : <Text type="secondary">Không có permission nào.</Text>}
+                  </Space>
+                </div>
               </div>
-            </div>
 
-            <div>
-              <Text type="secondary">Data scope hiệu lực</Text>
-              <div style={{ marginTop: 4 }}>
-                <Space size={[4, 4]} wrap>
-                  {scopes.length ? scopes.map((scope) => (
-                    <Tag key={scope} color={scopeColor(scope)}>{DATA_SCOPE_LABEL[scope]}</Tag>
-                  )) : <Text type="secondary">Không có scope.</Text>}
-                </Space>
+              <div>
+                <Text type="secondary">Policy khớp</Text>
+                <div style={{ marginTop: 4 }}>
+                  <Space size={[4, 4]} wrap>
+                    {result.matchedPolicies.length
+                      ? result.matchedPolicies.map((policy) => (
+                          <Tag key={policy.id}>{policy.id}</Tag>
+                        ))
+                      : <Text type="secondary">Không có policy khớp.</Text>}
+                  </Space>
+                </div>
               </div>
-            </div>
+            </Space>
+          </Card>
 
-            <div>
-              <Text type="secondary">Policy khớp</Text>
-              <div style={{ marginTop: 4 }}>
-                <Space size={[4, 4]} wrap>
-                  {result.matchedPolicies.length ? result.matchedPolicies.map((policy) => (
-                    <Tag key={policy.id}>{policy.id}</Tag>
-                  )) : <Text type="secondary">Không có policy khớp.</Text>}
-                </Space>
+          {/* Khối 2: Phạm vi dữ liệu (từ Assignment) */}
+          <Card size="small" title={<Space><TeamOutlined />Phạm vi dữ liệu (từ gán quyền người dùng)</Space>}>
+            <Space direction="vertical" size={10} style={{ width: '100%' }}>
+              <div>
+                <Text type="secondary">Phạm vi dữ liệu hiệu lực</Text>
+                <div style={{ marginTop: 4 }}>
+                  <Space size={[4, 4]} wrap>
+                    {dataScopes.length
+                      ? dataScopes.map((scope) => (
+                          <Tag key={scope}>{DATA_SCOPE_LABEL[scope]} ({scope})</Tag>
+                        ))
+                      : <Text type="secondary">Không có scope.</Text>}
+                  </Space>
+                </div>
               </div>
-            </div>
-          </Space>
-        </Card>
+
+              {userAssignments.length > 0 && (
+                <div>
+                  <Text type="secondary">Gán quyền gốc</Text>
+                  <div style={{ marginTop: 4 }}>
+                    {userAssignments.map((a) => (
+                      <Tag key={a.id} style={{ fontSize: 11 }}>
+                        {a.roleCode} · {DATA_SCOPE_LABEL[a.dataScope]}
+                        {a.orgUnitId ? ` · ${a.orgUnitId}` : ''}
+                      </Tag>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </Space>
+          </Card>
+        </Space>
       </Col>
     </Row>
   )
 }
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Trang
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function RolePermission() {
-  const [policies, setPolicies] = useState<RolePermissionPolicy[]>(ROLE_PERMISSION_POLICIES)
+  const { roles, setRoles, policies, setPolicies, assignments, resetDefaults } = useRbac()
   const [activeKey, setActiveKey] = useState('matrix')
   const toast = useToast()
   const confirm = useConfirm()
 
-  const stats = useMemo(
-    () => ({
-      roles: RBAC_ROLES.length,
-      policies: policies.length,
-      enabledPolicies: policies.filter((policy) => policy.enabled).length,
-      features: FEATURE_DEFINITIONS.length,
-    }),
-    [policies],
-  )
-
   const resetDefault = () =>
     confirm({
       title: 'Khôi phục phân quyền mặc định?',
-      content: 'Mọi thay đổi trong phiên demo sẽ bị bỏ, đưa toàn bộ policy về cấu hình gốc.',
+      content: 'Mọi thay đổi trong phiên demo sẽ bị bỏ, đưa toàn bộ policy, role và gán quyền về cấu hình gốc.',
       okText: 'Khôi phục',
       onOk: () => {
-        setPolicies(ROLE_PERMISSION_POLICIES)
+        resetDefaults()
         toast.success('Đã khôi phục', 'Phân quyền trở về cấu hình mặc định.')
       },
     })
 
   const items = [
     {
-      key: 'matrix',
-      label: <Space><ApartmentOutlined />Ma trận phân quyền</Space>,
-      children: <MatrixTab policies={policies} setPolicies={setPolicies} />,
-    },
-    {
-      key: 'policies',
-      label: <Space><KeyOutlined />Danh sách policy</Space>,
-      children: <PolicyTab policies={policies} setPolicies={setPolicies} />,
-    },
-    {
       key: 'roles',
-      label: <Space><TeamOutlined />Danh mục role</Space>,
-      children: <RoleCatalogTab />,
+      label: <Space><TeamOutlined />Danh mục vai trò</Space>,
+      children: <RoleCatalogTab roles={roles} setRoles={setRoles} policies={policies} assignments={assignments} />,
+    },
+    {
+      key: 'matrix',
+      label: <Space><ApartmentOutlined />Ma trận quyền</Space>,
+      children: <MatrixTab policies={policies} setPolicies={setPolicies} />,
     },
     {
       key: 'simulator',
       label: <Space><SafetyCertificateOutlined />Mô phỏng</Space>,
-      children: <SimulatorTab policies={policies} />,
+      children: <SimulatorTab policies={policies} assignments={assignments} />,
     },
   ]
 
@@ -877,33 +815,23 @@ export default function RolePermission() {
       <PageHeader
         icon={<KeyOutlined style={{ fontSize: 24, color: 'var(--vht-red)' }} />}
         title="Phân quyền"
-        tag={<Tag color="processing">EPIC03 · Role &amp; Permission</Tag>}
-        code={<Text type="secondary">Role / Permission / Feature / Policy / Scope</Text>}
+        // tag={<Tag color="processing">EPIC03 · Role &amp; Permission</Tag>}
+        // code={<Text type="secondary">Vai trò / Quyền / Chức năng / Policy / Gán quyền</Text>}
         breadcrumb={[{ label: 'Hệ thống QTKHCN' }, { label: 'Phân quyền' }]}
         extra={
-          <Button icon={<ReloadOutlined />} onClick={resetDefault}>Khôi phục mặc định</Button>
+          <Space>
+            <Button icon={<ReloadOutlined />} onClick={resetDefault}>Khôi phục mặc định</Button>
+            <HelpButton section="donvi" />
+          </Space>
         }
       />
 
-      <Alert
-        type="info"
-        showIcon
-        style={{ marginBottom: 16 }}
-        message="Mock in-memory — chỉnh sửa trực tiếp trên ma trận"
-        description={
-          <Paragraph style={{ marginBottom: 0 }}>
-            Màn này gom role hệ thống, role nghiệp vụ, permission, feature, policy và data scope vào một nơi.
-            Cấp/thu hồi quyền ngay trên ma trận checkbox; mọi thay đổi chỉ có hiệu lực trong phiên demo.
-          </Paragraph>
-        }
-      />
-
-      <Row gutter={14} style={{ marginBottom: 16 }}>
-        <Col xs={12} md={6}><StatCard title="Roles" value={stats.roles} color="#1677ff" /></Col>
-        <Col xs={12} md={6}><StatCard title="Features" value={stats.features} color="#17935a" /></Col>
-        <Col xs={12} md={6}><StatCard title="Policies" value={stats.policies} color="#722ed1" /></Col>
-        <Col xs={12} md={6}><StatCard title="Đang bật" value={stats.enabledPolicies} color="#ee0033" /></Col>
-      </Row>
+      {/* <Row gutter={14} style={{ marginBottom: 16 }}>
+        <Col xs={12} md={3}><StatCard title="Vai trò (Role)" value={stats.roles} color="#1677ff" /></Col>
+        <Col xs={12} md={3}><StatCard title="Tính năng (Feature)" value={stats.features} color="#17935a" /></Col>
+        <Col xs={12} md={3}><StatCard title="Chính sách (Policy)" value={stats.policies} color="#722ed1" /></Col>
+        <Col xs={12} md={3}><StatCard title="Đang bật" value={stats.enabledPolicies} color="#ee0033" /></Col>
+      </Row> */}
 
       <Tabs activeKey={activeKey} onChange={setActiveKey} items={items} />
     </div>

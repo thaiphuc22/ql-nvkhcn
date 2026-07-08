@@ -22,6 +22,7 @@ import { createDraftHoSo } from '../data/dossiers'
 import { useNhiemVu } from '../store/NhiemVuContext'
 import { useDossiers } from '../store/DossierContext'
 import { usePermissions } from '../store/AuthContext'
+import HelpButton from '../components/HelpButton'
 import { PageHeader } from '../components/ui'
 
 const { Text } = Typography
@@ -64,6 +65,7 @@ export default function NhiemVuCreate() {
           breadcrumb={[{ label: 'Quản lý NV KHCN', to: '/nhiem-vu' }, { label: 'Tạo mới' }]}
           onBack={() => navigate('/nhiem-vu')}
           title="Tạo Nhiệm vụ KHCN"
+          extra={<HelpButton section="nhiemvu" />}
         />
         <Alert
           type="warning"
@@ -125,6 +127,7 @@ export default function NhiemVuCreate() {
         onBack={() => navigate('/nhiem-vu')}
         icon={<ExperimentOutlined style={{ fontSize: 24, color: '#ee0033' }} />}
         title="Tạo Nhiệm vụ KHCN mới"
+        extra={<HelpButton section="nhiemvu" />}
       />
 
       <Alert

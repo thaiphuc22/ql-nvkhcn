@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Col, Empty, Row, Space, Tabs, Tag, Timeline, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { HistoryOutlined } from "@ant-design/icons";
+import HelpButton from '../components/HelpButton'
 import {
   PageHeader,
   StatCard,
@@ -35,6 +36,7 @@ export default function ProcessEventLog() {
       <PageHeader
         title="Nhật ký"
         icon={<HistoryOutlined style={{ fontSize: 26, color: "#ee0033" }} />}
+        extra={<HelpButton section="nhatky" />}
       />
       <Tabs
         defaultActiveKey="luong"

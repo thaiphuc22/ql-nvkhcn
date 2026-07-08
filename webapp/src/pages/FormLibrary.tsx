@@ -33,6 +33,7 @@ import { useProcesses } from '../store/ProcessContext'
 import FormRenderer from '../components/FormRenderer'
 import { type FormDesignerHandle } from '../components/FormDesigner'
 import { PageHeader, StatCard, EntityTable, LIST_SCROLL_Y } from '../components/ui'
+import HelpButton from '../components/HelpButton'
 
 // Trình thiết kế form-js khá nặng → chỉ nạp khi mở drawer (tách chunk riêng).
 const FormDesigner = lazy(() => import('../components/FormDesigner'))
@@ -206,9 +207,12 @@ export default function FormLibrary() {
         icon={<FormOutlined style={{ fontSize: 26, color: '#ee0033' }} />}
         title="Thư viện biểu mẫu (eForm)"
         extra={
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
-            Tạo biểu mẫu
-          </Button>
+          <Space>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+              Tạo biểu mẫu
+            </Button>
+            <HelpButton section="bieumau" />
+          </Space>
         }
       />
 

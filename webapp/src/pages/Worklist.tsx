@@ -6,13 +6,13 @@ import { FolderOpenOutlined, FormOutlined } from "@ant-design/icons";
 import type { Dossier, DossierStep } from "../data/dossiers";
 import { useDossiers } from "../store/DossierContext";
 import { useAuth, usePermissions } from "../store/AuthContext";
-import TaskFormModal from "../components/TaskFormModal";
 import {
   PageHeader,
   StatCard,
   EntityTable,
   LIST_SCROLL_Y,
 } from "../components/ui";
+import HelpButton from "../components/HelpButton";
 
 const { Text } = Typography;
 const TODAY = "03/07/2026";
@@ -38,7 +38,6 @@ export default function Worklist() {
   const { user } = useAuth();
   const { admin, canProcessStep } = usePermissions();
   const currentUser = user?.hoTen ?? "Người dùng";
-  const [formTask, setFormTask] = useState<string | null>(null);
   // Admin mặc định xem toàn bộ việc đang xử lý; user thường chỉ thấy việc
   // thuộc candidate group của mình (khớp vai trò gán trong BPMN).
   const [showAll] = useState(admin);
@@ -141,6 +140,8 @@ export default function Worklist() {
       width: 170,
       render: (_, t) => {
         const allowed = canProcessStep(t.step);
+        // (D10) Xử lý = 3 nút outcome (Đồng ý/Trả lại/Từ chối), mỗi nút có eForm riêng
+        // qua Action Availability Policy — chọn ở Chi tiết hồ sơ, không mở modal ở đây.
         return (
           <Space>
             <Tooltip title={allowed ? undefined : `Thuộc vai trò: ${t.vaiTro}`}>
@@ -149,7 +150,7 @@ export default function Worklist() {
                 size="small"
                 icon={<FormOutlined />}
                 disabled={!allowed}
-                onClick={() => setFormTask(t.d.id)}
+                onClick={() => navigate(`/ho-so/${encodeURIComponent(t.d.id)}`)}
               >
                 Xử lý
               </Button>
@@ -167,7 +168,7 @@ export default function Worklist() {
 
   return (
     <div>
-      <PageHeader title="Việc của tôi" style={{ marginBottom: 0 }} />
+      <PageHeader title="Việc của tôi" style={{ marginBottom: 0 }} extra={<HelpButton section="worklist" />} />
 
       <Row gutter={14} style={{ margin: "18px 0" }}>
         <Col xs={12} md={8}>
@@ -216,12 +217,6 @@ export default function Worklist() {
         dataSource={tasks}
         emptyText="Không có việc nào chờ xử lý 🎉"
         scroll={{ y: LIST_SCROLL_Y }}
-      />
-
-      <TaskFormModal
-        dossierId={formTask}
-        open={!!formTask}
-        onClose={() => setFormTask(null)}
       />
     </div>
   );

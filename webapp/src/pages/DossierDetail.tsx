@@ -32,8 +32,10 @@ import {
 } from "antd";
 import {
   CheckCircleOutlined,
+  CheckOutlined,
   ClockCircleOutlined,
   CloseCircleOutlined,
+  CloseOutlined,
   CommentOutlined,
   DownloadOutlined,
   ApartmentOutlined,
@@ -46,12 +48,15 @@ import {
   HistoryOutlined,
   MoreOutlined,
   PrinterOutlined,
+  RollbackOutlined,
   SendOutlined,
   SolutionOutlined,
   SwapOutlined,
 } from "@ant-design/icons";
 import { LOAI_TO_NHOM, type DossierStep, type StepStatus } from "../data/dossiers";
-import { resolveGroups, type ResolvedApprover } from "../data/approvalMatrix";
+import { resolveApprovers, resolveGroups, type ResolvedApprover } from "../data/approvalMatrix";
+import { buildApprovalContext } from "../data/approvalSlotMap";
+import { useApprovalMatrix } from "../store/ApprovalMatrixContext";
 import {
   EXCEPTION_STATUS_LABEL,
   EXCEPTION_TYPE_LABEL,
@@ -61,6 +66,7 @@ import { getAvailableActions, type AvailableAction } from "../data/actionAvailab
 import { PERMISSIONS } from "../data/actionAvailabilityPolicy";
 import {
   EXCEPTION_ACTION_CODE,
+  OUTCOME_ACTION_CODES,
   STANDARD_ACTION_CODES,
   SUPPORT_ACTION_CODES,
 } from "../data/actionRegistry";
@@ -97,6 +103,7 @@ import {
   DossierStatusTag,
   StatusTag,
 } from "../components/ui";
+import HelpButton from "../components/HelpButton";
 
 const { Text, Paragraph } = Typography;
 
@@ -283,7 +290,9 @@ export default function DossierDetail() {
     rejectException,
     applyException,
   } = useExceptions();
-  const [formOpen, setFormOpen] = useState(false);
+  // (D10) Action outcome đang mở TaskFormModal — thay cho boolean formOpen: nút nào
+  // được bấm (APPROVE_STEP/RETURN_STEP/REJECT_STEP) quyết định outcome + formKey.
+  const [outcomeAction, setOutcomeAction] = useState<AvailableAction | null>(null);
   const [submitOpen, setSubmitOpen] = useState(false);
   const [selectedQT, setSelectedQT] = useState<string>();
   const [docTpl, setDocTpl] = useState<DocTemplate | null>(null);
@@ -308,6 +317,8 @@ export default function DossierDetail() {
   // Card "Quy trình xử lý": sơ đồ nhánh chỉ BƯỚC HIỆN TẠI hay TOÀN BỘ quy trình.
   const [flowScope, setFlowScope] = useState<"current" | "full">("current");
   const [bpmnOpen, setBpmnOpen] = useState(false);
+  // Luật Ma trận phê duyệt (store CHUNG) — sửa ở /ma-tran-phe-duyet lan tới đây (Slice G).
+  const { rules: amRules } = useApprovalMatrix();
 
   const d = getById(decodeURIComponent(id));
   const docTemplates = useMemo(() => (d ? templatesFor(d) : []), [d]);
@@ -387,9 +398,20 @@ export default function DossierDetail() {
   // EPIC06 — Ma trận phê duyệt resolve candidateGroups của bước HIỆN TẠI → người
   // nhận việc cụ thể (+ uỷ quyền). Đây là nơi BPMN (chỉ mang candidateGroups trừu
   // tượng) nối vào Approval Matrix: bước không tự biết ai, ma trận mới biết.
-  const currentApprovers =
-    d.trangThai === "processing" && currentStep && isApprovalStep(currentStep)
-      ? resolveGroups(currentStep.vaiTroCodes)
+  // EPIC06 — Slice G: buoc hien tai di qua resolveApprovers(slot + dieu kien) tren
+  // luat CHUNG (store), nen sua luat o /ma-tran-phe-duyet doi luon nguoi du kien +
+  // hien thi "khop luat nao". Buoc khong suy duoc slot (approvalSlotMap) giu
+  // resolveGroups nhu cu. Xem docs/.../approval-matrix-refactor-plan §4.G.
+  const isCurrentApproval =
+    d.trangThai === "processing" && !!currentStep && isApprovalStep(currentStep);
+  const amCtx = isCurrentApproval
+    ? buildApprovalContext(d.cap, d.duToan, currentStep!.vaiTroCodes)
+    : null;
+  const amResult = amCtx ? resolveApprovers(amRules, amCtx) : null;
+  const currentApprovers = amResult
+    ? amResult.approvers
+    : isCurrentApproval
+      ? resolveGroups(currentStep!.vaiTroCodes)
       : [];
 
   // Ngoại lệ có kiểm soát (docs/research/controlled-exception-handling.md).
@@ -435,7 +457,7 @@ export default function DossierDetail() {
   ];
   const availableActions = getAvailableActions({
     surface: 'DOSSIER_DETAIL',
-    processCode: LOAI_TO_NHOM[d.loai],
+    processCode: d.quyTrinh || '',
     dossierStatus: d.trangThai,
     taskDefinitionKey: currentStep?.taskDefinitionKey,
     userRoleCodes: roleCodes,
@@ -449,7 +471,12 @@ export default function DossierDetail() {
   });
   const actionByCode = new Map(availableActions.map((a) => [a.actionCode, a]));
   const submitAction = actionByCode.get(STANDARD_ACTION_CODES.SUBMIT);
-  const processAction = actionByCode.get(STANDARD_ACTION_CODES.PROCESS_STEP);
+  // (D10) Bước phê duyệt = 3 outcome action độc lập, mỗi cái tự mang eForm riêng
+  // (policy.formKey) — thay cho một "Xử lý" gộp suy luận outcome từ ketLuan.
+  const approveAction = actionByCode.get(OUTCOME_ACTION_CODES.APPROVE_STEP);
+  const returnAction = actionByCode.get(OUTCOME_ACTION_CODES.RETURN_STEP);
+  const rejectAction = actionByCode.get(OUTCOME_ACTION_CODES.REJECT_STEP);
+  const hasProcessingActions = !!(approveAction || returnAction || rejectAction);
   const enabledExceptionTypes = (
     Object.entries(EXCEPTION_ACTION_CODE) as [ExceptionType, string][]
   )
@@ -649,7 +676,7 @@ export default function DossierDetail() {
                 </Button>
               </Tooltip>
             )}
-            {processAction && (
+            {hasProcessingActions && (
               <>
                 {canOpenException && (
                   <Tooltip title="Xin phép bỏ qua/chuyển thẳng bước hiện tại — cần cấp có thẩm quyền duyệt riêng.">
@@ -662,16 +689,41 @@ export default function DossierDetail() {
                     </Button>
                   </Tooltip>
                 )}
-                <Tooltip title={processAction.disabledReason}>
-                  <Button
-                    type="primary"
-                    icon={<FormOutlined />}
-                    disabled={!processAction.enabled}
-                    onClick={() => setFormOpen(true)}
-                  >
-                    Xử lý
-                  </Button>
-                </Tooltip>
+                {rejectAction && (
+                  <Tooltip title={rejectAction.disabledReason}>
+                    <Button
+                      danger
+                      icon={<CloseOutlined />}
+                      disabled={!rejectAction.enabled}
+                      onClick={() => setOutcomeAction(rejectAction)}
+                    >
+                      {rejectAction.label}
+                    </Button>
+                  </Tooltip>
+                )}
+                {returnAction && (
+                  <Tooltip title={returnAction.disabledReason}>
+                    <Button
+                      icon={<RollbackOutlined />}
+                      disabled={!returnAction.enabled}
+                      onClick={() => setOutcomeAction(returnAction)}
+                    >
+                      {returnAction.label}
+                    </Button>
+                  </Tooltip>
+                )}
+                {approveAction && (
+                  <Tooltip title={approveAction.disabledReason}>
+                    <Button
+                      type="primary"
+                      icon={<CheckOutlined />}
+                      disabled={!approveAction.enabled}
+                      onClick={() => setOutcomeAction(approveAction)}
+                    >
+                      {approveAction.label}
+                    </Button>
+                  </Tooltip>
+                )}
               </>
             )}
             {supportActions.length > 0 && (
@@ -692,6 +744,7 @@ export default function DossierDetail() {
                 <Button icon={<MoreOutlined />}>Thao tác khác</Button>
               </Dropdown>
             )}
+            <HelpButton section="hoso" />
           </Space>
         }
       />
@@ -1125,6 +1178,15 @@ export default function DossierDetail() {
                 {currentStep!.vaiTroCodes.join(", ")}); Ma trận phê duyệt resolve ra
                 người cụ thể theo tổ chức &amp; uỷ quyền hiện hành.
               </Paragraph>
+              {amResult?.matchedRule && (
+                <Alert
+                  type="info"
+                  showIcon
+                  style={{ marginBottom: 8, fontSize: 12 }}
+                  message={`Khớp luật: ${amResult.matchedRule.ten}`}
+                  description={<span style={{ fontSize: 12 }}>{amResult.reason}</span>}
+                />
+              )}
               <ApproverList approvers={currentApprovers} />
             </Card>
           )}
@@ -1192,8 +1254,9 @@ export default function DossierDetail() {
 
       <TaskFormModal
         dossierId={d.id}
-        open={formOpen}
-        onClose={() => setFormOpen(false)}
+        open={!!outcomeAction}
+        action={outcomeAction}
+        onClose={() => setOutcomeAction(null)}
       />
 
       {proc?.bpmnXml && (
