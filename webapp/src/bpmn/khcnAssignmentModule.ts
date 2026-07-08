@@ -167,7 +167,7 @@ function NeedRoleEntry(props: any) {
       element,
       id,
       label: translate('Cần vai trò (Need Role)'),
-      description: translate('Slot phê duyệt trừu tượng — Ma trận phê duyệt sẽ resolve ra người/nhóm cụ thể.'),
+      description: translate('Loại phê duyệt trừu tượng — Ma trận phê duyệt sẽ resolve ra người/nhóm cụ thể.'),
       getValue,
       setValue,
       getOptions,
@@ -179,7 +179,7 @@ function NeedRoleEntry(props: any) {
       createElement(
         'div',
         { style: { fontSize: 12, color: '#ad6800', padding: '2px 0 6px' } },
-        translate(`Mã "${current}" chưa có trong Danh mục Slot.`),
+        translate(`Mã "${current}" chưa có trong Danh mục Loại phê duyệt.`),
       ),
     )
   }
@@ -192,7 +192,7 @@ function NeedRoleEntry(props: any) {
         TextFieldEntry({
           element,
           id: `${id}-newCode`,
-          label: translate('Mã slot mới'),
+          label: translate('Mã loại phê duyệt mới'),
           description: translate('VD: TAI_CHINH_RASOAT — tự chuẩn hoá chữ hoa khi lưu.'),
           getValue: () => newCode,
           setValue: (v: string) => setNewCode(v || ''),
@@ -213,7 +213,7 @@ function NeedRoleEntry(props: any) {
           createElement(
             'button',
             { type: 'button', disabled: !newCode.trim(), onClick: submitNewSlot, style: { fontSize: 12 } },
-            translate('Lưu slot mới'),
+            translate('Lưu loại phê duyệt mới'),
           ),
           createElement(
             'button',
@@ -246,7 +246,7 @@ function NeedRoleEntry(props: any) {
             cursor: 'pointer',
           },
         },
-        translate('+ Tạo slot mới'),
+        translate('+ Tạo loại phê duyệt mới'),
       ),
     )
   }

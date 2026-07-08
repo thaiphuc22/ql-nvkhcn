@@ -72,7 +72,7 @@ export function analyzeRules(rules: ApprovalRule[]): RuleWarning[] {
         out.push({
           level: 'warning',
           slot,
-          message: `Slot "${slot}": ${arr.length} luật trùng ưu tiên ${prio} (${arr
+          message: `Loại phê duyệt "${slot}": ${arr.length} luật trùng ưu tiên ${prio} (${arr
             .map((r) => r.ten)
             .join(', ')}) — thứ tự first-match không xác định.`,
         })
@@ -102,13 +102,13 @@ export function analyzeRules(rules: ApprovalRule[]): RuleWarning[] {
         out.push({
           level: 'warning',
           slot,
-          message: `Slot "${slot}": luật fallback (điều kiện bất kỳ) đang bị tắt — một số hồ sơ có thể không khớp luật nào.`,
+          message: `Loại phê duyệt "${slot}": luật fallback (điều kiện bất kỳ) đang bị tắt — một số hồ sơ có thể không khớp luật nào.`,
         })
       } else {
         out.push({
           level: 'info',
           slot,
-          message: `Slot "${slot}": chưa có luật fallback (điều kiện bất kỳ) — hồ sơ ngoài các điều kiện đã khai sẽ không có người xử lý.`,
+          message: `Loại phê duyệt "${slot}": chưa có luật fallback (điều kiện bất kỳ) — hồ sơ ngoài các điều kiện đã khai sẽ không có người xử lý.`,
         })
       }
     }

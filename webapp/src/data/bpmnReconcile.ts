@@ -131,7 +131,7 @@ export interface ReconcileHealthSummary {
 function needRoleWarningFor(ts: TaskStep): string | null {
   if (!ts.needRole) return null
   const known = APPROVAL_SLOTS.some((s) => s.code === ts.needRole && s.trangThai === 'active')
-  return known ? null : `Need Role "${ts.needRole}" không khớp slot active nào trong Danh mục Slot.`
+  return known ? null : `Need Role "${ts.needRole}" không khớp loại phê duyệt active nào trong Danh mục Loại phê duyệt.`
 }
 
 /** Các quy trình đối soát được = có taskSteps + bảng routing (nguồn outcome). */

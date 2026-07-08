@@ -3422,7 +3422,7 @@ function ReconcileTab({
             kẹt · <Tag color="gold">🟡 Luật chung / thiếu biểu mẫu</Tag> = nên
             ghim theo bước · <Tag>⚪ Orphan</Tag> = policy trỏ task không còn
             trong BPMN · <Tag color="gold">🟡 Need Role</Tag> = mã Need Role
-            trên bước không khớp slot active nào trong Danh mục Slot (EPIC06).
+            trên bước không khớp loại phê duyệt active nào trong Danh mục Loại phê duyệt (EPIC06).
             Bấm <b>Đồng bộ</b> để scaffold/upsert — id tất định nên chạy lại
             không đẻ trùng.
           </span>
