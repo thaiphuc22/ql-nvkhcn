@@ -169,7 +169,7 @@ function FlowOverviewTab() {
                 type="warning"
                 showIcon
                 message="Ngoại lệ"
-                description="Tách riêng vì đây là hành động đi khác luồng chuẩn. Nếu cấu hình lỏng, hồ sơ có thể đi sai tuyến duyệt."
+                description="Nơi cấu hình các luồng hành động ngoại lệ, đi khác luồng chuẩn. Nút xin ngoại lệ hiện ở đâu, ai duyệt, có cần căn cứ hay không."
               />
               <Alert
                 type="info"
@@ -177,10 +177,10 @@ function FlowOverviewTab() {
                 message="Mô phỏng"
                 description="Sau mỗi lần chỉnh, vào đây thử ngay bằng một vai trò cụ thể để biết người dùng cuối sẽ thấy gì."
               />
-              <Paragraph type="secondary" style={{ marginBottom: 0 }}>
+              {/* <Paragraph type="secondary" style={{ marginBottom: 0 }}>
                 Các tab “Danh mục nút” và “Luồng xử lý” phục vụ người cấu hình nâng cao. Khi demo cho người
                 ít kỹ thuật, nên bắt đầu từ tab này rồi đi thẳng tới “Đồng bộ BPMN” và “Mô phỏng”.
-              </Paragraph>
+              </Paragraph> */}
             </Space>
           </Card>
         </Col>

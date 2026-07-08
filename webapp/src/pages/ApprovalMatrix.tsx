@@ -245,8 +245,8 @@ export default function ApprovalMatrix() {
       <PageHeader
         icon={<ClusterOutlined style={{ fontSize: 24, color: 'var(--vht-red)' }} />}
         title="Ma trận phê duyệt"
-        tag={<Tag color="processing">EPIC06 · Approval Matrix</Tag>}
-        code={<Text type="secondary">Ánh xạ “slot phê duyệt + điều kiện” → người phê duyệt cụ thể — prototype mock</Text>}
+        // tag={<Tag color="processing">EPIC06 · Approval Matrix</Tag>}
+        // code={<Text type="secondary">Ánh xạ “slot phê duyệt + điều kiện” → người phê duyệt cụ thể — prototype mock</Text>}
         breadcrumb={[{ label: 'Hệ thống QTKHCN' }, { label: 'Ma trận phê duyệt' }]}
         extra={
           <Space>
@@ -256,7 +256,7 @@ export default function ApprovalMatrix() {
         }
       />
 
-      <Alert
+      {/* <Alert
         type="info"
         showIcon
         style={{ marginBottom: 16 }}
@@ -270,7 +270,7 @@ export default function ApprovalMatrix() {
             BPMN</b>. Camunda 8 không có sẵn tính năng này — đây là mock của Approval Matrix Service.
           </span>
         }
-      />
+      /> */}
 
       {warnings.length > 0 && (
         <Alert

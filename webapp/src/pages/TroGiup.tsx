@@ -830,9 +830,9 @@ function HanhDongContent() {
 
         <Title level={5}>Vì sao cần trang này?</Title>
         <Paragraph>
-          Thay vì hard-code các nút (Trình duyệt, Đồng ý, Trả lại, Từ chối…) trong mã nguồn, UI
-          chi tiết hồ sơ gọi API <Text code>GET /dossiers/{'{id}'}/available-actions</Text> để
-          render động — nút nào hiện, nút nào ẩn, nút nào mờ phụ thuộc vào:
+          Thay vì viết cứng (hard-code) các nút (Trình duyệt, Đồng ý, Trả lại, Từ chối…) trong mã nguồn,
+          UI chi tiết hồ sơ gọi API <Text code>GET /dossiers/{'{id}'}/available-actions</Text> để
+          kết xuất động (render dynamically) — nút nào hiện, nút nào ẩn, nút nào mờ phụ thuộc vào:
         </Paragraph>
         <ul>
           <li><Text strong>Quy trình BPMN</Text> đang áp dụng cho hồ sơ (RD01, RD02, RD05…)</li>
@@ -848,33 +848,48 @@ function HanhDongContent() {
           <Text strong> không cần sửa code</Text> — chỉ cần cấu hình lại trên trang Action Studio.
         </Paragraph>
 
-        <Title level={5}>Mô hình 3 lớp (Action Availability Model)</Title>
+        <Title level={5}>Mô hình 3 lớp (Action Availability Model — mô hình khả dụng hành động)</Title>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 8 }}>
           <Card size="small" style={{ flex: '1 1 240px', borderLeft: '3px solid #1677ff' }} title={<><AppstoreOutlined /> 1. Action Registry</>}>
             <Text type="secondary" style={{ fontSize: 13 }}>
               Danh mục tĩnh tất cả hành động hệ thống hỗ trợ. Phân loại theo 3 nhóm:
-              STANDARD (đi theo BPMN), SUPPORT (không đổi luồng), EXCEPTION (xin đi khác luồng chuẩn).
+              STANDARD (đi theo BPMN), SUPPORT (hỗ trợ — không đổi luồng), EXCEPTION (ngoại lệ — xin đi khác luồng chuẩn).
               Admin <Text strong>không tự tạo</Text> action logic mới nhưng có thể chỉnh nhãn hiển thị,
               icon, nhóm UI, thứ tự.
             </Text>
           </Card>
           <Card size="small" style={{ flex: '1 1 240px', borderLeft: '3px solid #faad14' }} title={<><ControlOutlined /> 2. Action Availability Policy</>}>
             <Text type="secondary" style={{ fontSize: 13 }}>
-              Luật first-match quyết định action nào hiển thị ở surface/bước/vai trò/trạng thái nào.
+              Luật first-match (khớp theo thứ tự) quyết định action nào hiển thị ở surface (bề mặt)/bước/vai trò/trạng thái nào.
               Mỗi luật gồm điều kiện (processCode, taskDefinitionKey, dossierStatus, roleCodes…)
-              và kết quả (displayOrder, formKey, requiredPermissions). Hệ thống fail-closed:
+              và kết quả (displayOrder, formKey, requiredPermissions). Hệ thống fail-closed (đóng khi thiếu):
               không có luật = nút không hiện.
             </Text>
           </Card>
           <Card size="small" style={{ flex: '1 1 240px', borderLeft: '3px solid #ff4d4f' }} title={<><SafetyCertificateOutlined /> 3. Exception Action Policy</>}>
             <Text type="secondary" style={{ fontSize: 13 }}>
-              Kiểm soát hành động ngoại lệ — nơi phát sinh, nút xin ngoại lệ, ai duyệt,
+              Kiểm soát hành động ngoại lệ (exception) — nơi phát sinh, nút xin ngoại lệ, ai duyệt,
               cần căn cứ gì, sau duyệt đi đâu. Mỗi luật ngoại lệ tự động sinh một
               Availability Policy cho nút tương ứng, đảm bảo nút hiển thị đúng chỗ.
             </Text>
           </Card>
         </div>
       </Card>
+
+      {/* ── Ảnh tổng quan ── */}
+      <div style={{ marginBottom: 20, textAlign: 'center' }}>
+        <Image
+          src="/screenshots/action-studio-overview.png"
+          alt="Tổng quan trang Ma trận Hành động"
+          style={{ border: '1px solid #e6e9ee', borderRadius: 8, maxWidth: '100%' }}
+          preview={{ mask: 'Bấm để phóng to' }}
+        />
+        <div style={{ marginTop: 6 }}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            Hình 1: Trang Ma trận Hành động — gồm 7 tab chức năng, tab mặc định là "Tổng quan luồng"
+          </Text>
+        </div>
+      </div>
 
       {/* ── Luồng cấu hình khuyến nghị ── */}
       <SectionBlock title="Luồng thao tác khuyến nghị">
@@ -886,10 +901,10 @@ function HanhDongContent() {
           current={-1}
           size="small"
           items={[
-            { title: 'Bước 1 — Đồng bộ BPMN', description: 'Đọc các bước (user task) và nhánh kết quả từ BPMN. Phát hiện bước chưa có nút xử lý (🔴) hoặc đang dùng luật chung (🟡). Bấm "Đồng bộ" để scaffold/upsert policy.' },
+            { title: 'Bước 1 — Đồng bộ BPMN', description: 'Đọc các bước (user task — tác vụ người dùng) và nhánh kết quả từ BPMN. Phát hiện bước chưa có nút xử lý (🔴) hoặc đang dùng luật chung (🟡). Bấm "Đồng bộ" để tạo/cập nhật (scaffold/upsert) policy.' },
             { title: 'Bước 2 — Xem đường đi của hồ sơ', description: 'Kiểm tra mỗi lựa chọn (Đồng ý, Trả lại, Từ chối…) đưa hồ sơ tới bước nào. Sửa tại data/stepRouting.ts nếu đích chưa đúng.' },
-            { title: 'Bước 3 — Cấu hình luật hiển thị nút', description: 'Gắn nút với quy trình, trạng thái hồ sơ, vai trò, quyền và biểu mẫu cần điền. Dùng luật first-match theo thứ tự.' },
-            { title: 'Bước 4 — Cấu hình luật ngoại lệ', description: 'Nếu có hành động đi khác luồng chuẩn (xin bỏ qua Hội đồng, xin chuyển luồng…), tạo luật ngoại lệ. Hệ thống tự sinh nút hiển thị tương ứng.' },
+            { title: 'Bước 3 — Cấu hình luật hiển thị nút', description: 'Gắn nút với quy trình, trạng thái hồ sơ, vai trò, quyền và biểu mẫu cần điền. Dùng luật first-match (khớp theo thứ tự).' },
+            { title: 'Bước 4 — Cấu hình luật ngoại lệ', description: 'Nếu có hành động đi khác luồng chuẩn (xin bỏ qua Hội đồng, xin chuyển luồng…), tạo luật ngoại lệ (exception policy). Hệ thống tự sinh nút hiển thị tương ứng.' },
             { title: 'Bước 5 — Mô phỏng kiểm thử', description: 'Chọn vai trò, trạng thái hồ sơ, quyền để xem UI chi tiết hồ sơ sẽ hiện những nút nào. Đối chiếu payload JSON để kiểm tra.' },
           ]}
         />
@@ -900,35 +915,50 @@ function HanhDongContent() {
         <ControlOutlined /> 1. Tổng quan luồng (tab mặc định)
       </Title>
       <Paragraph>
-        Tab <Text strong>Tổng quan luồng</Text> là màn hình chào khi vào trang, cung cấp hai khối thông tin:
+        Tab <Text strong>Tổng quan luồng</Text> (Flow Overview) là màn hình chào khi vào trang, cung cấp hai khối thông tin:
       </Paragraph>
       <ul>
         <li><Text strong>Luồng cấu hình khuyến nghị:</Text> 5 bước đề xuất (Lấy bước từ quy trình → Xem đường đi → Quy định ai thấy nút → Kiểm soát ngoại lệ → Thử như người dùng thật).</li>
-        <li><Text strong>Giải thích các phần trên màn hình:</Text> 3 alert giải thích ngắn về Luật hiển thị nút, Ngoại lệ và Mô phỏng — giúp người mới hiểu nhanh cấu trúc trang.</li>
+        <li><Text strong>Giải thích các phần trên màn hình:</Text> 3 thông báo (alert) giải thích ngắn về Luật hiển thị nút, Ngoại lệ và Mô phỏng — giúp người mới hiểu nhanh cấu trúc trang.</li>
       </ul>
 
       {/* ── 2. Danh mục nút ── */}
       <Title level={4} style={{ marginTop: 24, color: '#bf0027' }}>
-        <AppstoreOutlined /> 2. Danh mục nút (Action Registry)
+        <AppstoreOutlined /> 2. Danh mục nút (Action Registry — sổ đăng ký hành động)
       </Title>
       <Paragraph>
         Tab <Text strong>Danh mục nút</Text> hiển thị toàn bộ <Text strong>Action Registry</Text> — danh mục
-        tĩnh tất cả hành động mà hệ thống hỗ trợ, được sắp xếp theo nhóm: STANDARD, SUPPORT, EXCEPTION.
+        tĩnh tất cả hành động mà hệ thống hỗ trợ, được sắp xếp theo nhóm: STANDARD (chuẩn), SUPPORT (hỗ trợ), EXCEPTION (ngoại lệ).
       </Paragraph>
+
+      <div style={{ marginBottom: 16, textAlign: 'center' }}>
+        <Image
+          src="/screenshots/action-studio-registry.png"
+          alt="Bảng Action Registry"
+          style={{ border: '1px solid #e6e9ee', borderRadius: 8, maxWidth: '100%' }}
+          preview={{ mask: 'Bấm để phóng to' }}
+        />
+        <div style={{ marginTop: 6 }}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            Hình 2: Bảng Action Registry — hiển thị danh sách tất cả hành động, phân loại theo nhóm và cho phép sửa hiển thị
+          </Text>
+        </div>
+      </div>
+
       <SectionBlock title="Các cột trong bảng">
         <ul>
-          <li><Text strong>Mã action:</Text> định danh duy nhất của hành động (VD: APPROVE, RETURN, BYPASS_COUNCIL).</li>
+          <li><Text strong>Mã action (Action Code):</Text> định danh duy nhất của hành động (VD: APPROVE, RETURN, BYPASS_COUNCIL).</li>
           <li><Text strong>Registry:</Text> tên hành động và nhóm (STANDARD / SUPPORT / EXCEPTION).</li>
-          <li><Text strong>Hiển thị action:</Text> nhãn hiển thị trên UI, nhóm UI (PRIMARY / MORE / EXCEPTION), tone màu, icon.</li>
-          <li><Text strong>Thứ tự:</Text> thứ tự mặc định khi render (có thể ghi đè bởi Availability Policy).</li>
+          <li><Text strong>Hiển thị action (Presentation):</Text> nhãn hiển thị trên UI, nhóm UI (PRIMARY — chính / MORE — thêm / EXCEPTION — ngoại lệ), tone màu, icon.</li>
+          <li><Text strong>Thứ tự (Order):</Text> thứ tự mặc định khi kết xuất (có thể ghi đè bởi Availability Policy).</li>
           <li><Text strong>Cần lý do / Cần căn cứ / Xác nhận:</Text> cờ từ Registry — có thể ghi đè bởi Policy.</li>
-          <li><Text strong>Kích hoạt:</Text> trạng thái bật/tắt toàn cục của action.</li>
+          <li><Text strong>Kích hoạt (Active):</Text> trạng thái bật/tắt toàn cục của action.</li>
         </ul>
       </SectionBlock>
       <SectionBlock title="Thao tác chính">
         <ul>
-          <li><Text strong>Xem thông tin:</Text> duyệt bảng để biết action nào đang có sẵn.</li>
-          <li><Text strong>Sửa hiển thị action:</Text> nhấn icon bút chì ở cuối dòng để mở modal chỉnh nhãn hiển thị, tooltip, icon, nhóm UI, tone và thứ tự mặc định.</li>
+          <li><Text strong>Xem thông tin:</Text> duyệt bảng để biết action nào đang có sẵn trong hệ thống.</li>
+          <li><Text strong>Sửa hiển thị action:</Text> nhấn icon bút chì (✏️) ở cuối dòng để mở cửa sổ (modal) chỉnh nhãn hiển thị, chú thích (tooltip), icon, nhóm UI, tone và thứ tự mặc định.</li>
         </ul>
       </SectionBlock>
       <Alert
@@ -941,86 +971,116 @@ function HanhDongContent() {
 
       {/* ── 3. Luật hiển thị nút ── */}
       <Title level={4} style={{ marginTop: 24, color: '#bf0027' }}>
-        <ControlOutlined /> 3. Luật hiển thị nút (Action Availability Policy)
+        <ControlOutlined /> 3. Luật hiển thị nút (Action Availability Policy — chính sách khả dụng)
       </Title>
       <Paragraph>
         Tab <Text strong>Luật hiển thị nút</Text> là nơi cấu hình chính cho nghiệp vụ: quyết định
         <Text strong> action nào</Text> được hiển thị, ở <Text strong> quy trình/bước/trạng thái nào</Text>,
         cho <Text strong> vai trò nào</Text>, và có <Text strong> mở biểu mẫu nào</Text>.
-        Hệ thống áp dụng luật theo cơ chế <Text strong>first-match</Text> — luật có thứ tự nhỏ hơn được
+        Hệ thống áp dụng luật theo cơ chế <Text strong>first-match</Text> (khớp theo thứ tự) — luật có thứ tự nhỏ hơn được
         xét trước.
       </Paragraph>
+
+      <div style={{ marginBottom: 16, textAlign: 'center' }}>
+        <Image
+          src="/screenshots/action-studio-availability.png"
+          alt="Bảng Luật hiển thị nút"
+          style={{ border: '1px solid #e6e9ee', borderRadius: 8, maxWidth: '100%' }}
+          preview={{ mask: 'Bấm để phóng to' }}
+        />
+        <div style={{ marginTop: 6 }}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            Hình 3: Bảng Luật hiển thị nút — cấu hình action nào hiện ở quy trình/bước/vai trò nào
+          </Text>
+        </div>
+      </div>
+
       <SectionBlock title="Các cột và ý nghĩa">
         <ul>
-          <li><Text strong>Thứ tự:</Text> quyết định thứ tự xét luật (first-match). Số nhỏ được xét trước.</li>
+          <li><Text strong>Thứ tự (Display Order):</Text> quyết định thứ tự xét luật (first-match). Số nhỏ được xét trước.</li>
           <li><Text strong>Action:</Text> hành động áp dụng, hiển thị tên và nhóm.</li>
-          <li><Text strong>Điều kiện hiển thị:</Text> tổ hợp các điều kiện — surface, quy trình (processCode), trạng thái hồ sơ (dossierStatus), bước BPMN (taskDefinitionKey), vai trò (allowedRoleCodes), điều kiện nghiệp vụ (conditionExpression) và biểu mẫu đính kèm (formKey).</li>
-          <li><Text strong>Quyền yêu cầu:</Text> người dùng phải có các quyền này mới thấy nút.</li>
-          <li><Text strong>Bật:</Text> switch bật/tắt luật mà không cần xoá.</li>
+          <li><Text strong>Điều kiện hiển thị (Condition):</Text> tổ hợp các điều kiện — surface (bề mặt), quy trình (processCode), trạng thái hồ sơ (dossierStatus), bước BPMN (taskDefinitionKey), vai trò (allowedRoleCodes), điều kiện nghiệp vụ (conditionExpression) và biểu mẫu đính kèm (formKey).</li>
+          <li><Text strong>Quyền yêu cầu (Required Permissions):</Text> người dùng phải có các quyền này mới thấy nút.</li>
+          <li><Text strong>Bật (Enabled):</Text> công tắc (switch) bật/tắt luật mà không cần xoá.</li>
         </ul>
       </SectionBlock>
-      <SectionBlock title="Cảnh báo đối soát BPMN">
+      <SectionBlock title="Thông báo đối soát BPMN (Reconcile Alert)">
         <Paragraph>
-          Phía trên bảng luật hiển thị luôn có <Text strong>Alert đối soát BPMN</Text> với các chỉ số:
+          Phía trên bảng luật hiển thị luôn có <Text strong>thông báo đối soát BPMN</Text> (Reconcile Alert) với các chỉ số:
         </Paragraph>
         <ul>
-          <li><Text strong>🔴 Thiếu nút:</Text> số bước trong BPMN chưa có luật enabled → bước đó bị kẹt, không ai xử lý được.</li>
-          <li><Text strong>🟡 Wildcard:</Text> số nhánh outcome đang dùng luật chung (không ghim theo bước) — nên ghim cụ thể.</li>
-          <li><Text strong>🟡 Thiếu biểu mẫu:</Text> số bước đã có luật nhưng chưa gán form.</li>
-          <li><Text strong>⚪ Orphan:</Text> số luật trỏ tới task không còn trong BPMN.</li>
+          <li><Text strong>🔴 Thiếu nút (Missing):</Text> số bước trong BPMN chưa có luật enabled → bước đó bị kẹt, không ai xử lý được.</li>
+          <li><Text strong>🟡 Dùng luật chung (Generic / Wildcard):</Text> số nhánh outcome đang dùng luật chung (không ghim theo bước) — nên ghim cụ thể.</li>
+          <li><Text strong>🟡 Thiếu biểu mẫu (Unfilled):</Text> số bước đã có luật nhưng chưa gán biểu mẫu (form).</li>
+          <li><Text strong>⚪ Luật mồ côi (Orphan):</Text> số luật trỏ tới tác vụ (task) không còn trong BPMN.</li>
         </ul>
       </SectionBlock>
       <SectionBlock title="Thao tác chính">
         <ul>
-          <li><Text strong>Thêm luật:</Text> nhấn "Thêm luật" → modal điền action, điều kiện, vai trò, quyền → lưu.</li>
-          <li><Text strong>Sửa luật:</Text> nhấn icon bút chì → chỉnh thông tin → lưu.</li>
-          <li><Text strong>Xoá luật:</Text> nhấn icon thùng rác → xác nhận xoá.</li>
-          <li><Text strong>Bật/tắt luật:</Text> gạt switch để tạm tắt luật mà không mất cấu hình.</li>
+          <li><Text strong>Thêm luật:</Text> nhấn "Thêm luật" (➕) → cửa sổ (modal) điền action, điều kiện, vai trò, quyền → lưu.</li>
+          <li><Text strong>Sửa luật:</Text> nhấn icon bút chì (✏️) → chỉnh thông tin → lưu.</li>
+          <li><Text strong>Xoá luật:</Text> nhấn icon thùng rác (🗑️) → xác nhận xoá.</li>
+          <li><Text strong>Bật/tắt luật:</Text> gạt công tắc (switch) để tạm tắt luật mà không mất cấu hình.</li>
           <li><Text strong>Xem đối soát BPMN:</Text> nhấn "Xem đối soát BPMN" để chuyển sang tab Đối soát.</li>
         </ul>
       </SectionBlock>
       <Alert
         type="warning"
         showIcon
-        message="Fail-closed: nếu không có luật nào khớp, action không hiện"
+        message="Fail-closed (đóng khi thiếu): nếu không có luật nào khớp, action không hiện"
         description="Khi thêm luật mới, hãy đảm bảo luật có điều kiện đủ cụ thể (gắn processCode + taskDefinitionKey) để tránh ảnh hưởng các quy trình khác."
         style={{ marginTop: 8 }}
       />
 
       {/* ── 4. Đối soát BPMN ── */}
       <Title level={4} style={{ marginTop: 24, color: '#bf0027' }}>
-        <SyncOutlined /> 4. Đối soát BPMN (BPMN Reconcile)
+        <SyncOutlined /> 4. Đối soát BPMN (BPMN Reconcile — đối chiếu quy trình)
       </Title>
       <Paragraph>
-        Tab <Text strong>Đối soát BPMN</Text> thực hiện đối chiếu 2 chiều giữa mô hình BPMN (các user task
-        và nhánh outcome) với các <Text strong>Availability Policy</Text> đang có. Đây là kiểm tra
-        <Text strong> đúng-sai</Text>: nếu BPMN có bước mà policy thiếu, hồ sơ sẽ bị kẹt.
+        Tab <Text strong>Đối soát BPMN</Text> thực hiện đối chiếu 2 chiều giữa mô hình BPMN (các user task — tác vụ người dùng
+        và nhánh outcome — kết quả) với các <Text strong>Availability Policy</Text> đang có. Đây là kiểm tra
+        <Text strong> đúng-sai (pass/fail)</Text>: nếu BPMN có bước mà policy thiếu, hồ sơ sẽ bị kẹt.
       </Paragraph>
-      <SectionBlock title="Các trạng thái đối soát">
+
+      <div style={{ marginBottom: 16, textAlign: 'center' }}>
+        <Image
+          src="/screenshots/action-studio-reconcile.png"
+          alt="Bảng Đối soát BPMN"
+          style={{ border: '1px solid #e6e9ee', borderRadius: 8, maxWidth: '100%' }}
+          preview={{ mask: 'Bấm để phóng to' }}
+        />
+        <div style={{ marginTop: 6 }}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            Hình 4: Bảng Đối soát BPMN — kiểm tra user task ↔ Availability Policy, phát hiện thiếu sót
+          </Text>
+        </div>
+      </div>
+
+      <SectionBlock title="Các trạng thái đối soát (Reconcile Status)">
         <ul>
-          <li><Text strong>🟢 Đã ghim đủ:</Text> tất cả nhánh outcome của bước đã có policy ghim cụ thể theo bước.</li>
-          <li><Text strong>🟡 Luật chung:</Text> nhánh đang dùng policy wildcard (không ghim taskDefinitionKey) — nên ghim cụ thể.</li>
-          <li><Text strong>🟡 Thiếu biểu mẫu:</Text> đã có policy nhưng chưa gán formKey.</li>
-          <li><Text strong>🔴 Thiếu action:</Text> chưa có luật enabled cho nhánh outcome → bước bị kẹt.</li>
-          <li><Text strong>⚪ Bỏ qua có chủ đích:</Text> admin đánh dấu bước này không cần policy (VD: bước không cần thao tác trên UI).</li>
+          <li><Text strong>🟢 Đã ghim đủ (Ok):</Text> tất cả nhánh outcome của bước đã có policy ghim cụ thể theo bước.</li>
+          <li><Text strong>🟡 Luật chung (Generic):</Text> nhánh đang dùng policy wildcard (không ghim taskDefinitionKey) — nên ghim cụ thể.</li>
+          <li><Text strong>🟡 Thiếu biểu mẫu (Unfilled):</Text> đã có policy nhưng chưa gán formKey.</li>
+          <li><Text strong>🔴 Thiếu action (Missing):</Text> chưa có luật enabled cho nhánh outcome → bước bị kẹt.</li>
+          <li><Text strong>⚪ Bỏ qua có chủ đích (Skipped):</Text> admin đánh dấu bước này không cần policy (VD: bước không cần thao tác trên UI).</li>
         </ul>
       </SectionBlock>
       <SectionBlock title="Thao tác chính">
         <ul>
           <li><Text strong>Chọn quy trình:</Text> chọn quy trình có BPMN + bảng định tuyến.</li>
-          <li><Text strong>Đồng bộ / Đối soát từ BPMN:</Text> nhấn nút để hệ thống tự động scaffold/upsert policy cho các nhánh outcome. ID policy là tất định nên chạy lại không đẻ trùng.</li>
-          <li><Text strong>Bỏ qua có chủ đích:</Text> gạt switch nếu bước đó cố tình không cần nút xử lý (VD: bước chỉ để hiển thị thông tin).</li>
+          <li><Text strong>Đồng bộ / Đối soát từ BPMN:</Text> nhấn nút để hệ thống tự động tạo/cập nhật (scaffold/upsert) policy cho các nhánh outcome. ID policy là tất định nên chạy lại không đẻ trùng.</li>
+          <li><Text strong>Bỏ qua có chủ đích:</Text> gạt công tắc (switch) nếu bước đó cố tình không cần nút xử lý (VD: bước chỉ để hiển thị thông tin).</li>
         </ul>
       </SectionBlock>
 
       {/* ── 5. Luồng ngoại lệ ── */}
       <Title level={4} style={{ marginTop: 24, color: '#bf0027' }}>
-        <SafetyCertificateOutlined /> 5. Luồng ngoại lệ (Exception Policy)
+        <SafetyCertificateOutlined /> 5. Luồng ngoại lệ (Exception Policy — chính sách ngoại lệ)
       </Title>
       <Paragraph>
         Tab <Text strong>Luồng ngoại lệ</Text> quản lý các hành động <Text strong>đi khác luồng chuẩn</Text>
-        BPMN — như xin bỏ qua Hội đồng, xin chuyển luồng, xin duyệt khẩn cấp. Khác với action STANDARD
-        (đi theo routing BPMN), action ngoại lệ cần được kiểm soát chặt:
+        BPMN — như xin bỏ qua Hội đồng (Bypass Council), xin chuyển luồng (Route To), xin duyệt khẩn cấp (Emergency Approval).
+        Khác với action STANDARD (chuẩn — đi theo routing BPMN), action ngoại lệ cần được kiểm soát chặt:
       </Paragraph>
       <ul>
         <li>Ai được phép xin ngoại lệ?</li>
@@ -1029,9 +1089,24 @@ function HanhDongContent() {
         <li>Sau khi duyệt, hồ sơ đi đâu?</li>
         <li>Mỗi hồ sơ được xin ngoại lệ tối đa bao nhiêu lần?</li>
       </ul>
+
+      <div style={{ marginBottom: 16, textAlign: 'center' }}>
+        <Image
+          src="/screenshots/action-studio-exception.png"
+          alt="Bảng Luồng ngoại lệ"
+          style={{ border: '1px solid #e6e9ee', borderRadius: 8, maxWidth: '100%' }}
+          preview={{ mask: 'Bấm để phóng to' }}
+        />
+        <div style={{ marginTop: 6 }}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            Hình 5: Bảng Luồng ngoại lệ — quản lý luật ngoại lệ và cấu hình nút xin ngoại lệ
+          </Text>
+        </div>
+      </div>
+
       <SectionBlock title="Cấu trúc một luật ngoại lệ">
         <Paragraph>
-          Khi tạo/sửa luật ngoại lệ, modal chia làm 4 phần:
+          Khi tạo/sửa luật ngoại lệ, cửa sổ (modal) chia làm 4 phần:
         </Paragraph>
         <ol>
           <li><Text strong>Ngoại lệ xảy ra ở đâu?</Text> — tên, quy trình, đối tượng (hồ sơ/nhiệm vụ/đề xuất), trạng thái, bước phát sinh.</li>
@@ -1046,8 +1121,8 @@ function HanhDongContent() {
         </Paragraph>
         <ul>
           <li><Text strong>Luật hiển thị nút sinh kèm:</Text> thông tin tóm tắt về Availability Policy tự động tạo.</li>
-          <li><Text strong>Xem trước luồng xử lý:</Text> sơ đồ routing — bước phát sinh, nhánh ngoại lệ, đích đến.</li>
-          <li><Text strong>Preview hiển thị nút:</Text> nút xin ngoại lệ sẽ trông như thế nào trên UI chi tiết hồ sơ (màu sắc, tooltip, vai trò thấy nút).</li>
+          <li><Text strong>Xem trước luồng xử lý (Routing Preview):</Text> sơ đồ routing — bước phát sinh, nhánh ngoại lệ, đích đến.</li>
+          <li><Text strong>Xem trước hiển thị nút (Button Preview):</Text> nút xin ngoại lệ sẽ trông như thế nào trên UI chi tiết hồ sơ (màu sắc, chú thích, vai trò thấy nút).</li>
         </ul>
       </SectionBlock>
       <Alert
@@ -1060,18 +1135,33 @@ function HanhDongContent() {
 
       {/* ── 6. Luồng xử lý ── */}
       <Title level={4} style={{ marginTop: 24, color: '#bf0027' }}>
-        <PartitionOutlined /> 6. Luồng xử lý (Routing Matrix)
+        <PartitionOutlined /> 6. Luồng xử lý (Routing Matrix — ma trận định tuyến)
       </Title>
       <Paragraph>
-        Tab <Text strong>Luồng xử lý</Text> hiển thị <Text strong>ma trận định tuyến</Text> của từng quy trình
+        Tab <Text strong>Luồng xử lý</Text> hiển thị <Text strong>ma trận định tuyến</Text> (Routing Matrix) của từng quy trình
         — ứng với mỗi bước, các nhánh kết quả xử lý (Đồng ý → bước tiếp, Trả lại → bước trước, Từ chối → kết thúc…)
-        đưa hồ sơ tới đâu. Cùng một component <Text code>StepRoutingDiagram</Text> mà màn Chi tiết hồ sơ dùng
-        ở runtime, nhưng ở đây xem theo <Text strong>loại bước</Text> (design-time), không gắn hồ sơ cụ thể.
+        đưa hồ sơ tới đâu. Cùng một thành phần <Text code>StepRoutingDiagram</Text> mà màn Chi tiết hồ sơ dùng
+        ở thời gian chạy (runtime), nhưng ở đây xem theo <Text strong>loại bước</Text> (design-time), không gắn hồ sơ cụ thể.
       </Paragraph>
+
+      <div style={{ marginBottom: 16, textAlign: 'center' }}>
+        <Image
+          src="/screenshots/action-studio-routing.png"
+          alt="Bảng Luồng xử lý"
+          style={{ border: '1px solid #e6e9ee', borderRadius: 8, maxWidth: '100%' }}
+          preview={{ mask: 'Bấm để phóng to' }}
+        />
+        <div style={{ marginTop: 6 }}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            Hình 6: Ma trận định tuyến (Routing Matrix) — xem các nhánh outcome và bước đích thiết kế
+          </Text>
+        </div>
+      </div>
+
       <SectionBlock title="Thao tác chính">
         <ul>
-          <li><Text strong>Chọn quy trình:</Text> dropdown chọn quy trình cần xem (RD01.01, RD02, RD05…).</li>
-          <li><Text strong>Xem sơ đồ:</Text> mỗi bước trong quy trình hiển thị dưới dạng thẻ card kèm sơ đồ routing — nhánh outcome (màu sắc), bước đích, vai trò xử lý.</li>
+          <li><Text strong>Chọn quy trình:</Text> danh sách thả xuống (dropdown) chọn quy trình cần xem (RD01.01, RD02, RD05…).</li>
+          <li><Text strong>Xem sơ đồ:</Text> mỗi bước trong quy trình hiển thị dưới dạng thẻ (card) kèm sơ đồ routing — nhánh outcome (màu sắc), bước đích, vai trò xử lý.</li>
         </ul>
       </SectionBlock>
       <Alert
@@ -1084,24 +1174,39 @@ function HanhDongContent() {
 
       {/* ── 7. Mô phỏng ── */}
       <Title level={4} style={{ marginTop: 24, color: '#bf0027' }}>
-        <ApiOutlined /> 7. Mô phỏng (Inspector / Simulator)
+        <ApiOutlined /> 7. Mô phỏng (Inspector / Simulator — công cụ mô phỏng)
       </Title>
       <Paragraph>
         Tab <Text strong>Mô phỏng</Text> cho phép admin kiểm thử ngay trên trình duyệt: chọn ngữ cảnh
-        nghiệp vụ (surface, quy trình, trạng thái, bước) và ngữ cảnh người dùng (vai trò, quyền, admin),
-        hệ thống sẽ render kết quả API <Text code>available-actions</Text> giống hệt những gì UI chi tiết
+        nghiệp vụ (surface — bề mặt, quy trình, trạng thái, bước) và ngữ cảnh người dùng (vai trò, quyền, admin),
+        hệ thống sẽ kết xuất (render) kết quả API <Text code>available-actions</Text> giống hệt những gì UI chi tiết
         hồ sơ sẽ nhận được.
       </Paragraph>
-      <SectionBlock title="Các bước mô phỏng">
+
+      <div style={{ marginBottom: 16, textAlign: 'center' }}>
+        <Image
+          src="/screenshots/action-studio-inspector.png"
+          alt="Tab Mô phỏng"
+          style={{ border: '1px solid #e6e9ee', borderRadius: 8, maxWidth: '100%' }}
+          preview={{ mask: 'Bấm để phóng to' }}
+        />
+        <div style={{ marginTop: 6 }}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            Hình 7: Tab Mô phỏng — chọn ngữ cảnh và xem action được render tương ứng
+          </Text>
+        </div>
+      </div>
+
+      <SectionBlock title="Các bước mô phỏng (Simulation Steps)">
         <ol>
-          <li><Text strong>Chọn ngữ cảnh nghiệp vụ:</Text> surface (màn hình), quy trình, trạng thái hồ sơ, task key và cấp nhiệm vụ.</li>
-          <li><Text strong>Chọn ngữ cảnh người dùng:</Text> vai trò (có thể chọn nhiều), quyền, trạng thái admin (bỏ qua role/permission).</li>
+          <li><Text strong>Chọn ngữ cảnh nghiệp vụ (Business Context):</Text> surface (màn hình), quy trình, trạng thái hồ sơ, task key và cấp nhiệm vụ.</li>
+          <li><Text strong>Chọn ngữ cảnh người dùng (User Context):</Text> vai trò (có thể chọn nhiều), quyền, trạng thái admin (bỏ qua kiểm tra role/permission).</li>
           <li><Text strong>Bật/tắt điều kiện ngoại lệ:</Text> còn bước phía sau để chuyển, user đang xử lý bước hiện tại, đang có yêu cầu ngoại lệ mở.</li>
-          <li><Text strong>Đọc kết quả:</Text> action hiển thị theo nhóm UI (PRIMARY / MORE / EXCEPTION). Action mờ = có rule hiển thị nhưng chưa đủ điều kiện bấm (di chuột để xem lý do).</li>
-          <li><Text strong>Đối chiếu payload JSON:</Text> phần cuối cùng hiển thị chính xác payload UI nghiệp vụ sẽ nhận từ available-actions API.</li>
+          <li><Text strong>Đọc kết quả:</Text> action hiển thị theo nhóm UI (PRIMARY — chính / MORE — thêm / EXCEPTION — ngoại lệ). Action mờ = có rule hiển thị nhưng chưa đủ điều kiện bấm (di chuột để xem lý do).</li>
+          <li><Text strong>Đối chiếu payload JSON:</Text> phần cuối cùng hiển thị chính xác dữ liệu (payload) UI nghiệp vụ sẽ nhận từ available-actions API.</li>
         </ol>
       </SectionBlock>
-      <SectionBlock title="Công thức hiển thị nút">
+      <SectionBlock title="Công thức hiển thị nút (Button Visibility Formula)">
         <Text code>
           Action Definition + Workflow Step + User Role + Permission + Business Condition + Exception Policy + Dossier State
         </Text>

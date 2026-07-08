@@ -28,9 +28,6 @@ import {
   HistoryOutlined,
   ApartmentOutlined,
   TeamOutlined,
-  ClusterOutlined,
-  SolutionOutlined,
-  ControlOutlined,
   BookOutlined,
 } from "@ant-design/icons";
 import {
@@ -140,6 +137,8 @@ export default function App() {
           ? "tichhop"
           : location.pathname.startsWith("/nhat-ky")
             ? "nhatky"
+            : location.pathname.startsWith("/quy-trinh")
+            ? "quytrinh"
             : location.pathname.startsWith("/quan-ly-luat")
             ? "luat"
             : location.pathname.startsWith("/ma-tran-phe-duyet")
@@ -178,9 +177,9 @@ export default function App() {
     matran: "Ma trận phê duyệt",
     hanhdong: "Ma trận Hành động",
     trogiup: "Hướng dẫn sử dụng",
-    quytrinh: "Quản lý quy trình",
+    quytrinh: "Quản trị quy trình",
   };
-  const sectionTitle = SECTION_TITLE[selectedKey] ?? "Quản lý quy trình";
+  const sectionTitle = SECTION_TITLE[selectedKey] ?? "Quản trị quy trình";
 
   // Breadcrumb hiển thị ở MỘT nơi (header). Trang set qua PageHeader → crumbs;
   // không set → mặc định Hệ thống / khu chức năng.
@@ -221,13 +220,19 @@ export default function App() {
         { key: "ho-so", icon: null, label: "Danh sách Hồ sơ KHCN" },
       ],
     },
-    // Quản lý quy trình — không hiển thị với Chủ nhiệm đề tài.
+    // Quy trình & Cấu hình nghiệp vụ — không hiển thị với Chủ nhiệm đề tài.
     ...(!isChuNhiemDeTai
       ? [
           {
-            key: "quytrinh",
+            key: "quytrinh-config",
             icon: <PartitionOutlined />,
-            label: "Quản lý quy trình",
+            label: "Quản trị quy trình",
+            children: [
+              { key: "quytrinh", icon: null, label: "Quản lý quy trình" },
+              { key: "luat", icon: null, label: "Ma trận quyết định" },
+              { key: "matran", icon: null, label: "Ma trận phê duyệt" },
+              { key: "hanhdong", icon: null, label: "Ma trận Hành động" },
+            ],
           },
         ]
       : []),
@@ -246,21 +251,7 @@ export default function App() {
               },
               { key: "tichhop", icon: <ApiOutlined />, label: "Tích hợp" },
               { key: "nhatky", icon: <HistoryOutlined />, label: "Nhật ký" },
-              {
-                key: "luat",
-                icon: <ClusterOutlined />,
-                label: "Ma trận quyết định",
-              },
-              {
-                key: "matran",
-                icon: <SolutionOutlined />,
-                label: "Ma trận phê duyệt",
-              },
-              {
-                key: "hanhdong",
-                icon: <ControlOutlined />,
-                label: "Ma trận Hành động",
-              },
+
             ],
           },
         ]
