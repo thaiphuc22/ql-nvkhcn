@@ -1201,7 +1201,6 @@ function ExceptionTab({
         description={
           <span>
             Khi lưu luật ngoại lệ, hệ thống đồng thời tạo/cập nhật một <b>Luật hiển thị nút</b> cho action ngoại lệ tương ứng.
-            Nhờ vậy admin cấu hình một lần nhưng vẫn thấy rõ: nút hiện ở đâu, ai được xin, ai duyệt và hồ sơ đi đâu.
           </span>
         }
       />

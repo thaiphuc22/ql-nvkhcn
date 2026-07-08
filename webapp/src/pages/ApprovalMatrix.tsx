@@ -56,6 +56,7 @@ import {
   anyCondition,
   describeConditionTree,
   type ConditionGroup,
+  type ConditionNode,
 } from '../data/approvalConditions'
 import { describeHelpers } from '../data/approvalVariableRegistry'
 import { analyzeRules, warningsByRule } from '../data/approvalMatrixAnalyzer'
@@ -87,6 +88,50 @@ interface RuleFormValues {
   enabled: boolean
 }
 
+const DEFAULT_RULE_FORM_VALUES: RuleFormValues = {
+  ten: '',
+  slot: 'THAM_DINH',
+  priority: 50,
+  enabled: true,
+}
+
+function ruleToFormValues(rule: ApprovalRule): RuleFormValues {
+  return {
+    ten: rule.ten,
+    slot: rule.slot,
+    priority: rule.priority,
+    enabled: rule.enabled,
+  }
+}
+function hasAssignmentTarget(assignment: ApprovalAssignment): boolean {
+  return assignment.targets.some(
+    (t) =>
+      (t.type === 'GROUP' && t.roleCodes.length > 0) ||
+      (t.type === 'USER' && t.userIds.length > 0) ||
+      (t.type !== 'GROUP' && t.type !== 'USER'),
+  )
+}
+
+function isBlankValue(value: unknown): boolean {
+  if (value === undefined || value === null) return true
+  if (typeof value === 'string') return value.trim() === ''
+  if (Array.isArray(value)) return value.length === 0
+  return false
+}
+
+function collectConditionValueIssues(node: ConditionNode, path = 'Điều kiện'): string[] {
+  if (node.kind === 'group') {
+    return node.items.flatMap((item, index) => collectConditionValueIssues(item, `${path} ${index + 1}`))
+  }
+  if (node.operator === 'exists' || node.operator === 'notExists') return []
+  if (node.operator === 'between') {
+    const missing: string[] = []
+    if (isBlankValue(node.value)) missing.push(`${path}: thiếu giá trị từ`)
+    if (isBlankValue(node.valueTo)) missing.push(`${path}: thiếu giá trị đến`)
+    return missing
+  }
+  return isBlankValue(node.value) ? [`${path}: thiếu giá trị so sánh`] : []
+}
 /**
  * EPIC06 — Ma trận phê duyệt (Approval Matrix). Prototype mock: quản lý luật ánh xạ
  * (slot phê duyệt + điều kiện) → người phê duyệt cụ thể, + Rule Builder (thêm/sửa)
@@ -102,34 +147,114 @@ export default function ApprovalMatrix() {
   const [editing, setEditing] = useState<ApprovalRule | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [form] = Form.useForm<RuleFormValues>()
+  const [formSeed, setFormSeed] = useState<RuleFormValues>(DEFAULT_RULE_FORM_VALUES)
   // Cây điều kiện + kết quả phân công soạn tách khỏi antd Form (Form giữ trường phẳng).
   const [condDraft, setCondDraft] = useState<ConditionGroup>(anyCondition())
   const [asgDraft, setAsgDraft] = useState<ApprovalAssignment>(groupAssignment([]))
+  const watchedTen = Form.useWatch('ten', form)
+  const watchedSlot = Form.useWatch('slot', form) as SlotCode | undefined
+  const watchedPriority = Form.useWatch('priority', form)
+  const watchedEnabled = Form.useWatch('enabled', form)
 
+  const draftSlot = watchedSlot ?? 'THAM_DINH'
+  const draftPriority = typeof watchedPriority === 'number' ? watchedPriority : 50
+  const draftEnabled = watchedEnabled ?? true
+  const conditionValueIssues = useMemo(() => collectConditionValueIssues(condDraft), [condDraft])
+  const conditionPreview = useMemo(
+    () => describeConditionTree(condDraft, describeHelpers),
+    [condDraft],
+  )
+  const assignmentPreview = useMemo(
+    () => asgDraft.targets.map(describeTarget).join('; ') || 'Chưa có đích phân công',
+    [asgDraft],
+  )
+  const assignmentHasTarget = useMemo(() => hasAssignmentTarget(asgDraft), [asgDraft])
+  const draftWarnings = useMemo(() => {
+    if (!modalOpen) return []
+    const out: { level: 'error' | 'warning' | 'info'; message: string }[] = []
+    const ruleName = String(watchedTen ?? '').trim()
+
+    if (!ruleName) out.push({ level: 'info', message: 'Chưa nhập tên luật.' })
+    if (condDraft.items.length === 0) {
+      out.push({ level: 'warning', message: 'Điều kiện đang để trống, rule sẽ khớp mọi hồ sơ trong slot đã chọn.' })
+    }
+    conditionValueIssues.forEach((issue) => out.push({ level: 'error', message: issue }))
+    if (!assignmentHasTarget) {
+      out.push({ level: 'error', message: 'Chưa có đích phân công hợp lệ.' })
+    }
+
+    const otherRules = rules.filter((r) => r.id !== editing?.id && r.slot === draftSlot)
+    const samePriority = otherRules.filter((r) => r.enabled && r.priority === draftPriority)
+    if (samePriority.length > 0) {
+      out.push({
+        level: 'warning',
+        message: `Trùng ưu tiên ${draftPriority} với ${samePriority.map((r) => r.ten).join(', ')} trong cùng slot.`,
+      })
+    }
+
+    if (draftEnabled) {
+      const higherWildcard = otherRules
+        .filter((r) => r.enabled && r.conditions.items.length === 0 && r.priority < draftPriority)
+        .sort((a, b) => a.priority - b.priority)[0]
+      if (higherWildcard) {
+        out.push({
+          level: 'warning',
+          message: `Có thể bị luật "${higherWildcard.ten}" che khuất vì luật đó khớp mọi hồ sơ và ưu tiên cao hơn.`,
+        })
+      }
+      if (condDraft.items.length === 0) {
+        const lowerRules = otherRules.filter((r) => r.enabled && r.priority > draftPriority)
+        if (lowerRules.length > 0) {
+          out.push({
+            level: 'warning',
+            message: `Rule khớp mọi hồ sơ này có thể che ${lowerRules.length} luật ưu tiên thấp hơn cùng slot.`,
+          })
+        }
+      }
+    }
+
+    return out
+  }, [
+    asgDraft,
+    assignmentHasTarget,
+    condDraft,
+    conditionValueIssues,
+    draftEnabled,
+    draftPriority,
+    draftSlot,
+    editing?.id,
+    modalOpen,
+    rules,
+    watchedTen,
+  ])
   const openCreate = () => {
+    const seed = DEFAULT_RULE_FORM_VALUES
     setEditing(null)
-    form.setFieldsValue({ ten: '', slot: 'THAM_DINH', priority: 50, enabled: true })
+    setFormSeed(seed)
+    form.resetFields()
+    form.setFieldsValue(seed)
     setCondDraft(anyCondition())
     setAsgDraft(groupAssignment([]))
     setModalOpen(true)
   }
   const openEdit = (r: ApprovalRule) => {
+    const seed = ruleToFormValues(r)
     setEditing(r)
-    form.setFieldsValue({ ten: r.ten, slot: r.slot, priority: r.priority, enabled: r.enabled })
+    setFormSeed(seed)
+    form.resetFields()
+    form.setFieldsValue(seed)
     setCondDraft(structuredClone(r.conditions))
     setAsgDraft(structuredClone(r.assignment))
     setModalOpen(true)
   }
+
   const saveRule = async () => {
     const v = await form.validateFields()
-    // Validate: cần ít nhất một target có nội dung (GROUP có nhóm / USER có người).
-    const hasTarget = asgDraft.targets.some(
-      (t) =>
-        (t.type === 'GROUP' && t.roleCodes.length > 0) ||
-        (t.type === 'USER' && t.userIds.length > 0) ||
-        (t.type !== 'GROUP' && t.type !== 'USER'),
-    )
-    if (!hasTarget) {
+    if (conditionValueIssues.length > 0) {
+      message.error('Cần nhập đủ giá trị cho các điều kiện trước khi lưu.')
+      return
+    }
+    if (!assignmentHasTarget) {
       message.error('Cần ít nhất một đích phân công (nhóm hoặc người).')
       return
     }
@@ -379,7 +504,7 @@ export default function ApprovalMatrix() {
               </div>
 
               <Button type="primary" icon={<ThunderboltOutlined />} block onClick={runSim}>
-                Giải quyết (Resolve người)
+                Xem kết quả
               </Button>
 
               {result && (
@@ -388,7 +513,7 @@ export default function ApprovalMatrix() {
                   <Alert
                     type={result.matchedRule ? 'success' : 'warning'}
                     showIcon
-                    message={result.matchedRule ? `Đã resolve · ${result.mode ? MODE_LABEL[result.mode] : ''}` : 'Không có luật khớp'}
+                    message={result.matchedRule ? `Kết quả:  ${result.mode ? MODE_LABEL[result.mode] : ''}` : 'Không có luật khớp'}
                     description={<span style={{ fontSize: 12 }}>{result.reason}</span>}
                   />
                   {result.warnings.length > 0 && (
@@ -478,39 +603,128 @@ export default function ApprovalMatrix() {
         open={modalOpen}
         onOk={saveRule}
         onCancel={() => setModalOpen(false)}
+        afterOpenChange={(open) => { if (open) form.setFieldsValue(formSeed) }}
         okText="Lưu"
         cancelText="Huỷ"
-        destroyOnClose
+        forceRender
+        width={1040}
+        styles={{ body: { maxHeight: 'calc(100vh - 220px)', overflowY: 'auto', paddingTop: 12 } }}
       >
-        <Form form={form} layout="vertical" preserve={false}>
-          <Form.Item name="ten" label="Tên luật" rules={[{ required: true, message: 'Nhập tên luật' }]}>
-            <Input placeholder="VD: Phê duyệt — Tập đoàn, ngân sách > 5 tỷ" />
-          </Form.Item>
-          <Form.Item name="slot" label="Slot phê duyệt" rules={[{ required: true }]}>
-            <Select options={APPROVAL_SLOTS.map((s) => ({ value: s.code, label: s.ten }))} />
-          </Form.Item>
-          <Form.Item
-            label="Điều kiện áp dụng"
-            tooltip="Cây điều kiện AND/OR — để trống = khớp mọi hồ sơ. Slot khớp riêng (chọn ở trên)."
-          >
-            <ConditionBuilder value={condDraft} onChange={setCondDraft} />
-          </Form.Item>
-          <Form.Item
-            label="Kết quả phân công"
-            tooltip="Ai/nhóm nào phê duyệt + chế độ. Đợt 2: GROUP/USER resolve thật; Chức danh/Hội đồng/Biểu thức sắp có."
-          >
-            <AssignmentBuilder value={asgDraft} onChange={setAsgDraft} />
-          </Form.Item>
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item name="priority" label="Ưu tiên (số nhỏ = cao)" rules={[{ required: true }]}>
-                <InputNumber style={{ width: '100%' }} min={1} />
-              </Form.Item>
+        <Form
+          key={editing?.id ?? 'create'}
+          form={form}
+          layout="vertical"
+          preserve={false}
+          initialValues={formSeed}
+        >
+          <Row gutter={[16, 16]} align="top">
+            <Col xs={24} lg={15}>
+              <Space direction="vertical" size={12} style={{ width: '100%' }}>
+                <Card size="small" title="Thông tin luật">
+                  <Form.Item name="ten" label="Tên luật" rules={[{ required: true, message: 'Nhập tên luật' }]}>
+                    <Input placeholder="VD: Phê duyệt — Tập đoàn, ngân sách > 5 tỷ" />
+                  </Form.Item>
+                  <Row gutter={12}>
+                    <Col xs={24} md={12}>
+                      <Form.Item name="slot" label="Slot phê duyệt" rules={[{ required: true }]}>
+                        <Select options={APPROVAL_SLOTS.map((s) => ({ value: s.code, label: s.ten }))} />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={12} md={6}>
+                      <Form.Item name="priority" label="Ưu tiên" rules={[{ required: true }]}>
+                        <InputNumber style={{ width: '100%' }} min={1} />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={12} md={6}>
+                      <Form.Item name="enabled" label="Kích hoạt" valuePropName="checked">
+                        <Switch />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    Số ưu tiên nhỏ hơn sẽ được xét trước theo cơ chế first-match.
+                  </Text>
+                </Card>
+
+                <Card size="small" title="Điều kiện áp dụng">
+                  {condDraft.items.length === 0 && (
+                    <Alert
+                      type="warning"
+                      showIcon
+                      style={{ marginBottom: 12 }}
+                      message="Rule đang khớp mọi hồ sơ trong slot đã chọn"
+                      description="Thêm điều kiện nếu rule này không phải fallback."
+                    />
+                  )}
+                  <Form.Item
+                    tooltip="Cây điều kiện AND/OR — để trống = khớp mọi hồ sơ. Slot khớp riêng ở phần thông tin luật."
+                    style={{ marginBottom: 0 }}
+                  >
+                    <ConditionBuilder value={condDraft} onChange={setCondDraft} />
+                  </Form.Item>
+                </Card>
+
+                <Card size="small" title="Kết quả phân công">
+                  <Form.Item
+                    tooltip="Ai/nhóm nào phê duyệt và chế độ phê duyệt. GROUP/USER đang resolve thật; chức danh, hội đồng và biểu thức là placeholder cho backend."
+                    style={{ marginBottom: 0 }}
+                  >
+                    <AssignmentBuilder value={asgDraft} onChange={setAsgDraft} />
+                  </Form.Item>
+                </Card>
+              </Space>
             </Col>
-            <Col span={12}>
-              <Form.Item name="enabled" label="Kích hoạt" valuePropName="checked">
-                <Switch />
-              </Form.Item>
+
+            <Col xs={24} lg={9}>
+              <Card size="small" title="Preview luật">
+                <Space direction="vertical" size={12} style={{ width: '100%' }}>
+                  <Space size={4} wrap>
+                    <Tag color="purple">{slotLabel(draftSlot)}</Tag>
+                    <Tag>Ưu tiên #{draftPriority}</Tag>
+                    <Tag color={draftEnabled ? 'green' : 'default'}>
+                      {draftEnabled ? 'Đang bật' : 'Đang tắt'}
+                    </Tag>
+                  </Space>
+
+                  <Paragraph style={{ marginBottom: 0 }}>
+                    <Text strong>{String(watchedTen ?? '').trim() || 'Luật chưa đặt tên'}</Text>
+                  </Paragraph>
+
+                  <div>
+                    <Text type="secondary" style={{ fontSize: 12 }}>Khi điều kiện</Text>
+                    <Paragraph style={{ marginBottom: 0, fontSize: 13 }}>{conditionPreview}</Paragraph>
+                  </div>
+
+                  <div>
+                    <Text type="secondary" style={{ fontSize: 12 }}>Thì phân công</Text>
+                    <Paragraph style={{ marginBottom: 0, fontSize: 13 }}>{assignmentPreview}</Paragraph>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      Chế độ: {MODE_LABEL[asgDraft.mode]}
+                    </Text>
+                  </div>
+
+                  <Divider style={{ margin: '4px 0' }} />
+
+                  <Alert
+                    type={draftWarnings.some((w) => w.level === 'error') ? 'error' : draftWarnings.length > 0 ? 'warning' : 'success'}
+                    showIcon
+                    message={draftWarnings.length > 0 ? 'Kiểm tra nhanh' : 'Rule đã đủ thông tin cơ bản'}
+                    description={
+                      draftWarnings.length > 0 ? (
+                        <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12 }}>
+                          {draftWarnings.map((w, i) => (
+                            <li key={i} style={{ color: w.level === 'error' ? '#cf1322' : undefined }}>
+                              {w.message}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span style={{ fontSize: 12 }}>Có thể lưu hoặc tiếp tục tinh chỉnh điều kiện/phân công.</span>
+                      )
+                    }
+                  />
+                </Space>
+              </Card>
             </Col>
           </Row>
         </Form>

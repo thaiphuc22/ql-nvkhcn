@@ -20,7 +20,7 @@ import {
 const { Text } = Typography
 
 const TARGET_TYPE_OPTIONS: { value: ApprovalTargetType; label: string; disabled?: boolean }[] = [
-  { value: 'GROUP', label: 'Nhóm (candidateGroup)' },
+  { value: 'GROUP', label: 'Nhóm phê duyệt' },
   { value: 'USER', label: 'Người cụ thể' },
   { value: 'ORG_POSITION', label: 'Chức danh tổ chức · sắp có', disabled: true },
   { value: 'COUNCIL', label: 'Hội đồng · sắp có', disabled: true },
@@ -29,6 +29,12 @@ const TARGET_TYPE_OPTIONS: { value: ApprovalTargetType; label: string; disabled?
 
 const ROLE_OPTIONS = ROLES.map((r) => ({ value: r.code, label: `${r.ten} (${r.code})` }))
 const USER_OPTIONS = users.map((u) => ({ value: u.id, label: `${u.hoTen}${u.chucDanh ? ` — ${u.chucDanh}` : ''}` }))
+
+const MODE_HELP: Record<ApprovalMode, string> = {
+  ANY_ONE: 'Chỉ cần một người trong danh sách hoàn thành phê duyệt.',
+  ALL: 'Tất cả người được phân công đều cần phê duyệt.',
+  SEQUENTIAL: 'Phê duyệt lần lượt theo thứ tự các đích phân công.',
+}
 
 function emptyTargetOf(type: ApprovalTargetType): ApprovalTarget {
   switch (type) {
@@ -125,6 +131,7 @@ export default function AssignmentBuilder({
             label: MODE_LABEL[m],
           }))}
         />
+        <Text type="secondary" style={{ fontSize: 12 }}>{MODE_HELP[value.mode]}</Text>
       </Space>
       {value.targets.length === 0 && (
         <div style={{ marginBottom: 8 }}>

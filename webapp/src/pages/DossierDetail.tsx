@@ -1171,7 +1171,7 @@ export default function DossierDetail() {
                   Người nhận việc — Ma trận phê duyệt
                 </Space>
               }
-              extra={<Tag color="processing">EPIC06</Tag>}
+              // extra={<Tag color="processing">EPIC06</Tag>}
             >
               <Paragraph type="secondary" style={{ fontSize: 12, marginTop: 0 }}>
                 Bước <b>{currentStep!.ten}</b> chỉ mang nhóm phê duyệt trừu tượng (

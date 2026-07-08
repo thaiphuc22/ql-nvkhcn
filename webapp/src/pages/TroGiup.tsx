@@ -363,6 +363,254 @@ function HoSoContent() {
   );
 }
 
+function AdminTongQuanContent() {
+  return (
+    <div>
+      <Title level={3}><AppstoreOutlined style={{ color: '#7c3aed' }} /> Tổng quan Quản trị</Title>
+      <Paragraph>
+        Nhóm <Text strong>Quản trị</Text> tập hợp 4 công cụ cấu hình cốt lõi, phối hợp với nhau
+        để định nghĩa cách một hồ sơ luân chuyển và ai được làm gì trên từng bước.
+      </Paragraph>
+
+      {/* ── Workflow Designer (BPMN) ── */}
+      <Title level={4} style={{ marginTop: 24, color: '#1677ff' }}>
+        <PartitionOutlined /> Workflow Designer (BPMN) — Quy trình xử lý hồ sơ
+      </Title>
+      <SectionBlock title="Vai trò">
+        <Paragraph>
+          Workflow Designer dùng để thiết kế <Text strong>quy trình xử lý của hồ sơ</Text> dưới dạng sơ đồ BPMN.
+          Một quy trình mô tả <Text strong>hồ sơ sẽ đi qua những bước nào, theo thứ tự nào, có những nhánh xử lý nào,
+          khi nào kết thúc</Text>.
+        </Paragraph>
+        <Paragraph>
+          Workflow chỉ mô tả <Text strong>trình tự xử lý</Text>, <Text strong>không quyết định người xử lý cụ thể</Text>
+          và <Text strong>không chứa các luật nghiệp vụ chi tiết</Text>.
+        </Paragraph>
+        <Paragraph style={{ marginBottom: 0 }}>
+          <Text strong>Ví dụ:</Text> Hồ sơ đi qua các bước: Tiếp nhận → Thẩm định → Phê duyệt → Ban hành.
+          Sau bước Thẩm định có thể chuyển sang Hội đồng hoặc Phê duyệt cuối cùng. Mỗi bước sử dụng biểu mẫu (Form) nào.
+          Thời hạn xử lý (SLA) của từng bước.
+        </Paragraph>
+      </SectionBlock>
+      <SectionBlock title="Dùng khi">
+        <ul>
+          <li>Thiết kế quy trình mới.</li>
+          <li>Thêm hoặc xóa bước xử lý.</li>
+          <li>Thay đổi thứ tự các bước.</li>
+          <li>Thêm hoặc sửa nhánh điều hướng.</li>
+          <li>Gắn biểu mẫu cho từng bước.</li>
+          <li>Cấu hình thời hạn xử lý của từng bước.</li>
+        </ul>
+      </SectionBlock>
+
+      <Divider />
+
+      {/* ── Business Rule Studio (DMN) ── */}
+      <Title level={4} style={{ marginTop: 24, color: '#d48806' }}>
+        <ClusterOutlined /> Business Rule Studio (DMN) — Luật nghiệp vụ
+      </Title>
+      <SectionBlock title="Vai trò">
+        <Paragraph>
+          Business Rule Studio dùng để định nghĩa <Text strong>các quyết định nghiệp vụ</Text> dưới dạng
+          Decision Table (DMN). DMN nhận dữ liệu của hồ sơ làm đầu vào và trả về các quyết định để quy trình
+          sử dụng trong quá trình xử lý.
+        </Paragraph>
+        <Paragraph>
+          DMN <Text strong>không điều khiển quy trình trực tiếp</Text>, mà cung cấp các kết quả để BPMN quyết định
+          bước tiếp theo hoặc cấu hình quá trình xử lý.
+        </Paragraph>
+        <Paragraph style={{ marginBottom: 0 }}>
+          <Text strong>Ví dụ:</Text> Hồ sơ này thuộc cấp nào? Có cần Hội đồng thẩm định hay không?
+          Cấp phê duyệt là L1, L2 hay L3? SLA xử lý là bao nhiêu ngày? Có cần gửi thông báo cho lãnh đạo không?
+        </Paragraph>
+      </SectionBlock>
+      <SectionBlock title="Ví dụ Decision Table">
+        <Table
+          size="small"
+          bordered
+          pagination={false}
+          dataSource={[
+            { condition: '≤ 100 triệu', risk: 'Thấp', result: 'L1' },
+            { condition: '100–500 triệu', risk: 'Trung bình', result: 'L2' },
+            { condition: '> 500 triệu', risk: 'Cao', result: 'L3 + Hội đồng' },
+          ]}
+          columns={[
+            { title: 'Tổng dự toán', dataIndex: 'condition', width: 180 },
+            { title: 'Mức rủi ro', dataIndex: 'risk', width: 140 },
+            { title: 'Kết quả', dataIndex: 'result' },
+          ]}
+        />
+      </SectionBlock>
+      <SectionBlock title="Dùng khi">
+        <ul>
+          <li>Thay đổi điều kiện nghiệp vụ.</li>
+          <li>Điều chỉnh ngưỡng xét duyệt.</li>
+          <li>Bổ sung hoặc sửa Decision Table.</li>
+          <li>Kiểm thử và mô phỏng luật nghiệp vụ.</li>
+        </ul>
+      </SectionBlock>
+
+      <Divider />
+
+      {/* ── Approval Matrix ── */}
+      <Title level={4} style={{ marginTop: 24, color: '#52c41a' }}>
+        <SolutionOutlined /> Approval Matrix — Xác định người xử lý
+      </Title>
+      <SectionBlock title="Vai trò">
+        <Paragraph>
+          Approval Matrix dùng để <Text strong>xác định người hoặc nhóm người thực hiện</Text> tại từng bước
+          của quy trình. Sau khi BPMN xác định đang ở bước nào và DMN xác định cần cấp phê duyệt nào,
+          Approval Matrix sẽ tra cứu cơ cấu tổ chức để tìm đúng người xử lý.
+        </Paragraph>
+        <Paragraph style={{ marginBottom: 0 }}>
+          Approval Matrix trả lời câu hỏi:
+          <Text strong> Ở bước này, với hồ sơ này, ai sẽ là người thực hiện?</Text>
+        </Paragraph>
+        <Paragraph style={{ marginBottom: 0 }}>
+          Approval Matrix có thể căn cứ vào: loại hồ sơ, cấp hồ sơ, vai trò cần xử lý, đơn vị, chức danh,
+          cơ cấu tổ chức, hiệu lực theo thời gian, quy tắc ủy quyền.
+        </Paragraph>
+      </SectionBlock>
+      <SectionBlock title="Ví dụ">
+        <Table
+          size="small"
+          bordered
+          pagination={false}
+          dataSource={[
+            { role: 'Trưởng phòng', dept: 'CNTT', level: 'L1', assignee: 'Nguyễn Văn A' },
+            { role: 'Giám đốc', dept: 'CNTT', level: 'L3', assignee: 'Trần Văn B' },
+            { role: 'Giám đốc (được ủy quyền)', dept: 'CNTT', level: 'L3', assignee: 'Phạm Văn C' },
+          ]}
+          columns={[
+            { title: 'Vai trò', dataIndex: 'role', width: 200 },
+            { title: 'Đơn vị', dataIndex: 'dept', width: 80 },
+            { title: 'Cấp', dataIndex: 'level', width: 70 },
+            { title: 'Người xử lý', dataIndex: 'assignee' },
+          ]}
+        />
+      </SectionBlock>
+      <SectionBlock title="Dùng khi">
+        <ul>
+          <li>Thay đổi người phê duyệt.</li>
+          <li>Thay đổi cơ cấu tổ chức.</li>
+          <li>Thiết lập ủy quyền tạm thời.</li>
+          <li>Thay đổi quy tắc phân công.</li>
+          <li>Kiểm tra ai sẽ xử lý một hồ sơ cụ thể.</li>
+        </ul>
+      </SectionBlock>
+
+      <Divider />
+
+      {/* ── Action Studio ── */}
+      <Title level={4} style={{ marginTop: 24, color: '#bf0027' }}>
+        <ControlOutlined /> Action Studio — Hành động trên hồ sơ
+      </Title>
+      <SectionBlock title="Vai trò">
+        <Paragraph>
+          Action Studio dùng để cấu hình <Text strong>các hành động mà người dùng được phép thực hiện</Text>
+          tại từng bước của quy trình. Hệ thống sẽ xác định:
+        </Paragraph>
+        <ul>
+          <li>Hành động nào được hiển thị.</li>
+          <li>Hành động nào bị ẩn.</li>
+          <li>Hành động nào bị vô hiệu hóa.</li>
+          <li>Hành động nào yêu cầu mở biểu mẫu trước khi thực hiện.</li>
+        </ul>
+        <Paragraph style={{ marginBottom: 0 }}>
+          Action Studio trả lời câu hỏi:
+          <Text strong> Người dùng này, tại bước này, được phép thực hiện những hành động gì?</Text>
+        </Paragraph>
+      </SectionBlock>
+      <SectionBlock title="Ví dụ">
+        <Paragraph>
+          Ở bước <Text strong>"Thẩm định"</Text>, người thẩm định có thể thấy:
+        </Paragraph>
+        <ul>
+          <li>Đồng ý</li>
+          <li>Yêu cầu bổ sung</li>
+          <li>Từ chối</li>
+          <li>Chuyển xử lý</li>
+        </ul>
+      </SectionBlock>
+      <SectionBlock title="Dùng khi">
+        <ul>
+          <li>Thêm hoặc xóa hành động.</li>
+          <li>Thay đổi quyền hiển thị hành động.</li>
+          <li>Cấu hình hành động ngoại lệ.</li>
+          <li>Điều chỉnh giao diện theo từng vai trò.</li>
+          <li>Mô phỏng trải nghiệm người dùng.</li>
+        </ul>
+      </SectionBlock>
+
+      <Divider />
+
+      {/* ── Mối quan hệ & vòng đời ── */}
+      <Title level={4} style={{ marginTop: 24, color: '#7c3aed' }}>
+        <ApartmentOutlined /> Mối quan hệ giữa bốn thành phần
+      </Title>
+      <Table
+        size="small"
+        bordered
+        pagination={false}
+        style={{ marginBottom: 16 }}
+        dataSource={[
+          { component: '1. Workflow Designer (BPMN)', question: 'Hồ sơ đi qua những bước nào?' },
+          { component: '2. Business Rule Studio (DMN)', question: 'Quy trình cần áp dụng chính sách hoặc quyết định nào?' },
+          { component: '3. Approval Matrix', question: 'Ai là người thực hiện tại bước đó?' },
+          { component: '4. Action Studio', question: 'Người đó được phép thực hiện những hành động gì?' },
+        ]}
+        columns={[
+          { title: 'Thành phần', dataIndex: 'component', width: 280 },
+          { title: 'Câu hỏi trả lời', dataIndex: 'question' },
+        ]}
+      />
+
+      <SectionBlock title="Toàn bộ vòng đời xử lý">
+        <Steps
+          direction="vertical"
+          current={-1}
+          size="small"
+          items={[
+            { title: 'Hồ sơ', description: 'Hồ sơ được khởi tạo và gửi vào quy trình.' },
+            { title: 'Workflow Designer (BPMN)', description: 'Xác định hồ sơ đi qua những bước nào.' },
+            { title: 'Business Rule Studio (DMN)', description: 'Xác định quy trình cần áp dụng quyết định nào.' },
+            { title: 'Approval Matrix', description: 'Xác định ai là người thực hiện tại bước đó.' },
+            { title: 'Camunda tạo User Task', description: 'Hệ thống tạo công việc cho người được chỉ định.' },
+            { title: 'Action Studio', description: 'Xác định người đó được phép thực hiện những hành động gì.' },
+            { title: 'Người dùng thực hiện', description: 'Người dùng thao tác trên hồ sơ (phê duyệt / trả lại / từ chối).' },
+            { title: 'BPMN chuyển sang bước tiếp theo', description: 'Sau khi xử lý, quy trình chuyển sang bước kế tiếp.' },
+            { title: 'Kết thúc', description: 'Hồ sơ kết thúc quy trình.' },
+          ]}
+        />
+      </SectionBlock>
+
+      {/* ── Ghi nhớ nhanh ── */}
+      <SectionBlock title="Ghi nhớ nhanh">
+        <Table
+          size="small"
+          bordered
+          pagination={false}
+          dataSource={[
+            { component: 'Workflow Designer (BPMN)', question: 'Hồ sơ đi qua những bước nào?' },
+            { component: 'Business Rule Studio (DMN)', question: 'Quy trình cần áp dụng quyết định nào?' },
+            { component: 'Approval Matrix', question: 'Ai là người thực hiện?' },
+            { component: 'Action Studio', question: 'Người đó được phép làm gì?' },
+          ]}
+          columns={[
+            { title: 'Thành phần', dataIndex: 'component', width: 280 },
+            { title: 'Câu hỏi trả lời', dataIndex: 'question' },
+          ]}
+        />
+        <Paragraph style={{ marginTop: 12, marginBottom: 0 }}>
+          Bốn thành phần phối hợp để bảo đảm mỗi hồ sơ được xử lý{' '}
+          <Text strong>đúng quy trình, đúng luật nghiệp vụ, đúng người thực hiện và đúng quyền thao tác</Text>,
+          đồng thời giảm thiểu việc phải sửa mã nguồn khi nghiệp vụ thay đổi.
+        </Paragraph>
+      </SectionBlock>
+    </div>
+  );
+}
+
 function QuyTrinhContent() {
   return (
     <div>
@@ -1310,15 +1558,16 @@ const ALL_SECTIONS: HelpSection[] = [
   { key: 'worklist',  icon: <CarryOutOutlined />,      label: 'Việc của tôi',        category: 'common', content: WorklistContent },
   { key: 'nhiemvu',   icon: <ExperimentOutlined />,    label: 'Nhiệm vụ KHCN',       category: 'work',   content: NhiemVuContent },
   { key: 'hoso',      icon: <FileTextOutlined />,      label: 'Hồ sơ KHCN',          category: 'work',   content: HoSoContent },
+  { key: 'admin-overview', icon: <AppstoreOutlined />,       label: 'Tổng quan',            category: 'admin',  content: AdminTongQuanContent },
   { key: 'quytrinh',  icon: <PartitionOutlined />,     label: 'Quản lý quy trình',   category: 'admin',  content: QuyTrinhContent },
   { key: 'bieumau',   icon: <FormOutlined />,          label: 'Thư viện biểu mẫu',   category: 'admin',  content: BienMauContent },
   { key: 'donvi',     icon: <ApartmentOutlined />,     label: 'Quản trị đơn vị',     category: 'org',    content: ToChucContent },
   { key: 'giamsat',   icon: <ThunderboltOutlined />,   label: 'Giám sát tiến trình', category: 'ops',    content: GiamSatContent },
   { key: 'tichhop',   icon: <ApiOutlined />,           label: 'Trạng thái Tích hợp', category: 'ops',    content: TichHopContent },
   { key: 'nhatky',    icon: <HistoryOutlined />,       label: 'Nhật ký',             category: 'ops',    content: NhatKyContent },
-  { key: 'luat',      icon: <ClusterOutlined />,       label: 'Quản lý luật',        category: 'ops',    content: LuatContent },
-  { key: 'matran',    icon: <SolutionOutlined />,      label: 'Ma trận phê duyệt',   category: 'ops',    content: MaTranContent },
-  { key: 'hanhdong',  icon: <ControlOutlined />,       label: 'Ma trận Hành động',  category: 'ops',    content: HanhDongContent },
+  { key: 'luat',      icon: <ClusterOutlined />,       label: 'Quản lý luật',        category: 'admin',  content: LuatContent },
+  { key: 'matran',    icon: <SolutionOutlined />,      label: 'Ma trận phê duyệt',   category: 'admin',  content: MaTranContent },
+  { key: 'hanhdong',  icon: <ControlOutlined />,       label: 'Ma trận Hành động',  category: 'admin',  content: HanhDongContent },
   { key: 'faq',       icon: <QuestionCircleOutlined />, label: 'Câu hỏi thường gặp', category: 'common', content: FAQContent },
 ];
 
