@@ -53,8 +53,16 @@ import {
   SolutionOutlined,
   SwapOutlined,
 } from "@ant-design/icons";
-import { LOAI_TO_NHOM, type DossierStep, type StepStatus } from "../data/dossiers";
-import { resolveApprovers, resolveGroups, type ResolvedApprover } from "../data/approvalMatrix";
+import {
+  LOAI_TO_NHOM,
+  type DossierStep,
+  type StepStatus,
+} from "../data/dossiers";
+import {
+  resolveApprovers,
+  resolveGroups,
+  type ResolvedApprover,
+} from "../data/approvalMatrix";
 import { buildApprovalContext } from "../data/approvalSlotMap";
 import { useApprovalMatrix } from "../store/ApprovalMatrixContext";
 import {
@@ -62,7 +70,10 @@ import {
   EXCEPTION_TYPE_LABEL,
   type ExceptionType,
 } from "../data/exceptions";
-import { getAvailableActions, type AvailableAction } from "../data/actionAvailability";
+import {
+  getAvailableActions,
+  type AvailableAction,
+} from "../data/actionAvailability";
 import { PERMISSIONS } from "../data/actionAvailabilityPolicy";
 import {
   EXCEPTION_ACTION_CODE,
@@ -110,7 +121,7 @@ const { Text, Paragraph } = Typography;
 /**
  * "Toàn bộ sơ đồ nhánh": vẽ sơ đồ định tuyến cho TỪNG bước của quy trình, dùng
  * chung `resolveRouting` + StepRoutingDiagram với chế độ xem 1-bước. Bước đang xử
- * lý hiển thị dạng 'active' (kèm người dự kiến + nhánh ngoại lệ); các bước còn lại
+ * lý hiển thị dạng 'active' (kèm người dự kiến + nhánh Chi tiết); các bước còn lại
  * dạng 'reference' (viền xám). Cùng nguồn dữ liệu với nút "Xử lý" nên không lệch.
  */
 function RoutingFlow({
@@ -185,7 +196,9 @@ function fileIcon(loai: string) {
 /** Chữ cái đầu họ tên → nhãn avatar. */
 function initials(name: string): string {
   const p = name.trim().split(/\s+/);
-  return ((p[0]?.[0] ?? "") + (p.length > 1 ? p[p.length - 1][0] : "")).toUpperCase();
+  return (
+    (p[0]?.[0] ?? "") + (p.length > 1 ? p[p.length - 1][0] : "")
+  ).toUpperCase();
 }
 
 // Vai trò khởi tạo/soạn thảo — không phải bước phê duyệt, không cần resolve người.
@@ -253,7 +266,11 @@ function ApproverList({
               </div>
             )}
             {a.delegatedFrom && (
-              <Tag color="volcano" icon={<SwapOutlined />} style={{ marginTop: 2 }}>
+              <Tag
+                color="volcano"
+                icon={<SwapOutlined />}
+                style={{ marginTop: 2 }}
+              >
                 được uỷ quyền thay {a.delegatedFrom.hoTen}
               </Tag>
             )}
@@ -292,7 +309,9 @@ export default function DossierDetail() {
   } = useExceptions();
   // (D10) Action outcome đang mở TaskFormModal — thay cho boolean formOpen: nút nào
   // được bấm (APPROVE_STEP/RETURN_STEP/REJECT_STEP) quyết định outcome + formKey.
-  const [outcomeAction, setOutcomeAction] = useState<AvailableAction | null>(null);
+  const [outcomeAction, setOutcomeAction] = useState<AvailableAction | null>(
+    null,
+  );
   const [submitOpen, setSubmitOpen] = useState(false);
   const [selectedQT, setSelectedQT] = useState<string>();
   const [docTpl, setDocTpl] = useState<DocTemplate | null>(null);
@@ -405,7 +424,9 @@ export default function DossierDetail() {
   // Slice D (approval-slot-catalog-plan.md §4.D): needRole thật của bước (nếu quy
   // trình đã re-author qua Properties Panel) ưu tiên hơn suy diễn candidateGroups.
   const isCurrentApproval =
-    d.trangThai === "processing" && !!currentStep && isApprovalStep(currentStep);
+    d.trangThai === "processing" &&
+    !!currentStep &&
+    isApprovalStep(currentStep);
   const currentNeedRole = proc?.taskSteps?.find(
     (ts) => ts.ten === currentStep?.ten,
   )?.needRole;
@@ -425,25 +446,24 @@ export default function DossierDetail() {
       ? resolveGroups(currentStep!.vaiTroCodes)
       : [];
 
-  // Ngoại lệ có kiểm soát (docs/research/controlled-exception-handling.md).
+  // Chi tiết có kiểm soát (docs/research/controlled-exception-handling.md).
   const excList = forDossier(d.id);
   // Yêu cầu đang "mở" (pending hoặc approved-chờ-áp-dụng) — chặn xin yêu cầu mới.
   const activeExc = activeFor(d.id);
-  // Node ĐÍCH của ngoại lệ đang mở → tô sáng nét đứt trên BPMN. Bản thân cú "nhảy"
-  // ngoại lệ KHÔNG phải một nhánh trong BPMN (chỉ có node đích là tô được).
+  // Node ĐÍCH của Chi tiết đang mở → tô sáng nét đứt trên BPMN. Bản thân cú "nhảy"
+  // Chi tiết KHÔNG phải một nhánh trong BPMN (chỉ có node đích là tô được).
   const bpmnExceptionIds = activeExc
     ? bpmnIdsForStep(d.quyTrinh, keyOfTen(d.steps[activeExc.toStepIndex]?.ten))
     : [];
   // Số yêu cầu chưa bị từ chối theo từng loại → áp maxTimesPerDossier của policy.
-  const exceptionCountByType = excList.reduce<Partial<Record<ExceptionType, number>>>(
-    (acc, r) => {
-      if (r.status !== "rejected")
-        acc[r.exceptionType] = (acc[r.exceptionType] ?? 0) + 1;
-      return acc;
-    },
-    {},
-  );
-  // Ai được xem audit ngoại lệ của hồ sơ này (VIEW_EXCEPTION_AUDIT).
+  const exceptionCountByType = excList.reduce<
+    Partial<Record<ExceptionType, number>>
+  >((acc, r) => {
+    if (r.status !== "rejected")
+      acc[r.exceptionType] = (acc[r.exceptionType] ?? 0) + 1;
+    return acc;
+  }, {});
+  // Ai được xem audit Chi tiết của hồ sơ này (VIEW_EXCEPTION_AUDIT).
   const canSeeExceptionAudit = canViewExceptionAudit({
     currentStep,
     approverRoleCodes: exceptionApproverCodesForCap(d.cap),
@@ -467,8 +487,8 @@ export default function DossierDetail() {
     PERMISSIONS.VIEW_AUDIT,
   ];
   const availableActions = getAvailableActions({
-    surface: 'DOSSIER_DETAIL',
-    processCode: d.quyTrinh || '',
+    surface: "DOSSIER_DETAIL",
+    processCode: d.quyTrinh || "",
     dossierStatus: d.trangThai,
     taskDefinitionKey: currentStep?.taskDefinitionKey,
     userRoleCodes: roleCodes,
@@ -487,31 +507,35 @@ export default function DossierDetail() {
   const approveAction = actionByCode.get(OUTCOME_ACTION_CODES.APPROVE_STEP);
   const returnAction = actionByCode.get(OUTCOME_ACTION_CODES.RETURN_STEP);
   const rejectAction = actionByCode.get(OUTCOME_ACTION_CODES.REJECT_STEP);
-  const hasProcessingActions = !!(approveAction || returnAction || rejectAction);
+  const hasProcessingActions = !!(
+    approveAction ||
+    returnAction ||
+    rejectAction
+  );
   const enabledExceptionTypes = (
     Object.entries(EXCEPTION_ACTION_CODE) as [ExceptionType, string][]
   )
     .filter(([, code]) => actionByCode.get(code)?.enabled)
     .map(([type]) => type);
   const canOpenException = enabledExceptionTypes.length > 0;
-  // Nhánh ngoại lệ (nét đứt) cho sơ đồ — 1 nhánh / loại ngoại lệ đang được phép.
+  // Nhánh Chi tiết (nét đứt) cho sơ đồ — 1 nhánh / loại Chi tiết đang được phép.
   const exceptionBranchViews = canOpenException
     ? enabledExceptionTypes.map((t) => ({
-        label: `Ngoại lệ: ${EXCEPTION_TYPE_LABEL[t]}`,
-        targetLabel: "Chuyển thẳng tới bước sau (chọn khi xin ngoại lệ)",
+        label: `Chi tiết: ${EXCEPTION_TYPE_LABEL[t]}`,
+        targetLabel: "Chuyển thẳng tới bước sau (chọn khi xin Chi tiết)",
       }))
     : [];
   // Nhóm "Thao tác khác" (doc mục 9) — gom support actions vào menu riêng, tách khỏi
-  // nút chuẩn/ngoại lệ. Render động từ Action Registry, không hard-code từng mục.
+  // nút chuẩn/Chi tiết. Render động từ Action Registry, không hard-code từng mục.
   const supportActions = availableActions.filter((a) => a.type === "SUPPORT");
 
-  // Policy của loại ngoại lệ đang chọn trong modal → quyết định căn cứ có bắt buộc không.
+  // Policy của loại Chi tiết đang chọn trong modal → quyết định căn cứ có bắt buộc không.
   const excPolicy = resolveExceptionPolicy(EXCEPTION_POLICIES, {
     exceptionType: excType,
     cap: d.cap,
     processCode: d.quyTrinh,
     taskDefinitionKey: currentStep?.taskDefinitionKey,
-    objectType: 'DOSSIER',
+    objectType: "DOSSIER",
     objectStatus: d.trangThai,
   });
   const excEvidenceRequired = !!excPolicy?.requireEvidence;
@@ -541,26 +565,30 @@ export default function DossierDetail() {
     });
     setExcOpen(false);
     message.info(
-      `Đã gửi yêu cầu ngoại lệ cho hồ sơ ${d.id} — chờ cấp có thẩm quyền duyệt.`,
+      `Đã gửi yêu cầu Chi tiết cho hồ sơ ${d.id} — chờ cấp có thẩm quyền duyệt.`,
     );
   };
 
   const handleApproveExc = (id: string) => {
     approveException(id, user?.hoTen ?? "Người dùng");
-    message.success("Đã duyệt ngoại lệ — chờ người xử lý áp dụng vào luồng.");
+    message.success("Đã duyệt Chi tiết — chờ người xử lý áp dụng vào luồng.");
   };
 
   const handleApplyExc = (id: string) => {
     applyException(id, user?.hoTen ?? "Người dùng");
-    message.success("Đã áp dụng ngoại lệ — hồ sơ chuyển bước.");
+    message.success("Đã áp dụng Chi tiết — hồ sơ chuyển bước.");
   };
 
   const submitRejectExc = () => {
     if (!rejectingId || !rejectNote.trim()) return;
-    rejectException(rejectingId, user?.hoTen ?? "Người dùng", rejectNote.trim());
+    rejectException(
+      rejectingId,
+      user?.hoTen ?? "Người dùng",
+      rejectNote.trim(),
+    );
     setRejectingId(null);
     setRejectNote("");
-    message.info("Đã từ chối yêu cầu ngoại lệ.");
+    message.info("Đã từ chối yêu cầu Chi tiết.");
   };
 
   const submitComment = () => {
@@ -594,7 +622,7 @@ export default function DossierDetail() {
           `  ${i + 1}. [${s.trangThai}] ${s.ten} — ${s.vaiTro}${s.nguoi ? ` · ${s.nguoi}` : ""}${s.thoiDiem ? ` · ${s.thoiDiem}` : ""}${s.yKien ? ` · ý kiến: ${s.yKien}` : ""}`,
       ),
       "",
-      "YÊU CẦU NGOẠI LỆ:",
+      "YÊU CẦU Chi tiết:",
       excList.length
         ? excList
             .map(
@@ -623,8 +651,10 @@ export default function DossierDetail() {
 
   const onSupportAction = (a: AvailableAction) => {
     if (a.actionCode === SUPPORT_ACTION_CODES.ADD_COMMENT) setCommentOpen(true);
-    else if (a.actionCode === SUPPORT_ACTION_CODES.DOWNLOAD_DOSSIER) downloadDossier();
-    else if (a.actionCode === SUPPORT_ACTION_CODES.VIEW_HISTORY) setHistoryOpen(true);
+    else if (a.actionCode === SUPPORT_ACTION_CODES.DOWNLOAD_DOSSIER)
+      downloadDossier();
+    else if (a.actionCode === SUPPORT_ACTION_CODES.VIEW_HISTORY)
+      setHistoryOpen(true);
   };
 
   // Soạn hồ sơ chủ trương: chỉ áp dụng cho hồ sơ loại "Chủ trương" (RD01).
@@ -700,7 +730,7 @@ export default function DossierDetail() {
                       icon={<ExclamationCircleOutlined />}
                       onClick={openException}
                     >
-                      Yêu cầu ngoại lệ
+                      Yêu cầu Chi tiết
                     </Button>
                   </Tooltip>
                 )}
@@ -771,8 +801,8 @@ export default function DossierDetail() {
           style={{ marginBottom: 16 }}
           message={
             activeExc.status === "approved"
-              ? `Ngoại lệ đã được duyệt, chờ áp dụng: "${EXCEPTION_TYPE_LABEL[activeExc.exceptionType]}"`
-              : `Đang có yêu cầu ngoại lệ chờ duyệt: "${EXCEPTION_TYPE_LABEL[activeExc.exceptionType]}"`
+              ? `Chi tiết đã được duyệt, chờ áp dụng: "${EXCEPTION_TYPE_LABEL[activeExc.exceptionType]}"`
+              : `Đang có yêu cầu Chi tiết chờ duyệt: "${EXCEPTION_TYPE_LABEL[activeExc.exceptionType]}"`
           }
           description={`Lý do: ${activeExc.reason}`}
         />
@@ -894,7 +924,7 @@ export default function DossierDetail() {
       {excList.length > 0 && canSeeExceptionAudit && (
         <Card
           size="small"
-          title="Yêu cầu ngoại lệ"
+          title="Yêu cầu Chi tiết"
           extra={
             <Tooltip title="Duyệt và Áp dụng là 2 quyền tách biệt: người duyệt cho phép, người xử lý bước mới áp dụng vào luồng.">
               <Text type="secondary" style={{ fontSize: 12 }}>
@@ -947,7 +977,9 @@ export default function DossierDetail() {
                 <List.Item.Meta
                   title={
                     <Space wrap>
-                      <Text strong>{EXCEPTION_TYPE_LABEL[r.exceptionType]}</Text>
+                      <Text strong>
+                        {EXCEPTION_TYPE_LABEL[r.exceptionType]}
+                      </Text>
                       <StatusTag
                         color={EXCEPTION_STATUS_LABEL[r.status].color}
                         label={EXCEPTION_STATUS_LABEL[r.status].label}
@@ -957,7 +989,8 @@ export default function DossierDetail() {
                   description={
                     <>
                       <div>
-                        {d.steps[r.fromStepIndex]?.ten} → {d.steps[r.toStepIndex]?.ten}
+                        {d.steps[r.fromStepIndex]?.ten} →{" "}
+                        {d.steps[r.toStepIndex]?.ten}
                       </div>
                       <div>Lý do: {r.reason}</div>
                       {r.evidence && <div>Căn cứ: {r.evidence}</div>}
@@ -980,8 +1013,7 @@ export default function DossierDetail() {
           size="small"
           title={
             <Space>
-              <CommentOutlined />
-              Ý kiến trao đổi
+              <CommentOutlined />Ý kiến trao đổi
             </Space>
           }
           extra={
@@ -999,7 +1031,11 @@ export default function DossierDetail() {
                   avatar={
                     <Avatar
                       size="small"
-                      style={{ background: "#e6f4ff", color: "#0958d9", fontWeight: 700 }}
+                      style={{
+                        background: "#e6f4ff",
+                        color: "#0958d9",
+                        fontWeight: 700,
+                      }}
                     >
                       {initials(c.author)}
                     </Avatar>
@@ -1038,7 +1074,9 @@ export default function DossierDetail() {
                 {d.quyTrinh ? (
                   `${d.quyTrinh} · ${d.quyTrinhTen}`
                 ) : (
-                  <Text type="secondary">Chưa vào quy trình — chờ gửi duyệt</Text>
+                  <Text type="secondary">
+                    Chưa vào quy trình — chờ gửi duyệt
+                  </Text>
                 )}
               </Descriptions.Item>
               <Descriptions.Item label="Cấp xét duyệt">
@@ -1188,10 +1226,13 @@ export default function DossierDetail() {
               }
               // extra={<Tag color="processing">EPIC06</Tag>}
             >
-              <Paragraph type="secondary" style={{ fontSize: 12, marginTop: 0 }}>
-                Bước <b>{currentStep!.ten}</b> chỉ mang nhóm phê duyệt trừu tượng (
-                {currentStep!.vaiTroCodes.join(", ")}); Ma trận phê duyệt resolve ra
-                người cụ thể theo tổ chức &amp; uỷ quyền hiện hành.
+              <Paragraph
+                type="secondary"
+                style={{ fontSize: 12, marginTop: 0 }}
+              >
+                Bước <b>{currentStep!.ten}</b> chỉ mang nhóm phê duyệt trừu
+                tượng ({currentStep!.vaiTroCodes.join(", ")}); Ma trận phê duyệt
+                resolve ra người cụ thể theo tổ chức &amp; uỷ quyền hiện hành.
               </Paragraph>
               {amResult?.matchedRule && (
                 <Alert
@@ -1199,7 +1240,9 @@ export default function DossierDetail() {
                   showIcon
                   style={{ marginBottom: 8, fontSize: 12 }}
                   message={`Khớp luật: ${amResult.matchedRule.ten}`}
-                  description={<span style={{ fontSize: 12 }}>{amResult.reason}</span>}
+                  description={
+                    <span style={{ fontSize: 12 }}>{amResult.reason}</span>
+                  }
                 />
               )}
               <ApproverList approvers={currentApprovers} />
@@ -1307,17 +1350,19 @@ export default function DossierDetail() {
                 <Space direction="vertical" size={2}>
                   {bpmnActiveIds.length > 0 ? (
                     <span>
-                      Ô <b>viền đỏ</b> là các tác vụ BPMN của bước hiện tại (bước tóm
-                      tắt gộp {bpmnActiveIds.length} tác vụ: {bpmnActiveIds.join(", ")}).
+                      Ô <b>viền đỏ</b> là các tác vụ BPMN của bước hiện tại
+                      (bước tóm tắt gộp {bpmnActiveIds.length} tác vụ:{" "}
+                      {bpmnActiveIds.join(", ")}).
                     </span>
                   ) : (
                     <span>Sơ đồ BPMN đầy đủ của quy trình (chỉ đọc).</span>
                   )}
                   {bpmnExceptionIds.length > 0 && (
                     <span>
-                      Hồ sơ có <b>yêu cầu ngoại lệ</b> đang mở. Cú “nhảy” ngoại lệ{" "}
-                      <b>không</b> phải một nhánh trong BPMN, nên chỉ tô{" "}
-                      <b>viền volcano nét đứt</b> ở node ĐÍCH — không có mũi tên nối.
+                      Hồ sơ có <b>yêu cầu Chi tiết</b> đang mở. Cú “nhảy” Chi
+                      tiết <b>không</b> phải một nhánh trong BPMN, nên chỉ tô{" "}
+                      <b>viền volcano nét đứt</b> ở node ĐÍCH — không có mũi tên
+                      nối.
                     </span>
                   )}
                 </Space>
@@ -1379,7 +1424,7 @@ export default function DossierDetail() {
         title={
           <Space>
             <ExclamationCircleOutlined style={{ color: "#cf1322" }} />
-            Yêu cầu xử lý ngoại lệ
+            Yêu cầu xử lý Chi tiết
           </Space>
         }
         okText="Gửi yêu cầu"
@@ -1392,10 +1437,10 @@ export default function DossierDetail() {
           type="warning"
           showIcon
           style={{ marginBottom: 12 }}
-          message="Đây là ngoại lệ, không phải luồng chuẩn."
+          message="Đây là Chi tiết, không phải luồng chuẩn."
           description="Yêu cầu sẽ được ghi vào lịch sử hồ sơ và phải được cấp có thẩm quyền duyệt riêng trước khi áp dụng."
         />
-        <Paragraph>Loại ngoại lệ</Paragraph>
+        <Paragraph>Loại Chi tiết</Paragraph>
         <Select<ExceptionType>
           style={{ width: "100%", marginBottom: 12 }}
           value={excType}
@@ -1417,19 +1462,21 @@ export default function DossierDetail() {
           rows={3}
           value={excReason}
           onChange={(e) => setExcReason(e.target.value)}
-          placeholder="Nêu rõ căn cứ/lý do xin ngoại lệ..."
+          placeholder="Nêu rõ căn cứ/lý do xin Chi tiết..."
           style={{ marginBottom: 12 }}
         />
         <Paragraph>
           Căn cứ đính kèm{" "}
           {excEvidenceRequired ? (
-            <Text type="danger">(bắt buộc với loại ngoại lệ này)</Text>
+            <Text type="danger">(bắt buộc với loại Chi tiết này)</Text>
           ) : (
             "(không bắt buộc)"
           )}
         </Paragraph>
         <Input
-          status={excEvidenceRequired && !excEvidence.trim() ? "error" : undefined}
+          status={
+            excEvidenceRequired && !excEvidence.trim() ? "error" : undefined
+          }
           value={excEvidence}
           onChange={(e) => setExcEvidence(e.target.value)}
           placeholder="Vd: Kết luận trực tiếp của TGĐ ngày..."
@@ -1438,7 +1485,7 @@ export default function DossierDetail() {
 
       <Modal
         open={!!rejectingId}
-        title="Từ chối yêu cầu ngoại lệ"
+        title="Từ chối yêu cầu Chi tiết"
         okText="Từ chối"
         cancelText="Hủy"
         okButtonProps={{ danger: true, disabled: !rejectNote.trim() }}
@@ -1471,7 +1518,8 @@ export default function DossierDetail() {
         onCancel={() => setCommentOpen(false)}
       >
         <Paragraph type="secondary" style={{ marginTop: 0 }}>
-          Ý kiến trao đổi được ghi vào hồ sơ, không làm thay đổi luồng phê duyệt.
+          Ý kiến trao đổi được ghi vào hồ sơ, không làm thay đổi luồng phê
+          duyệt.
         </Paragraph>
         <Input.TextArea
           rows={4}
@@ -1519,7 +1567,9 @@ export default function DossierDetail() {
                         {s.thoiDiem ? ` · ${s.thoiDiem}` : ""}
                       </Text>
                     </div>
-                    {s.yKien && <div style={{ fontSize: 13 }}>💬 {s.yKien}</div>}
+                    {s.yKien && (
+                      <div style={{ fontSize: 13 }}>💬 {s.yKien}</div>
+                    )}
                   </div>
                 ),
               };
@@ -1530,7 +1580,7 @@ export default function DossierDetail() {
               children: (
                 <div>
                   <Text strong>
-                    Ngoại lệ · {EXCEPTION_TYPE_LABEL[r.exceptionType]}
+                    Chi tiết · {EXCEPTION_TYPE_LABEL[r.exceptionType]}
                   </Text>{" "}
                   <StatusTag
                     color={EXCEPTION_STATUS_LABEL[r.status].color}
@@ -1538,8 +1588,9 @@ export default function DossierDetail() {
                   />
                   <div>
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      {d.steps[r.fromStepIndex]?.ten} → {d.steps[r.toStepIndex]?.ten} ·{" "}
-                      {r.requestedBy} · {r.requestedAt}
+                      {d.steps[r.fromStepIndex]?.ten} →{" "}
+                      {d.steps[r.toStepIndex]?.ten} · {r.requestedBy} ·{" "}
+                      {r.requestedAt}
                     </Text>
                   </div>
                   <div style={{ fontSize: 13 }}>Lý do: {r.reason}</div>
@@ -1581,7 +1632,10 @@ export default function DossierDetail() {
       >
         <Paragraph>
           Chọn quy trình mà hồ sơ <Text code>{d.id}</Text> (loại{" "}
-          <Tag color="blue" style={{ marginRight: 0 }}>{d.loai}</Tag>) sẽ đi vào:
+          <Tag color="blue" style={{ marginRight: 0 }}>
+            {d.loai}
+          </Tag>
+          ) sẽ đi vào:
         </Paragraph>
         {quyTrinhOptions.length ? (
           <>

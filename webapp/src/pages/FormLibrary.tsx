@@ -1,11 +1,10 @@
-import { lazy, Suspense, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   App,
   Button,
   Card,
   Col,
-  Drawer,
-  Empty,
   Form,
   Input,
   Modal,
@@ -13,7 +12,6 @@ import {
   Row,
   Select,
   Space,
-  Spin,
   Tag,
   Tooltip,
   Typography,
@@ -25,20 +23,17 @@ import {
   EyeOutlined,
   FormOutlined,
   PlusOutlined,
-  SaveOutlined,
 } from '@ant-design/icons'
 import { countFields, type FormMeta } from '../forms'
 import { useForms } from '../store/FormContext'
 import { useProcesses } from '../store/ProcessContext'
 import FormRenderer from '../components/FormRenderer'
-import { type FormDesignerHandle } from '../components/FormDesigner'
 import { PageHeader, StatCard, EntityTable, LIST_SCROLL_Y } from '../components/ui'
 import HelpButton from '../components/HelpButton'
 
-// Trình thiết kế form-js khá nặng → chỉ nạp khi mở drawer (tách chunk riêng).
-const FormDesigner = lazy(() => import('../components/FormDesigner'))
+const { Text } = Typography
 
-const { Text, Paragraph } = Typography
+const ROUTE_BASE = '/phan-he/PH3/bieu-mau'
 
 function slugify(s: string): string {
   return s
@@ -51,15 +46,14 @@ function slugify(s: string): string {
 }
 
 export default function FormLibrary() {
-  const { message, modal } = App.useApp()
-  const { list, addForm, updateSchema, removeForm } = useForms()
+  const navigate = useNavigate()
+  const { message } = App.useApp()
+  const { list, addForm, removeForm } = useForms()
   const { list: processes } = useProcesses()
 
   const [preview, setPreview] = useState<FormMeta | null>(null)
-  const [editing, setEditing] = useState<FormMeta | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
   const [createForm] = Form.useForm()
-  const designerRef = useRef<FormDesignerHandle>(null)
 
   // Đếm số User Task đang tham chiếu mỗi biểu mẫu (trên toàn bộ quy trình).
   const usage = useMemo(() => {
@@ -83,38 +77,9 @@ export default function FormLibrary() {
       message.success(`Đã tạo biểu mẫu "${v.ten}".`)
       setCreateOpen(false)
       createForm.resetFields()
-      // "Tạo & mở designer" đúng nghĩa: mở luôn drawer thiết kế cho form vừa tạo.
-      setEditing(created)
+      // "Tạo & mở designer" đúng nghĩa: chuyển thẳng sang trang thiết kế cho form vừa tạo.
+      navigate(`${ROUTE_BASE}/${encodeURIComponent(created.key)}/thiet-ke`)
     })
-  }
-
-  function saveDesign() {
-    if (!editing) return
-    const schema = designerRef.current?.getSchema()
-    if (!schema) {
-      message.error('Không lấy được schema từ designer.')
-      return
-    }
-    updateSchema(editing.key, schema)
-    designerRef.current?.markSaved()
-    message.success(`Đã lưu thiết kế biểu mẫu "${editing.ten}".`)
-    setEditing(null)
-  }
-
-  /** Đóng drawer thiết kế — còn thay đổi chưa lưu thì hỏi trước. */
-  function closeDesigner() {
-    if (designerRef.current?.isDirty()) {
-      modal.confirm({
-        title: 'Thoát khi chưa lưu?',
-        content: 'Thay đổi thiết kế chưa lưu sẽ bị mất.',
-        okText: 'Thoát',
-        okButtonProps: { danger: true },
-        cancelText: 'Ở lại',
-        onOk: () => setEditing(null),
-      })
-      return
-    }
-    setEditing(null)
   }
 
   const columns: ColumnsType<FormMeta> = [
@@ -164,7 +129,13 @@ export default function FormLibrary() {
               <Button size="small" icon={<EyeOutlined />} onClick={() => setPreview(r)} />
             </Tooltip>
             <Tooltip title="Thiết kế trường (designer)">
-              <Button size="small" icon={<EditOutlined />} onClick={() => setEditing(r)}>Thiết kế</Button>
+              <Button
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => navigate(`${ROUTE_BASE}/${encodeURIComponent(r.key)}/thiet-ke`)}
+              >
+                Thiết kế
+              </Button>
             </Tooltip>
             <Popconfirm
               title="Xoá biểu mẫu?"
@@ -259,46 +230,6 @@ export default function FormLibrary() {
       >
         {preview && <FormRenderer schema={preview.schema} />}
       </Modal>
-
-      {/* Designer (form-js FormEditor) */}
-      <Drawer
-        open={!!editing}
-        title={
-          <Space>
-            <span>Thiết kế biểu mẫu — {editing?.ten}</span>
-            {editing && <Text code>{editing.key}</Text>}
-          </Space>
-        }
-        width="calc(100vw - var(--vht-sider-w, 230px) - 16px)"
-        rootStyle={{ zIndex: 90 }}
-        destroyOnClose
-        onClose={closeDesigner}
-        // Full-height: body flex column, hint cố định trên, designer chiếm phần còn lại.
-        styles={{ body: { padding: 0, display: 'flex', flexDirection: 'column' } }}
-        extra={
-          <Space>
-            <Button onClick={closeDesigner}>Huỷ</Button>
-            <Button type="primary" icon={<SaveOutlined />} onClick={saveDesign}>Lưu thiết kế</Button>
-          </Space>
-        }
-      >
-        {editing ? (
-          <>
-            <Paragraph type="secondary" style={{ flex: '0 0 auto', margin: 0, padding: '8px 16px 0' }}>
-              Kéo–thả các trường từ dock <Text strong>Thành phần</Text> (trái), chỉnh thuộc tính ở dock phải,
-              bật <Text strong>Xem trước</Text> để thấy form render trực tiếp. Đặt <Text code>key</Text> ={' '}
-              <Text code>ketLuan</Text> cho trường kết luận để hệ thống tự nhận Đồng ý/Đạt/Thông qua/Phê duyệt.
-            </Paragraph>
-            <div style={{ flex: 1, minHeight: 0, padding: '8px 16px 16px' }}>
-              <Suspense fallback={<div style={{ padding: 48, textAlign: 'center' }}><Spin tip="Đang tải trình thiết kế..." /></div>}>
-                <FormDesigner ref={designerRef} schema={editing.schema} />
-              </Suspense>
-            </div>
-          </>
-        ) : (
-          <Empty />
-        )}
-      </Drawer>
     </div>
   )
 }

@@ -36,6 +36,7 @@ export default function ProcessCreate() {
   const [form] = Form.useForm()
   const editorRef = useRef<BpmnEditorHandle>(null)
   const [saving, setSaving] = useState(false)
+  const routeBase = '/quy-trinh'
 
   async function handleSave() {
     let values: { ma: string; ten: string; nhom: string; moTa?: string }
@@ -71,7 +72,7 @@ export default function ProcessCreate() {
         return
       }
       message.success(`Đã tạo quy trình ${ma} kèm sơ đồ BPMN.`)
-      navigate(`/quy-trinh/${encodeURIComponent(ma)}`)
+      navigate(`${routeBase}/${encodeURIComponent(ma)}`)
     } finally {
       setSaving(false)
     }
@@ -96,11 +97,11 @@ export default function ProcessCreate() {
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 112px)' }}>
       <PageHeader
         breadcrumb={[
-          { label: 'Quản lý quy trình', to: '/quy-trinh' },
-          { label: 'Danh mục quy trình', to: '/quy-trinh' },
+          { label: 'Quản lý quy trình', to: routeBase },
+          { label: 'Danh mục quy trình', to: routeBase },
           { label: 'Tạo mới' },
         ]}
-        onBack={() => navigate('/quy-trinh')}
+        onBack={() => navigate(routeBase)}
         icon={<PartitionOutlined style={{ fontSize: 24, color: '#ee0033' }} />}
         title="Tạo mới quy trình"
         extra={

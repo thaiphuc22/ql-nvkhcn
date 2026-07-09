@@ -72,6 +72,7 @@ export default function RuleList() {
   const [fKind, setFKind] = useState<RuleKind>()
   const [creating, setCreating] = useState(false)
   const [form] = Form.useForm<CreateForm>()
+  const routeBase = '/quan-ly-luat'
 
   const filtered = useMemo(() => {
     const kw = q.trim().toLowerCase()
@@ -100,7 +101,7 @@ export default function RuleList() {
     setCreating(false)
     form.resetFields()
     message.success('Đã tạo luật (bản nháp). Soạn nội dung ở màn chi tiết.')
-    navigate(`/quan-ly-luat/${id}`)
+    navigate(`${routeBase}/${id}`)
   }
 
   return (
@@ -178,7 +179,7 @@ export default function RuleList() {
       <EntityTable<BusinessRule>
         rowKey="id"
         dataSource={filtered}
-        onRowClick={(r) => navigate(`/quan-ly-luat/${r.id}`)}
+        onRowClick={(r) => navigate(`${routeBase}/${r.id}`)}
         scroll={{ y: LIST_SCROLL_Y }}
         columns={[
           {
@@ -253,7 +254,7 @@ export default function RuleList() {
                     onClick={() => {
                       const id = duplicate(r.id, actor)
                       message.success('Đã nhân bản thành bản nháp.')
-                      navigate(`/quan-ly-luat/${id}`)
+                      navigate(`${routeBase}/${id}`)
                     }}
                   />
                 </Tooltip>

@@ -35,6 +35,7 @@ export default function ProcessCatalog() {
   const navigate = useNavigate()
   const { list, addProcess } = useProcesses()
   const { canManageSystem } = usePermissions()
+  const routeBase = '/quy-trinh'
 
   const [q, setQ] = useState('')
   const [fNhom, setFNhom] = useState<string>()
@@ -131,7 +132,7 @@ export default function ProcessCatalog() {
                 type="primary"
                 icon={<PlusOutlined />}
                 disabled={!canManageSystem}
-                onClick={() => navigate('/quy-trinh/moi')}
+                onClick={() => navigate(`${routeBase}/moi`)}
               >
                 Tạo & vẽ BPMN
               </Button>
@@ -163,7 +164,7 @@ export default function ProcessCatalog() {
         rowKey="ma"
         columns={columns}
         dataSource={rows}
-        onRowClick={(record) => navigate(`/quy-trinh/${encodeURIComponent(record.ma)}`)}
+        onRowClick={(record) => navigate(`${routeBase}/${encodeURIComponent(record.ma)}`)}
         emptyText="Không có quy trình khớp bộ lọc."
         scroll={{ y: LIST_SCROLL_Y }}
       />

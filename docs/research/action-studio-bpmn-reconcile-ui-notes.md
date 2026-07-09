@@ -156,7 +156,7 @@ Truyền callback `onOpenReconcile` vào `AvailabilityTab`. Khi bấm `Xem đố
 Thêm tag/cột nhỏ trong bảng policy:
 
 - `BPMN scaffold`: id bắt đầu bằng `AP-BPMN-`.
-- `Luật ngoại lệ`: id bắt đầu bằng `AP-EX-`.
+- `Luật Chi tiết`: id bắt đầu bằng `AP-EX-`.
 - `Luật chung`: thiếu `processCode` hoặc thiếu `taskDefinitionKey`.
 - `Ghim theo bước`: có đủ `processCode` và `taskDefinitionKey`.
 

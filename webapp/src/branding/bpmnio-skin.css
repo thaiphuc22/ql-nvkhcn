@@ -56,7 +56,9 @@
 }
 .vht-designer .fjs-palette-field {
   border-radius: var(--vht-radius-sm);
-  transition: border-color 0.12s, background 0.12s;
+  transition:
+    border-color 0.12s,
+    background 0.12s;
 }
 .vht-designer .fjs-palette-field:hover {
   border-color: var(--vht-red);
@@ -102,12 +104,12 @@
   border-color: var(--vht-red);
   outline-color: var(--vht-red);
 }
-.vht-form .fjs-button[type='submit'],
+.vht-form .fjs-button[type="submit"],
 .vht-form .fjs-button.fjs-button-primary {
   background: var(--vht-red);
   border-color: var(--vht-red);
 }
-.vht-form .fjs-button[type='submit']:hover {
+.vht-form .fjs-button[type="submit"]:hover {
   background: var(--vht-red-dark);
   border-color: var(--vht-red-dark);
 }
@@ -148,7 +150,7 @@
   stroke-width: 3px !important;
   fill: var(--vht-red-050, rgba(207, 19, 34, 0.06)) !important;
 }
-/* Node ĐÍCH của một ngoại lệ đang chờ/áp dụng: viền volcano nét đứt (ngoài luồng chuẩn). */
+/* Node ĐÍCH của một Chi tiết đang chờ/áp dụng: viền volcano nét đứt (ngoài luồng chuẩn). */
 .vht-diagram .djs-element.vht-step-exception .djs-visual > :nth-child(1) {
   stroke: #d4380d !important;
   stroke-width: 3px !important;
@@ -208,7 +210,7 @@
   --input-error-background-color: var(--vht-red-050);
   --input-error-border-color: var(--vht-danger);
   --input-error-focus-border-color: var(--vht-danger);
-  --dot-color: var(--vht-red);            /* chỉ báo "đã chỉnh" */
+  --dot-color: var(--vht-red); /* chỉ báo "đã chỉnh" */
   --dot-color-error: var(--vht-danger);
   --group-background-color: var(--vht-surface);
   --sticky-group-background-color: var(--vht-surface);
@@ -327,7 +329,9 @@
   font-size: 14px;
   color: var(--vht-ink);
   background: var(--vht-surface);
-  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
 }
 .vht-fd-canvas .fjs-input {
   min-height: 32px;
@@ -370,8 +374,8 @@
 /* Checkbox/radio theo màu brand */
 .vht-fd-canvas .fjs-checkbox,
 .vht-fd-canvas .fjs-radio,
-.vht-fd-canvas input[type='checkbox'],
-.vht-fd-canvas input[type='radio'] {
+.vht-fd-canvas input[type="checkbox"],
+.vht-fd-canvas input[type="radio"] {
   accent-color: var(--vht-red);
 }
 
@@ -386,7 +390,9 @@
   border-radius: var(--vht-radius-sm);
   background: var(--vht-surface);
   overflow: hidden;
-  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
 }
 .vht-fd-canvas .fjs-form-field-number .fjs-vertical-group:hover {
   border-color: var(--vht-red);
@@ -415,7 +421,9 @@
 .vht-fd-canvas .fjs-number-arrow-container button {
   color: var(--vht-ink-2);
   background: transparent;
-  transition: background 0.12s ease, color 0.12s ease;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
 }
 .vht-fd-canvas .fjs-number-arrow-container button:hover {
   background: var(--vht-red-050);
@@ -435,7 +443,9 @@
   border-radius: var(--vht-radius-sm);
   background: var(--vht-surface);
   min-height: 34px;
-  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
 }
 .vht-fd-canvas .fjs-form-field-select .fjs-input-group:hover {
   border-color: var(--vht-red);
@@ -541,7 +551,10 @@
   font-size: 13px;
   text-align: left;
   cursor: grab;
-  transition: border-color 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;
+  transition:
+    border-color 0.12s ease,
+    background 0.12s ease,
+    box-shadow 0.12s ease;
 }
 .vht-fp-item:hover {
   border-color: var(--vht-red);
@@ -627,13 +640,13 @@
 
 /* ── Tô màu element: icon context-pad + swatch trong popup (Đợt 5) ──────────── */
 .vht-diagram .djs-context-pad .entry.khcn-color-icon::before {
-  content: '🎨';
+  content: "🎨";
   font-size: 14px;
   line-height: 20px;
 }
 .vht-diagram .djs-popup .entry .khcn-color-swatch::before,
 .vht-diagram .djs-popup .khcn-color-swatch::before {
-  content: '';
+  content: "";
   display: inline-block;
   width: 12px;
   height: 12px;
@@ -643,17 +656,38 @@
   vertical-align: -1px;
   background: #fff;
 }
-.vht-diagram .djs-popup .khcn-color-swatch-green::before { background: #c5d9c3; border-color: #7dcea0; }
-.vht-diagram .djs-popup .khcn-color-swatch-orange::before { background: #fae5d3; border-color: #e67e22; }
-.vht-diagram .djs-popup .khcn-color-swatch-blue::before { background: #d6eaf8; border-color: #3498db; }
-.vht-diagram .djs-popup .khcn-color-swatch-yellow::before { background: #fcf3cf; border-color: #f1c40f; }
-.vht-diagram .djs-popup .khcn-color-swatch-red::before { background: #fdecea; border-color: #e74c3c; }
-.vht-diagram .djs-popup .khcn-color-swatch-grey::before { background: #eceff1; border-color: #90a4ae; }
+.vht-diagram .djs-popup .khcn-color-swatch-green::before {
+  background: #c5d9c3;
+  border-color: #7dcea0;
+}
+.vht-diagram .djs-popup .khcn-color-swatch-orange::before {
+  background: #fae5d3;
+  border-color: #e67e22;
+}
+.vht-diagram .djs-popup .khcn-color-swatch-blue::before {
+  background: #d6eaf8;
+  border-color: #3498db;
+}
+.vht-diagram .djs-popup .khcn-color-swatch-yellow::before {
+  background: #fcf3cf;
+  border-color: #f1c40f;
+}
+.vht-diagram .djs-popup .khcn-color-swatch-red::before {
+  background: #fdecea;
+  border-color: #e74c3c;
+}
+.vht-diagram .djs-popup .khcn-color-swatch-grey::before {
+  background: #eceff1;
+  border-color: #90a4ae;
+}
 
 /* Make Ant Design dark sider menu selected item follow brand red */
 .ant-layout-sider .ant-menu-dark .ant-menu-item-selected,
 .ant-layout-sider .ant-menu-dark .ant-menu-item-active,
-.ant-layout-sider .ant-menu-dark .ant-menu-submenu-selected > .ant-menu-submenu-title {
+.ant-layout-sider
+  .ant-menu-dark
+  .ant-menu-submenu-selected
+  > .ant-menu-submenu-title {
   background: var(--vht-red) !important;
   color: #ffffff !important;
 }
@@ -669,10 +703,18 @@
 /* Specifically target inline (nested) submenu items when selected */
 .ant-layout-sider .ant-menu-dark .ant-menu-inline .ant-menu-item-selected,
 .ant-layout-sider .ant-menu-dark .ant-menu-inline .ant-menu-item-selected > a,
-.ant-layout-sider .ant-menu-dark .ant-menu-inline .ant-menu-item-selected .ant-menu-title-content {
+.ant-layout-sider
+  .ant-menu-dark
+  .ant-menu-inline
+  .ant-menu-item-selected
+  .ant-menu-title-content {
   background: var(--vht-red) !important;
   color: #ffffff !important;
 }
-.ant-layout-sider .ant-menu-dark .ant-menu-inline .ant-menu-item-selected .anticon {
+.ant-layout-sider
+  .ant-menu-dark
+  .ant-menu-inline
+  .ant-menu-item-selected
+  .anticon {
   color: #ffffff !important;
 }

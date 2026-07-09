@@ -147,7 +147,7 @@ const TAB_FLOW = [
   },
   {
     key: "exception",
-    title: "4. Kiểm soát xử lý ngoại lệ",
+    title: "4. Kiểm soát xử lý Chi tiết",
     description:
       "Quy định trường hợp nào được xin đi khác luồng chuẩn, ai duyệt, có cần căn cứ hay không.",
   },
@@ -227,8 +227,8 @@ function FlowOverviewTab() {
               <Alert
                 type="warning"
                 showIcon
-                message="Ngoại lệ"
-                description="Nơi cấu hình các luồng hành động ngoại lệ, đi khác luồng chuẩn. Nút xin ngoại lệ hiện ở đâu, ai duyệt, có cần căn cứ hay không."
+                message="Chi tiết"
+                description="Nơi cấu hình các luồng hành động Chi tiết, đi khác luồng chuẩn. Nút xin Chi tiết hiện ở đâu, ai duyệt, có cần căn cứ hay không."
               />
               <Alert
                 type="info"
@@ -253,17 +253,17 @@ const TYPE_META: Record<
   { label: string; color: string; hint: string }
 > = {
   STANDARD: {
-    label: "Chuẩn (Standard)",
+    label: "Chuẩn",
     color: "blue",
     hint: "Đi theo BPMN — Camunda Active User Task + Permission",
   },
   SUPPORT: {
-    label: "Hỗ trợ (Support)",
+    label: "Hỗ trợ",
     color: "default",
     hint: "Không đổi luồng chính — Permission + Dossier Status + Document Policy",
   },
   EXCEPTION: {
-    label: "Ngoại lệ (Exception)",
+    label: "Chi tiết",
     color: "volcano",
     hint: "Đổi đường đi chuẩn — Exception Policy + duyệt riêng",
   },
@@ -345,7 +345,7 @@ function exceptionTargetText(
     return targetStatus
       ? `Đổi trạng thái: ${DOSSIER_STATUS_LABEL[targetStatus]}`
       : "Chưa chọn trạng thái đích";
-  if (targetType === "COMPLETE") return "Kết thúc xử lý ngoại lệ";
+  if (targetType === "COMPLETE") return "Kết thúc xử lý Chi tiết";
   return targetTaskKey
     ? `Chuyển tới: ${stepLabel(processCode, targetTaskKey)}`
     : "Chưa chọn bước đích";
@@ -359,7 +359,7 @@ function validateExceptionPolicyDraft(v: Partial<ExceptionFormValues>) {
   const targetIndex = stepIndexForProcess(v.processCode, v.targetTaskKey);
 
   if (v.enabled && approverCodes.length === 0) {
-    errors.push("Luật đang bật phải có ít nhất một vai trò duyệt ngoại lệ.");
+    errors.push("Luật đang bật phải có ít nhất một vai trò duyệt Chi tiết.");
   }
 
   if (v.targetType === "STEP") {
@@ -390,7 +390,7 @@ function validateExceptionPolicyDraft(v: Partial<ExceptionFormValues>) {
     v.targetTaskKey &&
     v.sourceTaskKey === v.targetTaskKey
   ) {
-    errors.push("Bước đích không được trùng với bước phát sinh ngoại lệ.");
+    errors.push("Bước đích không được trùng với bước phát sinh Chi tiết.");
   }
 
   if (
@@ -481,7 +481,7 @@ function RoutingPreviewCard({
             <Alert
               type="warning"
               showIcon
-              message="Đích đến khi ngoại lệ được duyệt"
+              message="Đích đến khi Chi tiết được duyệt"
               description={exceptionLabel}
             />
           )}
@@ -495,7 +495,7 @@ function RoutingPreviewCard({
               exceptionLabel
                 ? [
                     {
-                      label: "Ngoại lệ được duyệt",
+                      label: "Chi tiết được duyệt",
                       targetLabel: exceptionLabel,
                     },
                   ]
@@ -607,7 +607,7 @@ function PolicySummaryCard({
   const actionLabel = values.actionCode
     ? (ACTION_PRESENTATIONS.find((p) => p.actionCode === values.actionCode)
         ?.displayLabel ?? values.actionCode)
-    : "nút xin ngoại lệ";
+    : "nút xin Chi tiết";
   const sourceLabel =
     stepLabel(values.processCode, values.sourceTaskKey) ?? "bước chưa chọn";
   const targetLabel = exceptionTargetText(
@@ -684,7 +684,9 @@ function PolicySummaryCard({
 
 function boolTag(v: boolean | undefined, yes = "Có", no = "—") {
   return v ? (
-    <Text type="success" strong>{yes}</Text>
+    <Text type="success" strong>
+      {yes}
+    </Text>
   ) : (
     <Text type="secondary">{no}</Text>
   );
@@ -901,7 +903,7 @@ function RegistryTab({
       dataIndex: ["def", "active"],
       width: 96,
       render: (v: boolean) =>
-        v ? <Tag color="green">active</Tag> : <Tag>off</Tag>,
+        v ? <Tag color="green">Bật</Tag> : <Tag>Tắt</Tag>,
     },
     {
       title: "",
@@ -993,7 +995,11 @@ function RegistryTab({
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="tone" label="Tone" rules={[{ required: true }]}>
+              <Form.Item
+                name="tone"
+                label="Sắc thái"
+                rules={[{ required: true }]}
+              >
                 <Select
                   options={(Object.keys(ACTION_TONE_LABEL) as ActionTone[]).map(
                     (t) => ({
@@ -1009,7 +1015,7 @@ function RegistryTab({
             <Col span={12}>
               <Form.Item
                 name="icon"
-                label="Icon key"
+                label="Mã biểu tượng"
                 rules={[{ required: true, whitespace: true }]}
               >
                 <Input placeholder="send, form, comment..." />
@@ -1321,7 +1327,7 @@ function AvailabilityTab({
       render: (n: number) => <Tag>{n}</Tag>,
     },
     {
-      title: "Action",
+      title: "Hành động",
       key: "action",
       width: 200,
       render: (_: unknown, p: ActionAvailabilityPolicy) => {
@@ -1347,31 +1353,31 @@ function AvailabilityTab({
       render: (_: unknown, p: ActionAvailabilityPolicy) => (
         <Space size={4} wrap>
           <Tag color={p.surface ? "blue" : undefined}>
-            Surface: {p.surface ? ACTION_SURFACE_LABEL[p.surface] : "mọi"}
+            {p.surface ? ACTION_SURFACE_LABEL[p.surface] : "Mọi màn hình"}
           </Tag>
           <Tag color={p.processCode ? "geekblue" : undefined}>
-            QT: {p.processCode ?? "mọi"}
+            {p.processCode ?? "Mọi quy trình"}
           </Tag>
           <Tag color={p.dossierStatus ? "purple" : undefined}>
-            TT:{" "}
-            {p.dossierStatus ? DOSSIER_STATUS_LABEL[p.dossierStatus] : "mọi"}
+            {p.dossierStatus
+              ? DOSSIER_STATUS_LABEL[p.dossierStatus]
+              : "Mọi trạng thái"}
           </Tag>
           {p.allowedRoleCodes.length ? (
             p.allowedRoleCodes.map((c) => (
               <Tag key={c} color="green">
-                {c}
+                {roleLabel(c)}
               </Tag>
             ))
           ) : (
-            <Tag>vai trò: mọi</Tag>
-          )}
-          {p.conditionExpression && (
-            <Tag color="gold">{p.conditionExpression}</Tag>
+            <Tag>Mọi vai trò</Tag>
           )}
           {p.formKey ? (
             <Tag color="cyan">Biểu mẫu: {formTen(p.formKey)}</Tag>
           ) : (
-            <Tag>không form</Tag>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              Không biểu mẫu
+            </Text>
           )}
         </Space>
       ),
@@ -1442,8 +1448,8 @@ function AvailabilityTab({
         message="Admin cấu hình “action nào được hiển thị, ở đâu, cho ai” — không sửa & deploy lại BPMN"
         description={
           <span>
-            Bảng này chi phối nút nào được hiển thị ở quy trình/bước/vai trò nào. Với action ngoại lệ,
-            luật này là phần <b>nút xin ngoại lệ hiện ở đâu</b>; tab Luật ngoại lệ quyết định ai duyệt và sau khi duyệt đi đâu.          </span>
+            Bảng này chi phối nút nào được hiển thị ở quy trình/bước/vai trò nào. Với action Chi tiết,
+            luật này là phần <b>nút xin Chi tiết hiện ở đâu</b>; tab Luật Chi tiết quyết định ai duyệt và sau khi duyệt đi đâu.          </span>
         }
       /> */}
       <Alert
@@ -1532,12 +1538,12 @@ function AvailabilityTab({
             <Form form={form} layout="vertical" preserve={false}>
               <Form.Item
                 name="actionCode"
-                label="Action (từ Registry)"
+                label="Hành động"
                 rules={[{ required: true }]}
               >
                 <Select options={actionOptions} />
               </Form.Item>
-              <Form.Item name="surface" label="Business surface">
+              <Form.Item name="surface" label="Màn hình hiển thị">
                 <Select
                   allowClear
                   placeholder="Mọi surface"
@@ -1715,17 +1721,28 @@ function AvailabilityTab({
       </Modal>
 
       <Drawer
-        title={<Space><HistoryOutlined />Lịch sử Luật hiển thị nút</Space>}
+        title={
+          <Space>
+            <HistoryOutlined />
+            Lịch sử Luật hiển thị nút
+          </Space>
+        }
         open={!!historyPolicyId}
         onClose={() => setHistoryPolicyId(null)}
         width={720}
       >
         {historyPolicyId && (
-          <Space direction="vertical" size={24} style={{ width: '100%' }}>
+          <Space direction="vertical" size={24} style={{ width: "100%" }}>
             <div>
-              <Text strong style={{ fontSize: 14 }}>Lịch sử Phiên bản</Text>
+              <Text strong style={{ fontSize: 14 }}>
+                Lịch sử Phiên bản
+              </Text>
               {histVersions.length === 0 ? (
-                <Empty description="Chưa có lịch sử phiên bản." image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ marginTop: 12 }} />
+                <Empty
+                  description="Chưa có lịch sử phiên bản."
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  style={{ marginTop: 12 }}
+                />
               ) : (
                 <Table
                   dataSource={histVersions}
@@ -1734,18 +1751,46 @@ function AvailabilityTab({
                   pagination={false}
                   style={{ marginTop: 8 }}
                   columns={[
-                    { title: 'Phiên bản', dataIndex: 'version', width: 80, render: (v: number) => <Tag>v{v}</Tag> },
-                    { title: 'Ngày', dataIndex: 'capNhat', width: 90, render: (d: string) => <Text type="secondary" style={{ fontSize: 12 }}>{d}</Text> },
-                    { title: 'Người cập nhật', dataIndex: 'nguoiCapNhat', width: 140 },
-                    { title: 'Ghi chú', dataIndex: 'changeNote', ellipsis: true },
+                    {
+                      title: "Phiên bản",
+                      dataIndex: "version",
+                      width: 80,
+                      render: (v: number) => <Tag>v{v}</Tag>,
+                    },
+                    {
+                      title: "Ngày",
+                      dataIndex: "capNhat",
+                      width: 90,
+                      render: (d: string) => (
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          {d}
+                        </Text>
+                      ),
+                    },
+                    {
+                      title: "Người cập nhật",
+                      dataIndex: "nguoiCapNhat",
+                      width: 140,
+                    },
+                    {
+                      title: "Ghi chú",
+                      dataIndex: "changeNote",
+                      ellipsis: true,
+                    },
                   ]}
                 />
               )}
             </div>
             <div>
-              <Text strong style={{ fontSize: 14 }}>Nhật ký Thay đổi</Text>
+              <Text strong style={{ fontSize: 14 }}>
+                Nhật ký Thay đổi
+              </Text>
               {histAudit.length === 0 ? (
-                <Empty description="Chưa có nhật ký thay đổi." image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ marginTop: 12 }} />
+                <Empty
+                  description="Chưa có nhật ký thay đổi."
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  style={{ marginTop: 12 }}
+                />
               ) : (
                 <Table
                   dataSource={histAudit}
@@ -1754,11 +1799,38 @@ function AvailabilityTab({
                   pagination={histAudit.length > 10 ? { pageSize: 10 } : false}
                   style={{ marginTop: 8 }}
                   columns={[
-                    { title: 'Thời gian', dataIndex: 'timestamp', width: 150, render: (t: string) => <Text type="secondary" style={{ fontSize: 12 }}>{t}</Text> },
-                    { title: 'Hành động', dataIndex: 'action', width: 110, render: (a: AvailAuditAction) => <Tag color={AVAIL_AUDIT_ACTION_COLOR[a]}>{AVAIL_AUDIT_ACTION_LABEL[a]}</Tag> },
-                    { title: 'Phiên bản', dataIndex: 'version', width: 70, render: (v: number) => <Tag>v{v}</Tag> },
-                    { title: 'Người thực hiện', dataIndex: 'actor', width: 130 },
-                    { title: 'Chi tiết', dataIndex: 'detail', ellipsis: true },
+                    {
+                      title: "Thời gian",
+                      dataIndex: "timestamp",
+                      width: 150,
+                      render: (t: string) => (
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          {t}
+                        </Text>
+                      ),
+                    },
+                    {
+                      title: "Hành động",
+                      dataIndex: "action",
+                      width: 110,
+                      render: (a: AvailAuditAction) => (
+                        <Tag color={AVAIL_AUDIT_ACTION_COLOR[a]}>
+                          {AVAIL_AUDIT_ACTION_LABEL[a]}
+                        </Tag>
+                      ),
+                    },
+                    {
+                      title: "Phiên bản",
+                      dataIndex: "version",
+                      width: 70,
+                      render: (v: number) => <Tag>v{v}</Tag>,
+                    },
+                    {
+                      title: "Người thực hiện",
+                      dataIndex: "actor",
+                      width: 130,
+                    },
+                    { title: "Chi tiết", dataIndex: "detail", ellipsis: true },
                   ]}
                 />
               )}
@@ -1998,7 +2070,7 @@ function ExceptionTab({
     );
     if (duplicated) {
       message.warning(
-        "Đã có luật ngoại lệ cho cùng nút, cấp, quy trình, bước và trạng thái này.",
+        "Đã có luật Chi tiết cho cùng nút, cấp, quy trình, bước và trạng thái này.",
       );
       return;
     }
@@ -2065,8 +2137,8 @@ function ExceptionTab({
     closeModal();
     message.success(
       editing
-        ? "Đã cập nhật luật ngoại lệ và luật hiển thị nút liên quan."
-        : "Đã thêm luật ngoại lệ và luật hiển thị nút liên quan.",
+        ? "Đã cập nhật luật Chi tiết và luật hiển thị nút liên quan."
+        : "Đã thêm luật Chi tiết và luật hiển thị nút liên quan.",
     );
   };
 
@@ -2077,12 +2149,12 @@ function ExceptionTab({
         prev.filter((a) => a.id !== p.availabilityPolicyId),
       );
     }
-    message.success("Đã xoá luật ngoại lệ và luật hiển thị nút liên quan.");
+    message.success("Đã xoá luật Chi tiết và luật hiển thị nút liên quan.");
   };
 
   const columns = [
     {
-      title: "Ngoại lệ",
+      title: "Chi tiết",
       key: "type",
       width: 250,
       render: (_: unknown, p: ExceptionActionPolicy) => (
@@ -2227,7 +2299,7 @@ function ExceptionTab({
             />
           </Tooltip>
           <Popconfirm
-            title="Xoá luật ngoại lệ này?"
+            title="Xoá luật Chi tiết này?"
             onConfirm={() => remove(p)}
             okText="Xoá"
             cancelText="Huỷ"
@@ -2246,11 +2318,11 @@ function ExceptionTab({
         showIcon
         icon={<WarningOutlined />}
         style={{ marginBottom: 16 }}
-        message="Luật ngoại lệ = nơi phát sinh + nút xin ngoại lệ + kiểm soát duyệt + đích đến sau khi duyệt"
+        message="Luật Chi tiết = nơi phát sinh + nút xin Chi tiết + kiểm soát duyệt + đích đến sau khi duyệt"
         description={
           <span>
-            Khi lưu luật ngoại lệ, hệ thống đồng thời tạo/cập nhật một{" "}
-            <b>Luật hiển thị nút</b> cho action ngoại lệ tương ứng.
+            Khi lưu luật Chi tiết, hệ thống đồng thời tạo/cập nhật một{" "}
+            <b>Luật hiển thị nút</b> cho action Chi tiết tương ứng.
           </span>
         }
       />
@@ -2259,7 +2331,7 @@ function ExceptionTab({
         title={
           <Space>
             <SafetyCertificateOutlined />
-            Danh sách luật ngoại lệ
+            Danh sách luật Chi tiết
           </Space>
         }
         extra={
@@ -2283,7 +2355,7 @@ function ExceptionTab({
       </Card>
 
       <Modal
-        title={editing ? "Sửa luật ngoại lệ" : "Thêm luật ngoại lệ"}
+        title={editing ? "Sửa luật Chi tiết" : "Thêm luật Chi tiết"}
         open={open}
         onOk={save}
         onCancel={closeModal}
@@ -2303,15 +2375,15 @@ function ExceptionTab({
               preserve={false}
               initialValues={activeFormValues ?? undefined}
             >
-              <Divider orientation="left">1. Ngoại lệ xảy ra ở đâu?</Divider>
+              <Divider orientation="left">1. Chi tiết xảy ra ở đâu?</Divider>
               <Form.Item
                 name="exceptionName"
-                label="Tên ngoại lệ"
+                label="Tên Chi tiết"
                 rules={[
                   {
                     required: true,
                     whitespace: true,
-                    message: "Nhập tên ngoại lệ.",
+                    message: "Nhập tên Chi tiết.",
                   },
                 ]}
               >
@@ -2320,7 +2392,7 @@ function ExceptionTab({
               <Form.Item name="description" label="Mô tả ngắn">
                 <Input.TextArea
                   rows={2}
-                  placeholder="Ghi chú nghiệp vụ để người cấu hình hiểu khi nào dùng ngoại lệ này."
+                  placeholder="Ghi chú nghiệp vụ để người cấu hình hiểu khi nào dùng Chi tiết này."
                 />
               </Form.Item>
               <Row gutter={12}>
@@ -2382,11 +2454,11 @@ function ExceptionTab({
                 <Col span={12}>
                   <Form.Item
                     name="sourceTaskKey"
-                    label="Bước phát sinh ngoại lệ"
+                    label="Bước phát sinh Chi tiết"
                     rules={[
                       {
                         required: true,
-                        message: "Chọn bước phát sinh ngoại lệ.",
+                        message: "Chọn bước phát sinh Chi tiết.",
                       },
                     ]}
                   >
@@ -2400,12 +2472,12 @@ function ExceptionTab({
               </Row>
 
               <Divider orientation="left">
-                2. Nút xin ngoại lệ trên hồ sơ
+                2. Nút xin Chi tiết trên hồ sơ
               </Divider>
               <Form.Item
                 name="actionCode"
                 label="Chọn nút theo tên hiển thị"
-                rules={[{ required: true, message: "Chọn nút xin ngoại lệ." }]}
+                rules={[{ required: true, message: "Chọn nút xin Chi tiết." }]}
               >
                 <Select
                   placeholder="Chọn nút"
@@ -2415,7 +2487,7 @@ function ExceptionTab({
               </Form.Item>
               <Row gutter={12}>
                 <Col span={12}>
-                  <Form.Item label="Action code">
+                  <Form.Item label="Mã hành động">
                     <Input value={watchedActionCode ?? ""} readOnly />
                   </Form.Item>
                 </Col>
@@ -2484,11 +2556,11 @@ function ExceptionTab({
               </Form.Item>
               <Form.Item
                 name="requiredApproverRoleCodes"
-                label="Vai trò được duyệt ngoại lệ"
+                label="Vai trò được duyệt Chi tiết"
                 rules={[
                   {
                     required: true,
-                    message: "Chọn ít nhất một vai trò duyệt ngoại lệ.",
+                    message: "Chọn ít nhất một vai trò duyệt Chi tiết.",
                   },
                 ]}
               >
@@ -2608,7 +2680,7 @@ function ExceptionTab({
                     <Alert
                       type="success"
                       showIcon
-                      message="Ngoại lệ được duyệt sẽ kết thúc xử lý đối tượng."
+                      message="Chi tiết được duyệt sẽ kết thúc xử lý đối tượng."
                     />
                   ) : (
                     <Form.Item
@@ -2638,7 +2710,7 @@ function ExceptionTab({
                 type="info"
                 showIcon
                 message="Luật hiển thị nút sinh kèm"
-                description={`Ngoại lệ: ${watchedExceptionName || "—"} · Action: ${watchedActionCode || "—"} · Quyền: ${PERMISSION_LABEL[PERMISSIONS.REQUEST_EXCEPTION]}`}
+                description={`Chi tiết: ${watchedExceptionName || "—"} · Action: ${watchedActionCode || "—"} · Quyền: ${PERMISSION_LABEL[PERMISSIONS.REQUEST_EXCEPTION]}`}
               />
               <RoutingPreviewCard
                 processCode={watchedProcessCode}
@@ -2662,17 +2734,28 @@ function ExceptionTab({
       </Modal>
 
       <Drawer
-        title={<Space><HistoryOutlined />Lịch sử Luồng ngoại lệ</Space>}
+        title={
+          <Space>
+            <HistoryOutlined />
+            Lịch sử Luồng chi tiết
+          </Space>
+        }
         open={!!historyPolicyId}
         onClose={() => setHistoryPolicyId(null)}
         width={720}
       >
         {historyPolicyId && (
-          <Space direction="vertical" size={24} style={{ width: '100%' }}>
+          <Space direction="vertical" size={24} style={{ width: "100%" }}>
             <div>
-              <Text strong style={{ fontSize: 14 }}>Lịch sử Phiên bản</Text>
+              <Text strong style={{ fontSize: 14 }}>
+                Lịch sử Phiên bản
+              </Text>
               {histVersions.length === 0 ? (
-                <Empty description="Chưa có lịch sử phiên bản." image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ marginTop: 12 }} />
+                <Empty
+                  description="Chưa có lịch sử phiên bản."
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  style={{ marginTop: 12 }}
+                />
               ) : (
                 <Table
                   dataSource={histVersions}
@@ -2681,18 +2764,46 @@ function ExceptionTab({
                   pagination={false}
                   style={{ marginTop: 8 }}
                   columns={[
-                    { title: 'Phiên bản', dataIndex: 'version', width: 80, render: (v: number) => <Tag>v{v}</Tag> },
-                    { title: 'Ngày', dataIndex: 'capNhat', width: 90, render: (d: string) => <Text type="secondary" style={{ fontSize: 12 }}>{d}</Text> },
-                    { title: 'Người cập nhật', dataIndex: 'nguoiCapNhat', width: 140 },
-                    { title: 'Ghi chú', dataIndex: 'changeNote', ellipsis: true },
+                    {
+                      title: "Phiên bản",
+                      dataIndex: "version",
+                      width: 80,
+                      render: (v: number) => <Tag>v{v}</Tag>,
+                    },
+                    {
+                      title: "Ngày",
+                      dataIndex: "capNhat",
+                      width: 90,
+                      render: (d: string) => (
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          {d}
+                        </Text>
+                      ),
+                    },
+                    {
+                      title: "Người cập nhật",
+                      dataIndex: "nguoiCapNhat",
+                      width: 140,
+                    },
+                    {
+                      title: "Ghi chú",
+                      dataIndex: "changeNote",
+                      ellipsis: true,
+                    },
                   ]}
                 />
               )}
             </div>
             <div>
-              <Text strong style={{ fontSize: 14 }}>Nhật ký Thay đổi</Text>
+              <Text strong style={{ fontSize: 14 }}>
+                Nhật ký Thay đổi
+              </Text>
               {histAudit.length === 0 ? (
-                <Empty description="Chưa có nhật ký thay đổi." image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ marginTop: 12 }} />
+                <Empty
+                  description="Chưa có nhật ký thay đổi."
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  style={{ marginTop: 12 }}
+                />
               ) : (
                 <Table
                   dataSource={histAudit}
@@ -2701,11 +2812,38 @@ function ExceptionTab({
                   pagination={histAudit.length > 10 ? { pageSize: 10 } : false}
                   style={{ marginTop: 8 }}
                   columns={[
-                    { title: 'Thời gian', dataIndex: 'timestamp', width: 150, render: (t: string) => <Text type="secondary" style={{ fontSize: 12 }}>{t}</Text> },
-                    { title: 'Hành động', dataIndex: 'action', width: 110, render: (a: ExcAuditAction) => <Tag color={EXC_AUDIT_ACTION_COLOR[a]}>{EXC_AUDIT_ACTION_LABEL[a]}</Tag> },
-                    { title: 'Phiên bản', dataIndex: 'version', width: 70, render: (v: number) => <Tag>v{v}</Tag> },
-                    { title: 'Người thực hiện', dataIndex: 'actor', width: 130 },
-                    { title: 'Chi tiết', dataIndex: 'detail', ellipsis: true },
+                    {
+                      title: "Thời gian",
+                      dataIndex: "timestamp",
+                      width: 150,
+                      render: (t: string) => (
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          {t}
+                        </Text>
+                      ),
+                    },
+                    {
+                      title: "Hành động",
+                      dataIndex: "action",
+                      width: 110,
+                      render: (a: ExcAuditAction) => (
+                        <Tag color={EXC_AUDIT_ACTION_COLOR[a]}>
+                          {EXC_AUDIT_ACTION_LABEL[a]}
+                        </Tag>
+                      ),
+                    },
+                    {
+                      title: "Phiên bản",
+                      dataIndex: "version",
+                      width: 70,
+                      render: (v: number) => <Tag>v{v}</Tag>,
+                    },
+                    {
+                      title: "Người thực hiện",
+                      dataIndex: "actor",
+                      width: 130,
+                    },
+                    { title: "Chi tiết", dataIndex: "detail", ellipsis: true },
                   ]}
                 />
               )}
@@ -2979,8 +3117,8 @@ function InspectorTab({
                 và trạng thái admin.
               </div>
               <div>
-                <Text strong>3. Bật/tắt điều kiện ngoại lệ</Text>: quyền xử lý
-                bước hiện tại, còn bước phía sau, ngoại lệ đang mở.
+                <Text strong>3. Bật/tắt điều kiện Chi tiết</Text>: quyền xử lý
+                bước hiện tại, còn bước phía sau, Chi tiết đang mở.
               </div>
               <div>
                 <Text strong>4. Đọc kết quả bên phải</Text>: action hiển thị
@@ -3133,7 +3271,7 @@ function InspectorTab({
               title={
                 <Space>
                   <WarningOutlined />
-                  Điều kiện ngoại lệ
+                  Điều kiện Chi tiết
                 </Space>
               }
             >
@@ -3150,14 +3288,14 @@ function InspectorTab({
                     checked={hasExceptionTargets}
                     onChange={setHasExceptionTargets}
                   />
-                  <Text>Còn bước phía sau để chuyển ngoại lệ</Text>
+                  <Text>Còn bước phía sau để chuyển Chi tiết</Text>
                 </Space>
                 <Space>
                   <Switch
                     checked={hasActiveException}
                     onChange={setHasActiveException}
                   />
-                  <Text>Đang có yêu cầu ngoại lệ mở</Text>
+                  <Text>Đang có yêu cầu Chi tiết mở</Text>
                 </Space>
               </Space>
             </Card>
@@ -3576,9 +3714,9 @@ function ReconcileTab({
             kẹt · <Tag color="gold">🟡 Luật chung / thiếu biểu mẫu</Tag> = nên
             ghim theo bước · <Tag>⚪ Orphan</Tag> = policy trỏ task không còn
             trong BPMN · <Tag color="gold">🟡 Need Role</Tag> = mã Need Role
-            trên bước không khớp loại phê duyệt active nào trong Danh mục Loại phê duyệt (EPIC06).
-            Bấm <b>Đồng bộ</b> để scaffold/upsert — id tất định nên chạy lại
-            không đẻ trùng.
+            trên bước không khớp loại phê duyệt active nào trong Danh mục Loại
+            phê duyệt (EPIC06). Bấm <b>Đồng bộ</b> để scaffold/upsert — id tất
+            định nên chạy lại không đẻ trùng.
           </span>
         }
       />
@@ -3686,20 +3824,30 @@ export default function ActionStudio() {
   >(ACTION_AVAILABILITY_POLICIES);
   const [excPolicies, setExcPolicies] =
     useState<ExceptionActionPolicy[]>(EXCEPTION_POLICIES);
-  const [availVersions] = useState<ActionAvailabilityVersion[]>(SEED_AVAIL_VERSIONS);
-  const [availAudit] = useState<ActionAvailabilityAuditEntry[]>(SEED_AVAIL_AUDIT);
+  const [availVersions] =
+    useState<ActionAvailabilityVersion[]>(SEED_AVAIL_VERSIONS);
+  const [availAudit] =
+    useState<ActionAvailabilityAuditEntry[]>(SEED_AVAIL_AUDIT);
   const [excVersions] = useState<ExceptionPolicyVersion[]>(SEED_EXC_VERSIONS);
   const [excAudit] = useState<ExceptionPolicyAuditEntry[]>(SEED_EXC_AUDIT);
   const [activeTab, setActiveTab] = useState("overview");
 
   const getAvailVersions = (policyId: string) =>
-    availVersions.filter((v) => v.policyId === policyId).sort((a, b) => b.version - a.version);
+    availVersions
+      .filter((v) => v.policyId === policyId)
+      .sort((a, b) => b.version - a.version);
   const getAvailAudit = (policyId: string) =>
-    availAudit.filter((a) => a.policyId === policyId).sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+    availAudit
+      .filter((a) => a.policyId === policyId)
+      .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
   const getExcVersions = (policyId: string) =>
-    excVersions.filter((v) => v.policyId === policyId).sort((a, b) => b.version - a.version);
+    excVersions
+      .filter((v) => v.policyId === policyId)
+      .sort((a, b) => b.version - a.version);
   const getExcAudit = (policyId: string) =>
-    excAudit.filter((a) => a.policyId === policyId).sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+    excAudit
+      .filter((a) => a.policyId === policyId)
+      .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
   const items = [
     {
@@ -3747,7 +3895,7 @@ export default function ActionStudio() {
       label: (
         <Space>
           <SafetyCertificateOutlined />
-          Luồng ngoại lệ
+          Luồng chi tiết
         </Space>
       ),
       children: (
@@ -3812,7 +3960,7 @@ export default function ActionStudio() {
         }
         title="Ma trận Hành động"
         // tag={<Tag color="processing">Action Availability Model</Tag>}
-        // code={<Text type="secondary">Đồng bộ quy trình / Luật hiển thị / Ngoại lệ / Mô phỏng</Text>}
+        // code={<Text type="secondary">Đồng bộ quy trình / Luật hiển thị / Chi tiết / Mô phỏng</Text>}
         breadcrumb={[
           { label: "Hệ thống QTKHCN" },
           { label: "Ma trận Hành động" },
@@ -3828,7 +3976,7 @@ export default function ActionStudio() {
           <div style={{ fontSize: 12 }}>
                   <div><Text strong>1. Chọn ngữ cảnh nghiệp vụ</Text>: surface, quy trình, trạng thái hồ sơ và task key cần kiểm thử.</div>
                   <div><Text strong>2. Chọn ngữ cảnh người dùng</Text>: vai trò, quyền và trạng thái admin để mô phỏng người dùng thực tế.</div>
-                  <div><Text strong>3. Bật/tắt điều kiện ngoại lệ</Text>: condition các bước phía sau, người dùng đang xử lý bước hiện tại, hồ sơ có ngoại lệ đang mở.</div>
+                  <div><Text strong>3. Bật/tắt điều kiện Chi tiết</Text>: condition các bước phía sau, người dùng đang xử lý bước hiện tại, hồ sơ có Chi tiết đang mở.</div>
                   <div><Text strong>4. Đọc kết quả bên phải</Text>: action hiển thị theo nhóm UI; action mở là có rule hiển thị nhưng chưa đủ điều kiện bấm.</div>
                   <div><Text strong>5. Đối chiếu payload</Text>: JSON phía dưới là dữ liệu UI nghiệp vụ sẽ nhận từ available-actions.</div>
                 </div>

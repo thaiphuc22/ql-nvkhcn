@@ -69,6 +69,7 @@ export default function ProcessDetail() {
   const bpmnEditRef = useRef<BpmnEditorHandle>(null);
   const [form] = Form.useForm();
   const [deployForm] = Form.useForm();
+  const routeBase = "/quy-trinh";
 
   const p = getByMa(decodeURIComponent(ma));
 
@@ -77,7 +78,7 @@ export default function ProcessDetail() {
       <NotFound
         title="Không tìm thấy quy trình"
         subTitle={`Mã "${ma}" không tồn tại trong danh mục.`}
-        onBack={() => navigate("/quy-trinh")}
+        onBack={() => navigate(routeBase)}
         backText="Về Danh mục quy trình"
       />
     );
@@ -386,11 +387,11 @@ export default function ProcessDetail() {
     <div>
       <PageHeader
         breadcrumb={[
-          { label: "Quản lý quy trình", to: "/quy-trinh" },
-          { label: "Danh mục quy trình", to: "/quy-trinh" },
+          { label: "Quản lý quy trình", to: routeBase },
+          { label: "Danh mục quy trình", to: routeBase },
           { label: p.ma },
         ]}
-        onBack={() => navigate("/quy-trinh")}
+        onBack={() => navigate(routeBase)}
         title={p.ten}
         tag={<ProcessStatusTag status={p.trangThai} />}
         code={

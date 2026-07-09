@@ -10,12 +10,18 @@ import {
   UndoOutlined,
 } from '@ant-design/icons'
 import { FormEditor } from '@bpmn-io/form-js'
+// form-js.css là CSS NỀN của viewer (flex cho .fjs-vertical-group/.fjs-input-group,
+// bố cục nhãn, mũi tên Number/Select…) — field trên CANVAS editor render bằng
+// component viewer nên BẮT BUỘC có nó; form-js-editor.css chỉ style khung editor.
+// Thiếu file này là lý do nhãn/mũi tên trên canvas vỡ bố cục.
+import '@bpmn-io/form-js/dist/assets/form-js.css'
 import '@bpmn-io/form-js/dist/assets/form-js-editor.css'
 import '@bpmn-io/form-js/dist/assets/properties-panel.css'
 import '../branding/bpmnio-skin.css'
 import { TranslateViModule } from '../branding/translate-vi'
 import { observeViLabels } from '../branding/relabel-vi'
 import { khcnFormSimplePanelModule } from '../formjs/khcnFormSimplePanelModule'
+import { khcnFieldDefaultsModule } from '../formjs/khcnFieldDefaultsModule'
 import FormRenderer from './FormRenderer'
 import FieldPalette from './formdesign/FieldPalette'
 import FieldProperties, { type FField } from './formdesign/FieldProperties'
@@ -105,8 +111,9 @@ const FormDesigner = forwardRef<FormDesignerHandle, Props>(({ schema }, ref) => 
     if (!canvasEl || !paletteEl || !propsEl) return
     const editor = new FormEditor({
       container: canvasEl,
-      // Việt hoá qua translate (didi) + lọc/Việt hoá nhóm panel (Đơn giản/Nâng cao).
-      additionalModules: [TranslateViModule, khcnFormSimplePanelModule(() => false)],
+      // Việt hoá qua translate (didi) + lọc/Việt hoá nhóm panel (Đơn giản/Nâng cao)
+      // + nhãn mặc định tiếng Việt cho field mới (ghi vào schema, không chỉ DOM).
+      additionalModules: [TranslateViModule, khcnFormSimplePanelModule(() => false), khcnFieldDefaultsModule],
       // Portal palette + properties panel ra 2 dock React (form-js 1.23:
       // ModularSection đọc config.<section>.parent → createPortal; dragula nhận
       // container theo class nên kéo–thả vẫn hoạt động khi palette nằm ngoài editor).

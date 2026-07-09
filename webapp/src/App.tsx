@@ -18,6 +18,7 @@ import {
   Button,
   Dropdown,
   Spin,
+  Tooltip,
 } from "antd";
 import {
   KeyOutlined,
@@ -36,7 +37,6 @@ import {
   ApartmentOutlined,
   TeamOutlined,
   BookOutlined,
-  DatabaseOutlined,
 } from "@ant-design/icons";
 import {
   Routes,
@@ -60,6 +60,7 @@ const NhiemVuCreate = lazy(() => import("./pages/NhiemVuCreate"));
 const NhiemVuDetail = lazy(() => import("./pages/NhiemVuDetail"));
 const Worklist = lazy(() => import("./pages/Worklist"));
 const FormLibrary = lazy(() => import("./pages/FormLibrary"));
+const FormDesignerPage = lazy(() => import("./pages/FormDesignerPage"));
 const UserManagement = lazy(() => import("./pages/UserManagement"));
 const RolePermission = lazy(() => import("./pages/RolePermission"));
 const OrgStructure = lazy(() => import("./pages/OrgStructure"));
@@ -192,19 +193,29 @@ export default function App() {
                             ? "luat"
                             : location.pathname.startsWith("/ma-tran-phe-duyet")
                               ? "matran"
-                              : location.pathname.startsWith("/cau-hinh-hanh-dong")
+                              : location.pathname.startsWith(
+                                    "/cau-hinh-hanh-dong",
+                                  )
                                 ? "hanhdong"
-                                : location.pathname.startsWith("/cau-hinh-service-task")
+                                : location.pathname.startsWith(
+                                      "/cau-hinh-service-task",
+                                    )
                                   ? "servicetask"
                                   : location.pathname.startsWith("/ho-so")
                                     ? "ho-so"
                                     : location.pathname.startsWith("/nhiem-vu")
                                       ? "nhiem-vu"
-                                      : location.pathname.startsWith("/tro-giup")
+                                      : location.pathname.startsWith(
+                                            "/tro-giup",
+                                          )
                                         ? "trogiup"
-                                        : location.pathname.startsWith("/danh-sach-phan-he")
+                                        : location.pathname.startsWith(
+                                              "/danh-sach-phan-he",
+                                            )
                                           ? "danh-sach-phan-he"
-                                          : location.pathname.startsWith("/phan-he/")
+                                          : location.pathname.startsWith(
+                                                "/phan-he/",
+                                              )
                                             ? "danh-sach-phan-he"
                                             : "quytrinh";
 
@@ -286,7 +297,7 @@ export default function App() {
               { key: "matran", icon: null, label: "Ma trận phê duyệt" },
               { key: "hanhdong", icon: null, label: "Ma trận Hành động" },
               ...(canManageSystem
-                ? [{ key: "servicetask", icon: <ThunderboltOutlined />, label: "Tác vụ hệ thống" }]
+                ? [{ key: "servicetask", icon: null, label: "Tác vụ hệ thống" }]
                 : []),
             ],
           },
@@ -310,48 +321,48 @@ export default function App() {
           },
         ]
       : []),
-    ...(canManageSystem
-      ? [
-          {
-            key: "toChuc",
-            icon: <KeyOutlined />,
-            label: "Quản trị tổ chức",
-            children: [
-              {
-                key: "donvi",
-                icon: <ApartmentOutlined />,
-                label: "Quản trị đơn vị",
-              },
-              {
-                key: "nguoidung",
-                icon: <TeamOutlined />,
-                label: "Quản trị người dùng",
-              },
-              {
-                key: "phanquyen",
-                icon: <KeyOutlined />,
-                label: "Phân quyền",
-              },
-            ],
-          },
-        ]
-      : []),
-    ...(!isChuNhiemDeTai
-      ? [
-          {
-            key: "danhmuc",
-            icon: <DatabaseOutlined />,
-            label: "Danh mục dùng chung",
-            children: [
-              {
-                key: "bieumau",
-                icon: <FormOutlined />,
-                label: "Thư viện biểu mẫu",
-              },
-            ],
-          },
-        ]
-      : []),
+    // ...(canManageSystem
+    //   ? [
+    //       {
+    //         key: "toChuc",
+    //         icon: <KeyOutlined />,
+    //         label: "Quản trị tổ chức",
+    //         children: [
+    //           {
+    //             key: "donvi",
+    //             icon: <ApartmentOutlined />,
+    //             label: "Quản trị đơn vị",
+    //           },
+    //           {
+    //             key: "nguoidung",
+    //             icon: <TeamOutlined />,
+    //             label: "Quản trị người dùng",
+    //           },
+    //           {
+    //             key: "phanquyen",
+    //             icon: <KeyOutlined />,
+    //             label: "Phân quyền",
+    //           },
+    //         ],
+    //       },
+    //     ]
+    //   : []),
+    // ...(!isChuNhiemDeTai
+    //   ? [
+    //       {
+    //         key: "danhmuc",
+    //         icon: <DatabaseOutlined />,
+    //         label: "Danh mục dùng chung",
+    //         children: [
+    //           {
+    //             key: "bieumau",
+    //             icon: <FormOutlined />,
+    //             label: "Thư viện biểu mẫu",
+    //           },
+    //         ],
+    //       },
+    //     ]
+    //   : []),
   ] as const;
 
   const menuItemsMain = menuItems.filter((i) => i.key !== "trogiup");
@@ -359,19 +370,42 @@ export default function App() {
   const PH_MENU_MAP: Record<string, any[]> = {
     PH2: [
       { key: "ph2-tongquan", icon: <DashboardOutlined />, label: "Tổng quan" },
-      { key: "ph2-donvi", icon: <ApartmentOutlined />, label: "Quản trị đơn vị" },
-      { key: "ph2-nguoidung", icon: <TeamOutlined />, label: "Quản trị người dùng" },
+      {
+        key: "ph2-donvi",
+        icon: <ApartmentOutlined />,
+        label: "Quản trị đơn vị",
+      },
+      {
+        key: "ph2-nguoidung",
+        icon: <TeamOutlined />,
+        label: "Quản trị người dùng",
+      },
       { key: "ph2-phanquyen", icon: <KeyOutlined />, label: "Phân quyền" },
     ],
     PH3: [
       { key: "ph3-tongquan", icon: <DashboardOutlined />, label: "Tổng quan" },
-      { key: "ph3-bieumau", icon: <FormOutlined />, label: "Thư viện biểu mẫu" },
+      {
+        key: "ph3-bieumau",
+        icon: <FormOutlined />,
+        label: "Thư viện biểu mẫu",
+      },
     ],
   };
 
   const isStandalonePage = location.pathname.startsWith("/danh-sach-phan-he");
 
-  if (!user) return <Login />;
+  if (!user) {
+    return (
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
+
+  if (location.pathname === "/login") {
+    return <Navigate to="/danh-sach-phan-he" replace />;
+  }
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
@@ -397,12 +431,12 @@ export default function App() {
           >
             <div
               style={{
-                height: 58,
+                minHeight: 82,
                 flexShrink: 0,
                 display: "flex",
                 alignItems: "center",
                 gap: 10,
-                padding: "0 16px",
+                padding: "10px 16px",
                 borderBottom: "1px solid rgba(255,255,255,0.15)",
               }}
             >
@@ -423,14 +457,45 @@ export default function App() {
                 {phanHeInfo ? phanHeInfo.id : "VHT"}
               </div>
               {!collapsed && (
-                <div style={{ lineHeight: 1.1 }}>
-                  <div style={{ color: "#fff", fontWeight: 700 }}>
-                    {phanHeInfo ? phanHeInfo.ten : "QTKHCN"}
+                <Tooltip
+                  placement="right"
+                  title={
+                    phanHeInfo
+                      ? `${phanHeInfo.ten} - ${phanHeInfo.moTa}`
+                      : "QTKHCN - Quản trị KHCN"
+                  }
+                >
+                  <div style={{ minWidth: 0, lineHeight: 1.15 }}>
+                    <div
+                      style={{
+                        color: "#fff",
+                        fontWeight: 700,
+                        fontSize: 13,
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                        overflowWrap: "anywhere",
+                      }}
+                    >
+                      {phanHeInfo ? phanHeInfo.ten : "QTKHCN"}
+                    </div>
+                    <div
+                      style={{
+                        color: "rgba(255,255,255,0.72)",
+                        fontSize: 11,
+                        marginTop: 3,
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                        overflowWrap: "anywhere",
+                      }}
+                    >
+                      {phanHeInfo ? phanHeInfo.moTa : "Quản trị KHCN"}
+                    </div>
                   </div>
-                  <div style={{ color: "rgba(255,255,255,0.72)", fontSize: 11 }}>
-                    {phanHeInfo ? phanHeInfo.moTa : "Quản trị KHCN"}
-                  </div>
-                </div>
+                </Tooltip>
               )}
             </div>
             <div style={{ flex: 1, overflow: "auto" }}>
@@ -438,7 +503,10 @@ export default function App() {
                 theme="dark"
                 mode="inline"
                 selectedKeys={[selectedKey]}
-                items={(phanHeContextId && PH_MENU_MAP[phanHeContextId]) || menuItemsMain}
+                items={
+                  (phanHeContextId && PH_MENU_MAP[phanHeContextId]) ||
+                  menuItemsMain
+                }
                 onClick={({ key }) => {
                   const to = ROUTE_BY_KEY[key];
                   if (to) startTransition(() => navigate(to));
@@ -488,7 +556,6 @@ export default function App() {
         }}
       >
         <Header
-          className={isStandalonePage ? "qtkhcn-glass-header" : undefined}
           style={{
             position: "sticky",
             top: 0,
@@ -524,15 +591,14 @@ export default function App() {
             )}
             {isStandalonePage ? (
               <span
-                className="qtkhcn-mono"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 8,
                   fontSize: 15,
-                  fontWeight: 600,
-                  letterSpacing: 3,
-                  color: "rgba(255, 241, 243, 0.92)",
+                  fontWeight: 700,
+                  letterSpacing: 1,
+                  color: "var(--vht-ink)",
                   userSelect: "none",
                 }}
               >
@@ -548,7 +614,10 @@ export default function App() {
                 QTKHCN
               </span>
             ) : (
-              <Breadcrumb items={breadcrumbItems} style={{ whiteSpace: "normal" }} />
+              <Breadcrumb
+                items={breadcrumbItems}
+                style={{ whiteSpace: "normal" }}
+              />
             )}
           </div>
           <Space size={4} align="center">
@@ -589,26 +658,10 @@ export default function App() {
                     size={0}
                     style={{ textAlign: "right", lineHeight: 1.2 }}
                   >
-                    <Text
-                      strong
-                      style={{
-                        fontSize: 13,
-                        color: isStandalonePage
-                          ? "rgba(255, 241, 243, 0.92)"
-                          : undefined,
-                      }}
-                    >
+                    <Text strong style={{ fontSize: 13 }}>
                       {user.hoTen}
                     </Text>
-                    <Text
-                      type="secondary"
-                      style={{
-                        fontSize: 12,
-                        color: isStandalonePage
-                          ? "rgba(255, 218, 216, 0.65)"
-                          : undefined,
-                      }}
-                    >
+                    <Text type="secondary" style={{ fontSize: 12 }}>
                       {user.chucDanh}
                     </Text>
                   </Space>
@@ -631,7 +684,7 @@ export default function App() {
           id="app-scroll"
           style={{
             padding: 24,
-            background: isStandalonePage ? "#17090b" : "var(--vht-surface-2)",
+            background: "var(--vht-surface-2)",
             position: "relative",
           }}
         >
@@ -649,23 +702,61 @@ export default function App() {
             }
           >
             <Routes>
+              <Route
+                path="/"
+                element={<Navigate to="/danh-sach-phan-he" replace />}
+              />
               <Route path="/tong-quan" element={<Dashboard />} />
               <Route path="/viec-cua-toi" element={<Worklist />} />
               <Route
                 path="/quy-trinh"
-                element={!isChuNhiemDeTai ? <ProcessCatalog /> : <Navigate to="/tong-quan" replace />}
+                element={
+                  !isChuNhiemDeTai ? (
+                    <ProcessCatalog />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
               />
               <Route
                 path="/quy-trinh/moi"
-                element={canManageSystem ? <ProcessCreate /> : <Navigate to="/quy-trinh" replace />}
+                element={
+                  canManageSystem ? (
+                    <ProcessCreate />
+                  ) : (
+                    <Navigate to="/quy-trinh" replace />
+                  )
+                }
               />
               <Route
                 path="/quy-trinh/:ma"
-                element={!isChuNhiemDeTai ? <ProcessDetail /> : <Navigate to="/tong-quan" replace />}
+                element={
+                  !isChuNhiemDeTai ? (
+                    <ProcessDetail />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
               />
               <Route
                 path="/phan-he/PH3/bieu-mau"
-                element={!isChuNhiemDeTai ? <FormLibrary /> : <Navigate to="/tong-quan" replace />}
+                element={
+                  !isChuNhiemDeTai ? (
+                    <FormLibrary />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
+              />
+              <Route
+                path="/phan-he/PH3/bieu-mau/:key/thiet-ke"
+                element={
+                  !isChuNhiemDeTai ? (
+                    <FormDesignerPage />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
               />
               <Route path="/nhiem-vu" element={<NhiemVuList />} />
               <Route path="/nhiem-vu/moi" element={<NhiemVuCreate />} />
@@ -675,56 +766,141 @@ export default function App() {
               <Route path="/ho-so/:id" element={<DossierDetail />} />
               <Route
                 path="/phan-he/PH2/co-cau-to-chuc"
-                element={canManageSystem ? <OrgStructure /> : <Navigate to="/tong-quan" replace />}
+                element={
+                  canManageSystem ? (
+                    <OrgStructure />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
               />
               <Route
                 path="/phan-he/PH2/nguoi-dung"
-                element={canManageSystem ? <UserManagement /> : <Navigate to="/tong-quan" replace />}
+                element={
+                  canManageSystem ? (
+                    <UserManagement />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
               />
               <Route
                 path="/phan-he/PH2/phan-quyen"
-                element={canManageSystem ? <RolePermission /> : <Navigate to="/tong-quan" replace />}
+                element={
+                  canManageSystem ? (
+                    <RolePermission />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
               />
               <Route
                 path="/giam-sat"
-                element={canManageSystem ? <ProcessMonitor /> : <Navigate to="/tong-quan" replace />}
+                element={
+                  canManageSystem ? (
+                    <ProcessMonitor />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
               />
               <Route
                 path="/tich-hop"
-                element={canManageSystem ? <IntegrationStatus /> : <Navigate to="/tong-quan" replace />}
+                element={
+                  canManageSystem ? (
+                    <IntegrationStatus />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
               />
               <Route
                 path="/nhat-ky"
-                element={canManageSystem ? <ProcessEventLog /> : <Navigate to="/tong-quan" replace />}
+                element={
+                  canManageSystem ? (
+                    <ProcessEventLog />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
               />
               <Route
                 path="/quan-ly-luat"
-                element={canManageSystem ? <RuleList /> : <Navigate to="/tong-quan" replace />}
+                element={
+                  canManageSystem ? (
+                    <RuleList />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
               />
               <Route
                 path="/quan-ly-luat/:id"
-                element={canManageSystem ? <RuleDetail /> : <Navigate to="/tong-quan" replace />}
+                element={
+                  canManageSystem ? (
+                    <RuleDetail />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
               />
               <Route
                 path="/ma-tran-phe-duyet"
-                element={canManageSystem ? <ApprovalMatrix /> : <Navigate to="/tong-quan" replace />}
+                element={
+                  canManageSystem ? (
+                    <ApprovalMatrix />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
               />
               <Route
                 path="/cau-hinh-hanh-dong"
-                element={canManageSystem ? <ActionStudio /> : <Navigate to="/tong-quan" replace />}
+                element={
+                  canManageSystem ? (
+                    <ActionStudio />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
               />
               <Route
                 path="/cau-hinh-service-task"
-                element={canManageSystem ? <ServiceTaskConfig /> : <Navigate to="/tong-quan" replace />}
+                element={
+                  canManageSystem ? (
+                    <ServiceTaskConfig />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
               />
               <Route path="/tro-giup" element={<TroGiup />} />
               <Route path="/danh-sach-phan-he" element={<SubsystemList />} />
-              <Route path="/phan-he/PH2" element={<Navigate to="/phan-he/PH2/tong-quan" replace />} />
-              <Route path="/phan-he/PH2/tong-quan" element={<PhanHePage phanHeId="PH2" />} />
-              <Route path="/phan-he/PH3" element={<Navigate to="/phan-he/PH3/tong-quan" replace />} />
-              <Route path="/phan-he/PH3/tong-quan" element={<PhanHePage phanHeId="PH3" />} />
+              <Route
+                path="/phan-he/PH2"
+                element={<Navigate to="/phan-he/PH2/tong-quan" replace />}
+              />
+              <Route
+                path="/phan-he/PH2/tong-quan"
+                element={<PhanHePage phanHeId="PH2" />}
+              />
+              <Route
+                path="/phan-he/PH3"
+                element={<Navigate to="/phan-he/PH3/tong-quan" replace />}
+              />
+              <Route
+                path="/phan-he/PH3/tong-quan"
+                element={<PhanHePage phanHeId="PH3" />}
+              />
+              <Route
+                path="/phan-he/PH4"
+                element={<Navigate to="/quy-trinh" replace />}
+              />
               <Route path="/phan-he/:id" element={<PhanHePage />} />
-              <Route path="*" element={<Navigate to="/tong-quan" replace />} />
+              <Route
+                path="*"
+                element={<Navigate to="/danh-sach-phan-he" replace />}
+              />
             </Routes>
           </Suspense>
         </Content>

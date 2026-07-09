@@ -34,7 +34,7 @@ Sửa `InspectorTab`: thay 1 card dài `Ngữ cảnh gọi API` thành 3 card nh
 
 1. **Card "Ngữ cảnh hồ sơ"**: `surface`, `processCode`, `dossierStatus`, `taskDefinitionKey` (đổi sang Select), `cap`
 2. **Card "Ngữ cảnh người dùng"**: `roleCodes`, `perms`, `isAdmin`
-3. **Card "Điều kiện ngoại lệ"**: `canRequestOnCurrentStep`, `hasExceptionTargets`, `hasActiveException`
+3. **Card "Điều kiện Chi tiết"**: `canRequestOnCurrentStep`, `hasExceptionTargets`, `hasActiveException`
 
 ### Slice B — Summary bar
 

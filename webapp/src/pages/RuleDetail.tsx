@@ -98,6 +98,7 @@ export default function RuleDetail() {
   const { user } = usePermissions()
   const actor = user?.hoTen ?? 'Người dùng'
 
+  const routeBase = '/quan-ly-luat'
   const editorRef = useRef<DmnEditorHandle>(null)
   const rule = id ? get(id) : undefined
 
@@ -128,7 +129,7 @@ export default function RuleDetail() {
       <NotFound
         title="Không tìm thấy luật"
         subTitle="Luật không tồn tại hoặc đã bị xoá."
-        onBack={() => navigate('/quan-ly-luat')}
+        onBack={() => navigate(routeBase)}
         backText="Về danh sách luật"
       />
     )
@@ -196,12 +197,12 @@ export default function RuleDetail() {
         code={<Text type="secondary">{rule.moTa}</Text>}
         breadcrumb={[
           { label: 'Hệ thống QTKHCN' },
-          { label: 'Ma trận quyết định', to: '/quan-ly-luat' },
+          { label: 'Ma trận quyết định', to: routeBase },
           { label: rule.ma },
         ]}
         extra={
           <Space>
-            <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/quan-ly-luat')}>
+            <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(routeBase)}>
               Danh sách
             </Button>
             {rule.kind === 'DMN' && <Button onClick={download}>Tải DMN XML</Button>}

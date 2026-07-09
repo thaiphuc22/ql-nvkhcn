@@ -1,23 +1,23 @@
-# Review và kế hoạch nâng cấp popup Sửa luật ngoại lệ
+# Review và kế hoạch nâng cấp popup Sửa luật Chi tiết
 
 ## Phạm vi
 
-Tài liệu này review popup **Sửa luật ngoại lệ** trong `webapp/src/pages/ActionStudio.tsx`.
+Tài liệu này review popup **Sửa luật Chi tiết** trong `webapp/src/pages/ActionStudio.tsx`.
 
 Lưu ý phân biệt:
 
-- `ActionStudio.tsx`: popup cấu hình **luật ngoại lệ** cho admin.
-- `DossierDetail.tsx`: popup người dùng gửi **yêu cầu xử lý ngoại lệ** trên hồ sơ.
+- `ActionStudio.tsx`: popup cấu hình **luật Chi tiết** cho admin.
+- `DossierDetail.tsx`: popup người dùng gửi **yêu cầu xử lý Chi tiết** trên hồ sơ.
 
 ## Hiện trạng
 
 Popup hiện đã có nền tảng đúng hướng:
 
 - Quản lý `ExceptionActionPolicy`.
-- Tự sinh/cập nhật `ActionAvailabilityPolicy` liên quan để nút xin ngoại lệ xuất hiện trên màn chi tiết hồ sơ.
+- Tự sinh/cập nhật `ActionAvailabilityPolicy` liên quan để nút xin Chi tiết xuất hiện trên màn chi tiết hồ sơ.
 - Có 4 nhóm cấu hình chính:
-  - Ngoại lệ phát sinh ở đâu.
-  - Nút xin ngoại lệ trên hồ sơ.
+  - Chi tiết phát sinh ở đâu.
+  - Nút xin Chi tiết trên hồ sơ.
   - Ai duyệt và cần căn cứ gì.
   - Nếu được duyệt thì đi đâu.
 - Có preview luồng xử lý và preview nút.
@@ -27,7 +27,7 @@ Các mốc code chính:
 - `ExceptionTab`: `webapp/src/pages/ActionStudio.tsx`
 - Mở sửa luật: `openEdit(p: ExceptionActionPolicy)`
 - Lưu luật: `save()`
-- Modal: title `Sửa luật ngoại lệ`
+- Modal: title `Sửa luật Chi tiết`
 - Preview: `RoutingPreviewCard`, `ButtonPreviewCard`
 
 ## Vấn đề cần cải thiện
@@ -71,17 +71,17 @@ Preview hiện có sơ đồ và nút, nhưng chưa trả lời nhanh 3 câu h�
 Đề xuất:
 
 - Thêm card "Tóm tắt luật".
-- Tô rõ bước phát sinh và bước đích ngoại lệ.
+- Tô rõ bước phát sinh và bước đích Chi tiết.
 - Hiển thị trạng thái lỗi/cảnh báo ngay trong preview nếu cấu hình chưa hợp lệ.
 
 ### 4. Liên kết với màn hồ sơ cần rõ hơn
 
 `DossierDetail.tsx` đang resolve policy để quyết định:
 
-- Loại ngoại lệ nào được mở.
+- Loại Chi tiết nào được mở.
 - Có bắt buộc lý do/căn cứ không.
-- Ai duyệt ngoại lệ.
-- Giới hạn số lần ngoại lệ trên hồ sơ.
+- Ai duyệt Chi tiết.
+- Giới hạn số lần Chi tiết trên hồ sơ.
 
 Popup cấu hình nên hiển thị rõ tác động này để admin thấy luật vừa lưu sẽ ảnh hưởng gì trên màn hồ sơ.
 
@@ -102,7 +102,7 @@ Việc cần làm:
 
 Tiêu chí đạt:
 
-- Không thể lưu luật ngoại lệ bật mà thiếu người duyệt.
+- Không thể lưu luật Chi tiết bật mà thiếu người duyệt.
 - Không thể lưu đích `STEP` mơ hồ khi chưa có quy trình.
 - Form không giữ task key cũ sau khi đổi quy trình.
 
@@ -152,7 +152,7 @@ Tiêu chí đạt:
 
 - Preview trả lời rõ: ở đâu, ai thấy, ai duyệt, đi đâu.
 
-### Phase 4: Đồng bộ với popup xin ngoại lệ trên hồ sơ
+### Phase 4: Đồng bộ với popup xin Chi tiết trên hồ sơ
 
 Mục tiêu: đảm bảo cấu hình ở Action Studio phản ánh đúng trên `DossierDetail.tsx`.
 
@@ -160,7 +160,7 @@ Việc cần làm:
 
 - Kiểm tra `resolveExceptionPolicy` dùng đủ `processCode`, `taskDefinitionKey`, `objectStatus`.
 - Đảm bảo `DossierDetail.tsx` dùng `requireReason`, `requireEvidence`, `maxTimesPerDossier`, `requiredApproverRoleCodes` từ policy.
-- Nếu có target cố định trong policy, cân nhắc tự chọn/khóa bước đích trong popup xin ngoại lệ.
+- Nếu có target cố định trong policy, cân nhắc tự chọn/khóa bước đích trong popup xin Chi tiết.
 
 Tiêu chí đạt:
 
@@ -173,7 +173,7 @@ Khuyến nghị làm theo thứ tự:
 1. Validation nghiệp vụ.
 2. Tóm tắt luật và preview cảnh báo.
 3. Layout lại modal.
-4. Đồng bộ sâu với popup xin ngoại lệ trên hồ sơ.
+4. Đồng bộ sâu với popup xin Chi tiết trên hồ sơ.
 
 Lý do: validation giúp giảm rủi ro demo ngay; layout và preview làm sau sẽ ít phải sửa lại logic.
 

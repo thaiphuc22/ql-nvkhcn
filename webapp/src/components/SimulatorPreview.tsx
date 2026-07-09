@@ -90,7 +90,7 @@ export default function SimulatorPreview({
       title: ACTION_UI_GROUP_LABEL.EXCEPTION,
       icon: <WarningOutlined />,
       group: "EXCEPTION",
-      hint: "Ngoại lệ",
+      hint: "Chi tiết",
     },
   ];
 

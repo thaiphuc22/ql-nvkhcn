@@ -93,12 +93,12 @@ export interface AvailableActionsInput {
   userRoleCodes: string[];
   userPermissions: string[];
   isAdmin: boolean;
-  /** Yêu cầu ngoại lệ đang mở (pending hoặc approved-chờ-áp-dụng), nếu có. */
+  /** Yêu cầu Chi tiết đang mở (pending hoặc approved-chờ-áp-dụng), nếu có. */
   activeExc?: unknown;
   hasExceptionTargets: boolean;
   canRequestExceptionOnCurrentStep: boolean;
   cap: Cap;
-  /** Số yêu cầu ngoại lệ chưa bị từ chối theo từng loại. */
+  /** Số yêu cầu Chi tiết chưa bị từ chối theo từng loại. */
   exceptionCountByType: Partial<Record<ExceptionType, number>>;
 }
 
@@ -161,10 +161,10 @@ export function getAvailableActions(
   const gateBaseEnabled =
     !activeExc && hasExceptionTargets && canRequestExceptionOnCurrentStep;
   const gateBaseReason = activeExc
-    ? "Đang có yêu cầu ngoại lệ khác chờ duyệt/áp dụng cho hồ sơ này."
+    ? "Đang có yêu cầu Chi tiết khác chờ duyệt/áp dụng cho hồ sơ này."
     : !hasExceptionTargets
       ? "Không còn bước phía sau để chuyển thẳng tới."
-      : "Chỉ người xử lý bước hiện tại mới được xin ngoại lệ.";
+      : "Chỉ người xử lý bước hiện tại mới được xin Chi tiết.";
 
   const exceptionActions: AvailableAction[] = [];
   for (const [exceptionType, actionCode] of Object.entries(
@@ -203,7 +203,7 @@ export function getAvailableActions(
     let reason = gateBaseReason;
     if (enabled && !policy) {
       enabled = false;
-      reason = `Chính sách không cho phép loại ngoại lệ này ở cấp ${cap}.`;
+      reason = `Chính sách không cho phép loại Chi tiết này ở cấp ${cap}.`;
     } else if (enabled && policy && count >= policy.maxTimesPerDossier) {
       enabled = false;
       reason = `Đã đạt số lần tối đa cho loại này trên hồ sơ (${policy.maxTimesPerDossier}).`;
@@ -342,10 +342,10 @@ export function getDebugActions(input: AvailableActionsInput): DebugAction[] {
   const gateBaseEnabled =
     !activeExc && hasExceptionTargets && canRequestExceptionOnCurrentStep;
   const gateBaseReason = activeExc
-    ? "Đang có yêu cầu ngoại lệ khác chờ duyệt/áp dụng cho hồ sơ này."
+    ? "Đang có yêu cầu Chi tiết khác chờ duyệt/áp dụng cho hồ sơ này."
     : !hasExceptionTargets
       ? "Không còn bước phía sau để chuyển thẳng tới."
-      : "Chỉ người xử lý bước hiện tại mới được xin ngoại lệ.";
+      : "Chỉ người xử lý bước hiện tại mới được xin Chi tiết.";
 
   const exceptionActions: DebugAction[] = [];
 
@@ -385,7 +385,7 @@ export function getDebugActions(input: AvailableActionsInput): DebugAction[] {
     let reason = gateBaseReason;
     if (enabled && !policy) {
       enabled = false;
-      reason = `Chính sách không cho phép loại ngoại lệ này ở cấp ${cap}.`;
+      reason = `Chính sách không cho phép loại Chi tiết này ở cấp ${cap}.`;
     } else if (enabled && policy && count >= policy.maxTimesPerDossier) {
       enabled = false;
       reason = `Đã đạt số lần tối đa cho loại này trên hồ sơ (${policy.maxTimesPerDossier}).`;

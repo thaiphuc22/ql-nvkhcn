@@ -5,7 +5,30 @@
 
 ---
 
-## ★ CURRENT — Theme `/danh-sach-phan-he` "Đỏ Tác Chiến" (Slice A) — DONE 2026-07-09
+## ★ CURRENT — Gỡ theme `/danh-sach-phan-he`, đưa về design chuẩn các màn khác — DONE 2026-07-09
+
+User đảo chiều quyết định: **bỏ hẳn theme "Đỏ Tác Chiến"** (nền tối blueprint + constellation +
+beam quét + mono + glass tối), thiết kế lại trang portal theo cùng khuôn các màn danh sách khác
+(`ProcessCatalog`…): nền sáng `var(--vht-surface-2)`, `PageHeader` chuẩn + dải `StatCard` (4 ô:
+Tổng/Có quyền/Chưa có quyền/Sắp ra mắt) + `FilterBar` (chip lọc ở `left`, đếm kết quả ở `right`,
+Input.Search) + lưới `PhanHeCard`. Card giữ layout cũ nhưng nền trắng đặc, viền `--vht-border`,
+bỏ backdrop-blur & pill mono.
+- `SubsystemList.tsx`: viết lại — bỏ `ConstellationLines`/`HeroBanner`/`BentoStatCard`, bỏ class
+  `qtkhcn-standalone-bg`/`qtkhcn-mono`, đổi mọi màu chữ sáng-trên-tối → token mực chuẩn.
+- `App.tsx`: header standalone bỏ `qtkhcn-glass-header` (dùng header trắng chuẩn), wordmark QTKHCN
+  → mực đen (bỏ mono/letter-spacing), tên user/chức danh bỏ override màu sáng, `Content` bg
+  standalone `#17090b` → `var(--vht-surface-2)`. Gỡ import chết `DatabaseOutlined`.
+- `tokens.css`: xóa toàn bộ CSS theme không còn dùng (standalone-bg + ::before/::after,
+  glass-header, glass-card, constellation + keyframes draw/node-in/scan/ping/node-pulse,
+  reduced-motion block, `.qtkhcn-mono`, `.qtkhcn-ping-dot`). Giữ tokens :root, scrollbar,
+  bento-card, slot-group-separator.
+
+**Verify**: `npx tsc --noEmit -p tsconfig.json` GREEN (0 lỗi). Chưa click-through trình duyệt —
+**Next: user mở `/danh-sach-phan-he` xác nhận layout sáng đồng bộ các màn khác.**
+
+---
+
+## Lịch sử — Theme `/danh-sach-phan-he` "Đỏ Tác Chiến" (Slice A) — DONE rồi bị gỡ 2026-07-09
 
 Plan of record: `docs/research/danh-sach-phan-he-theme-upgrade-plan-2026-07-09.md`. Frontend-mock
 recolor + hiệu ứng của trang danh sách phân hệ (same carve-out as D10–D13, no F1). 3 quyết định

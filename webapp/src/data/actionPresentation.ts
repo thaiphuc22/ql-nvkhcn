@@ -13,7 +13,7 @@ export const ACTION_SURFACE_LABEL: Record<ActionSurface, string> = {
   DOSSIER_LIST: "Danh sách hồ sơ",
   WORKLIST: "Việc của tôi",
   PROCESS_DETAIL: "Chi tiết quy trình",
-  EXCEPTION_REVIEW: "Duyệt ngoại lệ",
+  EXCEPTION_REVIEW: "Duyệt Chi tiết",
   ACTION_STUDIO: "Ma trận Hành động",
 };
 
@@ -26,16 +26,16 @@ export type ActionUiGroup = "PRIMARY" | "MORE" | "EXCEPTION";
 export const ACTION_UI_GROUP_LABEL: Record<ActionUiGroup, string> = {
   PRIMARY: "Hành động chính",
   MORE: "Hành động khác",
-  EXCEPTION: "Hành động ngoại lệ",
+  EXCEPTION: "Hành động Chi tiết",
 };
 
 export type ActionTone = "primary" | "default" | "danger" | "warning";
 
 export const ACTION_TONE_LABEL: Record<ActionTone, string> = {
-  primary: "Primary",
-  default: "Default",
-  danger: "Danger",
-  warning: "Warning",
+  primary: "Chính",
+  default: "Mặc định",
+  danger: "Nguy hiểm",
+  warning: "Cảnh báo",
 };
 
 export interface ActionPresentation {
@@ -106,7 +106,7 @@ export const ACTION_PRESENTATIONS: ActionPresentation[] = Object.values(
   displayLabel: def.actionName,
   tooltip:
     def.actionType === "EXCEPTION"
-      ? "Hành động ngoại lệ cần kiểm soát và phê duyệt riêng."
+      ? "Hành động Chi tiết cần kiểm soát và phê duyệt riêng."
       : undefined,
   icon: ICON_BY_ACTION[def.actionCode] ?? "control",
   uiGroup: groupForType(def.actionType),

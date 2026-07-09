@@ -18,18 +18,18 @@ Nguồn hiện tại: `webapp/src/data/actionRegistry.ts`.
 > "Đánh giá nhanh" và "Đề xuất bổ sung ưu tiên" gốc bên dưới coi như đã xử lý, giữ lại chỉ để
 > tham khảo lịch sử.
 
-| Action code | Tên hiện tại | Type | Ghi chú |
-|---|---|---|---|
-| `SUBMIT` | Gửi duyệt | `STANDARD` | Gửi hồ sơ từ trạng thái khởi tạo vào luồng xử lý. |
-| `APPROVE_STEP` | Đồng ý duyệt | `STANDARD` | (D10) outcome `APPROVE`. Thay cho `PROCESS_STEP` cũ. |
-| `RETURN_STEP` | Yêu cầu điều chỉnh | `STANDARD` | (D10) outcome `RETURN`. |
-| `REJECT_STEP` | Từ chối duyệt | `STANDARD` | (D10) outcome `REJECT`. |
-| `ADD_COMMENT` | Bổ sung ý kiến | `SUPPORT` | Không đổi workflow chính, cần lý do/nội dung ý kiến. |
-| `DOWNLOAD_DOSSIER` | Tải hồ sơ | `SUPPORT` | Tải/xuất hồ sơ. |
-| `VIEW_HISTORY` | Xem lịch sử | `SUPPORT` | Xem lịch sử xử lý/audit mức cơ bản. |
-| `REQUEST_BYPASS_COUNCIL` | Yêu cầu bỏ qua Hội đồng | `EXCEPTION` | Action ngoại lệ, cần kiểm soát bằng Exception Policy. |
-| `REQUEST_JUMP_TO_HIGHER_APPROVER` | Yêu cầu trình cấp cao hơn | `EXCEPTION` | Action ngoại lệ để đổi tuyến xử lý chuẩn. |
-| `REQUEST_SKIP_STEP` | Yêu cầu bỏ qua bước | `EXCEPTION` | Action ngoại lệ để bỏ qua một bước BPMN. |
+| Action code                       | Tên hiện tại              | Type        | Ghi chú                                               |
+| --------------------------------- | ------------------------- | ----------- | ----------------------------------------------------- |
+| `SUBMIT`                          | Gửi duyệt                 | `STANDARD`  | Gửi hồ sơ từ trạng thái khởi tạo vào luồng xử lý.     |
+| `APPROVE_STEP`                    | Đồng ý duyệt              | `STANDARD`  | (D10) outcome `APPROVE`. Thay cho `PROCESS_STEP` cũ.  |
+| `RETURN_STEP`                     | Yêu cầu điều chỉnh        | `STANDARD`  | (D10) outcome `RETURN`.                               |
+| `REJECT_STEP`                     | Từ chối duyệt             | `STANDARD`  | (D10) outcome `REJECT`.                               |
+| `ADD_COMMENT`                     | Bổ sung ý kiến            | `SUPPORT`   | Không đổi workflow chính, cần lý do/nội dung ý kiến.  |
+| `DOWNLOAD_DOSSIER`                | Tải hồ sơ                 | `SUPPORT`   | Tải/xuất hồ sơ.                                       |
+| `VIEW_HISTORY`                    | Xem lịch sử               | `SUPPORT`   | Xem lịch sử xử lý/audit mức cơ bản.                   |
+| `REQUEST_BYPASS_COUNCIL`          | Yêu cầu bỏ qua Hội đồng   | `EXCEPTION` | Action Chi tiết, cần kiểm soát bằng Exception Policy. |
+| `REQUEST_JUMP_TO_HIGHER_APPROVER` | Yêu cầu trình cấp cao hơn | `EXCEPTION` | Action Chi tiết để đổi tuyến xử lý chuẩn.             |
+| `REQUEST_SKIP_STEP`               | Yêu cầu bỏ qua bước       | `EXCEPTION` | Action Chi tiết để bỏ qua một bước BPMN.              |
 
 <details>
 <summary>Đánh giá gốc &amp; đề xuất Phase 1 (đã xử lý qua D10 — xem lịch sử)</summary>
@@ -42,16 +42,16 @@ Lập quyết định, Đánh giá, Phê duyệt, Công nhận kết quả.
 Nếu tất cả đều dùng `PROCESS_STEP`, màn cấu hình chỉ biết "xử lý bước", không biết bước đó nên
 cho phép `APPROVE`, `REJECT`, `RETURN`, `SIGN`, hay `COMPLETE_REVIEW`.
 
-| Action code | Tên gợi ý | Type | Cờ nên có | Ghi chú |
-|---|---|---|---|---|
-| `APPROVE` | Phê duyệt | `STANDARD` | `requiresConfirm: true` | → đã thành `APPROVE_STEP` (D10). |
-| `REJECT` | Từ chối | `STANDARD` | `requiresReason: true`, `requiresConfirm: true` | → đã thành `REJECT_STEP` (D10). |
-| `RETURN` | Trả lại bước trước | `STANDARD` | `requiresReason: true`, `requiresConfirm: true` | → đã thành `RETURN_STEP` (D10). |
-| `REQUEST_SUPPLEMENT` | Yêu cầu bổ sung hồ sơ | `STANDARD` | `requiresReason: true` | Chưa implement — chưa rõ standard hay support, cần chốt riêng. |
-| `SIGN` | Ký duyệt | `STANDARD` | `requiresConfirm: true` | Chưa implement — có thể chỉ là label khác của `APPROVE_STEP` theo bước (qua Availability Policy), cần chốt. |
-| `COMPLETE_REVIEW` | Hoàn tất thẩm định/đánh giá | `STANDARD` | `requiresConfirm: true` | Chưa implement — cùng câu hỏi như `SIGN`. |
-| `ASSIGN_COUNCIL` | Thành lập/Gán hội đồng | `STANDARD` | `requiresConfirm: true` | Chưa implement — hợp RD02/RD05. |
-| `ISSUE_DECISION` | Ban hành quyết định | `STANDARD` | `requiresConfirm: true` | Chưa implement — hợp QĐ chủ trương, QĐ nghiệm thu, công nhận kết quả. |
+| Action code          | Tên gợi ý                   | Type       | Cờ nên có                                       | Ghi chú                                                                                                     |
+| -------------------- | --------------------------- | ---------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `APPROVE`            | Phê duyệt                   | `STANDARD` | `requiresConfirm: true`                         | → đã thành `APPROVE_STEP` (D10).                                                                            |
+| `REJECT`             | Từ chối                     | `STANDARD` | `requiresReason: true`, `requiresConfirm: true` | → đã thành `REJECT_STEP` (D10).                                                                             |
+| `RETURN`             | Trả lại bước trước          | `STANDARD` | `requiresReason: true`, `requiresConfirm: true` | → đã thành `RETURN_STEP` (D10).                                                                             |
+| `REQUEST_SUPPLEMENT` | Yêu cầu bổ sung hồ sơ       | `STANDARD` | `requiresReason: true`                          | Chưa implement — chưa rõ standard hay support, cần chốt riêng.                                              |
+| `SIGN`               | Ký duyệt                    | `STANDARD` | `requiresConfirm: true`                         | Chưa implement — có thể chỉ là label khác của `APPROVE_STEP` theo bước (qua Availability Policy), cần chốt. |
+| `COMPLETE_REVIEW`    | Hoàn tất thẩm định/đánh giá | `STANDARD` | `requiresConfirm: true`                         | Chưa implement — cùng câu hỏi như `SIGN`.                                                                   |
+| `ASSIGN_COUNCIL`     | Thành lập/Gán hội đồng      | `STANDARD` | `requiresConfirm: true`                         | Chưa implement — hợp RD02/RD05.                                                                             |
+| `ISSUE_DECISION`     | Ban hành quyết định         | `STANDARD` | `requiresConfirm: true`                         | Chưa implement — hợp QĐ chủ trương, QĐ nghiệm thu, công nhận kết quả.                                       |
 
 </details>
 
@@ -64,13 +64,13 @@ Nhóm này không đổi workflow chính, nhưng tăng khả năng thao tác h�
 > (Action Studio). **Chưa có `ActionAvailabilityPolicy` nào tham chiếu** các mã này → chưa xuất
 > hiện trên hồ sơ/worklist thật cho tới khi cấu hình policy theo từng bước/quy trình.
 
-| Action code | Tên gợi ý | Type | Ghi chú |
-|---|---|---|---|
-| `UPLOAD_ATTACHMENT` | Tải lên tài liệu | `SUPPORT` | Bổ sung chiều ngược với `DOWNLOAD_DOSSIER`. |
-| `VIEW_DOCUMENTS` | Xem tài liệu | `SUPPORT` | Tách khỏi download để kiểm soát quyền xem/tải riêng. |
-| `EXPORT_PDF` | Xuất PDF | `SUPPORT` | Xuất hồ sơ, tờ trình, phiếu nhận xét, phiếu phê duyệt. |
-| `PRINT_DOSSIER` | In hồ sơ | `SUPPORT` | Thường cần cho nghiệp vụ hành chính. |
-| `VIEW_AUDIT` | Xem audit chi tiết | `SUPPORT` | Có thể tách khỏi `VIEW_HISTORY` nếu audit là nghiệp vụ quan trọng. |
+| Action code         | Tên gợi ý          | Type      | Ghi chú                                                            |
+| ------------------- | ------------------ | --------- | ------------------------------------------------------------------ |
+| `UPLOAD_ATTACHMENT` | Tải lên tài liệu   | `SUPPORT` | Bổ sung chiều ngược với `DOWNLOAD_DOSSIER`.                        |
+| `VIEW_DOCUMENTS`    | Xem tài liệu       | `SUPPORT` | Tách khỏi download để kiểm soát quyền xem/tải riêng.               |
+| `EXPORT_PDF`        | Xuất PDF           | `SUPPORT` | Xuất hồ sơ, tờ trình, phiếu nhận xét, phiếu phê duyệt.             |
+| `PRINT_DOSSIER`     | In hồ sơ           | `SUPPORT` | Thường cần cho nghiệp vụ hành chính.                               |
+| `VIEW_AUDIT`        | Xem audit chi tiết | `SUPPORT` | Có thể tách khỏi `VIEW_HISTORY` nếu audit là nghiệp vụ quan trọng. |
 
 ## Đề xuất Exception Actions
 
@@ -84,13 +84,13 @@ Nhóm này làm thay đổi đường đi chuẩn hoặc xử lý tình huống 
 > 1-1 với `ExceptionType`) — cần một việc riêng: thêm `ExceptionType` + `ExceptionActionPolicy`
 > cho từng mã trước khi chúng thật sự xin/duyệt được trên hồ sơ.
 
-| Action code | Tên gợi ý | Type | Ghi chú |
-|---|---|---|---|
-| `REQUEST_ADD_REVIEWER` | Yêu cầu bổ sung người thẩm định | `EXCEPTION` | Khi cần thêm CQNV/Hội đồng/người phản biện. |
-| `REQUEST_REPLACE_APPROVER` | Yêu cầu thay người xử lý/phê duyệt | `EXCEPTION` | Khi người xử lý vắng mặt, sai phân công, hoặc đổi thẩm quyền. |
-| `REQUEST_REOPEN_STEP` | Yêu cầu mở lại bước đã xử lý | `EXCEPTION` | Cần kiểm soát mạnh vì có thể đảo lại trạng thái hồ sơ. Seed với `requiresEvidence: true`. |
-| `REQUEST_MANUAL_COMPLETION` | Yêu cầu hoàn tất thủ công | `EXCEPTION` | Dùng khi lỗi tích hợp, lỗi Camunda, hoặc cần can thiệp vận hành. Seed với `requiresEvidence: true`. |
-| `REQUEST_EMERGENCY_APPROVAL` | Yêu cầu phê duyệt khẩn | `EXCEPTION` | Chỉ nên bật nếu nghiệp vụ có luồng ưu tiên/khẩn. |
+| Action code                  | Tên gợi ý                          | Type        | Ghi chú                                                                                             |
+| ---------------------------- | ---------------------------------- | ----------- | --------------------------------------------------------------------------------------------------- |
+| `REQUEST_ADD_REVIEWER`       | Yêu cầu bổ sung người thẩm định    | `EXCEPTION` | Khi cần thêm CQNV/Hội đồng/người phản biện.                                                         |
+| `REQUEST_REPLACE_APPROVER`   | Yêu cầu thay người xử lý/phê duyệt | `EXCEPTION` | Khi người xử lý vắng mặt, sai phân công, hoặc đổi thẩm quyền.                                       |
+| `REQUEST_REOPEN_STEP`        | Yêu cầu mở lại bước đã xử lý       | `EXCEPTION` | Cần kiểm soát mạnh vì có thể đảo lại trạng thái hồ sơ. Seed với `requiresEvidence: true`.           |
+| `REQUEST_MANUAL_COMPLETION`  | Yêu cầu hoàn tất thủ công          | `EXCEPTION` | Dùng khi lỗi tích hợp, lỗi Camunda, hoặc cần can thiệp vận hành. Seed với `requiresEvidence: true`. |
+| `REQUEST_EMERGENCY_APPROVAL` | Yêu cầu phê duyệt khẩn             | `EXCEPTION` | Chỉ nên bật nếu nghiệp vụ có luồng ưu tiên/khẩn.                                                    |
 
 ## Khuyến nghị triển khai
 
@@ -109,7 +109,7 @@ Phase 2: **Seed xong 2026-07-08** — 5 action đã có trong `ACTION_REGISTRY`/
 - `VIEW_AUDIT`
 
 Phase 3: **Seed xong 2026-07-08** — 5 action đã có trong `ACTION_REGISTRY`/"Danh mục nút",
-**chưa** có `ExceptionType`/`ExceptionActionPolicy` (chưa đi qua được luồng xin/duyệt ngoại lệ):
+**chưa** có `ExceptionType`/`ExceptionActionPolicy` (chưa đi qua được luồng xin/duyệt Chi tiết):
 
 - `REQUEST_ADD_REVIEWER`
 - `REQUEST_REPLACE_APPROVER`
