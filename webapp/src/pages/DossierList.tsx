@@ -5,7 +5,6 @@ import {
   Row,
   Segmented,
   Space,
-  Tag,
   Typography,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
@@ -67,7 +66,7 @@ export default function DossierList() {
       title: 'Quy trình',
       dataIndex: 'quyTrinh',
       width: 100,
-      render: (v: string) => (v ? <Tag>{v}</Tag> : <Text type="secondary">—</Text>),
+      render: (v: string) => (v ? <Text>{v}</Text> : <Text type="secondary">—</Text>),
     },
     { title: 'Cấp', dataIndex: 'cap', width: 90 },
     { title: 'Loại', dataIndex: 'loai', width: 120 },

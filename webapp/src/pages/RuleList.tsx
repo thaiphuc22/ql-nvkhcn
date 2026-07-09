@@ -214,11 +214,7 @@ export default function RuleList() {
             title: 'Quy trình áp dụng',
             dataIndex: 'rdApDung',
             render: (rds: string[]) => (
-              <Space size={4} wrap>
-                {rds.map((rd) => (
-                  <Tag key={rd}>{rd}</Tag>
-                ))}
-              </Space>
+              <Text>{rds.join(', ')}</Text>
             ),
           },
           {
@@ -232,7 +228,7 @@ export default function RuleList() {
             title: 'Phiên bản',
             dataIndex: 'version',
             align: 'center',
-            render: (v: number) => <Tag>v{v}</Tag>,
+            render: (v: number) => <Text type="secondary">v{v}</Text>,
           },
           {
             title: 'Cập nhật',

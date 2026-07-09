@@ -99,7 +99,7 @@ export default function ProcessMonitor() {
         <div>
           <Space size={6}>
             <Text code>{r.process}</Text>
-            <Tag>v{r.version}</Tag>
+            <Text type="secondary">v{r.version}</Text>
           </Space>
           <div>
             <Text type="secondary" style={{ fontSize: 12 }}>

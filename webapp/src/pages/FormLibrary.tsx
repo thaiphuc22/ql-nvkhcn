@@ -40,14 +40,6 @@ const FormDesigner = lazy(() => import('../components/FormDesigner'))
 
 const { Text, Paragraph } = Typography
 
-const LOAI_COLOR: Record<string, string> = {
-  'Soạn thảo': 'purple',
-  'Góp ý': 'blue',
-  'Nhận xét': 'geekblue',
-  'Thẩm định': 'gold',
-  'Phê duyệt': 'green',
-}
-
 function slugify(s: string): string {
   return s
     .normalize('NFD')
@@ -141,7 +133,7 @@ export default function FormLibrary() {
       title: 'Loại',
       dataIndex: 'loai',
       width: 120,
-      render: (v?: string) => (v ? <Tag color={LOAI_COLOR[v]}>{v}</Tag> : <Text type="secondary">—</Text>),
+      render: (v?: string) => (v ? <Text>{v}</Text> : <Text type="secondary">—</Text>),
     },
     {
       title: 'Số trường',

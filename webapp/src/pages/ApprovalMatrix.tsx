@@ -1,12 +1,12 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
   App,
-  Avatar,
   Button,
   Card,
   Col,
   Divider,
+  Drawer,
   Empty,
   Form,
   Input,
@@ -26,8 +26,10 @@ import {
 import {
   AppstoreOutlined,
   ClusterOutlined,
+  CopyOutlined,
   DeleteOutlined,
   EditOutlined,
+  HistoryOutlined,
   PlusOutlined,
   SolutionOutlined,
   SwapOutlined,
@@ -39,10 +41,9 @@ import ConditionBuilder from "../components/ConditionBuilder";
 import AssignmentBuilder, {
   type AssignmentTargetIssue,
 } from "../components/AssignmentBuilder";
+import SimulationPanel from "../components/SimulationPanel";
 import { PageHeader } from "../components/ui";
-import { roleLabel } from "../data/roles";
 import {
-  DELEGATIONS,
   LOAI_HOI_DONG_LABEL,
   MODE_LABEL,
   VND,
@@ -61,6 +62,11 @@ import {
   type ApprovalSlot,
 } from "../data/approvalSlotCatalog";
 import {
+  APPROVAL_AUDIT_ACTION_LABEL,
+  APPROVAL_AUDIT_ACTION_COLOR,
+  type ApprovalRuleAuditAction,
+} from "../data/approvalMatrix";
+import {
   anyCondition,
   describeConditionTree,
   leaf,
@@ -70,6 +76,7 @@ import {
 import { describeHelpers } from "../data/approvalVariableRegistry";
 import { analyzeRules, warningsByRule } from "../data/approvalMatrixAnalyzer";
 import { useApprovalMatrix } from "../store/ApprovalMatrixContext";
+import { usePermissions } from "../store/AuthContext";
 import {
   useApprovalSlotCatalog,
   type CreateApprovalSlotInput,
@@ -79,19 +86,11 @@ import { users } from "../data/users";
 
 const { Text, Paragraph } = Typography;
 
-/** Chữ cái đầu họ tên → nhãn avatar. */
-function initials(name: string): string {
-  const p = name.trim().split(/\s+/);
-  return (
-    (p[0]?.[0] ?? "") + (p.length > 1 ? p[p.length - 1][0] : "")
-  ).toUpperCase();
-}
-
 /** Diễn giải điều kiện của một rule thành câu đọc được (bảng). */
 function conditionSummary(r: ApprovalRule) {
   const empty = r.conditions.items.length === 0;
   return empty ? (
-    <Tag>Mọi hồ sơ</Tag>
+    <Tag color="orange" style={{ margin: 0 }}>Mọi hồ sơ</Tag>
   ) : (
     <Text style={{ fontSize: 12 }}>
       {describeConditionTree(r.conditions, describeHelpers)}
@@ -213,10 +212,14 @@ function MatrixTab() {
   // Nguồn luật CHUNG (store) — sửa ở đây lan sang runtime hồ sơ (Slice G).
   const {
     rules,
+    delegations,
     upsertRule,
     removeRule: removeRuleCtx,
     toggleRule,
   } = useApprovalMatrix();
+  const { user } = usePermissions();
+  const actor = user?.hoTen ?? "Quản trị hệ thống";
+  const TODAY = "2026-07-09";
 
   // ── Rule Builder (modal) ────────────────────────────────────────────────
   const [editing, setEditing] = useState<ApprovalRule | null>(null);
@@ -414,6 +417,17 @@ function MatrixTab() {
     setDraftSimResult(null);
     setModalOpen(true);
   };
+  const cloneRule = (r: ApprovalRule) => {
+    const seed: RuleFormValues = { ...ruleToFormValues(r), ten: `${r.ten} (bản sao)`, enabled: true };
+    setEditing(null); // tạo mới, không ghi đè
+    setFormSeed(seed);
+    form.resetFields();
+    form.setFieldsValue(seed);
+    setCondDraft(structuredClone(r.conditions));
+    setAsgDraft(structuredClone(r.assignment));
+    setDraftSimResult(null);
+    setModalOpen(true);
+  };
 
   const saveRule = async () => {
     const v = await form.validateFields();
@@ -435,20 +449,48 @@ function MatrixTab() {
       enabled: v.enabled,
       version: (editing?.version ?? 0) + 1,
     };
-    upsertRule(next);
+    upsertRule(next, actor);
     setModalOpen(false);
     message.success(editing ? "Đã cập nhật luật." : "Đã thêm luật mới.");
   };
   const removeRule = (id: string) => {
-    removeRuleCtx(id);
+    removeRuleCtx(id, actor);
     message.success("Đã xoá luật.");
   };
-  const toggle = (id: string, enabled: boolean) => toggleRule(id, enabled);
+  const toggle = (id: string, enabled: boolean) => toggleRule(id, enabled, actor);
+
+  // Reset form khi drawer mở (thay afterOpenChange của Modal).
+  useEffect(() => {
+    if (modalOpen) form.setFieldsValue(formSeed);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modalOpen]);
 
   const sortedRules = useMemo(
     () => [...rules].sort((a, b) => a.priority - b.priority),
     [rules],
   );
+
+  // ── Filter ──────────────────────────────────────────────────────────────
+  const [filterSlot, setFilterSlot] = useState<string>("all");
+  const [filterEnabled, setFilterEnabled] = useState<string>("all");
+
+  // ── Simulation Drawer ──────────────────────────────────────────────────
+  const [simDrawerOpen, setSimDrawerOpen] = useState(false);
+
+  // ── History Drawer ─────────────────────────────────────────────────────
+  const [historyRuleId, setHistoryRuleId] = useState<string | null>(null);
+  const { getVersions, getAudit } = useApprovalMatrix();
+  const historyVersions = historyRuleId ? getVersions(historyRuleId) : [];
+  const historyAudit = historyRuleId ? getAudit(historyRuleId) : [];
+
+  const filteredRules = useMemo(() => {
+    return sortedRules.filter((r) => {
+      if (filterSlot !== "all" && r.slot !== filterSlot) return false;
+      if (filterEnabled === "on" && !r.enabled) return false;
+      if (filterEnabled === "off" && r.enabled) return false;
+      return true;
+    });
+  }, [sortedRules, filterSlot, filterEnabled]);
 
   // ── Phân tích xung đột / độ phủ (Slice F) ────────────────────────────────
   const warnings = useMemo(() => analyzeRules(rules), [rules]);
@@ -458,30 +500,16 @@ function MatrixTab() {
     [warnings],
   );
 
-  // ── Simulation ──────────────────────────────────────────────────────────
-  const [simSlot, setSimSlot] = useState<SlotCode>("PHE_DUYET");
-  const [simCap, setSimCap] = useState<"CS" | "TD">("TD");
-  const [simLoaiHD, setSimLoaiHD] = useState<string>("HD_KHCN_TD");
-  const [simBudget, setSimBudget] = useState<number>(12_000_000_000);
-  const [result, setResult] = useState<ResolveResult | null>(null);
-
-  const runSim = useCallback(() => {
-    setResult(
-      resolveApprovers(rules, {
-        slot: simSlot,
-        cap: simCap,
-        loaiHoiDong: simLoaiHD,
-        tongDuToan: simBudget,
-      }),
-    );
-  }, [rules, simSlot, simCap, simLoaiHD, simBudget]);
-
   const columns = [
     {
-      title: "Ưu tiên",
+      title: (
+        <Tooltip title="Số càng nhỏ càng ưu tiên. Luật đầu tiên khớp điều kiện sẽ thắng (first-match).">
+          #
+        </Tooltip>
+      ),
       dataIndex: "priority",
-      width: 84,
-      render: (p: number) => <Tag>{p}</Tag>,
+      width: 52,
+      render: (p: number) => <Text type="secondary" style={{ fontSize: 12, fontWeight: 600 }}>{p}</Text>,
     },
     {
       title: "Luật",
@@ -513,9 +541,9 @@ function MatrixTab() {
               )}
             </Space>
             <div>
-              <Tag color="purple" style={{ marginTop: 4 }}>
+              <Text type="secondary" style={{ fontSize: 11 }}>
                 {slotLabel(r.slot)}
-              </Tag>
+              </Text>
             </div>
           </div>
         );
@@ -529,29 +557,41 @@ function MatrixTab() {
     {
       title: "Kết quả phân công",
       key: "approver",
-      render: (_: unknown, r: ApprovalRule) => (
-        <Space direction="vertical" size={2}>
-          <Space size={4} wrap>
-            {r.assignment.targets.map((t, i) => (
-              <Tag
-                key={i}
-                color={
-                  t.type === "GROUP"
-                    ? "green"
-                    : t.type === "USER"
-                      ? "blue"
-                      : "default"
-                }
-              >
-                {describeTarget(t)}
-              </Tag>
-            ))}
+      render: (_: unknown, r: ApprovalRule) => {
+        const targets = r.assignment.targets;
+        const visible = targets.slice(0, 2);
+        const overflow = targets.length - 2;
+        return (
+          <Space direction="vertical" size={2}>
+            <Space size={4} wrap>
+              {visible.map((t, i) => (
+                <Text
+                  key={i}
+                  style={{
+                    fontSize: 12,
+                    color: t.type === "GROUP" ? "#389e0d" : t.type === "USER" ? "#1677ff" : undefined,
+                  }}
+                >
+                  {describeTarget(t)}
+                  {i < visible.length - 1 ? ", " : ""}
+                </Text>
+              ))}
+              {overflow > 0 && (
+                <Tooltip
+                  title={targets.slice(2).map((t, i) => (
+                    <div key={i}>{describeTarget(t)}</div>
+                  ))}
+                >
+                  <Tag style={{ cursor: "default" }}>+{overflow}</Tag>
+                </Tooltip>
+              )}
+            </Space>
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              {MODE_LABEL[r.assignment.mode]}
+            </Text>
           </Space>
-          <Text type="secondary" style={{ fontSize: 11 }}>
-            Chế độ: {MODE_LABEL[r.assignment.mode]}
-          </Text>
-        </Space>
-      ),
+        );
+      },
     },
     {
       title: "Bật",
@@ -564,22 +604,42 @@ function MatrixTab() {
     {
       title: "",
       key: "act",
-      width: 92,
+      width: 160,
       render: (_: unknown, r: ApprovalRule) => (
         <Space size={2}>
-          <Button
-            size="small"
-            type="text"
-            icon={<EditOutlined />}
-            onClick={() => openEdit(r)}
-          />
+          <Tooltip title="Sửa">
+            <Button
+              size="small"
+              type="text"
+              icon={<EditOutlined />}
+              onClick={() => openEdit(r)}
+            />
+          </Tooltip>
+          <Tooltip title="Nhân bản">
+            <Button
+              size="small"
+              type="text"
+              icon={<CopyOutlined />}
+              onClick={() => cloneRule(r)}
+            />
+          </Tooltip>
+          <Tooltip title="Lịch sử">
+            <Button
+              size="small"
+              type="text"
+              icon={<HistoryOutlined />}
+              onClick={() => setHistoryRuleId(r.id)}
+            />
+          </Tooltip>
           <Popconfirm
             title="Xoá luật này?"
             onConfirm={() => removeRule(r.id)}
             okText="Xoá"
             cancelText="Huỷ"
           >
-            <Button size="small" type="text" danger icon={<DeleteOutlined />} />
+            <Tooltip title="Xoá">
+              <Button size="small" type="text" danger icon={<DeleteOutlined />} />
+            </Tooltip>
           </Popconfirm>
         </Space>
       ),
@@ -627,7 +687,7 @@ function MatrixTab() {
       )}
 
       <Row gutter={[16, 16]}>
-        <Col xs={24} lg={15}>
+        <Col xs={24}>
           <Card
             size="small"
             title={
@@ -637,23 +697,88 @@ function MatrixTab() {
               </Space>
             }
             extra={
-              <Button
-                type="primary"
-                size="small"
-                icon={<PlusOutlined />}
-                onClick={openCreate}
-              >
-                Thêm luật
-              </Button>
+              <Space size={8} wrap>
+                <Select
+                  size="small"
+                  style={{ width: 160 }}
+                  value={filterSlot}
+                  onChange={(v) => setFilterSlot(v)}
+                  options={[
+                    { value: "all", label: "Tất cả loại phê duyệt" },
+                    ...APPROVAL_SLOTS.filter((s) => s.trangThai === "active").map((s) => ({
+                      value: s.code,
+                      label: s.ten,
+                    })),
+                  ]}
+                />
+                <Select
+                  size="small"
+                  style={{ width: 120 }}
+                  value={filterEnabled}
+                  onChange={(v) => setFilterEnabled(v)}
+                  options={[
+                    { value: "all", label: "Tất cả trạng thái" },
+                    { value: "on", label: "Đang bật" },
+                    { value: "off", label: "Đang tắt" },
+                  ]}
+                />
+                <Button
+                  type="primary"
+                  size="small"
+                  icon={<PlusOutlined />}
+                  onClick={openCreate}
+                >
+                  Thêm luật
+                </Button>
+                <Button
+                  size="small"
+                  icon={<ThunderboltOutlined />}
+                  onClick={() => setSimDrawerOpen(true)}
+                >
+                  Mô phỏng
+                </Button>
+              </Space>
             }
           >
-            <Table
-              size="small"
-              rowKey="id"
-              pagination={false}
-              dataSource={sortedRules}
-              columns={columns}
-            />
+            {rules.length === 0 ? (
+              <Empty
+                description={
+                  <span>
+                    Chưa có luật ánh xạ nào.
+                    <br />
+                    Bấm <Text strong>"Thêm luật"</Text> để tạo luật đầu tiên.
+                  </span>
+                }
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                style={{ padding: "24px 0" }}
+              >
+                <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+                  Thêm luật
+                </Button>
+              </Empty>
+            ) : (
+              <Table
+                size="small"
+                rowKey="id"
+                rowClassName={(_record: ApprovalRule, index: number) => {
+                  if (index === 0) return "";
+                  const prev = filteredRules[index - 1];
+                  return _record.slot !== prev?.slot ? "slot-group-separator" : "";
+                }}
+                pagination={
+                  rules.length > 10
+                    ? { showSizeChanger: true, pageSizeOptions: [10, 20, 50], showTotal: (t: number) => `${t} luật` }
+                    : { hideOnSinglePage: true }
+                }
+                dataSource={filteredRules}
+                columns={columns}
+                locale={{
+                  emptyText: filterSlot !== "all" || filterEnabled !== "all"
+                    ? "Không có luật nào khớp bộ lọc."
+                    : undefined,
+                }}
+              />
+            )}
           </Card>
 
           <Card
@@ -671,15 +796,18 @@ function MatrixTab() {
               biết. Ví dụ dưới đang hiệu lực sẽ tự chuyển công việc của người uỷ
               quyền sang người nhận.
             </Paragraph>
-            {DELEGATIONS.map((d) => {
+            {delegations.length === 0 && (
+              <Empty description="Chưa có uỷ quyền nào" image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ fontSize: 12 }} />
+            )}
+            {delegations.map((d) => {
               const from = users.find((u) => u.id === d.fromUserId);
               const to = users.find((u) => u.id === d.toUserId);
               return (
                 <div key={d.id} style={{ marginBottom: 8 }}>
                   <Space wrap>
-                    <Tag color="volcano">{from?.hoTen}</Tag>
+                    <Tag color="volcano">{from?.hoTen ?? d.fromUserId}</Tag>
                     <SwapOutlined />
-                    <Tag color="green">{to?.hoTen}</Tag>
+                    <Tag color="green">{to?.hoTen ?? d.toUserId}</Tag>
                     <Text type="secondary" style={{ fontSize: 12 }}>
                       {d.from} → {d.to} · {d.lyDo}
                     </Text>
@@ -689,248 +817,130 @@ function MatrixTab() {
             })}
           </Card>
         </Col>
-
-        <Col xs={24} lg={9}>
-          <Card
-            size="small"
-            title={
-              <Space>
-                <ThunderboltOutlined />
-                Mô phỏng (Simulation)
-              </Space>
-            }
-          >
-            <Space direction="vertical" size={12} style={{ width: "100%" }}>
-              <div>
-                <Text type="secondary">Loại phê duyệt (Need Role từ BPMN)</Text>
-                <Select
-                  style={{ width: "100%", marginTop: 4 }}
-                  value={simSlot}
-                  onChange={setSimSlot}
-                  options={APPROVAL_SLOTS.filter(
-                    (s) => s.trangThai === "active",
-                  ).map((s) => ({ value: s.code, label: s.ten }))}
-                />
-              </div>
-              <div>
-                <Text type="secondary">Cấp nhiệm vụ (cap) — từ DMN</Text>
-                <Select
-                  style={{ width: "100%", marginTop: 4 }}
-                  value={simCap}
-                  onChange={setSimCap}
-                  options={[
-                    { value: "CS", label: "Cơ sở" },
-                    { value: "TD", label: "Tập đoàn" },
-                  ]}
-                />
-              </div>
-              {simSlot === "HOI_DONG" && (
-                <div>
-                  <Text type="secondary">
-                    Loại hội đồng (loaiHoiDong) — output DMN
-                  </Text>
-                  <Select
-                    style={{ width: "100%", marginTop: 4 }}
-                    value={simLoaiHD}
-                    onChange={setSimLoaiHD}
-                    options={Object.entries(LOAI_HOI_DONG_LABEL).map(
-                      ([v, l]) => ({ value: v, label: l }),
-                    )}
-                  />
-                </div>
-              )}
-              <div>
-                <Text type="secondary">
-                  Tổng dự toán (đồng) — business data
-                </Text>
-                <InputNumber<number>
-                  style={{ width: "100%", marginTop: 4 }}
-                  min={0}
-                  step={1_000_000_000}
-                  value={simBudget}
-                  onChange={(v) => setSimBudget(v ?? 0)}
-                  formatter={(v) => VND.format(Number(v ?? 0))}
-                  parser={(s) => Number((s ?? "").replace(/\D/g, ""))}
-                />
-              </div>
-
-              <Button
-                type="primary"
-                icon={<ThunderboltOutlined />}
-                block
-                onClick={runSim}
-              >
-                Xem kết quả
-              </Button>
-
-              {result && (
-                <>
-                  <Divider style={{ margin: "4px 0" }} />
-                  <Alert
-                    type={result.matchedRule ? "success" : "warning"}
-                    showIcon
-                    message={
-                      result.matchedRule
-                        ? `Kết quả:  ${result.mode ? MODE_LABEL[result.mode] : ""}`
-                        : "Không có luật khớp"
-                    }
-                    description={
-                      <span style={{ fontSize: 12 }}>{result.reason}</span>
-                    }
-                  />
-                  {result.warnings.length > 0 && (
-                    <Alert
-                      type="warning"
-                      showIcon
-                      style={{ fontSize: 12 }}
-                      message="Cảnh báo"
-                      description={
-                        <ul
-                          style={{ margin: 0, paddingLeft: 18, fontSize: 12 }}
-                        >
-                          {result.warnings.map((w, i) => (
-                            <li key={i}>{w}</li>
-                          ))}
-                        </ul>
-                      }
-                    />
-                  )}
-                  {result.approvers.length > 0 && (
-                    <Card
-                      size="small"
-                      style={{ background: "var(--vht-surface-2)" }}
-                    >
-                      <Space
-                        direction="vertical"
-                        size={8}
-                        style={{ width: "100%" }}
-                      >
-                        {result.approvers.map((a) => (
-                          <Space key={a.user.id} align="start">
-                            <Avatar
-                              style={{
-                                background: "#ffdad8",
-                                color: "#bf0027",
-                                fontWeight: 700,
-                              }}
-                            >
-                              {initials(a.user.hoTen)}
-                            </Avatar>
-                            <div style={{ lineHeight: 1.35 }}>
-                              <Text strong>{a.user.hoTen}</Text>
-                              <div>
-                                <Text type="secondary" style={{ fontSize: 12 }}>
-                                  {a.user.chucDanh}
-                                </Text>
-                              </div>
-                              {a.viaRoleCode && (
-                                <Tag color="green" style={{ marginTop: 2 }}>
-                                  {roleLabel(a.viaRoleCode)}
-                                </Tag>
-                              )}
-                              {a.delegatedFrom && (
-                                <Tag
-                                  color="volcano"
-                                  icon={<SwapOutlined />}
-                                  style={{ marginTop: 2 }}
-                                >
-                                  thay {a.delegatedFrom.hoTen}
-                                </Tag>
-                              )}
-                            </div>
-                          </Space>
-                        ))}
-                      </Space>
-                    </Card>
-                  )}
-                  {result.approvers.length === 0 &&
-                    result.matchedRule == null && (
-                      <Empty
-                        description="Không có người phê duyệt"
-                        image={Empty.PRESENTED_IMAGE_SIMPLE}
-                      />
-                    )}
-
-                  {result.evaluatedRules.length > 0 && (
-                    <div>
-                      <Text type="secondary" style={{ fontSize: 12 }}>
-                        Đã xét {result.evaluatedRules.length} luật cùng slot (vì
-                        sao chọn/loại):
-                      </Text>
-                      <Space
-                        direction="vertical"
-                        size={4}
-                        style={{ width: "100%", marginTop: 6 }}
-                      >
-                        {result.evaluatedRules.map((e) => (
-                          <div
-                            key={e.rule.id}
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              gap: 8,
-                              fontSize: 12,
-                              opacity: e.matched ? 1 : 0.6,
-                            }}
-                          >
-                            <Space size={4}>
-                              <Tag
-                                color={
-                                  e.chosen
-                                    ? "green"
-                                    : e.matched
-                                      ? "blue"
-                                      : "default"
-                                }
-                              >
-                                #{e.rule.priority}
-                              </Tag>
-                              <Text delete={!e.matched && !e.chosen}>
-                                {e.rule.ten}
-                              </Text>
-                            </Space>
-                            <Text type="secondary">{e.note}</Text>
-                          </div>
-                        ))}
-                      </Space>
-                    </div>
-                  )}
-                </>
-              )}
-
-              <Paragraph
-                type="secondary"
-                style={{ fontSize: 12, marginBottom: 0 }}
-              >
-                Khi backend/Zeebe sẵn sàng, nút này gọi{" "}
-                <Text code>POST /approval-matrix/resolve</Text>; Camunda chỉ
-                nhận danh sách <Text code>candidateUsers</Text> đã tính. BPMN
-                &amp; ma trận giữ nguyên.
-              </Paragraph>
-            </Space>
-          </Card>
-        </Col>
       </Row>
 
-      <Modal
+      <Drawer
+        title={
+          <Space>
+            <ThunderboltOutlined />
+            Mô phỏng (Simulation)
+          </Space>
+        }
+        open={simDrawerOpen}
+        onClose={() => setSimDrawerOpen(false)}
+        width={480}
+        styles={{ body: { paddingTop: 4 } }}
+      >
+        <SimulationPanel rules={rules} />
+      </Drawer>
+
+      <Drawer
+        title={
+          <Space>
+            <HistoryOutlined />
+            Lịch sử luật ánh xạ
+          </Space>
+        }
+        open={!!historyRuleId}
+        onClose={() => setHistoryRuleId(null)}
+        width={720}
+      >
+        {historyRuleId && (() => {
+          const rule = rules.find((r) => r.id === historyRuleId);
+          // Merge current version vào đầu danh sách
+          const currentSnap = rule ? {
+            id: `current-${rule.id}`,
+            ruleId: rule.id,
+            version: rule.version ?? 1,
+            ten: rule.ten,
+            slot: rule.slot,
+            conditions: rule.conditions,
+            assignment: rule.assignment,
+            priority: rule.priority,
+            enabled: rule.enabled,
+            capNhat: TODAY,
+            nguoiCapNhat: actor,
+            changeNote: '(phiên bản hiện tại)',
+          } : null;
+          const allVersions = currentSnap
+            ? [currentSnap, ...historyVersions.filter((v) => v.version !== (rule?.version ?? 1))]
+            : historyVersions;
+          allVersions.sort((a, b) => b.version - a.version);
+
+          return (
+            <Space direction="vertical" size={24} style={{ width: '100%' }}>
+              <div>
+                <Text strong style={{ fontSize: 14 }}>Lịch sử Phiên bản</Text>
+                {allVersions.length === 0 ? (
+                  <Empty description="Chưa có lịch sử phiên bản." image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ marginTop: 12 }} />
+                ) : (
+                  <Table
+                    dataSource={allVersions}
+                    rowKey="id"
+                    size="small"
+                    pagination={false}
+                    style={{ marginTop: 8 }}
+                    columns={[
+                      {
+                        title: 'Phiên bản', dataIndex: 'version', width: 90,
+                        render: (v: number, rec: (typeof allVersions)[0]) => (
+                          <Space>
+                            <Tag color={rec.id.startsWith('current') ? 'green' : 'default'}>v{v}</Tag>
+                            {rec.id.startsWith('current') && <Text type="secondary" style={{ fontSize: 11 }}>(hiện tại)</Text>}
+                          </Space>
+                        ),
+                      },
+                      { title: 'Ngày', dataIndex: 'capNhat', width: 90, render: (d: string) => <Text type="secondary" style={{ fontSize: 12 }}>{d}</Text> },
+                      { title: 'Người cập nhật', dataIndex: 'nguoiCapNhat', width: 150 },
+                      { title: 'Ghi chú', dataIndex: 'changeNote', ellipsis: true },
+                    ]}
+                  />
+                )}
+              </div>
+
+              <div>
+                <Text strong style={{ fontSize: 14 }}>Nhật ký Thay đổi</Text>
+                {historyAudit.length === 0 ? (
+                  <Empty description="Chưa có nhật ký thay đổi." image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ marginTop: 12 }} />
+                ) : (
+                  <Table
+                    dataSource={historyAudit}
+                    rowKey="id"
+                    size="small"
+                    pagination={historyAudit.length > 10 ? { pageSize: 10 } : false}
+                    style={{ marginTop: 8 }}
+                    columns={[
+                      { title: 'Thời gian', dataIndex: 'timestamp', width: 150, render: (t: string) => <Text type="secondary" style={{ fontSize: 12 }}>{t}</Text> },
+                      {
+                        title: 'Hành động', dataIndex: 'action', width: 130,
+                        render: (a: ApprovalRuleAuditAction) => <Tag color={APPROVAL_AUDIT_ACTION_COLOR[a]}>{APPROVAL_AUDIT_ACTION_LABEL[a]}</Tag>,
+                      },
+                      { title: 'Phiên bản', dataIndex: 'version', width: 80, render: (v: number) => <Tag>v{v}</Tag> },
+                      { title: 'Người thực hiện', dataIndex: 'actor', width: 150 },
+                      { title: 'Chi tiết', dataIndex: 'detail', ellipsis: true },
+                    ]}
+                  />
+                )}
+              </div>
+            </Space>
+          );
+        })()}
+      </Drawer>
+
+      <Drawer
         title={editing ? "Sửa luật ánh xạ" : "Thêm luật ánh xạ"}
         open={modalOpen}
-        onOk={saveRule}
-        onCancel={() => setModalOpen(false)}
-        afterOpenChange={(open) => {
-          if (open) form.setFieldsValue(formSeed);
-        }}
-        okText="Lưu"
-        cancelText="Huỷ"
-        forceRender
-        width={1040}
-        styles={{
-          body: {
-            maxHeight: "calc(100vh - 220px)",
-            overflowY: "auto",
-            paddingTop: 12,
-          },
-        }}
+        onClose={() => setModalOpen(false)}
+        width={960}
+        styles={{ body: { paddingBottom: 80 } }}
+        footer={
+          <Space style={{ float: "right" }}>
+            <Button onClick={() => setModalOpen(false)}>Huỷ</Button>
+            <Button type="primary" onClick={saveRule}>
+              Lưu
+            </Button>
+          </Space>
+        }
       >
         <Form
           key={editing?.id ?? "create"}
@@ -941,55 +951,54 @@ function MatrixTab() {
         >
           <Row gutter={[16, 16]} align="top">
             <Col xs={24} lg={15}>
-              <Space direction="vertical" size={12} style={{ width: "100%" }}>
-                <Card size="small" title="Thông tin luật">
-                  <Form.Item
-                    name="ten"
-                    label="Tên luật"
-                    rules={[{ required: true, message: "Nhập tên luật" }]}
-                  >
-                    <Input placeholder="VD: Phê duyệt — Tập đoàn, ngân sách > 5 tỷ" />
-                  </Form.Item>
-                  <Row gutter={12}>
-                    <Col xs={24} md={12}>
-                      <Form.Item
-                        name="slot"
-                        label="Loại phê duyệt"
-                        rules={[{ required: true }]}
-                      >
-                        <Select
-                          options={APPROVAL_SLOTS.filter(
-                            (s) => s.trangThai === "active",
-                          ).map((s) => ({ value: s.code, label: s.ten }))}
-                        />
-                      </Form.Item>
-                    </Col>
-                    <Col xs={12} md={6}>
-                      <Form.Item
-                        name="priority"
-                        label="Ưu tiên"
-                        rules={[{ required: true }]}
-                      >
-                        <InputNumber style={{ width: "100%" }} min={1} />
-                      </Form.Item>
-                    </Col>
-                    <Col xs={12} md={6}>
-                      <Form.Item
-                        name="enabled"
-                        label="Kích hoạt"
-                        valuePropName="checked"
-                      >
-                        <Switch />
-                      </Form.Item>
-                    </Col>
-                  </Row>
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    Số ưu tiên nhỏ hơn sẽ được xét trước theo cơ chế
-                    first-match.
-                  </Text>
-                </Card>
+              <Card size="small" title="Thông tin luật">
+                <Form.Item
+                  name="ten"
+                  label="Tên luật"
+                  rules={[{ required: true, message: "Nhập tên luật" }]}
+                >
+                  <Input placeholder="VD: Phê duyệt — Tập đoàn, ngân sách > 5 tỷ" />
+                </Form.Item>
+                <Row gutter={12}>
+                  <Col xs={24} md={12}>
+                    <Form.Item
+                      name="slot"
+                      label="Loại phê duyệt"
+                      rules={[{ required: true }]}
+                    >
+                      <Select
+                        options={APPROVAL_SLOTS.filter(
+                          (s) => s.trangThai === "active",
+                        ).map((s) => ({ value: s.code, label: s.ten }))}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={12} md={6}>
+                    <Form.Item
+                      name="priority"
+                      label="Ưu tiên"
+                      rules={[{ required: true }]}
+                    >
+                      <InputNumber style={{ width: "100%" }} min={1} />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={12} md={6}>
+                    <Form.Item
+                      name="enabled"
+                      label="Kích hoạt"
+                      valuePropName="checked"
+                    >
+                      <Switch />
+                    </Form.Item>
+                  </Col>
+                </Row>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Số ưu tiên nhỏ hơn sẽ được xét trước theo cơ chế first-match.
+                </Text>
 
-                <Card size="small" title="Điều kiện áp dụng">
+                <Divider style={{ margin: "16px 0 12px" }} />
+                <Text strong style={{ fontSize: 13 }}>Điều kiện áp dụng</Text>
+                <div style={{ marginTop: 8 }}>
                   {condDraft.items.length === 0 && (
                     <Alert
                       type="warning"
@@ -1022,9 +1031,11 @@ function MatrixTab() {
                       onChange={setCondDraft}
                     />
                   </Form.Item>
-                </Card>
+                </div>
 
-                <Card size="small" title="Action sẽ hiện cho ai">
+                <Divider style={{ margin: "16px 0 12px" }} />
+                <Text strong style={{ fontSize: 13 }}>Action sẽ hiện cho ai</Text>
+                <div style={{ marginTop: 8 }}>
                   {targetPresets.length > 0 && (
                     <Space size={[8, 8]} wrap style={{ marginBottom: 12 }}>
                       <Text type="secondary" style={{ fontSize: 12 }}>
@@ -1051,8 +1062,8 @@ function MatrixTab() {
                       issues={assignmentTargetIssues}
                     />
                   </Form.Item>
-                </Card>
-              </Space>
+                </div>
+              </Card>
             </Col>
 
             <Col xs={24} lg={9}>
@@ -1270,7 +1281,7 @@ function MatrixTab() {
             </Col>
           </Row>
         </Form>
-      </Modal>
+      </Drawer>
     </div>
   );
 }

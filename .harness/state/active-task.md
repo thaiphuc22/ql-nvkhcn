@@ -1,7 +1,243 @@
 # Active Task
 
-**Last updated**: 2026-07-08
+**Last updated**: 2026-07-09
 **Agent role**: Delivery Manager / Frontend implementer
+
+---
+
+## ★ CURRENT — Theme `/danh-sach-phan-he` "Đỏ Tác Chiến" (Slice A) — DONE 2026-07-09
+
+Plan of record: `docs/research/danh-sach-phan-he-theme-upgrade-plan-2026-07-09.md`. Frontend-mock
+recolor + hiệu ứng của trang danh sách phân hệ (same carve-out as D10–D13, no F1). 3 quyết định
+đã chốt trong plan: giữ nền tối blueprint, giữ `window.open`, đổi Navy/Gold → Đỏ Tác Chiến.
+
+- **A1 recolor**: `tokens.css` — biến `--blueprint-*` + toàn bộ gradient layer (L2/L3/L4, beam
+  `::before`, `.qtkhcn-glass-header`) sang `--vht-red`/`--vht-red-chrome` theo bảng palette trong
+  plan; đồng thời quét sạch màu gold/navy còn sót ở inline style `SubsystemList.tsx` (section
+  title/hero/empty-state/request-access → trắng ánh đỏ `rgba(255,241,243|255,218,216,…)`) và nền
+  standalone `App.tsx:591` (`#0a1628`→`#17090b`). Grep xác nhận 0 giá trị palette cũ còn lại.
+- **A2 đường nối tự vẽ**: bỏ 3 lớp L5 linear-gradient tĩnh khỏi `background-image`; thêm
+  `ConstellationLines` (SVG overlay `.qtkhcn-constellation`, 11 node/11 cạnh, 2 hub khớp
+  `--blueprint-hub1/2`) trong `SubsystemList.tsx`. Kỹ thuật: `pathLength={1}` ⇒ dasharray/offset
+  chuẩn hoá, animate `qtkhcn-draw` 1.8s ease-out **one-shot forwards**, stagger 130ms/đường +
+  node fade-in. `prefers-reduced-motion: reduce` ⇒ render trạng thái vẽ xong ngay + tắt luôn
+  beam quét & ping-dot.
+- **A3 mono**: `index.html` thêm `IBM+Plex+Mono:wght@400;500;600` vào URL Google Fonts sẵn có;
+  `--vht-font-mono` + class `.qtkhcn-mono` trong `tokens.css`; áp cho giá trị số `BentoStatCard`
+  và pill trạng thái card (KHÔNG áp tiêu đề/mô tả tiếng Việt).
+
+**Verify**: `npm run build` GREEN (tsc + vite, 13.6s); grep dist xác nhận
+`.qtkhcn-constellation`/`#17090b`/IBM Plex Mono vào bundle. CHƯA click-through trình duyệt
+(Playwright chưa cài — nhất quán các phiên trước). **Next: user chạy `npm run dev` mở
+`/danh-sach-phan-he` soi palette đỏ + animation vẽ đường + font mono; cần test trực quan dấu
+tiếng Việt của IBM Plex Mono trên pill trạng thái (plan A3 yêu cầu) trước khi chốt.**
+
+**Follow-up tương phản (user feedback sau khi soi trực quan, 2026-07-09 — DONE)**: glass trắng
+64–72% trên nền `#17090b` cho ra xám đục, chữ khó đọc; header trắng + breadcrumb đỏ lạc lõng.
+Fix theo "phương án 1: card sáng đục, header tối":
+- Card/hero/filter-bar `SubsystemList.tsx`: alpha 0.56–0.72 → 0.88–0.92 (trắng gần đục, giữ blur);
+  chữ phụ `#8c8c8c`/`#999` → `#737373`. `.qtkhcn-glass-card` (tokens.css) → 0.92, viền đỏ mờ.
+- `.qtkhcn-glass-header` (tokens.css) → glass tối `rgba(23,9,11,0.72)` + viền dưới đỏ 0.28.
+- `App.tsx` header standalone: breadcrumb (trùng tiêu đề trang) → wordmark `QTKHCN` mono + ô đỏ;
+  tên user/chức danh → chữ sáng (conditional theo `isStandalonePage`).
+- Nhân tiện gỡ chặn build: `ServiceTaskConfig.tsx:55` `CATEGORY_GROUPS` unused (WIP module của
+  user, untracked) → thêm `export` (giữ data). Build GREEN 16.4s.
+
+**Backlog giữ nguyên (đợt sau)**: Slice B (đồng bộ theme sang `PhanHePage.tsx`), Slice C (luồng
+điều hướng PH1/CTA-Modules), D (pendingTasks), E (refactor inline style), F (profile/notification).
+
+---
+
+## ★ CURRENT — eForm builder chrome (D13): palette + panel AntD trên engine form-js — DONE (cả 3 lát, 2026-07-09)
+
+Decision **D13** locked 2026-07-09 (amends D12 §1 "builder unchanged"). User yêu cầu builder
+(`FormDesigner`) "theo AntD 100%": **vỏ = AntD tự viết, ruột = form-js giữ nguyên**. Frontend-mock,
+no F1 dependency. Slice: **Lát A palette → Lát B properties panel → Lát C polish**.
+
+**Kiến trúc chốt (đã đọc source form-js editor):**
+- Editor chỉ export `ContextPadModule`+`FormEditor` ⇒ không gỡ được module palette/panel gọn →
+  **portal palette+panel native vào div ẩn** (`display:none`), dựng UI AntD trên service.
+- Service dùng: `modeling.addFormField/editFormField/removeFormField`, `selection.get()`+event
+  `selection.changed`, `formLayouter.nextRowId()`, `editor._getState().schema` (root field sống).
+- **Kéo–thả MIỄN PHÍ**: draggle bind `pointerdown` capture trên `document.documentElement`, dùng
+  `isContainer(el)` động (classList). Item AntD mang class `fjs-palette-fields fjs-drag-container
+  fjs-no-drop` (wrapper) + `fjs-drag-copy` + `data-field-type` (item) ⇒ dragula tự nhận, thả xuống
+  canvas gọi `createNewField` của form-js. Không viết lại drag.
+
+**Lát A — DONE (2026-07-09).**
+- Tạo `webapp/src/components/formdesign/FieldPalette.tsx`: palette AntD, 4 nhóm (Nhập liệu / Lựa
+  chọn / Trình bày / Bố cục) nhãn tiếng Việt + icon AntD + ô tìm kiếm (`Input`+`Empty`). Mỗi item
+  mang class ma thuật form-js (kéo) + `onClick`→`onAdd(type)` (click).
+- `FormDesigner.tsx`: import FieldPalette; dock trái render `<FieldPalette onAdd={handleAddField}>`;
+  palette native portal vào `<div display:none ref={paletteRef}>`. `handleAddField(type)` dựng attrs
+  như `createNewField` (`_parent`, `layout.row=nextRowId()`), thêm vào cuối container đang chọn
+  (group/dynamiclist) hoặc root qua `modeling.addFormField`.
+- CSS `.vht-fp-*` trong `bpmnio-skin.css` (cùng cụm AntD-parity): item flex + hover đỏ + mirror
+  dragula (`.gu-mirror`).
+- **Verify**: `npm run build` GREEN (12.0s). Cơ chế kéo–thả xác minh qua đọc source (draggle bind
+  document-level pointerdown + isContainer động) — CHƯA click-through trình duyệt (Playwright chưa
+  cài). **Next: user chạy `npm run dev` soi palette + thử kéo/click, xác nhận trước khi làm Lát B.**
+
+**Lát B — DONE (2026-07-09).**
+- Tạo `webapp/src/components/formdesign/FieldProperties.tsx`: panel AntD cho field đang chọn.
+  Sections: Chung (key/label/description) · Nội dung (text/html) · Biểu thức FEEL (expression) ·
+  Kiểm tra hợp lệ (required + min/max cho number + minLength/maxLength cho text) · Tùy chọn
+  (OptionsEditor value/label cho select/radio/checklist/taglist) · Ẩn/hiện FEEL (conditional.hide) ·
+  nút Xóa (Popconfirm). Ô chữ commit-on-blur (mỗi sửa = 1 undo, không mất focus); switch/số commit
+  ngay. Type→nhãn VN + id (copyable). Root (type 'default') → ghi chú; không chọn → Empty.
+- `FormDesigner.tsx`: nghe `selection.changed` → `setSelectedField`; `commandStack.changed` bump
+  `selVersion`; render `<FieldProperties key={id#version}>` (remount nạp lại giá trị sau sửa/undo);
+  panel native portal vào `<div display:none>`. `handleEditField` = `modeling.editFormField` (try/catch
+  key trùng), `handleRemoveField` = tìm parent+index rồi `modeling.removeFormField`. **Gỡ toggle
+  "Nâng cao"** (chỉ điều khiển panel native — không còn ý nghĩa); module `khcnFormSimplePanelModule`
+  giữ nhưng nhận `() => false`.
+- **Verify**: `npm run build` GREEN (12.9s); dev server HMR nạp lại không lỗi. CHƯA click-through.
+  **Next: user thử chọn field trên canvas → sửa key/label/required/options/FEEL/xóa, kiểm undo/redo.**
+
+**Lát C — DONE (2026-07-09). D13 HOÀN TẤT (cả 3 lát).**
+- `FieldProperties.tsx`: thêm props theo type còn thiếu — `group` có section "Bố cục nhóm" (nhãn +
+  Switch "Hiển thị khung viền" = `showOutline`); `dynamiclist` thêm vào REQUIREABLE nên có công tắc
+  *Bắt buộc*. Thêm `showOutline?: boolean` vào FField.
+- `bpmnio-skin.css`: **dọn CSS chết** — bỏ các rule skin palette/panel NATIVE (`.vht-fd-palette-dock
+  .fjs-palette-*`, `.vht-designer .bio-properties-panel-*` bổ sung phiên này) vì native giờ ẩn trong
+  div `display:none` (UI là AntD). Giữ skin CANVAS (`.vht-fd-canvas .fjs-*`) vì canvas vẫn là DOM
+  form-js. Cập nhật comment cụm AntD-parity (chỉ còn canvas). Lưu ý: block Đợt 6
+  `.vht-designer .bio-properties-panel` + polish `.vht-designer .fjs-palette-*` cũ để lại (vô hại,
+  nhắm DOM ẩn; gắn với check:panel-vars/README — không gỡ trong phiên này).
+- **Verify**: `npm run build` GREEN (12.5s). CHƯA click-through (Playwright chưa cài).
+
+**Next (không còn lát D13):** kiểm chứng end-to-end trên trình duyệt khi có Playwright — mở Form
+Designer, kéo/click thêm field, chọn field sửa key/label/required/options/FEEL/showOutline/xóa,
+undo/redo, Lưu → schema round-trip. Việc "sau" (tuỳ chọn): thêm popup FEEL autocomplete (bù D13 §4),
+props nâng cao cho image/table/iframe, kéo item palette AntD có preview đẹp hơn.
+
+---
+
+## eForm B-engine renderer (D12) — ALL 3 LÁT DONE (2026-07-09)
+
+Plan of record: `docs/arch/eform-b-engine-architecture.md`. Decision **D12** locked 2026-07-09.
+Frontend-mock work (swaps the runtime form renderer only) — same carve-out category as
+D10/D11/EPIC06, does NOT touch the F1 blocker.
+
+**PH3 nav grouping (done first, per user) — DONE.** User flagged (from
+`docs/research/userflow-sso-app-portal-phan-he-2026-07-09.md`) that eForm UI must sit in its
+correct phân hệ. Reorganized `webapp/src/App.tsx` sider: "Thư viện biểu mẫu" is now nested under
+a new **"Danh mục dùng chung" (PH3)** submenu (`DatabaseOutlined`) instead of a lone top-level
+item — nav-only, route `/bieu-mau` unchanged. Build green. See memory `ui-organize-by-phanhe`.
+
+**Lát 1 — DONE.** Rewrote `webapp/src/components/FormRenderer.tsx` in place to an AntD renderer
+(flat fields): `text`→markdown-lite Typography (heading/**bold**, no new dep, XSS-safe),
+`textfield`→Input, `textarea`→Input.TextArea, `number`→InputNumber, `checkbox`→Checkbox,
+`checklist`→Checkbox.Group, `radio`→Radio.Group, `select`→Select, `taglist`→Select multiple,
+`datetime`→DatePicker/TimePicker (dayjs), `separator`→Divider, `spacer`→spacing. Controlled
+`formData` state keyed by `component.key`; `validateField` covers required/min/max/minLength/
+maxLength/pattern/email; unmapped types render a safe "chưa hỗ trợ" Alert (R4). **Kept the exact
+`FormRendererHandle` + `FormSubmitResult` contract** (`submit(): {data, errors}`, errors keyed by
+component id) so all 5 call sites are untouched.
+
+**Deviations from the Lát-1 plan (flagged):**
+1. **Kept the filename `FormRenderer.tsx`** (rewrote internals) instead of adding a separate
+   `AntFormRenderer.tsx`. Rationale: same module path + exports ⇒ zero changes at the 5 call sites
+   (`TaskFormModal`, `FormDesigner` preview, `FormLibrary`, `ProcessDetail`, `ActionStudio`).
+2. **Did NOT keep the form-js runtime renderer as a fallback (OQ1).** All rendering — modal AND
+   every preview — now uses AntD, matching the client's "must look like AntD everywhere" ask. The
+   old form-js `Form` runtime is recoverable from git if a Lát-3 (`dynamiclist`) fallback is later
+   needed. `@bpmn-io/form-js` stays a dep (builder `FormDesigner` still uses `FormEditor`).
+
+**Verified**: `npm run build` GREEN (tsc + vite, 12.1s). The heavy form-js `Form` runtime chunk
+(~334 kB) dropped out of the bundle for TaskFormModal/previews. No in-browser click-through —
+Playwright not installed this session (consistent with prior sessions).
+
+**Lát 2 — DONE (2026-07-09).** Cắm `feelin` (`^7.0.1`) vào `FormRenderer.tsx`:
+- **`evalFeel(expr, ctx)`** — bỏ tiền tố `=` rồi `evaluate(src, ctx).value` (⚠ `feelin@7` trả
+  `{value, warnings}`, KHÔNG phải value trực tiếp như snippet trong arch-doc §4 — đã unwrap
+  `.value`). try/catch → `undefined` khi lỗi/parse hỏng (fail-safe, R4). Biến thiếu → `null` +
+  warning, không throw.
+- **Vòng reactivity** = `derived` useMemo trên `[components, formData]`: (1) tính mọi component
+  `type:'expression'` có `key`+`expression` → `computed`; (2) đánh giá `conditional.hide` trên
+  context đã trộn `{...formData, ...computed}` (điều kiện có thể tham chiếu trường tính toán) →
+  `hidden` Set (keyed theo `idOf`).
+- **① Ẩn/hiện**: component trong `hidden` → `return null` khi render, **bỏ khỏi validate + khỏi
+  data submit** (tránh chặn nộp vì ô đang ẩn / tránh gửi dữ liệu ô ẩn).
+- **② Tự tính**: `expression` có `label` → render Input `disabled readOnly` hiển thị giá trị
+  computed; không `label` → headless (`return null`). `onChange` bị chặn cho field computed.
+  Thêm hỗ trợ `readonly:true` (disable input) cho field thường.
+- **submit()** dùng `derived.ctx` (đã gồm computed) + loại `hidden`. Contract `FormRendererHandle`
+  giữ nguyên → 5 call site không đổi.
+- **Seed demo mới** (bổ sung, KHÔNG sửa seed cũ): `webapp/src/forms/phieuDuToanDemo.ts`
+  (`phieu-du-toan-demo`) — radio Đạt/Chưa đạt; textarea "Lý do chưa đạt" `conditional.hide`
+  `=ketLuan != "chua_dat"` + required; number PL1/PL2; expression `tongKinhPhi` =
+  `=(if kinhPhiPL1=null then 0 else kinhPhiPL1)+(...)`. Đăng ký trong `forms/index.ts`.
+
+**Verified Lát 2**: `npm run build` GREEN (tsc + vite, 13.2s). Logic kiểm chứng bằng node harness
+tái hiện `derived`/`submit` trên seed demo — 3 kịch bản đúng: (a) `ketLuan=dat` ⇒ Lý do ẩn, không
+đòi required, không nộp, `tongKinhPhi` tự tính = 15; (b) `chua_dat` + trống Lý do ⇒ lỗi required
+trên Lý do (đang hiện); (c) `chua_dat` + có Lý do ⇒ hợp lệ, nộp cả Lý do + `tongKinhPhi`. Không
+click-through trình duyệt (Playwright không cài, nhất quán các phiên trước).
+
+**Lát 3 — DONE (2026-07-09).** ③ `dynamiclist` → bảng động (thêm/xoá dòng) trong `FormRenderer.tsx`:
+- **Refactor tái dùng**: tách `deriveState(components, data, parent={})` (module-level) — tính
+  `{computed, ctx, hidden}` cho MỘT cấp; `parent` = context cấp trên. `derived` memo cấp gốc giờ
+  chỉ gọi `deriveState(components, formData)` (hành vi Lát 2 giữ nguyên).
+- **Đệ quy submit**: `processLevel(components, data, parent, prefix, errs)` (module-level) walk 1
+  cấp, gặp `dynamiclist` thì đệ quy vào từng dòng với `parent = ctx` cấp trên; gom data thành
+  **mảng object** (`out[key] = rows.map(...)`); lỗi ghi phẳng, key dòng = `<idList>#<dòng>.<idÔ>`
+  (`rowErrKey`). `submit()` giờ = `processLevel(components, formData, {}, '', errs)` — contract
+  `FormRendererHandle` GIỮ NGUYÊN. `dynamiclist` có `validate.required` + 0 dòng ⇒ lỗi "Cần ít
+  nhất một dòng".
+- **Render**: component `DynamicList` (mới, cuối file) — mỗi dòng là card viền, render đệ quy
+  component con qua chính `ComponentField` (leaf, tái dùng), nút xoá dòng (`DeleteOutlined`) +
+  "Thêm dòng" (`PlusOutlined`, `Button type="dashed" block`). Computed/hidden mỗi dòng suy từ
+  `deriveState(children, row, rootCtx)`.
+- **R2 (phạm vi biến FEEL trong dòng) — CHỐT**: context dòng = `{ ...gốc(rootCtx), ...dòng }`
+  (dòng ưu tiên). ⇒ biểu thức trong dòng thấy cả biến dòng lẫn biến gốc; biểu thức gốc đọc được
+  mảng dòng (vd `count(danhSachThanhVien)`).
+- **Seed demo mới** (bổ sung, KHÔNG sửa seed cũ): `webapp/src/forms/phieuThanhVienDemo.ts`
+  (`phieu-thanh-vien-demo`) — `dynamiclist` `danhSachThanhVien` (required) với con: hoTen(req),
+  vaiTro(select), soThang(0–24), heSo(min0), expression `chiPhiUocTinh`=soThang×heSo (②theo dòng),
+  textarea `ghiChu` `conditional.hide` `=vaiTro != "chu_nhiem"` (①theo dòng); + gốc: expression
+  `soThanhVien`=`count(...)` (đọc mảng dòng), textarea yKien. Đăng ký trong `forms/index.ts`.
+
+**Verified Lát 3**: `npm run build` GREEN (tsc + vite, 13.2s). Node harness tái hiện
+`deriveState`/`processLevel` trên seed — 3 kịch bản đúng: (A) DS rỗng+required ⇒ lỗi `ds` "Cần ≥1
+dòng", `soThanhVien=0`; (B) 1 chủ nhiệm đủ ⇒ `chiPhiUocTinh=6` (theo dòng), `ghiChu` hiện+vào
+payload, `soThanhVien=1`, không lỗi; (C) 2 dòng ⇒ dòng0(thành viên) thiếu hoTen ⇒ `ds#0.ht` bắt
+buộc, `ghiChu` dòng0 **ẩn** (không đòi, không nộp); dòng1 soThang=30>24 ⇒ `ds#1.st` MAX; cả 2 dòng
+có `chiPhiUocTinh`, `soThanhVien=2`. Không click-through (Playwright không cài).
+
+**Next: (không còn lát) — kiểm chứng end-to-end trên trình duyệt khi có Playwright** (mở
+TaskFormModal thật, điền form có dynamiclist, Xác nhận, thấy trạng thái hồ sơ đổi — theo §8 arch).
+Việc "sau" trong roadmap: `filepicker`→Upload (chặn bởi backend Foundation 1), `html/iframe`
+(sanitize) — chưa làm. Cân nhắc lock đề xuất giữ/bỏ fallback form-js (OQ1) — hiện đã bỏ hoàn toàn.
+
+**Goal of the whole task**: replace the form-js runtime renderer (which the client says looks
+inconsistent with AntD) with a custom AntD renderer, while keeping the form-js **schema**,
+**builder** (`FormDesigner`), **binding** (`formKey` on `ActionAvailabilityPolicy`), `FormContext`
+and seed forms all unchanged. Engine for ①conditional / ②computed via `feelin` (already a dep,
+`^7.0.1`); ③`dynamiclist` as an AntD editable table. Delivered in 3 slices.
+
+**Lát 1 scope (this slice — flat fields only)**:
+- New `webapp/src/components/AntFormRenderer.tsx` rendering flat form-js components with AntD:
+  `text`(markdown)/`textfield`→Input, `textarea`→Input.TextArea, `number`→InputNumber,
+  `checkbox`→Checkbox, `checklist`→Checkbox.Group, `radio`→Radio.Group, `select`→Select,
+  `taglist`→Select multiple, `datetime`→DatePicker/TimePicker (vi_VN), `separator`→Divider.
+- **Preserve the exact `FormRendererHandle` contract**: `submit(): { data, errors }` — validate
+  `component.validate` (required/min/max/length/pattern) on visible fields; `data` = keyed by
+  `component.key`. So `TaskFormModal.tsx` (checks `Object.keys(res.errors).length`) and
+  `buildYKien(res.data)` need NO change.
+- Swap `FormRenderer` → `AntFormRenderer` at the two call sites: `TaskFormModal.tsx` and the
+  live-preview pane in `FormDesigner.tsx`. Keep `FormRenderer.tsx` (form-js) available as a
+  fallback until Lát 3 lands (OQ1 in the design doc).
+- **Out of scope this slice** (Lát 2/3): `feelin` wiring (conditional/computed), `dynamiclist`,
+  `expression`, `filepicker`, `html/iframe`. Unmapped component types must render a safe
+  "chưa hỗ trợ" placeholder, never crash (R4).
+
+**Guardrails**: D10 — renderer must NOT infer outcome from form data (the button is the decision).
+D12 — do not touch schema/builder/binding/store/seed. Match surrounding AntD + vi_VN idiom.
+
+**Verify (per `.harness/rules` + /verify)**: `npm run build` green, then drive the real flow —
+open a Phê duyệt dossier → TaskFormModal → fill `phieu-phe-duyet`/`phieu-y-kien` → Xác nhận →
+confirm dossier status changes (not just preview). Note if Playwright unavailable this session.
 
 ---
 

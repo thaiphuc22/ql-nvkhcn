@@ -123,7 +123,7 @@ export default function MappingStudio() {
   }
 
   const columns: ColumnsType<MappingConfig> = [
-    { title: 'Hệ', dataIndex: 'he', width: 80, render: (v: string) => <Tag>{v}</Tag> },
+    { title: 'Hệ', dataIndex: 'he', width: 80, render: (v: string) => <Text>{v}</Text> },
     {
       title: 'Đối tượng',
       dataIndex: 'doiTuong',

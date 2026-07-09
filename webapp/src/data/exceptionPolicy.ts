@@ -168,6 +168,116 @@ export function exceptionApproverCodesForCap(cap: Cap): string[] {
   ]
 }
 
+// ── Version History & Audit ──
+
+export type ExcAuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'TOGGLE'
+
+export interface ExceptionPolicyVersion {
+  id: string
+  policyId: string
+  version: number
+  exceptionName: string
+  description?: string
+  actionCode?: string
+  exceptionType: ExceptionType
+  cap?: Cap | null
+  processCode?: string | null
+  objectType?: ExceptionObjectType
+  objectStatus?: DossierStatus | null
+  sourceTaskKey?: string | null
+  targetType?: ExceptionTargetType
+  targetTaskKey?: string | null
+  targetStatus?: DossierStatus | null
+  requiredApproverRoleCodes: string[]
+  requireReason: boolean
+  requireEvidence: boolean
+  maxTimesPerDossier: number
+  priority: number
+  enabled: boolean
+  capNhat: string
+  nguoiCapNhat: string
+  changeNote: string
+}
+
+export interface ExceptionPolicyAuditEntry {
+  id: string
+  policyId: string
+  action: ExcAuditAction
+  version: number
+  actor: string
+  timestamp: string
+  detail: string
+}
+
+export const EXC_AUDIT_ACTION_LABEL: Record<ExcAuditAction, string> = {
+  CREATE: 'Tạo mới',
+  UPDATE: 'Cập nhật',
+  DELETE: 'Xoá',
+  TOGGLE: 'Bật/Tắt',
+}
+
+export const EXC_AUDIT_ACTION_COLOR: Record<ExcAuditAction, string> = {
+  CREATE: 'green',
+  UPDATE: 'blue',
+  DELETE: 'red',
+  TOGGLE: 'orange',
+}
+
+export const SEED_EXC_VERSIONS: ExceptionPolicyVersion[] = [
+  {
+    id: 'exv-ep01-v1',
+    policyId: 'EP-01',
+    version: 1,
+    exceptionName: 'Bỏ qua Hội đồng',
+    exceptionType: 'BypassCouncil',
+    cap: 'Cơ sở',
+    processCode: null,
+    objectType: 'DOSSIER',
+    objectStatus: 'processing',
+    sourceTaskKey: null,
+    targetType: 'STEP',
+    requiredApproverRoleCodes: ['TGD_VHT'],
+    requireReason: true,
+    requireEvidence: true,
+    maxTimesPerDossier: 1,
+    priority: 10,
+    enabled: true,
+    capNhat: '2026-06-10',
+    nguoiCapNhat: 'Quản trị hệ thống',
+    changeNote: 'Phiên bản đầu — TGD_VHT duyệt, bắt buộc căn cứ.',
+  },
+  {
+    id: 'exv-ep01-v2',
+    policyId: 'EP-01',
+    version: 2,
+    exceptionName: 'Bỏ qua Hội đồng (Cơ sở)',
+    exceptionType: 'BypassCouncil',
+    cap: 'Cơ sở',
+    processCode: null,
+    objectType: 'DOSSIER',
+    objectStatus: 'processing',
+    sourceTaskKey: null,
+    targetType: 'STEP',
+    requiredApproverRoleCodes: ['TGD_VHT'],
+    requireReason: true,
+    requireEvidence: true,
+    maxTimesPerDossier: 1,
+    priority: 10,
+    enabled: true,
+    capNhat: '2026-07-05',
+    nguoiCapNhat: 'Chuyên viên nghiệp vụ',
+    changeNote: 'Đổi tên thành "Bỏ qua Hội đồng (Cơ sở)" để phân biệt với cấp Tập đoàn.',
+  },
+]
+
+export const SEED_EXC_AUDIT: ExceptionPolicyAuditEntry[] = [
+  { id: 'exa-ep01-1', policyId: 'EP-01', action: 'CREATE', version: 1, actor: 'Quản trị hệ thống', timestamp: '2026-06-10 08:00', detail: 'Tạo luật ngoại lệ Bỏ qua Hội đồng (Cơ sở).' },
+  { id: 'exa-ep01-2', policyId: 'EP-01', action: 'UPDATE', version: 2, actor: 'Chuyên viên nghiệp vụ', timestamp: '2026-07-05 14:00', detail: 'Đổi tên thành "Bỏ qua Hội đồng (Cơ sở)".' },
+  { id: 'exa-ep02-1', policyId: 'EP-02', action: 'CREATE', version: 1, actor: 'Quản trị hệ thống', timestamp: '2026-06-10 08:30', detail: 'Tạo luật Bỏ qua Hội đồng (Tập đoàn).' },
+  { id: 'exa-ep03-1', policyId: 'EP-03', action: 'CREATE', version: 1, actor: 'Quản trị hệ thống', timestamp: '2026-06-10 09:00', detail: 'Tạo luật Trình thẳng cấp cao hơn (Cơ sở).' },
+  { id: 'exa-ep05-1', policyId: 'EP-05', action: 'CREATE', version: 1, actor: 'Quản trị hệ thống', timestamp: '2026-06-10 09:30', detail: 'Tạo luật Bỏ qua một bước (Cơ sở).' },
+]
+
 
 
 

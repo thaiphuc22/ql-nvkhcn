@@ -63,6 +63,38 @@ export function applyViLabels(root: HTMLElement): void {
     const ph = (search.placeholder ?? '').trim()
     if (VI_DICT[ph]) search.placeholder = VI_DICT[ph]
   }
+
+  // ── Canvas (form đang soạn): các chuỗi form-js render THẲNG (literal, không qua
+  //    translate) → vá tại chỗ. KHÔNG dùng VI_DICT vì 'Select'/'Repeatable' trùng
+  //    nghĩa với nhãn palette (Danh sách chọn…); ở đây là placeholder/footer khác.
+
+  // Select rỗng: chỗ hiển thị đang là 'Select' (form-js hardcode) → 'Chọn…'.
+  root.querySelectorAll('.fjs-select-display.fjs-select-placeholder').forEach((el) => {
+    const first = el.firstChild
+    if (first && first.nodeType === Node.TEXT_NODE && (first.nodeValue ?? '').trim() === 'Select') {
+      setInPlace(el, 'Chọn…')
+    }
+  })
+
+  // Footer trường lặp lại: 'Repeatable' → 'Có thể lặp lại'.
+  root.querySelectorAll('.fjs-repeat-render-footer span').forEach((el) => {
+    if (el.childElementCount > 0) return
+    if ((el.textContent ?? '').trim() === 'Repeatable') setInPlace(el, 'Có thể lặp lại')
+  })
+
+  // Trường biểu thức (Expression): placeholder = icon + text động. firstChild là
+  // <svg> nên phải quét TEXT node riêng (setInPlace không dùng được ở đây).
+  root.querySelectorAll('.fjs-form-field-placeholder').forEach((el) => {
+    el.childNodes.forEach((n) => {
+      if (n.nodeType !== Node.TEXT_NODE) return
+      const cur = (n.nodeValue ?? '').trim()
+      if (!cur) return
+      let vi: string | undefined
+      if (cur === 'Expression is empty') vi = 'Chưa nhập biểu thức'
+      else if (cur.startsWith('Expression for ')) vi = 'Biểu thức cho ' + cur.slice('Expression for '.length)
+      if (vi && n.nodeValue !== vi) n.nodeValue = vi
+    })
+  })
 }
 
 /** Theo dõi & vá lại mỗi khi form-js render lại. Trả hàm huỷ. */

@@ -390,3 +390,100 @@ export function availabilityConditionText(p: ActionAvailabilityPolicy): string {
   if (p.conditionExpression) parts.push(p.conditionExpression)
   return parts.join(' AND ')
 }
+
+// ── Version History & Audit ──
+
+export type AvailAuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'TOGGLE'
+
+export interface ActionAvailabilityVersion {
+  id: string
+  policyId: string
+  version: number
+  actionCode: string
+  surface?: string | null
+  processCode?: string | null
+  taskDefinitionKey?: string | null
+  dossierStatus?: string | null
+  allowedRoleCodes: string[]
+  requiredPermissions: string[]
+  formKey?: string | null
+  conditionExpression?: string
+  displayOrder: number
+  enabled: boolean
+  capNhat: string
+  nguoiCapNhat: string
+  changeNote: string
+}
+
+export interface ActionAvailabilityAuditEntry {
+  id: string
+  policyId: string
+  action: AvailAuditAction
+  version: number
+  actor: string
+  timestamp: string
+  detail: string
+}
+
+export const AVAIL_AUDIT_ACTION_LABEL: Record<AvailAuditAction, string> = {
+  CREATE: 'Tạo mới',
+  UPDATE: 'Cập nhật',
+  DELETE: 'Xoá',
+  TOGGLE: 'Bật/Tắt',
+}
+
+export const AVAIL_AUDIT_ACTION_COLOR: Record<AvailAuditAction, string> = {
+  CREATE: 'green',
+  UPDATE: 'blue',
+  DELETE: 'red',
+  TOGGLE: 'orange',
+}
+
+export const SEED_AVAIL_VERSIONS: ActionAvailabilityVersion[] = [
+  {
+    id: 'avv-ap01-v1',
+    policyId: 'AP-01',
+    version: 1,
+    actionCode: 'SUBMIT',
+    surface: 'DOSSIER_DETAIL',
+    processCode: null,
+    taskDefinitionKey: null,
+    dossierStatus: 'draft',
+    allowedRoleCodes: ['PM', 'PA'],
+    requiredPermissions: ['SUBMIT_DOSSIER'],
+    formKey: 'phieu-chu-truong',
+    conditionExpression: 'dossier.docsComplete = true',
+    displayOrder: 10,
+    enabled: true,
+    capNhat: '2026-06-01',
+    nguoiCapNhat: 'Quản trị hệ thống',
+    changeNote: 'Phiên bản đầu — vai trò PM, PA.',
+  },
+  {
+    id: 'avv-ap01-v2',
+    policyId: 'AP-01',
+    version: 2,
+    actionCode: 'SUBMIT',
+    surface: 'DOSSIER_DETAIL',
+    processCode: null,
+    taskDefinitionKey: null,
+    dossierStatus: 'draft',
+    allowedRoleCodes: ['PM', 'PA', 'NNC'],
+    requiredPermissions: ['SUBMIT_DOSSIER'],
+    formKey: 'phieu-chu-truong',
+    conditionExpression: 'dossier.docsComplete = true',
+    displayOrder: 10,
+    enabled: true,
+    capNhat: '2026-07-01',
+    nguoiCapNhat: 'Chuyên viên nghiệp vụ',
+    changeNote: 'Thêm vai trò NNC (Người nộp chính).',
+  },
+]
+
+export const SEED_AVAIL_AUDIT: ActionAvailabilityAuditEntry[] = [
+  { id: 'ava-ap01-1', policyId: 'AP-01', action: 'CREATE', version: 1, actor: 'Quản trị hệ thống', timestamp: '2026-06-01 09:00', detail: 'Tạo luật hiển thị nút SUBMIT cho hồ sơ draft.' },
+  { id: 'ava-ap01-2', policyId: 'AP-01', action: 'UPDATE', version: 2, actor: 'Chuyên viên nghiệp vụ', timestamp: '2026-07-01 10:00', detail: 'Thêm vai trò NNC vào danh sách được phép.' },
+  { id: 'ava-ap03-1', policyId: 'AP-03', action: 'CREATE', version: 1, actor: 'Quản trị hệ thống', timestamp: '2026-06-05 11:00', detail: 'Tạo luật ADD_COMMENT (mọi trạng thái).' },
+  { id: 'ava-ap04-1', policyId: 'AP-04', action: 'CREATE', version: 1, actor: 'Quản trị hệ thống', timestamp: '2026-06-05 11:30', detail: 'Tạo luật DOWNLOAD_DOSSIER.' },
+  { id: 'ava-ap05-1', policyId: 'AP-05', action: 'CREATE', version: 1, actor: 'Quản trị hệ thống', timestamp: '2026-06-05 12:00', detail: 'Tạo luật VIEW_HISTORY.' },
+]

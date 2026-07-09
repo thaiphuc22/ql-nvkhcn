@@ -22,7 +22,9 @@ import {
 import {
   ApartmentOutlined,
   ArrowLeftOutlined,
+  AuditOutlined,
   ExperimentOutlined,
+  HistoryOutlined,
   SaveOutlined,
   TableOutlined,
   ThunderboltOutlined,
@@ -30,6 +32,8 @@ import {
 import { PageHeader, NotFound, StatusTag } from '../components/ui'
 import { type DmnEditorHandle } from '../components/DmnEditor'
 import RuleGridBuilder from '../components/RuleGridBuilder'
+import RuleVersionTimeline from '../components/RuleVersionTimeline'
+import RuleAuditTable from '../components/RuleAuditTable'
 import { useRules } from '../store/RuleContext'
 import { usePermissions } from '../store/AuthContext'
 import {
@@ -221,25 +225,50 @@ export default function RuleDetail() {
       />
 
       {rule.kind === 'SERVICE' ? (
-        <Alert
-          type="warning"
-          showIcon
-          message="Luật dịch vụ (Service rule) — không dùng DMN"
-          description={
-            <Space direction="vertical">
-              <span>
-                Luật này cần tra cứu CSDL / gọi hệ ngoài nên <b>không</b> biểu diễn bằng bảng quyết định
-                DMN (xem ranh giới §7). Chỉ khai báo interface; đội phát triển hiện thực ở backend.
-              </span>
-              {rule.serviceInterface && (
-                <Descriptions size="small" column={1} bordered>
-                  <Descriptions.Item label="Đầu vào">{rule.serviceInterface.inputs || '—'}</Descriptions.Item>
-                  <Descriptions.Item label="Đầu ra">{rule.serviceInterface.output || '—'}</Descriptions.Item>
-                </Descriptions>
-              )}
-            </Space>
-          }
-        />
+        <>
+          <Alert
+            type="warning"
+            showIcon
+            message="Luật dịch vụ (Service rule) — không dùng DMN"
+            description={
+              <Space direction="vertical">
+                <span>
+                  Luật này cần tra cứu CSDL / gọi hệ ngoài nên <b>không</b> biểu diễn bằng bảng quyết định
+                  DMN (xem ranh giới §7). Chỉ khai báo interface; đội phát triển hiện thực ở backend.
+                </span>
+                {rule.serviceInterface && (
+                  <Descriptions size="small" column={1} bordered>
+                    <Descriptions.Item label="Đầu vào">{rule.serviceInterface.inputs || '—'}</Descriptions.Item>
+                    <Descriptions.Item label="Đầu ra">{rule.serviceInterface.output || '—'}</Descriptions.Item>
+                  </Descriptions>
+                )}
+              </Space>
+            }
+          />
+          <Tabs
+            style={{ marginTop: 16 }}
+            items={[
+              {
+                key: 'versions',
+                label: (
+                  <span>
+                    <HistoryOutlined /> Lịch sử Phiên bản
+                  </span>
+                ),
+                children: <RuleVersionTimeline ruleId={rule.id} />,
+              },
+              {
+                key: 'audit',
+                label: (
+                  <span>
+                    <AuditOutlined /> Lịch sử Thay đổi
+                  </span>
+                ),
+                children: <RuleAuditTable ruleId={rule.id} />,
+              },
+            ]}
+          />
+        </>
       ) : (
         <Row gutter={[16, 16]}>
           <Col xs={24} lg={15}>
@@ -291,6 +320,24 @@ export default function RuleDetail() {
                       </Suspense>
                     </Space>
                   ),
+                },
+                {
+                  key: 'versions',
+                  label: (
+                    <span>
+                      <HistoryOutlined /> Lịch sử Phiên bản
+                    </span>
+                  ),
+                  children: <RuleVersionTimeline ruleId={rule.id} />,
+                },
+                {
+                  key: 'audit',
+                  label: (
+                    <span>
+                      <AuditOutlined /> Lịch sử Thay đổi
+                    </span>
+                  ),
+                  children: <RuleAuditTable ruleId={rule.id} />,
                 },
               ]}
             />

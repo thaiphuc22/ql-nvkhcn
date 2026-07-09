@@ -7,6 +7,7 @@ import {
   Col,
   Collapse,
   Divider,
+  Drawer,
   Empty,
   Form,
   Input,
@@ -33,6 +34,7 @@ import {
   EditOutlined,
   EyeOutlined,
   FileTextOutlined,
+  HistoryOutlined,
   PartitionOutlined,
   PlayCircleOutlined,
   PlusOutlined,
@@ -63,11 +65,25 @@ import {
   DOSSIER_STATUS_LABEL,
   PERMISSIONS,
   PERMISSION_LABEL,
+  SEED_AVAIL_VERSIONS,
+  SEED_AVAIL_AUDIT,
+  AVAIL_AUDIT_ACTION_LABEL,
+  AVAIL_AUDIT_ACTION_COLOR,
   type ActionAvailabilityPolicy,
+  type ActionAvailabilityVersion,
+  type ActionAvailabilityAuditEntry,
+  type AvailAuditAction,
 } from "../data/actionAvailabilityPolicy";
 import {
   EXCEPTION_POLICIES,
+  SEED_EXC_VERSIONS,
+  SEED_EXC_AUDIT,
+  EXC_AUDIT_ACTION_LABEL,
+  EXC_AUDIT_ACTION_COLOR,
   type ExceptionActionPolicy,
+  type ExceptionPolicyVersion,
+  type ExceptionPolicyAuditEntry,
+  type ExcAuditAction,
   type ExceptionObjectType,
   type ExceptionTargetType,
 } from "../data/exceptionPolicy";
@@ -668,7 +684,7 @@ function PolicySummaryCard({
 
 function boolTag(v: boolean | undefined, yes = "Có", no = "—") {
   return v ? (
-    <Tag color="green">{yes}</Tag>
+    <Text type="success" strong>{yes}</Text>
   ) : (
     <Text type="secondary">{no}</Text>
   );
@@ -840,8 +856,8 @@ function RegistryTab({
               >
                 {ACTION_UI_GROUP_LABEL[p.uiGroup]}
               </Tag>
-              <Tag>{ACTION_TONE_LABEL[p.tone]}</Tag>
-              <Tag>{p.icon}</Tag>
+              <Text type="secondary">{ACTION_TONE_LABEL[p.tone]}</Text>
+              <Text code>{p.icon}</Text>
             </Space>
             {p.tooltip ? (
               <Text type="secondary">{p.tooltip}</Text>
@@ -859,7 +875,7 @@ function RegistryTab({
       key: "order",
       width: 90,
       render: (_: unknown, row: { presentation?: ActionPresentation }) => (
-        <Tag>{row.presentation?.defaultOrder ?? "—"}</Tag>
+        <Text>{row.presentation?.defaultOrder ?? "—"}</Text>
       ),
     },
     {
@@ -1147,17 +1163,25 @@ function AvailabilityTab({
   policies,
   setPolicies,
   onOpenReconcile,
+  getVersions,
+  getAudit,
 }: {
   policies: ActionAvailabilityPolicy[];
   setPolicies: React.Dispatch<React.SetStateAction<ActionAvailabilityPolicy[]>>;
   onOpenReconcile: () => void;
+  getVersions: (id: string) => ActionAvailabilityVersion[];
+  getAudit: (id: string) => ActionAvailabilityAuditEntry[];
 }) {
   const { message } = App.useApp();
   const { list: formList } = useForms();
   const [editing, setEditing] = useState<ActionAvailabilityPolicy | null>(null);
   const [open, setOpen] = useState(false);
   const [previewFormKey, setPreviewFormKey] = useState<string | null>(null);
+  const [historyPolicyId, setHistoryPolicyId] = useState<string | null>(null);
   const [form] = Form.useForm<AvailFormValues>();
+
+  const histVersions = historyPolicyId ? getVersions(historyPolicyId) : [];
+  const histAudit = historyPolicyId ? getAudit(historyPolicyId) : [];
 
   const watchedActionCode = Form.useWatch("actionCode", form);
   const watchedProcessCode = Form.useWatch("processCode", form);
@@ -1379,7 +1403,7 @@ function AvailabilityTab({
     {
       title: "",
       key: "act",
-      width: 88,
+      width: 120,
       render: (_: unknown, p: ActionAvailabilityPolicy) => (
         <Space size={2}>
           <Button
@@ -1388,6 +1412,14 @@ function AvailabilityTab({
             icon={<EditOutlined />}
             onClick={() => openEdit(p)}
           />
+          <Tooltip title="Lịch sử">
+            <Button
+              size="small"
+              type="text"
+              icon={<HistoryOutlined />}
+              onClick={() => setHistoryPolicyId(p.id)}
+            />
+          </Tooltip>
           <Popconfirm
             title="Xoá luật này?"
             onConfirm={() => remove(p.id)}
@@ -1681,6 +1713,59 @@ function AvailabilityTab({
           />
         )}
       </Modal>
+
+      <Drawer
+        title={<Space><HistoryOutlined />Lịch sử Luật hiển thị nút</Space>}
+        open={!!historyPolicyId}
+        onClose={() => setHistoryPolicyId(null)}
+        width={720}
+      >
+        {historyPolicyId && (
+          <Space direction="vertical" size={24} style={{ width: '100%' }}>
+            <div>
+              <Text strong style={{ fontSize: 14 }}>Lịch sử Phiên bản</Text>
+              {histVersions.length === 0 ? (
+                <Empty description="Chưa có lịch sử phiên bản." image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ marginTop: 12 }} />
+              ) : (
+                <Table
+                  dataSource={histVersions}
+                  rowKey="id"
+                  size="small"
+                  pagination={false}
+                  style={{ marginTop: 8 }}
+                  columns={[
+                    { title: 'Phiên bản', dataIndex: 'version', width: 80, render: (v: number) => <Tag>v{v}</Tag> },
+                    { title: 'Ngày', dataIndex: 'capNhat', width: 90, render: (d: string) => <Text type="secondary" style={{ fontSize: 12 }}>{d}</Text> },
+                    { title: 'Người cập nhật', dataIndex: 'nguoiCapNhat', width: 140 },
+                    { title: 'Ghi chú', dataIndex: 'changeNote', ellipsis: true },
+                  ]}
+                />
+              )}
+            </div>
+            <div>
+              <Text strong style={{ fontSize: 14 }}>Nhật ký Thay đổi</Text>
+              {histAudit.length === 0 ? (
+                <Empty description="Chưa có nhật ký thay đổi." image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ marginTop: 12 }} />
+              ) : (
+                <Table
+                  dataSource={histAudit}
+                  rowKey="id"
+                  size="small"
+                  pagination={histAudit.length > 10 ? { pageSize: 10 } : false}
+                  style={{ marginTop: 8 }}
+                  columns={[
+                    { title: 'Thời gian', dataIndex: 'timestamp', width: 150, render: (t: string) => <Text type="secondary" style={{ fontSize: 12 }}>{t}</Text> },
+                    { title: 'Hành động', dataIndex: 'action', width: 110, render: (a: AvailAuditAction) => <Tag color={AVAIL_AUDIT_ACTION_COLOR[a]}>{AVAIL_AUDIT_ACTION_LABEL[a]}</Tag> },
+                    { title: 'Phiên bản', dataIndex: 'version', width: 70, render: (v: number) => <Tag>v{v}</Tag> },
+                    { title: 'Người thực hiện', dataIndex: 'actor', width: 130 },
+                    { title: 'Chi tiết', dataIndex: 'detail', ellipsis: true },
+                  ]}
+                />
+              )}
+            </div>
+          </Space>
+        )}
+      </Drawer>
     </>
   );
 }
@@ -1717,6 +1802,8 @@ function ExceptionTab({
   setPolicies,
   availPolicies,
   setAvailPolicies,
+  getVersions,
+  getAudit,
 }: {
   policies: ExceptionActionPolicy[];
   setPolicies: React.Dispatch<React.SetStateAction<ExceptionActionPolicy[]>>;
@@ -1724,14 +1811,20 @@ function ExceptionTab({
   setAvailPolicies: React.Dispatch<
     React.SetStateAction<ActionAvailabilityPolicy[]>
   >;
+  getVersions: (id: string) => ExceptionPolicyVersion[];
+  getAudit: (id: string) => ExceptionPolicyAuditEntry[];
 }) {
   const { message } = App.useApp();
   const [editing, setEditing] = useState<ExceptionActionPolicy | null>(null);
   const [open, setOpen] = useState(false);
+  const [historyPolicyId, setHistoryPolicyId] = useState<string | null>(null);
   const [activeFormValues, setActiveFormValues] =
     useState<ExceptionFormValues | null>(null);
   const [formMountKey, setFormMountKey] = useState(0);
   const [form] = Form.useForm<ExceptionFormValues>();
+
+  const histVersions = historyPolicyId ? getVersions(historyPolicyId) : [];
+  const histAudit = historyPolicyId ? getAudit(historyPolicyId) : [];
 
   const watchedExceptionName = Form.useWatch("exceptionName", form);
   const watchedActionCode = Form.useWatch("actionCode", form);
@@ -2116,7 +2209,7 @@ function ExceptionTab({
     {
       title: "",
       key: "act",
-      width: 88,
+      width: 120,
       render: (_: unknown, p: ExceptionActionPolicy) => (
         <Space size={2}>
           <Button
@@ -2125,6 +2218,14 @@ function ExceptionTab({
             icon={<EditOutlined />}
             onClick={() => openEdit(p)}
           />
+          <Tooltip title="Lịch sử">
+            <Button
+              size="small"
+              type="text"
+              icon={<HistoryOutlined />}
+              onClick={() => setHistoryPolicyId(p.id)}
+            />
+          </Tooltip>
           <Popconfirm
             title="Xoá luật ngoại lệ này?"
             onConfirm={() => remove(p)}
@@ -2559,6 +2660,59 @@ function ExceptionTab({
           </Col>
         </Row>
       </Modal>
+
+      <Drawer
+        title={<Space><HistoryOutlined />Lịch sử Luồng ngoại lệ</Space>}
+        open={!!historyPolicyId}
+        onClose={() => setHistoryPolicyId(null)}
+        width={720}
+      >
+        {historyPolicyId && (
+          <Space direction="vertical" size={24} style={{ width: '100%' }}>
+            <div>
+              <Text strong style={{ fontSize: 14 }}>Lịch sử Phiên bản</Text>
+              {histVersions.length === 0 ? (
+                <Empty description="Chưa có lịch sử phiên bản." image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ marginTop: 12 }} />
+              ) : (
+                <Table
+                  dataSource={histVersions}
+                  rowKey="id"
+                  size="small"
+                  pagination={false}
+                  style={{ marginTop: 8 }}
+                  columns={[
+                    { title: 'Phiên bản', dataIndex: 'version', width: 80, render: (v: number) => <Tag>v{v}</Tag> },
+                    { title: 'Ngày', dataIndex: 'capNhat', width: 90, render: (d: string) => <Text type="secondary" style={{ fontSize: 12 }}>{d}</Text> },
+                    { title: 'Người cập nhật', dataIndex: 'nguoiCapNhat', width: 140 },
+                    { title: 'Ghi chú', dataIndex: 'changeNote', ellipsis: true },
+                  ]}
+                />
+              )}
+            </div>
+            <div>
+              <Text strong style={{ fontSize: 14 }}>Nhật ký Thay đổi</Text>
+              {histAudit.length === 0 ? (
+                <Empty description="Chưa có nhật ký thay đổi." image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ marginTop: 12 }} />
+              ) : (
+                <Table
+                  dataSource={histAudit}
+                  rowKey="id"
+                  size="small"
+                  pagination={histAudit.length > 10 ? { pageSize: 10 } : false}
+                  style={{ marginTop: 8 }}
+                  columns={[
+                    { title: 'Thời gian', dataIndex: 'timestamp', width: 150, render: (t: string) => <Text type="secondary" style={{ fontSize: 12 }}>{t}</Text> },
+                    { title: 'Hành động', dataIndex: 'action', width: 110, render: (a: ExcAuditAction) => <Tag color={EXC_AUDIT_ACTION_COLOR[a]}>{EXC_AUDIT_ACTION_LABEL[a]}</Tag> },
+                    { title: 'Phiên bản', dataIndex: 'version', width: 70, render: (v: number) => <Tag>v{v}</Tag> },
+                    { title: 'Người thực hiện', dataIndex: 'actor', width: 130 },
+                    { title: 'Chi tiết', dataIndex: 'detail', ellipsis: true },
+                  ]}
+                />
+              )}
+            </div>
+          </Space>
+        )}
+      </Drawer>
     </>
   );
 }
@@ -3532,7 +3686,20 @@ export default function ActionStudio() {
   >(ACTION_AVAILABILITY_POLICIES);
   const [excPolicies, setExcPolicies] =
     useState<ExceptionActionPolicy[]>(EXCEPTION_POLICIES);
+  const [availVersions] = useState<ActionAvailabilityVersion[]>(SEED_AVAIL_VERSIONS);
+  const [availAudit] = useState<ActionAvailabilityAuditEntry[]>(SEED_AVAIL_AUDIT);
+  const [excVersions] = useState<ExceptionPolicyVersion[]>(SEED_EXC_VERSIONS);
+  const [excAudit] = useState<ExceptionPolicyAuditEntry[]>(SEED_EXC_AUDIT);
   const [activeTab, setActiveTab] = useState("overview");
+
+  const getAvailVersions = (policyId: string) =>
+    availVersions.filter((v) => v.policyId === policyId).sort((a, b) => b.version - a.version);
+  const getAvailAudit = (policyId: string) =>
+    availAudit.filter((a) => a.policyId === policyId).sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+  const getExcVersions = (policyId: string) =>
+    excVersions.filter((v) => v.policyId === policyId).sort((a, b) => b.version - a.version);
+  const getExcAudit = (policyId: string) =>
+    excAudit.filter((a) => a.policyId === policyId).sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
   const items = [
     {
@@ -3558,6 +3725,8 @@ export default function ActionStudio() {
           policies={availPolicies}
           setPolicies={setAvailPolicies}
           onOpenReconcile={() => setActiveTab("reconcile")}
+          getVersions={getAvailVersions}
+          getAudit={getAvailAudit}
         />
       ),
     },
@@ -3587,6 +3756,8 @@ export default function ActionStudio() {
           setPolicies={setExcPolicies}
           availPolicies={availPolicies}
           setAvailPolicies={setAvailPolicies}
+          getVersions={getExcVersions}
+          getAudit={getExcAudit}
         />
       ),
     },

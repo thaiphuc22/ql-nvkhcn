@@ -73,9 +73,12 @@
   outline-color: var(--vht-red);
 }
 
-/* ── Polish: vùng canvas & phần tử được chọn ────────────────────────────────── */
+/* ── Polish: vùng canvas & phần tử được chọn ──────────────────────────────────
+ * Field chọn đã có viền đỏ + nền hồng (biến --color-children-selected-*). Thêm
+ * outline mảnh + offset cho tách nền, tránh chồng 3 lớp nhấn đỏ dày cộp. */
 .vht-designer .fjs-editor-selected {
-  outline: 2px solid var(--vht-red);
+  outline: 1px solid var(--vht-red);
+  outline-offset: 1px;
 }
 .vht-designer .fjs-editor-hovered {
   outline: 1px dashed var(--vht-red);
@@ -293,25 +296,283 @@
   border-radius: var(--vht-radius);
 }
 
-/* ── Đợt FD: Form designer bố cục custom (palette portal + full-height) ───────
- * Palette form-js được portal vào dock React `.vht-fd-palette-dock` (config
- * `palette: { parent }`) — CSS gốc chỉ set kích thước khi palette nằm trong
- * `.fjs-editor-container`, nên phải cho nó nở đầy dock ở đây. KHÔNG sửa block
- * `.vht-designer .bio-properties-panel` (Đợt 6 — dùng chung với dock BPMN). */
-.vht-fd-palette-dock .fjs-palette-container,
-.vht-fd-palette-dock .fjs-palette {
-  width: 100%;
-  height: 100%;
-  border-right: none;
-}
-/* Dock đã có header React riêng ("Thành phần") — ẩn header gốc của palette. */
-.vht-fd-palette-dock .fjs-palette-header {
-  display: none;
-}
+/* ── Đợt FD / D13: Form designer bố cục custom — canvas full-height ───────────
+ * Palette + panel native form-js nay portal vào div ẩn (UI là AntD tự viết:
+ * FieldPalette + FieldProperties). Các rule skin palette/panel native cũ đã bỏ
+ * vì không còn hiển thị. Chỉ CANVAS ở giữa vẫn là DOM form-js (giữ nguyên engine). */
 /* Canvas form-js chiếm trọn khung khi ghim trong flex row full-height. */
 .vht-fd-canvas .fjs-container,
 .vht-fd-canvas .fjs-editor-container {
   height: 100%;
+}
+
+/* ── Đợt AntD-parity: skin CANVAS form-js bám diện mạo AntD ───────────────────
+ * Sau D13, palette + panel là AntD tự viết; chỉ CANVAS ở giữa còn là DOM form-js.
+ * Chuẩn AntD tham chiếu: input height 32px, padding 4px 11px, radius 6px, font 14px,
+ * hover→viền brand, focus→viền brand + glow 2px. Scope chặt dưới .vht-fd-canvas.
+ * (--vht-red-glow = đỏ VHT 10% — tương đương box-shadow focus của AntD.)
+ */
+.vht-designer {
+  --vht-red-glow: rgba(238, 0, 51, 0.1);
+}
+
+/* 1) CANVAS — form đang soạn: input/textarea/label theo AntD ------------------
+ * Select KHÔNG nằm ở đây: nó là .fjs-input-group (bọc display + mũi tên) nên
+ * được xử lý riêng ở khối "Select" bên dưới (giống Number) để tránh viền đôi. */
+.vht-fd-canvas .fjs-input,
+.vht-fd-canvas .fjs-textarea,
+.vht-fd-canvas .fjs-taglist {
+  border: 1px solid var(--vht-border-strong);
+  border-radius: var(--vht-radius-sm);
+  font-size: 14px;
+  color: var(--vht-ink);
+  background: var(--vht-surface);
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.vht-fd-canvas .fjs-input {
+  min-height: 32px;
+  padding: 4px 11px;
+}
+.vht-fd-canvas .fjs-textarea {
+  padding: 5px 11px;
+}
+.vht-fd-canvas .fjs-input:hover,
+.vht-fd-canvas .fjs-textarea:hover,
+.vht-fd-canvas .fjs-taglist:hover {
+  border-color: var(--vht-red);
+}
+.vht-fd-canvas .fjs-input:focus,
+.vht-fd-canvas .fjs-textarea:focus {
+  border-color: var(--vht-red);
+  box-shadow: 0 0 0 2px var(--vht-red-glow);
+  outline: none;
+}
+/* Nhãn trường: LUÔN nằm trên ô (bố cục cột của form-js). Nới white-space/overflow
+ * vì mặc định lib là `nowrap; overflow:hidden` → nhãn tiếng Việt dài bị cắt cụt.
+ * (Ô nhiều dòng/textarea nhờ đó thấy đủ nhãn phía trên ô.) */
+.vht-fd-canvas .fjs-form-field-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--vht-ink);
+  margin-bottom: 6px;
+  white-space: normal;
+  overflow: visible;
+}
+.vht-fd-canvas .fjs-form-field-description {
+  font-size: 12px;
+  color: var(--vht-ink-3);
+  margin-top: 4px;
+}
+.vht-fd-canvas .fjs-form-field-error {
+  font-size: 12px;
+  color: var(--vht-danger);
+}
+/* Checkbox/radio theo màu brand */
+.vht-fd-canvas .fjs-checkbox,
+.vht-fd-canvas .fjs-radio,
+.vht-fd-canvas input[type='checkbox'],
+.vht-fd-canvas input[type='radio'] {
+  accent-color: var(--vht-red);
+}
+
+/* ── Number field = MỘT control kiểu AntD InputNumber ────────────────────────
+ * form-js bọc <input> + cụm mũi tên trong .fjs-vertical-group (flex ngang).
+ * Rule .fjs-input ở trên vô tình gán border/radius/min-height lên chính input →
+ * cụm mũi tên (.fjs-number-arrow-container) bị đẩy xuống thành 2 hộp xám.
+ * Cách chuẩn: đưa VIỀN ra .fjs-vertical-group (bọc cả input + stepper), input
+ * trong suốt, stepper dọc gọn bên phải. Scope chặt dưới .fjs-form-field-number. */
+.vht-fd-canvas .fjs-form-field-number .fjs-vertical-group {
+  border: 1px solid var(--vht-border-strong);
+  border-radius: var(--vht-radius-sm);
+  background: var(--vht-surface);
+  overflow: hidden;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.vht-fd-canvas .fjs-form-field-number .fjs-vertical-group:hover {
+  border-color: var(--vht-red);
+}
+.vht-fd-canvas .fjs-form-field-number .fjs-vertical-group:focus-within {
+  border-color: var(--vht-red);
+  box-shadow: 0 0 0 2px var(--vht-red-glow);
+}
+.vht-fd-canvas .fjs-form-field-number.fjs-has-errors .fjs-vertical-group {
+  border-color: var(--vht-danger);
+}
+/* Input bên trong: bỏ viền/hộp riêng, để .fjs-vertical-group làm khung chung. */
+.vht-fd-canvas .fjs-form-field-number .fjs-input {
+  border: none !important;
+  border-radius: 0;
+  box-shadow: none !important;
+  min-height: 34px;
+}
+/* Stepper dọc: dải nút mảnh bên phải, tách bằng hairline, hover mới ửng đỏ. */
+.vht-fd-canvas .fjs-number-arrow-container {
+  flex: 0 0 22px;
+  width: 22px;
+  border-left: 1px solid var(--vht-border);
+  background: var(--vht-surface-3);
+}
+.vht-fd-canvas .fjs-number-arrow-container button {
+  color: var(--vht-ink-2);
+  background: transparent;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.vht-fd-canvas .fjs-number-arrow-container button:hover {
+  background: var(--vht-red-050);
+  color: var(--vht-red);
+}
+.vht-fd-canvas .fjs-number-arrow-separator {
+  background: var(--vht-border);
+}
+
+/* ── Select = MỘT control kiểu AntD, chevron căn PHẢI + GIỮA ──────────────────
+ * form-js dựng select là .fjs-input-group [ .fjs-select-display | mũi tên ]. Nếu
+ * bo viền vào .fjs-select-display thì mũi tên nằm NGOÀI hộp (rời rạc, xấu). Cách
+ * chuẩn (như Number): đưa VIỀN ra .fjs-input-group, display trong suốt, mũi tên
+ * là icon căn phải-giữa. Scope chặt dưới .fjs-form-field-select. */
+.vht-fd-canvas .fjs-form-field-select .fjs-input-group {
+  border: 1px solid var(--vht-border-strong);
+  border-radius: var(--vht-radius-sm);
+  background: var(--vht-surface);
+  min-height: 34px;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.vht-fd-canvas .fjs-form-field-select .fjs-input-group:hover {
+  border-color: var(--vht-red);
+}
+.vht-fd-canvas .fjs-form-field-select .fjs-input-group:focus-within {
+  border-color: var(--vht-red);
+  box-shadow: 0 0 0 2px var(--vht-red-glow);
+}
+/* Chỗ hiển thị bên trong: bỏ viền/hộp riêng, để input-group làm khung chung. */
+.vht-fd-canvas .fjs-form-field-select .fjs-select-display {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--vht-ink);
+  font-size: 14px;
+  padding: 4px 11px;
+  display: flex;
+  align-items: center;
+}
+/* Mũi tên / nút xoá: căn về phải, GIỮA theo trục dọc của ô. */
+.vht-fd-canvas .fjs-select-arrow,
+.vht-fd-canvas .fjs-select-cross {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  color: var(--vht-ink-2);
+}
+.vht-fd-canvas .fjs-form-field-select .fjs-input-group:hover .fjs-select-arrow {
+  color: var(--vht-red);
+}
+/* Cùng logic "icon căn giữa theo dòng" cho các ô có tiền/hậu tố (ngày, tiền tố…). */
+.vht-fd-canvas .fjs-input-adornment {
+  display: flex;
+  align-items: center;
+}
+
+/* ── Đỡ "lộ kỹ thuật": footer lặp lại + gợi ý biểu thức trên canvas ───────────
+ * (Việt hoá chuỗi ở relabel-vi.ts; ở đây chỉ làm dịu màu/hình khối.) */
+.vht-fd-canvas .fjs-repeat-render-footer {
+  color: var(--vht-ink-3);
+  background: var(--vht-surface-2);
+  border: 1px solid var(--vht-border);
+  border-radius: var(--vht-radius-sm);
+  font-size: 12px;
+}
+.vht-fd-canvas .fjs-repeat-render-footer svg {
+  opacity: 0.65;
+}
+.vht-fd-canvas .fjs-form-field-placeholder {
+  color: var(--vht-ink-3);
+}
+.vht-fd-canvas .fjs-form-field-placeholder svg {
+  opacity: 0.7;
+}
+
+/* ── Tay nắm kéo-rộng field: mảnh & trung tính, chỉ ửng đỏ khi kéo ───────────
+ * .fjs-field-resize-handle mặc định lấy viền = --cds-border-interactive (đã map
+ * sang đỏ) → hiện như 2 thanh đỏ "scrollbar" ở field được chọn. Trả viền về
+ * trung tính; giữ nền đỏ CHỈ ở trạng thái hover/đang kéo (đã có sẵn trong lib). */
+.vht-designer {
+  --color-resize-handle-border: var(--vht-border-strong);
+  --color-resize-handle-background: var(--vht-red);
+}
+.vht-fd-canvas .fjs-field-resize-handle {
+  width: 5px;
+  height: 32px;
+  box-shadow: 0 1px 3px rgba(15, 23, 34, 0.18);
+}
+
+/* ── D13 Lát A: Palette AntD tự viết (FieldPalette.tsx) ──────────────────────
+ * Item mang class form-js (fjs-palette-fields/fjs-drag-container/fjs-drag-copy) để
+ * dragula nhận diện; phần NHÌN do lớp .vht-fp-* điều khiển. Ép lại layout của
+ * .fjs-palette-fields (form-js set flex cho palette native) về đúng ý ta. */
+.vht-fp-list.fjs-palette-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0;
+  margin: 4px 0 0;
+  border: none;
+  background: transparent;
+}
+.vht-fp-group-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--vht-ink-3);
+  padding: 0 4px;
+}
+.vht-fp-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--vht-radius-sm);
+  background: var(--vht-surface);
+  color: var(--vht-ink);
+  font-family: var(--vht-font);
+  font-size: 13px;
+  text-align: left;
+  cursor: grab;
+  transition: border-color 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;
+}
+.vht-fp-item:hover {
+  border-color: var(--vht-red);
+  background: var(--vht-red-050);
+  box-shadow: 0 1px 3px rgba(15, 23, 34, 0.06);
+}
+.vht-fp-item:active {
+  cursor: grabbing;
+}
+.vht-fp-item-icon {
+  display: inline-flex;
+  font-size: 16px;
+  color: var(--vht-ink-2);
+  flex: 0 0 auto;
+}
+.vht-fp-item:hover .vht-fp-item-icon {
+  color: var(--vht-red);
+}
+.vht-fp-item-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Bản sao dragula (mirror) khi kéo item palette — giữ diện mạo gọn. */
+.gu-mirror .vht-fp-item,
+.vht-fp-item.gu-transit {
+  border-color: var(--vht-red);
+  background: var(--vht-red-050);
+  box-shadow: 0 4px 12px rgba(15, 23, 34, 0.16);
 }
 
 /* ── Drawer "Mẫu nghiệp vụ KHCN" (Đợt 3) ────────────────────────────────────── */

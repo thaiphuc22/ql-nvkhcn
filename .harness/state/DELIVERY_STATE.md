@@ -1,7 +1,8 @@
 # Delivery State
 
 **Owner**: Delivery Manager
-**Last updated**: 2026-07-08 (**Action Studio Simulator UI upgrade Đợt 1–5 (Slice A–P) DONE**
+**Last updated**: 2026-07-09 (**Theme `/danh-sach-phan-he` Slice A DONE** — see Your Next Action.
+Earlier 2026-07-08: **Action Studio Simulator UI upgrade Đợt 1–5 (Slice A–P) DONE**
 — tab Mô phỏng upgraded from debug API inspector to business simulation preview. Đợt 1: 3-card
 context form + summary bar + task dropdown + collapsible guide. Đợt 2: `SimulatorPreview.tsx`
 renders buttons like real dossier detail (PRIMARY/MORE dropdown/EXCEPTION dashed), Payload API
@@ -24,6 +25,39 @@ screen (`/tich-hop`) upgrade Đợt 1+2 (Slice A-G) DONE** + **EPIC06 Approval M
 > in the frontend mock that still need to be formalized server-side. F4 not started.
 > **Do not start EPIC work (Configuration Service EPICs or further RD flows) until F1–F5
 > are COMPLETE.** See `active-task.md` for the concrete next step.
+>
+> **★ ACTIVE TASK (2026-07-09): Theme `/danh-sach-phan-he` "Đỏ Tác Chiến" (Slice A + follow-up tương phản) — DONE.**
+> Follow-up sau soi trực quan của user: glass 0.56–0.72 trên nền tối ra xám đục → nâng
+> card/hero/filter lên 0.88–0.92 (chữ phụ `#8c8c8c`→`#737373`); `.qtkhcn-glass-header` đảo sang
+> glass tối `rgba(23,9,11,0.72)`; breadcrumb standalone (trùng tiêu đề trang) → wordmark `QTKHCN`
+> mono, tên user chữ sáng. Gỡ chặn build: `export` `CATEGORY_GROUPS` unused trong
+> `ServiceTaskConfig.tsx` (WIP của user). Build GREEN 16.4s.
+> Plan: `docs/research/danh-sach-phan-he-theme-upgrade-plan-2026-07-09.md`. A1 recolor Navy/Gold →
+> Đỏ Tác Chiến (`tokens.css` `--blueprint-*` + gradients + beam + glass-header; quét cả gold/navy
+> inline trong `SubsystemList.tsx` + nền standalone `App.tsx`); A2 constellation lines chuyển từ
+> linear-gradient tĩnh sang SVG động `ConstellationLines` (one-shot stroke-dashoffset draw-in,
+> stagger, `prefers-reduced-motion` ⇒ render sẵn + tắt beam/ping); A3 IBM Plex Mono
+> (`.qtkhcn-mono`, áp giá trị BentoStatCard + pill trạng thái). Build GREEN 13.6s; grep dist xác
+> nhận bundle. Chưa click-through (Playwright chưa cài). Slice B/C + D/E/F ở Backlog của plan.
+> Frontend-mock, no F1.
+>
+> **Earlier 2026-07-09: eForm B-engine renderer — D12. ALL 3 LÁT DONE.** Rewrote
+> `webapp/src/components/FormRenderer.tsx` in place to an AntD renderer (kept the
+> `FormRendererHandle` contract ⇒ 5 call sites untouched; dropped the form-js `Form` runtime chunk
+> ~334 kB). Also grouped eForm under a new **"Danh mục dùng chung" (PH3)** sider submenu in
+> `App.tsx` first (user: eForm UI must sit in its correct phân hệ, per
+> `docs/research/userflow-sso-app-portal-phan-he-2026-07-09.md`). **Lát 2**: wired `feelin@7`
+> (`evalFeel` unwraps `{value}`) for ① conditional (`conditional.hide`, hidden ⇒ excluded from
+> validate+submit) + ② computed (`expression`, readonly); seed `forms/phieuDuToanDemo.ts`.
+> **Lát 3**: ③ `dynamiclist` → editable table (add/remove rows) via new `DynamicList` comp +
+> module-level `deriveState`/`processLevel` (recursive submit → array-of-objects, row error key
+> `<idList>#<row>.<field>`); R2 resolved — row FEEL ctx = `{...root, ...row}` so row exprs see both
+> scopes and root exprs read the row array (`count(...)`); seed `forms/phieuThanhVienDemo.ts`
+> (member list + row-scoped computed `chiPhiUocTinh` + row conditional `ghiChu`). Build green +
+> node-harness verified (Lát 2: 3 scenarios; Lát 3: 3 scenarios incl. R2). **Next: end-to-end
+> browser click-through when Playwright available**; roadmap "sau" = `filepicker`→Upload (needs F1
+> backend), `html/iframe` (sanitize). Design: `docs/arch/eform-b-engine-architecture.md`.
+> Frontend-mock, no F1.
 >
 > **Integration screen upgrade Đợt 1+2 (Slice A-G, frontend-mock) — DONE 2026-07-08.** Tab split +
 > richer cards + drawer chi tiết (Đợt 1); Mapping Studio — field/value mapping editor, JSON

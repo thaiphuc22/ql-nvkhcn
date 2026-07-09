@@ -15,6 +15,7 @@ import { RbacProvider } from './store/RbacContext'
 import { ApprovalMatrixProvider } from './store/ApprovalMatrixContext'
 import { ApprovalSlotCatalogProvider } from './store/ApprovalSlotCatalogContext'
 import { IntegrationMappingProvider } from './store/IntegrationMappingContext'
+import { ServiceTaskProvider } from './store/ServiceTaskContext'
 import { FormProvider } from './store/FormContext'
 import { BreadcrumbProvider } from './store/BreadcrumbContext'
 import { AuthProvider } from './store/AuthContext'
@@ -34,11 +35,13 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
                       <ApprovalSlotCatalogProvider>
                         <ApprovalMatrixProvider>
                           <IntegrationMappingProvider>
-                            <BrowserRouter>
+                            <ServiceTaskProvider>
+                              <BrowserRouter>
                               <BreadcrumbProvider>
                                 <App />
                               </BreadcrumbProvider>
                             </BrowserRouter>
+                            </ServiceTaskProvider>
                           </IntegrationMappingProvider>
                         </ApprovalMatrixProvider>
                       </ApprovalSlotCatalogProvider>
@@ -54,3 +57,4 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     </ConfigProvider>
   </React.StrictMode>,
 )
+

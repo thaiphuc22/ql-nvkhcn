@@ -97,6 +97,40 @@ Each entry: what was decided, when, and why.
 **Source**: `docs/research/recfactor-module-user-role.md` + design session 2026-07-08. Affects `webapp/src/data/rbac.ts`, `data/rbacEngine.ts`, `store/RbacContext.tsx`, `pages/RolePermission.tsx`, `pages/UserManagement.tsx`. Extends D9; consistent with D3 (Camunda holds no business data). Frontend-mock only — real DB-backed RBAC still waits on F3.
 **Status**: LOCKED (model shape) — frontend-mock implementation DONE 2026-07-08; `npm run build` green. Server-side enforcement still open (F3).
 
+## D12 — eForm "B-engine": custom AntD runtime renderer over the unchanged form-js schema
+**Date**: 2026-07-09
+**Decision**: Response to a client complaint that eForms rendered by `@bpmn-io/form-js` "look inconsistent with the AntD app", combined with a business need for **conditional visibility (①) + calculated fields (②) + dynamic tables (③)**. Rather than adopt a new form framework (e.g. Formily) or hand-build a form engine from scratch, the eForm layer evolves as follows:
+
+1. **The form-js JSON schema stays the data contract.** No new schema format. `FormContext` CRUD, `seedForms`, and — critically — the existing drag-drop builder (`FormDesigner` wrapping form-js `FormEditor`) are all **kept unchanged**. The schema already models ①②③ (`conditional.hide`, expression fields, `dynamiclist`).
+2. **Only the runtime renderer is replaced.** A new `AntFormRenderer` (replacing `components/FormRenderer.tsx`) maps `component.type` → Ant Design components, preserving the exact `FormRendererHandle` interface (`submit(): { data, errors }`) so `TaskFormModal` and `buildYKien` need no change.
+3. **Reuse `feelin` (already a dependency, `^7.0.1`) for the expression engine** — evaluate `conditional.hide` (①) and computed expressions (②) against a controlled `formData` state on every change; strip the leading `=` before eval. Do NOT rewrite FEEL.
+4. **`dynamiclist` (③) renders as an AntD editable table** with recursive per-row rendering + per-row validation; submit gathers a nested array.
+5. **Binding is untouched.** Form→Task/Action binding stays the `formKey`-by-reference model from D10 (`ActionAvailabilityPolicy`); the renderer swap does not touch it. The renderer still must NOT infer outcome from form data (D10: the button is the decision).
+6. **Delivered in 3 slices**: Lát 1 flat fields → Lát 2 feelin conditional/computed → Lát 3 dynamic table. Each slice verified end-to-end on the real Phê duyệt flow.
+
+**Rationale**: Needing ①②③ means needing a form *engine*, not just a skin — but the two most expensive pieces (the FEEL evaluator and a schema that already models ①②③) are reusable, and the project already invested in a custom form-js builder. Adopting Formily would force replacing that builder + migrating the schema + losing Camunda Form compatibility, for a benefit (batteries-included engine) that `feelin` largely neutralizes. Since the project already renders forms in custom UI (not Tasklist, per D2/D6), keeping the form-js schema as the interchange format costs nothing and preserves the builder + binding + storage.
+**Source**: `docs/arch/eform-b-engine-architecture.md` (full design + decision trail in Phụ lục A). Design session 2026-07-09 (BA/PM). Extends D6/D10; consistent with D2/D3. Affects only `webapp/src/components/FormRenderer.tsx` (→ `AntFormRenderer`) at implementation time — builder/binding/store/seed unchanged.
+**Status**: LOCKED (model shape) — implementation NOT started; frontend-mock work (no F1 dependency). Slice plan in `active-task.md`.
+
+---
+
+## D13 — eForm builder chrome: AntD-native palette + properties panel over the form-js engine (amends D12 §1)
+**Date**: 2026-07-09
+**Decision**: Client feedback that the **builder** (`FormDesigner`) still "looks non-AntD / ugly" — the visible surfaces (palette, properties panel) are `@bpmn-io/form-js` DOM (Carbon/IBM Plex), which CSS skinning can only *approximate*. D12 §1 kept the builder unchanged; this decision **amends that clause** to allow replacing the builder's **author-facing UI** with hand-written Ant Design, while **keeping form-js as the underlying engine**:
+
+1. **Engine stays form-js, unchanged.** The `FormEditor` canvas (drag-move reorder, context-pad delete, layout, undo/redo), `modeling`/`selection`/`fieldFactory` services, schema import/export, and Vietnamese-ization all remain. The native `PaletteModule` + `PropertiesPanelModule` stay loaded but are **portaled into hidden containers** (editor bundle only exports `ContextPadModule` + `FormEditor`, so a custom `modules` list to remove them is impractical — hiding is the low-risk path).
+2. **Palette → AntD, tự viết.** New React component renders field types (VN labels + AntD icons, grouped). **Native drag-drop works for free**: dragula uses functional `isContainer`/`moves`/`copy` on document mousedown, so any AntD palette item carrying the form-js drag classes drops onto the canvas via form-js's own `createNewField`. Required markup: wrapper `fjs-palette-fields fjs-drag-container fjs-no-drop`; each item `fjs-drag-copy` + `data-field-type="<type>"`. Also click-to-add via `modeling.addFormField({type}, target, index)`.
+3. **Properties panel → AntD, tự viết.** Listens `selection.changed`; renders an AntD form for the selected field; writes via `modeling.editFormField(field, prop, value)` (nested props like `validate.required` set the whole sub-object, per native panel). Covers: general (key/label/description/id), validation, static text (markdown), options editor (select/radio), FEEL (`expression`, `conditional.hide`) via monospace textarea, delete.
+4. **Known trade-off**: loses the native **FEEL popup editor** (variable autocomplete) — replaced by a plain monospace `=...` textarea. Acceptable for now; re-adding autocomplete is a separate task.
+5. **Boundary preserved**: does NOT touch the schema contract, `FormContext` store, `formKey` binding, seed forms, or the B-engine `FormRenderer`. Same JSON in/out; only the author-facing chrome changes. Consistent with D10 (button-is-the-decision) and D3.
+6. **Delivered in 3 slices**: Lát A palette (drag + click) → Lát B properties panel → Lát C polish/empty-state/undo-sync. Each slice `npm run build` green.
+
+**Rationale**: Skinning form-js DOM (D12-era `bpmnio-skin.css`) can only get *close* to AntD, never identical, because the controls are a different engine. Client wants pixel-consistent chrome. The form-js **services** (modeling/selection/fieldFactory) are a clean, stable API, and dragula's functional container checks mean the most expensive part (drag-drop) needs no reimplementation — so building AntD chrome over the engine is far cheaper than replacing the engine. Amends only D12 §1's "builder kept unchanged"; every other D12 clause (schema-as-contract, B-engine renderer, binding) stands.
+**Source**: Session 2026-07-09 (continuation of the D12 eForm work). Affects `webapp/src/components/FormDesigner.tsx` + new palette/panel components under `webapp/src/components/formdesign/`. User explicitly directed going to "mức 2" (self-written AntD palette/panel) after rejecting deeper CSS skinning as insufficient.
+**Status**: LOCKED (approach) — implementation **DONE 2026-07-09** (Lát A palette + Lát B panel +
+Lát C hoàn thiện; `npm run build` green mỗi lát). Frontend-mock work (no F1 dependency). Chưa
+click-through trình duyệt (Playwright chưa cài) — kiểm chứng runtime bằng đọc source + build.
+
 ---
 
 ## Open decisions blocking Foundation 1 (Project Scaffold)

@@ -39,6 +39,8 @@
 
   /* Font hệ thống — 1 nguồn cho app + bpmn.io (canvas dùng bản TS ở branding/font.ts). */
   --vht-font: Inter, system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  /* Mono điểm nhấn (mã, số liệu kỹ thuật) — KHÔNG dùng cho tiêu đề/mô tả tiếng Việt. */
+  --vht-font-mono: 'IBM Plex Mono', 'Cascadia Mono', Consolas, monospace;
 
   /* Bề rộng sider (App cập nhật khi thu gọn) — dùng để canh Drawer né menu. */
   --vht-sider-w: 230px;
@@ -47,6 +49,239 @@
 /* Font hệ thống thiết kế = Inter (khớp antd token.fontFamily; phủ cả phần ngoài antd). */
 body {
   font-family: var(--vht-font);
+}
+
+/* ── Animations ── */
+
+/* Ping dot — used in HeroBanner on /danh-sach-phan-he (dashboard-sample inspired) */
+@keyframes qtkhcn-ping {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.qtkhcn-ping-dot {
+  animation: qtkhcn-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Scanning light beam — military blueprint radar sweep */
+@keyframes qtkhcn-scan {
+  0%   { top: -5%;  opacity: 0; }
+  10%  { opacity: 0.9; }
+  85%  { opacity: 0.9; }
+  95%  { top: 105%; opacity: 0; }
+  100% { top: 105%; opacity: 0; }
+}
+
+/* Node pulse — subtle breathing glow at knowledge nodes */
+@keyframes qtkhcn-node-pulse {
+  0%, 100% { opacity: 0.18; }
+  50%      { opacity: 0.40; }
+}
+
+/* ── Blueprint Military × Academic Mind-map Background ── */
+
+/*
+ * Design: "Background animation phong cách Blueprint quân đội
+ * kết hợp sơ đồ tư duy học thuật." Palette "Đỏ Tác Chiến" — phái sinh từ
+ * --vht-red / --vht-red-chrome / --vht-ink (bộ nhận diện VHT Military Red).
+ *
+ * Layers (bottom → top):
+ *   L1  Nền đen ánh đỏ
+ *   L2  Red radial glow (organic warmth)
+ *   L3  Red coordinate grid (80px, thin lines)
+ *   L4  Mind-map radiating spokes from two hub centers (conic-gradient)
+ *   L5  Constellation connecting lines — SVG động `.qtkhcn-constellation`
+ *       (render trong SubsystemList.tsx, animation "vẽ dần" stroke-dashoffset)
+ *   ::before  Scanning light beam (animated horizontal red bar)
+ *   ::after   Parchment/brushed-metal noise texture (SVG feTurbulence)
+ */
+
+.qtkhcn-standalone-bg {
+  --blueprint-navy: #17090b;
+  --blueprint-slate: #241012;
+  --blueprint-gold-line: rgba(238, 0, 51, 0.07);
+  --blueprint-gold-bright: rgba(238, 0, 51, 0.16);
+  --blueprint-node: rgba(191, 0, 39, 0.14);
+  --blueprint-olive: rgba(191, 0, 39, 0.08);
+  --blueprint-hub1-x: 72%;
+  --blueprint-hub1-y: 35%;
+  --blueprint-hub2-x: 28%;
+  --blueprint-hub2-y: 62%;
+
+  position: relative;
+  overflow: hidden;
+  background-color: var(--blueprint-navy);
+  background-image:
+    /* L5 (constellation lines) đã chuyển sang SVG động — xem .qtkhcn-constellation */
+
+    /* L4a: Mind-map hub 1 — radiating spokes (72%, 35%) */
+    repeating-conic-gradient(
+      from 7deg at var(--blueprint-hub1-x) var(--blueprint-hub1-y),
+      rgba(238, 0, 51, 0.00) 0deg,
+      rgba(238, 0, 51, 0.05) 0.4deg,
+      transparent 0.4deg,
+      transparent 22deg
+    ),
+    /* L4b: Mind-map hub 2 — radiating spokes (28%, 62%) */
+    repeating-conic-gradient(
+      from -3deg at var(--blueprint-hub2-x) var(--blueprint-hub2-y),
+      rgba(191, 0, 39, 0.00) 0deg,
+      rgba(191, 0, 39, 0.04) 0.4deg,
+      transparent 0.4deg,
+      transparent 18deg
+    ),
+
+    /* L3a: Coordinate grid — horizontal, 80px */
+    repeating-linear-gradient(
+      0deg,
+      var(--blueprint-gold-line) 0px,
+      var(--blueprint-gold-line) 1px,
+      transparent 1px,
+      transparent 80px
+    ),
+    /* L3b: Coordinate grid — vertical, 80px */
+    repeating-linear-gradient(
+      90deg,
+      var(--blueprint-gold-line) 0px,
+      var(--blueprint-gold-line) 1px,
+      transparent 1px,
+      transparent 80px
+    ),
+
+    /* L2a: Red organic glow — top (alpha thấp vì phủ diện tích lớn) */
+    radial-gradient(
+      ellipse 70% 35% at 60% 10%,
+      rgba(191, 0, 39, 0.10) 0%,
+      transparent 65%
+    ),
+    /* L2b: Red warmth — bottom-left */
+    radial-gradient(
+      ellipse 55% 30% at 25% 90%,
+      rgba(238, 0, 51, 0.05) 0%,
+      transparent 60%
+    ),
+
+    /* L1: nền đen ánh đỏ (via background-color) */
+    var(--blueprint-navy);
+}
+
+/* ── Scanning light beam (::before) ── */
+.qtkhcn-standalone-bg::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(238, 0, 51, 0.16) 15%,
+      rgba(238, 0, 51, 0.40) 40%,
+      rgba(238, 0, 51, 0.55) 50%,
+      rgba(238, 0, 51, 0.40) 60%,
+      rgba(238, 0, 51, 0.16) 85%,
+      transparent 100%
+    );
+  box-shadow:
+    0 0 18px rgba(238, 0, 51, 0.35),
+    0 0 40px rgba(238, 0, 51, 0.14),
+    0 0 80px rgba(238, 0, 51, 0.06);
+  animation: qtkhcn-scan 10s ease-in-out infinite;
+  border-radius: 2px;
+}
+
+/* ── Parchment / brushed-metal noise texture (::after) ── */
+.qtkhcn-standalone-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  /* Inline SVG noise via feTurbulence — fine paper grain */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 300px 300px;
+}
+
+/* ── Glass-morphism header (glass tối — tan vào nền blueprint thay vì cắt ngang) ── */
+.qtkhcn-glass-header {
+  background: rgba(23, 9, 11, 0.72) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(238, 0, 51, 0.28) !important;
+  box-shadow: 0 1px 8px rgba(23, 9, 11, 0.35);
+}
+
+/* ── Glass-morphism card surface (trắng gần đục — chữ đen giữ tương phản AA trên nền tối) ── */
+.qtkhcn-glass-card {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(238, 0, 51, 0.1);
+  border-radius: var(--vht-radius, 8px);
+}
+
+/* ── L5: Constellation — SVG overlay, các đường nối "tự vẽ ra" 1 lần khi mount ──
+ * SVG render trong SubsystemList.tsx (viewBox 0 0 100 100, preserveAspectRatio none,
+ * pathLength=1 trên mỗi line ⇒ dasharray/dashoffset chuẩn hoá về 1, không cần đo path).
+ * Stagger từng đường bằng animation-delay inline. */
+.qtkhcn-constellation {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+.qtkhcn-constellation line {
+  stroke: rgba(238, 0, 51, 0.20);
+  stroke-width: 1;
+  fill: none;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1; /* trạng thái đầu: chưa vẽ (ẩn cả trong lúc chờ delay) */
+  animation: qtkhcn-draw 1.8s ease-out forwards;
+}
+.qtkhcn-constellation circle {
+  fill: rgba(191, 0, 39, 0.35);
+  opacity: 0;
+  animation: qtkhcn-node-in 0.6s ease-out forwards;
+}
+
+@keyframes qtkhcn-draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes qtkhcn-node-in {
+  to { opacity: 1; }
+}
+
+/* Motion-sensitive users: render trạng thái đã vẽ xong, tắt beam quét + ping. */
+@media (prefers-reduced-motion: reduce) {
+  .qtkhcn-constellation line {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .qtkhcn-constellation circle {
+    animation: none;
+    opacity: 1;
+  }
+  .qtkhcn-standalone-bg::before {
+    animation: none;
+    opacity: 0;
+  }
+  .qtkhcn-ping-dot {
+    animation: none;
+  }
+}
+
+/* ── Mono điểm nhấn — CHỈ cho mã/số liệu kỹ thuật, không áp lên văn bản tiếng Việt dài ── */
+.qtkhcn-mono {
+  font-family: var(--vht-font-mono);
 }
 
 /*
@@ -88,4 +323,9 @@ body {
 .vht-bento-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* ── Approval Matrix: slot-group separator (Đợt 3, Slice F) ───────────────── */
+.slot-group-separator > td {
+  border-top: 2px solid var(--vht-border-strong) !important;
 }

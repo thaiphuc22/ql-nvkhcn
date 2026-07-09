@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type ReactNode } from 'react'
-import { Button, Space, Switch, Tag, Tooltip, Typography } from 'antd'
+import { Button, Space, Tag, Tooltip, Typography } from 'antd'
 import {
   AppstoreOutlined,
   CloseOutlined,
@@ -17,6 +17,8 @@ import { TranslateViModule } from '../branding/translate-vi'
 import { observeViLabels } from '../branding/relabel-vi'
 import { khcnFormSimplePanelModule } from '../formjs/khcnFormSimplePanelModule'
 import FormRenderer from './FormRenderer'
+import FieldPalette from './formdesign/FieldPalette'
+import FieldProperties, { type FField } from './formdesign/FieldProperties'
 
 const { Text } = Typography
 
@@ -80,8 +82,7 @@ const FormDesigner = forwardRef<FormDesignerHandle, Props>(({ schema }, ref) => 
   const paletteRef = useRef<HTMLDivElement>(null)
   const propsRef = useRef<HTMLDivElement>(null)
   const editorRef = useRef<FormEditor | null>(null)
-  // Chế độ nâng cao + dirty + preview — module/handle đọc qua ref để không rebuild editor.
-  const advancedRef = useRef(false)
+  // dirty + preview — module/handle đọc qua ref để không rebuild editor.
   const dirtyRef = useRef(false)
   const previewOpenRef = useRef(false)
   const previewTimerRef = useRef<number>(0)
@@ -90,7 +91,9 @@ const FormDesigner = forwardRef<FormDesignerHandle, Props>(({ schema }, ref) => 
   const [panelOpen, setPanelOpen] = useState(true)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewSchema, setPreviewSchema] = useState<unknown>(null)
-  const [advanced, setAdvanced] = useState(false)
+  // Field đang chọn + bộ đếm phiên (bump mỗi thay đổi schema) → panel AntD remount đọc lại giá trị.
+  const [selectedField, setSelectedField] = useState<FField | null>(null)
+  const [selVersion, setSelVersion] = useState(0)
   const [isDirty, setIsDirty] = useState(false)
   const [canUndo, setCanUndo] = useState(false)
   const [canRedo, setCanRedo] = useState(false)
@@ -103,7 +106,7 @@ const FormDesigner = forwardRef<FormDesignerHandle, Props>(({ schema }, ref) => 
     const editor = new FormEditor({
       container: canvasEl,
       // Việt hoá qua translate (didi) + lọc/Việt hoá nhóm panel (Đơn giản/Nâng cao).
-      additionalModules: [TranslateViModule, khcnFormSimplePanelModule(() => advancedRef.current)],
+      additionalModules: [TranslateViModule, khcnFormSimplePanelModule(() => false)],
       // Portal palette + properties panel ra 2 dock React (form-js 1.23:
       // ModularSection đọc config.<section>.parent → createPortal; dragula nhận
       // container theo class nên kéo–thả vẫn hoạt động khi palette nằm ngoài editor).
@@ -127,6 +130,13 @@ const FormDesigner = forwardRef<FormDesignerHandle, Props>(({ schema }, ref) => 
       setIsDirty(true)
       setCanUndo(commandStack.canUndo())
       setCanRedo(commandStack.canRedo())
+      // Ép panel AntD đọc lại giá trị field sau mỗi lệnh (sửa/undo/redo).
+      setSelVersion((v) => v + 1)
+    }
+    // Panel AntD: theo dõi field đang chọn (null khi bấm vùng trống).
+    const onSelectionChanged = (e?: unknown) => {
+      const sel = (e as { selection?: FField } | undefined)?.selection ?? null
+      setSelectedField(sel && sel.type ? sel : null)
     }
     // Live preview: mỗi thay đổi schema → cập nhật pane xem trước (debounce 300ms).
     const onChanged = () => {
@@ -138,13 +148,17 @@ const FormDesigner = forwardRef<FormDesignerHandle, Props>(({ schema }, ref) => 
     }
     eventBus.on('commandStack.changed', onStackChanged)
     eventBus.on('changed', onChanged)
+    eventBus.on('selection.changed', onSelectionChanged)
 
     dirtyRef.current = false
     setIsDirty(false)
     setCanUndo(false)
     setCanRedo(false)
+    setSelectedField(null)
     void editor.importSchema(schema as never).then(() => {
       ready = true
+      const sel = (editor.get('selection') as { get: () => unknown }).get() as FField | null
+      setSelectedField(sel && sel.type ? sel : null)
     })
 
     // Việt hoá nhãn render thẳng (palette/panel) — quan sát CẢ wrapper vì
@@ -156,6 +170,7 @@ const FormDesigner = forwardRef<FormDesignerHandle, Props>(({ schema }, ref) => 
       window.clearTimeout(previewTimerRef.current)
       eventBus.off('commandStack.changed', onStackChanged)
       eventBus.off('changed', onChanged)
+      eventBus.off('selection.changed', onSelectionChanged)
       editor.destroy()
       editorRef.current = null
     }
@@ -186,24 +201,70 @@ const FormDesigner = forwardRef<FormDesignerHandle, Props>(({ schema }, ref) => 
   const undo = () => (editorRef.current?.get('commandStack') as { undo: () => void } | undefined)?.undo()
   const redo = () => (editorRef.current?.get('commandStack') as { redo: () => void } | undefined)?.redo()
 
-  /** Đổi Đơn giản ↔ Nâng cao: module đọc ref; ép panel dựng lại nhóm bằng cách
-   *  phát lại selection.changed với đúng payload mà Selection.set dùng. */
-  const toggleAdvanced = (checked: boolean) => {
-    advancedRef.current = checked
-    setAdvanced(checked)
-    const editor = editorRef.current
-    if (!editor) return
-    const selection = editor.get('selection') as { get: () => unknown }
-    ;(editor.get('eventBus') as { fire: (e: string, p?: unknown) => void }).fire('selection.changed', {
-      selection: selection.get(),
-    })
-  }
-
   const togglePreview = () => {
     const next = !previewOpen
     previewOpenRef.current = next
     setPreviewOpen(next)
     if (next) setPreviewSchema(editorRef.current?.saveSchema() ?? null)
+  }
+
+  /** Thêm field bằng CLICK từ palette AntD — dựng attrs như `createNewField` của
+   *  form-js (layout.row mới), thêm vào cuối container đang chọn (group/dynamiclist)
+   *  hoặc root. Kéo–thả đi đường khác (dragula của form-js). */
+  const handleAddField = (type: string) => {
+    const editor = editorRef.current as unknown as {
+      get: (name: string) => unknown
+      _getState: () => { schema: { id: string; type: string; components?: unknown[] } }
+    } | null
+    if (!editor) return
+    const modeling = editor.get('modeling') as {
+      addFormField: (attrs: unknown, target: unknown, index: number) => unknown
+    }
+    const selection = editor.get('selection') as { get: () => unknown }
+    const layouter = editor.get('formLayouter') as { nextRowId: () => string }
+    const root = editor._getState().schema
+    const sel = selection.get() as { id: string; type: string; components?: unknown[] } | null
+    const isContainer =
+      !!sel && sel !== root && Array.isArray(sel.components) && (sel.type === 'group' || sel.type === 'dynamiclist')
+    const target = isContainer ? sel! : root
+    const index = Array.isArray(target.components) ? target.components.length : 0
+    modeling.addFormField(
+      { type, _parent: target.id, layout: { row: layouter.nextRowId(), columns: null } },
+      target,
+      index,
+    )
+  }
+
+  /** Sửa 1 thuộc tính field (panel AntD). prop lồng như `validate` được panel gộp cả
+   *  object con rồi truyền vào đây. Bọc try/catch: đổi key trùng có thể ném trong behavior. */
+  const handleEditField = (field: FField, prop: string, value: unknown) => {
+    const modeling = editorRef.current?.get('modeling') as
+      | { editFormField: (f: unknown, p: string, v: unknown) => void }
+      | undefined
+    if (!modeling) return
+    try {
+      modeling.editFormField(field, prop, value)
+    } catch (err) {
+      // Ví dụ: key trùng/không hợp lệ — giữ nguyên giá trị cũ, không làm sập editor.
+      console.warn('[FormDesigner] editFormField bị từ chối:', prop, err)
+    }
+  }
+
+  /** Xóa field: tìm parent + index rồi removeFormField (đi qua commandStack → undo được). */
+  const handleRemoveField = (field: FField) => {
+    const editor = editorRef.current
+    if (!editor) return
+    const registry = editor.get('formFieldRegistry') as {
+      get: (id: string) => { components?: { id: string }[] } | undefined
+    }
+    const modeling = editor.get('modeling') as {
+      removeFormField: (f: unknown, parent: unknown, index: number) => void
+    }
+    const parent = field._parent ? registry.get(field._parent) : undefined
+    if (!parent || !Array.isArray(parent.components)) return
+    const index = parent.components.findIndex((c) => c.id === field.id)
+    if (index < 0) return
+    modeling.removeFormField(field, parent, index)
   }
 
   return (
@@ -234,9 +295,16 @@ const FormDesigner = forwardRef<FormDesignerHandle, Props>(({ schema }, ref) => 
       >
         <div style={{ width: PALETTE_W, height: '100%', display: 'flex', flexDirection: 'column' }}>
           <DockHeader title="Thành phần" onClose={() => setPaletteOpen(false)} />
-          <div ref={paletteRef} style={{ flex: 1, minHeight: 0, overflow: 'auto' }} />
+          {/* Palette AntD tự viết (D13). Kéo–thả vẫn do dragula form-js xử lý qua class. */}
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <FieldPalette onAdd={handleAddField} />
+          </div>
         </div>
       </div>
+
+      {/* Palette NATIVE form-js: giữ module sống nhưng ẩn (portal đích cho
+          `palette.parent`). Ta chỉ dùng dịch vụ/dragula của nó, không hiện UI. */}
+      <div ref={paletteRef} style={{ display: 'none' }} aria-hidden />
 
       {/* Canvas kéo–thả */}
       <div ref={canvasRef} className="vht-fd-canvas" style={{ flex: 1, minWidth: 0, height: '100%' }} />
@@ -272,9 +340,21 @@ const FormDesigner = forwardRef<FormDesignerHandle, Props>(({ schema }, ref) => 
       >
         <div style={{ width: PANEL_W, height: '100%', display: 'flex', flexDirection: 'column' }}>
           <DockHeader title="Thuộc tính trường" onClose={() => setPanelOpen(false)} />
-          <div ref={propsRef} style={{ flex: 1, minHeight: 0, overflow: 'auto' }} />
+          {/* Panel AntD tự viết (D13). Remount theo id#version để nạp lại giá trị. */}
+          <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+            <FieldProperties
+              key={selectedField ? `${selectedField.id}#${selVersion}` : 'none'}
+              field={selectedField}
+              onEdit={handleEditField}
+              onRemove={handleRemoveField}
+            />
+          </div>
         </div>
       </div>
+
+      {/* Panel NATIVE form-js: giữ module sống nhưng ẩn (portal đích cho
+          `propertiesPanel.parent`). Chỉ dùng service, không hiện UI. */}
+      <div ref={propsRef} style={{ display: 'none' }} aria-hidden />
 
       {/* Toolbar nổi trên-trái: mở lại palette + Undo/Redo + Chưa lưu */}
       <div
@@ -305,7 +385,7 @@ const FormDesigner = forwardRef<FormDesignerHandle, Props>(({ schema }, ref) => 
         {isDirty && <Tag color="warning" style={{ marginInlineEnd: 0 }}>Chưa lưu</Tag>}
       </div>
 
-      {/* Cụm điều khiển trên-phải: Nâng cao + Xem trước + mở lại panel */}
+      {/* Cụm điều khiển trên-phải: Xem trước + mở lại panel */}
       <div
         style={{
           position: 'absolute',
@@ -318,22 +398,6 @@ const FormDesigner = forwardRef<FormDesignerHandle, Props>(({ schema }, ref) => 
           transition: 'right 0.18s ease',
         }}
       >
-        <div
-          style={{
-            display: 'flex',
-            gap: 6,
-            alignItems: 'center',
-            background: '#fff',
-            border: '1px solid var(--vht-border)',
-            borderRadius: 'var(--vht-radius-sm)',
-            padding: '3px 10px',
-          }}
-        >
-          <Text type="secondary" style={{ fontSize: 12 }}>Nâng cao</Text>
-          <Tooltip title={advanced ? 'Đang hiện đầy đủ nhóm thuộc tính kỹ thuật' : 'Đang ở chế độ đơn giản cho nghiệp vụ'}>
-            <Switch size="small" checked={advanced} onChange={toggleAdvanced} />
-          </Tooltip>
-        </div>
         <Button icon={previewOpen ? <EyeInvisibleOutlined /> : <EyeOutlined />} onClick={togglePreview}>
           Xem trước
         </Button>

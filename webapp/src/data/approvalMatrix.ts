@@ -97,6 +97,114 @@ export function groupAssignment(roleCodes: string[], mode: ApprovalMode = 'ANY_O
   return { mode, targets: [{ type: 'GROUP', roleCodes }] }
 }
 
+// ── Version History & Audit cho Approval Matrix ──
+
+export type ApprovalRuleAuditAction =
+  | 'CREATE'
+  | 'UPDATE'
+  | 'DELETE'
+  | 'TOGGLE'
+
+export interface ApprovalRuleVersion {
+  id: string
+  ruleId: string
+  version: number
+  ten: string
+  slot: SlotCode
+  conditions: ConditionGroup
+  assignment: ApprovalAssignment
+  priority: number
+  enabled: boolean
+  capNhat: string
+  nguoiCapNhat: string
+  changeNote: string
+}
+
+export interface ApprovalRuleAuditEntry {
+  id: string
+  ruleId: string
+  action: ApprovalRuleAuditAction
+  version: number
+  actor: string
+  timestamp: string
+  detail: string
+}
+
+export const APPROVAL_AUDIT_ACTION_LABEL: Record<ApprovalRuleAuditAction, string> = {
+  CREATE: 'Tạo mới',
+  UPDATE: 'Cập nhật',
+  DELETE: 'Xoá',
+  TOGGLE: 'Bật/Tắt',
+}
+
+export const APPROVAL_AUDIT_ACTION_COLOR: Record<ApprovalRuleAuditAction, string> = {
+  CREATE: 'green',
+  UPDATE: 'blue',
+  DELETE: 'red',
+  TOGGLE: 'orange',
+}
+
+/** Seed version history — snapshot các phiên bản cũ của các luật đã sửa nhiều lần. */
+export const SEED_APPROVAL_VERSIONS: ApprovalRuleVersion[] = [
+  // AM-05: đã chỉnh sửa 2 lần (v1→v2→v3 hiện tại)
+  {
+    id: 'amv-05-v1',
+    ruleId: 'AM-05',
+    version: 1,
+    ten: 'Phê duyệt — Tập đoàn, ngân sách > 10 tỷ',
+    slot: 'PHE_DUYET',
+    conditions: { kind: 'group', logic: 'AND', items: [leaf('capNhiemVu', 'eq', 'TD'), leaf('tongDuToan', 'gte', 10_000_000_000)] },
+    assignment: groupAssignment(['BTGD_TD']),
+    priority: 25,
+    enabled: true,
+    capNhat: '2026-06-10',
+    nguoiCapNhat: 'Quản trị hệ thống',
+    changeNote: 'Phiên bản đầu — ngưỡng 10 tỷ.',
+  },
+  {
+    id: 'amv-05-v2',
+    ruleId: 'AM-05',
+    version: 2,
+    ten: 'Phê duyệt — Tập đoàn, ngân sách > 5 tỷ',
+    slot: 'PHE_DUYET',
+    conditions: { kind: 'group', logic: 'AND', items: [leaf('capNhiemVu', 'eq', 'TD'), leaf('tongDuToan', 'gte', 5_000_000_000)] },
+    assignment: groupAssignment(['BTGD_TD']),
+    priority: 25,
+    enabled: true,
+    capNhat: '2026-07-01',
+    nguoiCapNhat: 'Chuyên viên nghiệp vụ',
+    changeNote: 'Hạ ngưỡng ngân sách từ 10 tỷ xuống 5 tỷ.',
+  },
+  // AM-01: v1 ban đầu
+  {
+    id: 'amv-01-v1',
+    ruleId: 'AM-01',
+    version: 1,
+    ten: 'Thẩm định — cấp Cơ sở',
+    slot: 'THAM_DINH',
+    conditions: { kind: 'group', logic: 'AND', items: [leaf('capNhiemVu', 'eq', 'CS')] },
+    assignment: groupAssignment(['CQ_KHCN']),
+    priority: 10,
+    enabled: true,
+    capNhat: '2026-06-01',
+    nguoiCapNhat: 'Quản trị hệ thống',
+    changeNote: 'Phiên bản khởi tạo.',
+  },
+]
+
+/** Seed audit entries. */
+export const SEED_APPROVAL_AUDIT: ApprovalRuleAuditEntry[] = [
+  { id: 'ama-01', ruleId: 'AM-01', action: 'CREATE', version: 1, actor: 'Quản trị hệ thống', timestamp: '2026-06-01 09:00', detail: 'Tạo luật Thẩm định — cấp Cơ sở.' },
+  { id: 'ama-02', ruleId: 'AM-02', action: 'CREATE', version: 1, actor: 'Quản trị hệ thống', timestamp: '2026-06-01 09:30', detail: 'Tạo luật Thẩm định — cấp Tập đoàn.' },
+  { id: 'ama-03', ruleId: 'AM-03', action: 'CREATE', version: 1, actor: 'Quản trị hệ thống', timestamp: '2026-06-05 10:00', detail: 'Tạo luật Hội đồng — Cơ sở.' },
+  { id: 'ama-04', ruleId: 'AM-04', action: 'CREATE', version: 1, actor: 'Quản trị hệ thống', timestamp: '2026-06-05 10:30', detail: 'Tạo luật Hội đồng — Tập đoàn.' },
+  { id: 'ama-05a', ruleId: 'AM-05', action: 'CREATE', version: 1, actor: 'Quản trị hệ thống', timestamp: '2026-06-10 14:00', detail: 'Tạo luật Phê duyệt — Tập đoàn, ngân sách > 10 tỷ.' },
+  { id: 'ama-05b', ruleId: 'AM-05', action: 'UPDATE', version: 2, actor: 'Chuyên viên nghiệp vụ', timestamp: '2026-07-01 11:00', detail: 'Hạ ngưỡng ngân sách từ 10 tỷ → 5 tỷ.' },
+  { id: 'ama-05c', ruleId: 'AM-05', action: 'UPDATE', version: 3, actor: 'Quản trị hệ thống', timestamp: '2026-07-07 08:00', detail: 'Cập nhật mô tả + bổ sung điều kiện.' },
+  { id: 'ama-06', ruleId: 'AM-06', action: 'CREATE', version: 1, actor: 'Quản trị hệ thống', timestamp: '2026-06-15 09:00', detail: 'Tạo luật Phê duyệt — cấp Cơ sở.' },
+  { id: 'ama-07', ruleId: 'AM-07', action: 'CREATE', version: 1, actor: 'Quản trị hệ thống', timestamp: '2026-06-15 09:30', detail: 'Tạo luật Phê duyệt — Tập đoàn (mặc định).' },
+]
+
 /**
  * Ma trận mock. Minh hoạ đúng ví dụ đầu doc:
  *   "Mission Level = Tập đoàn AND Budget > 5 tỷ → HĐ KHCN → TGĐ"

@@ -32,8 +32,14 @@ export interface ApprovalVariableDef {
   source: 'dossier' | 'mission' | 'process' | 'dmn' | 'organization' | 'system'
   operators: ConditionOperator[]
   options?: { value: string; label: string }[]
-  /** Panel Mô phỏng có cấp giá trị cho biến này không (Đợt 1: 3 biến lõi). */
+  /** Panel Mô phỏng có cấp giá trị cho biến này không (Đợt 1: mở rộng từ 3 → 6+ biến). */
   simulated?: boolean
+  /** Thứ tự hiển thị trong panel Mô phỏng (số nhỏ = trên cùng). */
+  simulationOrder?: number
+  /** Giá trị mặc định cho panel Mô phỏng. */
+  simulationDefault?: unknown
+  /** Hiển thị biến này trong panel Mô phỏng chỉ khi slot thuộc danh sách (bỏ trống = luôn hiện). */
+  visibleForSlots?: string[]
 }
 
 // Bộ toán tử mặc định theo kiểu — Condition Builder đọc để giới hạn lựa chọn.
@@ -55,6 +61,8 @@ export const APPROVAL_VARIABLES: ApprovalVariableDef[] = [
       { value: 'TD', label: 'Tập đoàn' },
     ],
     simulated: true,
+    simulationOrder: 1,
+    simulationDefault: 'TD',
   },
   {
     key: 'loaiHoiDong',
@@ -68,6 +76,9 @@ export const APPROVAL_VARIABLES: ApprovalVariableDef[] = [
       { value: 'KHONG', label: 'Không cần hội đồng' },
     ],
     simulated: true,
+    simulationOrder: 3,
+    simulationDefault: 'HD_KHCN_TD',
+    visibleForSlots: ['HOI_DONG'],
   },
   {
     key: 'tongDuToan',
@@ -76,6 +87,8 @@ export const APPROVAL_VARIABLES: ApprovalVariableDef[] = [
     source: 'dossier',
     operators: NUM_OPS,
     simulated: true,
+    simulationOrder: 2,
+    simulationDefault: 12_000_000_000,
   },
   // ── Biến mở rộng (tạo luật được; runtime resolve từ hồ sơ ở Đợt 2) ──────────
   {
@@ -89,6 +102,9 @@ export const APPROVAL_VARIABLES: ApprovalVariableDef[] = [
       { value: 'SXTN', label: 'Sản xuất thử nghiệm' },
       { value: 'DA', label: 'Dự án/Đề án' },
     ],
+    simulated: true,
+    simulationOrder: 4,
+    simulationDefault: 'NCKH',
   },
   {
     key: 'nguonVon',
@@ -133,6 +149,9 @@ export const APPROVAL_VARIABLES: ApprovalVariableDef[] = [
     type: 'string',
     source: 'dossier',
     operators: STR_OPS,
+    simulated: true,
+    simulationOrder: 5,
+    simulationDefault: '',
   },
   {
     key: 'coMuaSam',
@@ -140,6 +159,9 @@ export const APPROVAL_VARIABLES: ApprovalVariableDef[] = [
     type: 'boolean',
     source: 'dossier',
     operators: BOOL_OPS,
+    simulated: true,
+    simulationOrder: 6,
+    simulationDefault: false,
   },
   {
     key: 'coThueNgoai',
@@ -147,6 +169,9 @@ export const APPROVAL_VARIABLES: ApprovalVariableDef[] = [
     type: 'boolean',
     source: 'dossier',
     operators: BOOL_OPS,
+    simulated: true,
+    simulationOrder: 7,
+    simulationDefault: false,
   },
   {
     key: 'processCode',
@@ -159,6 +184,9 @@ export const APPROVAL_VARIABLES: ApprovalVariableDef[] = [
       { value: 'RD02', label: 'RD02 — Xét duyệt' },
       { value: 'RD05', label: 'RD05 — Nghiệm thu' },
     ],
+    simulated: true,
+    simulationOrder: 8,
+    simulationDefault: 'RD01',
   },
 ]
 
@@ -188,4 +216,24 @@ export function variableValueLabel(key: string, value: unknown): string {
 export const describeHelpers = {
   fieldLabel: variableLabel,
   valueLabel: variableValueLabel,
+}
+
+/** Các biến dùng được trong panel Mô phỏng, sắp xếp theo simulationOrder. */
+export function simulationVariables(slot?: string): ApprovalVariableDef[] {
+  return APPROVAL_VARIABLES
+    .filter((v) => {
+      if (!v.simulated) return false
+      if (v.visibleForSlots && slot && !v.visibleForSlots.includes(slot)) return false
+      return true
+    })
+    .sort((a, b) => (a.simulationOrder ?? 99) - (b.simulationOrder ?? 99))
+}
+
+/** Giá trị mặc định cho toàn bộ biến mô phỏng (dùng khởi tạo state). */
+export function defaultSimulationContext(slot?: string): Record<string, unknown> {
+  const ctx: Record<string, unknown> = {}
+  for (const v of simulationVariables(slot)) {
+    ctx[v.key] = v.simulationDefault ?? null
+  }
+  return ctx
 }

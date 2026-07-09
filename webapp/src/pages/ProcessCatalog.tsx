@@ -9,7 +9,6 @@ import {
   Row,
   Select,
   Space,
-  Tag,
   Tooltip,
   Typography,
   Upload,
@@ -99,7 +98,7 @@ export default function ProcessCatalog() {
         </div>
       ),
     },
-    { title: 'Nhóm', dataIndex: 'nhom', width: 90, render: (v: string) => <Tag>{v}</Tag> },
+    { title: 'Nhóm', dataIndex: 'nhom', width: 90, render: (v: string) => <Text>{v}</Text> },
     {
       title: 'Phiên bản', key: 'ver', width: 100, align: 'center',
       render: (_, r) => <Text strong>v{curVer(r)}</Text>,
