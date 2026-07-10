@@ -33,7 +33,7 @@ render thẳng. Lỗ hổng:
 
 ### 1.2 ✅ Nhiều element, không tìm kiếm được (xác nhận, đúng — nặng nhất)
 
-- `khcnTemplatesModule` bơm **15 mẫu KHCN** (`data/elementTemplates.ts`) vào palette
+- `khcnTemplatesModule` bơm **15 Mẫu phần tử** (`data/elementTemplates.ts`) vào palette
   dọc mặc định; mẫu cùng BPMN type dùng **chung icon**, tên chỉ hiện qua tooltip →
   BA phải rê chuột từng nút để phân biệt "Ký duyệt" với "Thẩm định".
 - Palette gốc bpmn-js vẫn đầy đủ mọi loại BPMN (data object, data store, group,
@@ -108,7 +108,7 @@ nhìn thấy**. Cần thêm package `diagram-js-grid` (lưới chấm) + nút to
 
 | # | Việc | Cách làm |
 |---|---|---|
-| 3.1 | **Drawer "Mẫu nghiệp vụ KHCN"** | Panel React (AntD) dock trái thay cho 15 nút palette: nhóm theo `nhom` (Phê duyệt/Thẩm định/Soạn thảo/Hội đồng/Hẹn giờ/Tích hợp), mỗi mẫu có **tên + mô tả + icon riêng**, ô **tìm kiếm**; click/kéo → gọi `create.start()` như module hiện tại (qua ref modeler) |
+| 3.1 | **Drawer "Mẫu phần tử"** | Panel React (AntD) dock trái thay cho 15 nút palette: nhóm theo `nhom` (Phê duyệt/Thẩm định/Soạn thảo/Hội đồng/Hẹn giờ/Tích hợp), mỗi mẫu có **tên + mô tả + icon riêng**, ô **tìm kiếm**; click/kéo → gọi `create.start()` như module hiện tại (qua ref modeler) |
 | 3.2 | **Thu gọn palette gốc** | PaletteProvider lọc còn: công cụ (hand/lasso/space/connect) + Start/End + Task + Gateway + ghi chú; bỏ data object/store, group… khỏi tầm mắt BA |
 | 3.3 | **Rút gọn replace/append menu** | PopupMenuProvider lọc theo "bộ từ vựng KHCN": User/Service Task, Call Activity, Exclusive/Parallel Gateway, Start/End, Timer, Sub-process. (Chế độ nâng cao hiện đủ — xem 4.1) |
 
@@ -116,7 +116,7 @@ nhìn thấy**. Cần thêm package `diagram-js-grid` (lưới chấm) + nút to
 
 | # | Việc | Cách làm |
 |---|---|---|
-| 4.1 | **Chế độ Đơn giản (mặc định) / Nâng cao** | Provider priority thấp lọc groups theo **whitelist theo loại element** — UserTask: Chung · Biểu mẫu KHCN · Phân công KHCN · (Thời hạn); SequenceFlow từ gateway: Điều kiện KHCN; ServiceTask: Chung · Job type; CallActivity: Chung · Process đích; Lane: Vai trò. Toggle "Nâng cao" (header panel) hiện đầy đủ Zeebe |
+| 4.1 | **Chế độ Đơn giản (mặc định) / Nâng cao** | Provider priority thấp lọc groups theo **whitelist theo loại element** — UserTask: Chung · Biểu Mẫu phần tử · Phân công KHCN · (Thời hạn); SequenceFlow từ gateway: Điều kiện KHCN; ServiceTask: Chung · Job type; CallActivity: Chung · Process đích; Lane: Vai trò. Toggle "Nâng cao" (header panel) hiện đầy đủ Zeebe |
 | 4.2 | **Default flow tại chỗ** | Trong nhóm "Điều kiện": checkbox "Đặt làm nhánh mặc định (đi khi không nhánh nào khớp)" + badge "Mặc định" trên option; đồng bộ 2 chiều với thuộc tính `default` của gateway |
 | 4.3 | **Job type dropdown** | ServiceTask: thay ô text bằng dropdown 5 hệ tích hợp (QLNS/MS/SAP/QLTS/PLM — nguồn từ `camundaOps`/contract), cho phép "(tuỳ chỉnh)" |
 

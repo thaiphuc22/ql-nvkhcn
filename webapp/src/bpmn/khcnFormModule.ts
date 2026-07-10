@@ -1,5 +1,5 @@
 /*
- * Custom Properties Provider: nhóm "Biểu mẫu KHCN".
+ * Custom Properties Provider: nhóm "Biểu Mẫu phần tử".
  *
  * Thêm 1 nhóm vào Properties Panel cho mỗi User Task, với dropdown chọn biểu mẫu
  * LẤY TỪ ĐÚNG THƯ VIỆN BIỂU MẪU (FormContext) — BA gán nhanh, không gõ tay.
@@ -103,7 +103,7 @@ function makeProvider(getForms: () => FormLite[]) {
         if (is(element, 'bpmn:UserTask')) {
           groups.push({
             id: 'khcnForm',
-            label: this._translate('Biểu mẫu KHCN'),
+            label: this._translate('Biểu Mẫu phần tử'),
             entries: [
               {
                 id: 'khcn-formKey',

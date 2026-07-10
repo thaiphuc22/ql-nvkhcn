@@ -2,7 +2,7 @@
  * P0.5 #4 — Khối "Đồng ý / Từ chối" + rework.
  *
  * Mọi luồng RD01–RD06 đều có cổng phê duyệt: "Phê duyệt/Từ chối", "Đạt/Chưa đạt"
- * ở mỗi cấp, kèm vòng lặp rework. Mẫu chèn nhanh nằm ở drawer "Mẫu nghiệp vụ KHCN"
+ * ở mỗi cấp, kèm vòng lặp rework. Mẫu chèn nhanh nằm ở drawer "Mẫu phần tử"
  * (data/elementTemplates.ts id `decision-gateway`). Module này giữ BEHAVIOR:
  *  tự gán nhãn 2 sequence flow đi ra của cổng đó — flow thứ 1 = "Đồng ý",
  *  flow thứ 2 = "Từ chối" (đặt làm DEFAULT). Không đè nhãn có sẵn.

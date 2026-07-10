@@ -108,7 +108,7 @@ interface Props {
 
 /**
  * Canvas vẽ BPMN theo bố cục Camunda Modeler: palette nổi trái, canvas toàn vùng,
- * Properties Panel dock bên phải (đóng/mở), drawer "Mẫu nghiệp vụ KHCN" dock trái,
+ * Properties Panel dock bên phải (đóng/mở), drawer "Mẫu phần tử" dock trái,
  * toolbar zoom/lưới/undo nổi góc dưới. Chế độ Đơn giản (BA) / Nâng cao (kỹ thuật).
  * Live-lint: element lỗi được đánh dấu ngay trên canvas sau mỗi thay đổi.
  */
@@ -459,149 +459,224 @@ const BpmnEditor = forwardRef<BpmnEditorHandle, Props>(
           height: isFs ? "100vh" : height,
           background: "#fff",
           overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
+        {/* Thanh toolbar cố định, ngang hàng với title Card "Sơ đồ BPMN": gom
+            mọi nút trước đây float đè lên canvas (Mẫu phần tử, Kiểm tra, zoom/
+            undo/lưới/toàn màn hình, Nâng cao, Mở panel) về 1 hàng duy nhất. */}
         <div
-          ref={containerRef}
-          className="vht-diagram"
-          style={{ height: "100%" }}
-        />
+          style={{
+            flex: "0 0 auto",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "12px 12px",
+            borderBottom: "1px solid var(--vht-border)",
+            background: "var(--vht-surface-2)",
+            overflowX: "auto",
+          }}
+        >
+          {!drawerOpen && (
+            <Tooltip title="Mở thư viện Mẫu phần tử">
+              <Button
+                icon={<AppstoreOutlined />}
+                onClick={() => setDrawerOpen(true)}
+              >
+                Mẫu phần tử
+              </Button>
+            </Tooltip>
+          )}
+          <Tooltip title="Kiểm tra tính hợp lệ của quy trình">
+            <Badge
+              count={errorCount || warningCount}
+              color={errorCount ? undefined : "orange"}
+              size="small"
+            >
+              <Button icon={<SafetyCertificateOutlined />} onClick={runLint}>
+                Kiểm tra
+              </Button>
+            </Badge>
+          </Tooltip>
+          {isDirty && !importError && (
+            <Tag color="warning" style={{ marginInlineEnd: 0 }}>
+              Chưa lưu
+            </Tag>
+          )}
 
-        {importError && (
-          <Alert
-            type="error"
-            showIcon
-            closable
-            message="Lỗi nạp sơ đồ BPMN"
-            description={importError}
-            onClose={() => setImportError("")}
-            style={{
-              position: "absolute",
-              top: 56,
-              left: drawerOpen ? DRAWER_W + 12 : 150,
-              right: panelOpen ? PANEL_W + 12 : 12,
-              zIndex: 28,
-            }}
+          <div
+            style={{ width: 1, alignSelf: "stretch", background: "var(--vht-border)" }}
           />
-        )}
-        <div>
-          {/* Hàng nút trên-trái: Mẫu KHCN + Kiểm tra (badge lỗi) + Chưa lưu */}
+
+          <DiagramToolbar
+            inline
+            isFs={isFs}
+            onZoomIn={() => zoomBy(1.2)}
+            onZoomOut={() => zoomBy(1 / 1.2)}
+            onFit={fit}
+            onToggleMinimap={toggleMinimap}
+            onToggleFullscreen={toggleFullscreen}
+            zoomPct={zoomPct}
+            onZoomReset={zoomReset}
+            onUndo={undo}
+            onRedo={redo}
+            canUndo={canUndo}
+            canRedo={canRedo}
+            gridOn={gridOn}
+            onToggleGrid={toggleGrid}
+          />
+
           <div
             style={{
-              position: "absolute",
-              top: 12,
-              left: drawerOpen ? DRAWER_W + 12 : 12,
-              zIndex: 26,
+              marginLeft: "auto",
               display: "flex",
-              gap: 8,
               alignItems: "center",
-              transition: "left 0.18s ease",
+              gap: 12,
             }}
           >
-            {!drawerOpen && (
-              <Tooltip title="Mở thư viện mẫu nghiệp vụ KHCN" placement="right">
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Thuộc tính nâng cao
+              </Text>
+              <Tooltip
+                title={
+                  advanced
+                    ? "Đang hiện đầy đủ thuộc tính kỹ thuật"
+                    : "Đang ở chế độ đơn giản cho nghiệp vụ"
+                }
+              >
+                <Switch
+                  size="small"
+                  checked={advanced}
+                  onChange={toggleAdvanced}
+                />
+              </Tooltip>
+            </div>
+            {!panelOpen && (
+              <Tooltip title="Mở panel thuộc tính">
                 <Button
-                  icon={<AppstoreOutlined />}
-                  onClick={() => setDrawerOpen(true)}
-                >
-                  Mẫu KHCN
-                </Button>
+                  icon={<ProfileOutlined />}
+                  onClick={() => setPanelOpen(true)}
+                />
               </Tooltip>
             )}
-            <Tooltip title="Kiểm tra tính hợp lệ của quy trình">
-              <Badge
-                count={errorCount || warningCount}
-                color={errorCount ? undefined : "orange"}
-                size="small"
-              >
-                <Button icon={<SafetyCertificateOutlined />} onClick={runLint}>
-                  Kiểm tra
-                </Button>
-              </Badge>
-            </Tooltip>
-            {isDirty && !importError && (
-              <Tag color="warning" style={{ marginInlineEnd: 0 }}>
-                Chưa lưu
-              </Tag>
-            )}
-          </div>
-
-          {/* Công tắc Đơn giản/Nâng cao — cạnh panel thuộc tính */}
-          <div
-            style={{
-              position: "absolute",
-              top: 12,
-              right: panelOpen ? PANEL_W + 12 : 56,
-              zIndex: 26,
-              display: "flex",
-              gap: 6,
-              alignItems: "center",
-              background: "#fff",
-              border: "1px solid var(--vht-border)",
-              borderRadius: "var(--vht-radius-sm)",
-              padding: "3px 10px",
-              transition: "right 0.18s ease",
-            }}
-          >
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              Thuộc tính nâng cao
-            </Text>
-            <Tooltip
-              title={
-                advanced
-                  ? "Đang hiện đầy đủ thuộc tính kỹ thuật"
-                  : "Đang ở chế độ đơn giản cho nghiệp vụ"
-              }
-            >
-              <Switch
-                size="small"
-                checked={advanced}
-                onChange={toggleAdvanced}
-              />
-            </Tooltip>
           </div>
         </div>
 
-        {/* Drawer mẫu nghiệp vụ KHCN (dock trái) */}
-        <BpmnTemplateDrawer
-          open={drawerOpen}
-          onClose={() => setDrawerOpen(false)}
-          onPick={onPickTemplate}
-        />
+        {/* Vùng canvas + docks (drawer trái/panel phải nổi trên vùng này) */}
+        <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
+          <div
+            ref={containerRef}
+            className="vht-diagram"
+            style={{ height: "100%" }}
+          />
 
-        {/* Hint bắt đầu nhanh (hiện 1 lần) */}
-        {showHint && !importError && (
-          <Card
-            size="small"
+          {importError && (
+            <Alert
+              type="error"
+              showIcon
+              closable
+              message="Lỗi nạp sơ đồ BPMN"
+              description={importError}
+              onClose={() => setImportError("")}
+              style={{
+                position: "absolute",
+                top: 12,
+                left: drawerOpen ? DRAWER_W + 12 : 12,
+                right: panelOpen ? PANEL_W + 12 : 12,
+                zIndex: 28,
+              }}
+            />
+          )}
+
+          {/* Drawer Mẫu phần tử (dock trái) */}
+          <BpmnTemplateDrawer
+            open={drawerOpen}
+            onClose={() => setDrawerOpen(false)}
+            onPick={onPickTemplate}
+          />
+
+          {/* Hint bắt đầu nhanh (hiện 1 lần) */}
+          {showHint && !importError && (
+            <Card
+              size="small"
+              style={{
+                position: "absolute",
+                bottom: 64,
+                left: "50%",
+                transform: "translateX(-50%)",
+                zIndex: 27,
+                width: 420,
+                maxWidth: "calc(100% - 40px)",
+                boxShadow: "0 4px 16px rgba(15,23,34,0.12)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 12,
+                }}
+              >
+                <div style={{ fontSize: 13 }}>
+                  <Text strong>Bắt đầu nhanh:</Text> ① chọn mẫu trong{" "}
+                  <Text strong>Mẫu phần tử</Text> (trái) → ② di chuột lên canvas, bấm
+                  để đặt → ③ nối các bước rồi bấm <Text strong>Kiểm tra</Text>.
+                </div>
+                <Button size="small" type="text" onClick={dismissHint}>
+                  Đã hiểu
+                </Button>
+              </div>
+            </Card>
+          )}
+
+          {/* Properties Panel dock (phải) */}
+          <div
+            className="vht-props-dock"
             style={{
               position: "absolute",
-              bottom: 64,
-              left: "50%",
-              transform: "translateX(-50%)",
-              zIndex: 27,
-              width: 420,
-              maxWidth: "calc(100% - 40px)",
-              boxShadow: "0 4px 16px rgba(15,23,34,0.12)",
+              top: 0,
+              right: 0,
+              bottom: 0,
+              width: PANEL_W,
+              background: "#fff",
+              borderLeft: "1px solid var(--vht-border)",
+              boxShadow: "-2px 0 10px rgba(15,23,34,0.06)",
+              display: "flex",
+              flexDirection: "column",
+              transform: panelOpen ? "translateX(0)" : `translateX(${PANEL_W}px)`,
+              transition: "transform 0.18s ease",
+              zIndex: 25,
             }}
           >
             <div
               style={{
+                height: 42,
+                flex: "0 0 auto",
                 display: "flex",
+                alignItems: "center",
                 justifyContent: "space-between",
-                gap: 12,
+                padding: "0 8px 0 14px",
+                borderBottom: "1px solid var(--vht-border)",
+                background: "var(--vht-surface-2)",
               }}
             >
-              <div style={{ fontSize: 13 }}>
-                <Text strong>Bắt đầu nhanh:</Text> ① chọn mẫu trong{" "}
-                <Text strong>Mẫu KHCN</Text> (trái) → ② di chuột lên canvas, bấm
-                để đặt → ③ nối các bước rồi bấm <Text strong>Kiểm tra</Text>.
-              </div>
-              <Button size="small" type="text" onClick={dismissHint}>
-                Đã hiểu
-              </Button>
+              <Text strong>Thuộc tính phần tử</Text>
+              <Button
+                type="text"
+                size="small"
+                icon={<CloseOutlined />}
+                onClick={() => setPanelOpen(false)}
+              />
             </div>
-          </Card>
-        )}
+            <div
+              ref={propsRef}
+              className="vht-designer"
+              style={{ flex: 1, overflow: "auto" }}
+            />
+          </div>
+        </div>
 
         <Modal
           title="Kết quả kiểm tra quy trình"
@@ -643,82 +718,6 @@ const BpmnEditor = forwardRef<BpmnEditorHandle, Props>(
             />
           )}
         </Modal>
-
-        {/* Properties Panel dock (phải) */}
-        <div
-          className="vht-props-dock"
-          style={{
-            position: "absolute",
-            top: 0,
-            right: 0,
-            bottom: 0,
-            width: PANEL_W,
-            background: "#fff",
-            borderLeft: "1px solid var(--vht-border)",
-            boxShadow: "-2px 0 10px rgba(15,23,34,0.06)",
-            display: "flex",
-            flexDirection: "column",
-            transform: panelOpen ? "translateX(0)" : `translateX(${PANEL_W}px)`,
-            transition: "transform 0.18s ease",
-            zIndex: 25,
-          }}
-        >
-          <div
-            style={{
-              height: 42,
-              flex: "0 0 auto",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "0 8px 0 14px",
-              borderBottom: "1px solid var(--vht-border)",
-              background: "var(--vht-surface-2)",
-            }}
-          >
-            <Text strong>Thuộc tính phần tử</Text>
-            <Button
-              type="text"
-              size="small"
-              icon={<CloseOutlined />}
-              onClick={() => setPanelOpen(false)}
-            />
-          </div>
-          <div
-            ref={propsRef}
-            className="vht-designer"
-            style={{ flex: 1, overflow: "auto" }}
-          />
-        </div>
-
-        {/* Nút mở lại panel (khi đang đóng) — tab dọc mép phải */}
-        {!panelOpen && (
-          <Tooltip title="Mở panel thuộc tính" placement="left">
-            <Button
-              icon={<ProfileOutlined />}
-              onClick={() => setPanelOpen(true)}
-              style={{ position: "absolute", top: 12, right: 12, zIndex: 26 }}
-            />
-          </Tooltip>
-        )}
-
-        {/* Toolbar zoom/tiện ích — góc dưới-phải, né panel khi mở */}
-        <DiagramToolbar
-          isFs={isFs}
-          offsetRight={panelOpen ? PANEL_W : 0}
-          onZoomIn={() => zoomBy(1.2)}
-          onZoomOut={() => zoomBy(1 / 1.2)}
-          onFit={fit}
-          onToggleMinimap={toggleMinimap}
-          onToggleFullscreen={toggleFullscreen}
-          zoomPct={zoomPct}
-          onZoomReset={zoomReset}
-          onUndo={undo}
-          onRedo={redo}
-          canUndo={canUndo}
-          canRedo={canRedo}
-          gridOn={gridOn}
-          onToggleGrid={toggleGrid}
-        />
       </div>
     );
   },

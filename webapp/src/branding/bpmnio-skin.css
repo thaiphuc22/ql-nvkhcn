@@ -628,7 +628,7 @@
   box-shadow: 0 4px 12px rgba(15, 23, 34, 0.16);
 }
 
-/* ── Drawer "Mẫu nghiệp vụ KHCN" (Đợt 3) ────────────────────────────────────── */
+/* ── Drawer "Mẫu phần tử" (Đợt 3) ────────────────────────────────────── */
 /* Khi drawer mở: đẩy palette + minimap sang phải để không bị che. */
 .khcn-drawer-open .djs-palette {
   left: 276px;

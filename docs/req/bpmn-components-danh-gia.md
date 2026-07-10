@@ -42,7 +42,7 @@ Khác hẳn: QLKHCN ↔ NS/MS/SAP/QLTS/PLM, mỗi bên là một pool, trao đ�
 |---|---|
 | `BpmnModeler` + palette mặc định | Đủ mọi phần tử BPMN gốc (task, gateway, event, pool/lane, data object) |
 | Việt hoá nhãn | `TranslateViModule` + `relabel-vi` |
-| Properties Panel | `Bpmn` + `Zeebe` provider + custom **"Biểu mẫu KHCN"** (chỉ `formKey`) |
+| Properties Panel | `Bpmn` + `Zeebe` provider + custom **"Biểu Mẫu phần tử"** (chỉ `formKey`) |
 | Tiện ích | Minimap, toolbar zoom/fit/fullscreen, skin thương hiệu |
 | moddle | `zeebe-bpmn-moddle` (xuất XML Camunda 8 triển khai được) |
 

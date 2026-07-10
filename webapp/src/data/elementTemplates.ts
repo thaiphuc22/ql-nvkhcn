@@ -9,7 +9,7 @@
 export interface KhcnTemplate {
   id: string;
   ten: string;
-  /** Mô tả ngắn hiển thị trong drawer "Mẫu nghiệp vụ KHCN" (BA đọc hiểu ngay). */
+  /** Mô tả ngắn hiển thị trong drawer "Mẫu phần tử" (BA đọc hiểu ngay). */
   moTa: string;
   nhom:
     | "Phê duyệt"

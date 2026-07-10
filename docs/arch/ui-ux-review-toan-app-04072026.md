@@ -222,7 +222,7 @@ xuống dòng nhiều ở màn hẹp) — khi đó toàn trang (`#app-scroll`, `
 `overflow`/chiều cao cố định riêng) phải cuộn, kéo theo cả Card "Thông tin chung" và tiêu đề
 "Sơ đồ BPMN" trôi khỏi màn hình trong khi đang thao tác trên canvas.
 
-Đáng chú ý: 2 panel dock bên trong `BpmnEditor` — **drawer "Mẫu nghiệp vụ KHCN"**
+Đáng chú ý: 2 panel dock bên trong `BpmnEditor` — **drawer "Mẫu phần tử"**
 (`BpmnTemplateDrawer.tsx:88`, `overflow: auto` trong khung `flex:1`) và **panel "Thuộc tính
 phần tử"** (`BpmnEditor.tsx:506`, `overflow: auto` tương tự) — **đã có cuộn dọc riêng bên
 trong**, đúng như đề xuất, chỉ là bị giới hạn bởi khung cha `74vh` cố định thay vì bởi chiều

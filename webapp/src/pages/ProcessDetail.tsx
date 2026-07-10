@@ -205,7 +205,33 @@ export default function ProcessDetail() {
   const infoTab = (
     <Row gutter={16}>
       <Col xs={24} lg={14}>
-        <Card title="Thông tin quy trình" style={{ marginBottom: 16 }}>
+        <Card
+          title="Thông tin quy trình"
+          style={{ marginBottom: 16 }}
+          extra={
+            editing ? (
+              <Space>
+                <Button
+                  icon={<CloseOutlined />}
+                  onClick={() => setEditing(false)}
+                >
+                  Huỷ
+                </Button>
+                <Button
+                  type="primary"
+                  icon={<SaveOutlined />}
+                  onClick={saveEdit}
+                >
+                  Lưu
+                </Button>
+              </Space>
+            ) : (
+              <Button icon={<EditOutlined />} onClick={startEdit}>
+                Chỉnh sửa
+              </Button>
+            )
+          }
+        >
           {editing ? (
             <Form form={form} layout="vertical">
               <Form.Item label="Mã quy trình">
@@ -403,85 +429,68 @@ export default function ProcessDetail() {
           </>
         }
         extra={
-          editing ? (
-            <Space>
-              <Button
-                icon={<CloseOutlined />}
-                onClick={() => setEditing(false)}
+          <Space>
+            {p.trangThai === "active" ? (
+              <Popconfirm
+                title="Tạm ngừng quy trình?"
+                description="Quy trình sẽ ngừng nhận instance mới. Có thể kích hoạt lại sau."
+                okText="Tạm ngừng"
+                cancelText="Huỷ"
+                okButtonProps={{ danger: true }}
+                onConfirm={onToggle}
+                disabled={!canManageSystem}
               >
-                Huỷ
-              </Button>
-              <Button type="primary" icon={<SaveOutlined />} onClick={saveEdit}>
-                Lưu
-              </Button>
-            </Space>
-          ) : (
-            <Space>
-              <Button icon={<EditOutlined />} onClick={startEdit}>
-                Chỉnh sửa
-              </Button>
-              {p.trangThai === "active" ? (
-                <Popconfirm
-                  title="Tạm ngừng quy trình?"
-                  description="Quy trình sẽ ngừng nhận instance mới. Có thể kích hoạt lại sau."
-                  okText="Tạm ngừng"
-                  cancelText="Huỷ"
-                  okButtonProps={{ danger: true }}
-                  onConfirm={onToggle}
-                  disabled={!canManageSystem}
-                >
-                  <Tooltip
-                    title={
-                      canManageSystem
-                        ? undefined
-                        : "Chỉ Quản trị hệ thống được tạm ngừng quy trình."
-                    }
-                  >
-                    <Button
-                      danger
-                      icon={<PauseCircleOutlined />}
-                      disabled={!canManageSystem}
-                    >
-                      Tạm ngừng
-                    </Button>
-                  </Tooltip>
-                </Popconfirm>
-              ) : (
                 <Tooltip
                   title={
                     canManageSystem
                       ? undefined
-                      : "Chỉ Quản trị hệ thống được kích hoạt quy trình."
+                      : "Chỉ Quản trị hệ thống được tạm ngừng quy trình."
                   }
                 >
                   <Button
-                    icon={<PlayCircleOutlined />}
-                    disabled={p.trangThai === "planned" || !canManageSystem}
-                    onClick={onToggle}
+                    danger
+                    icon={<PauseCircleOutlined />}
+                    disabled={!canManageSystem}
                   >
-                    Kích hoạt
+                    Tạm ngừng
                   </Button>
                 </Tooltip>
-              )}
+              </Popconfirm>
+            ) : (
               <Tooltip
                 title={
                   canManageSystem
                     ? undefined
-                    : "Chỉ Quản trị hệ thống được deploy phiên bản mới."
+                    : "Chỉ Quản trị hệ thống được kích hoạt quy trình."
                 }
               >
                 <Button
-                  type="primary"
-                  icon={<CloudUploadOutlined />}
+                  icon={<PlayCircleOutlined />}
                   disabled={p.trangThai === "planned" || !canManageSystem}
-                  onClick={() => setDeployOpen(true)}
+                  onClick={onToggle}
                 >
-                  Ban hành phiên bản mới
+                  Kích hoạt
                 </Button>
               </Tooltip>
-              <HelpButton section="quytrinh" />
-            </Space>
-          )
+            )}
+            <Tooltip
+              title={
+                canManageSystem
+                  ? undefined
+                  : "Chỉ Quản trị hệ thống được deploy phiên bản mới."
+              }
+            >
+              <Button
+                type="primary"
+                icon={<CloudUploadOutlined />}
+                disabled={p.trangThai === "planned" || !canManageSystem}
+                onClick={() => setDeployOpen(true)}
+              >
+                Ban hành phiên bản mới
+              </Button>
+            </Tooltip>
+            <HelpButton section="quytrinh" />
+          </Space>
         }
       />
 

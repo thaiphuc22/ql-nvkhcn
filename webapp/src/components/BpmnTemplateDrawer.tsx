@@ -19,7 +19,7 @@ const GROUP_ORDER: KhcnTemplate['nhom'][] = [
 ]
 
 /**
- * Drawer "Mẫu nghiệp vụ KHCN" — thay cho 15 nút palette chung icon (Đợt 3,
+ * Drawer "Mẫu phần tử" — thay cho 15 nút palette chung icon (Đợt 3,
  * bpmn-editor-ux-upgrade-plan.md): nhóm rõ, nhãn + mô tả đọc được ngay,
  * tìm kiếm theo tên/mô tả/vai trò. Dock trái, trượt ra/vào như panel thuộc tính.
  */
@@ -70,7 +70,7 @@ export default function BpmnTemplateDrawer({ open, onClose, onPick }: Props) {
           background: 'var(--vht-surface-2)',
         }}
       >
-        <Text strong>Mẫu nghiệp vụ KHCN</Text>
+        <Text strong>Mẫu phần tử</Text>
         <Button type="text" size="small" icon={<CloseOutlined />} onClick={onClose} />
       </div>
 

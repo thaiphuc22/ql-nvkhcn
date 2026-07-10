@@ -1,9 +1,9 @@
 /*
  * P1 — Element Templates domain (bản nhẹ, không cần Camunda template engine).
  *
- * Từ đợt nâng UX (bpmn-editor-ux-upgrade-plan.md, Đợt 3): mẫu KHCN KHÔNG còn nằm
+ * Từ đợt nâng UX (bpmn-editor-ux-upgrade-plan.md, Đợt 3): Mẫu phần tử KHÔNG còn nằm
  * trong palette dọc (15 nút cùng icon, chỉ phân biệt được qua tooltip) mà chuyển
- * sang drawer "Mẫu nghiệp vụ KHCN" (components/BpmnTemplateDrawer.tsx) có nhóm,
+ * sang drawer "Mẫu phần tử" (components/BpmnTemplateDrawer.tsx) có nhóm,
  * nhãn, mô tả và tìm kiếm. File này giữ phần LÕI dùng chung: dựng businessObject
  * đúng cấu hình Zeebe rồi khởi động thao tác kéo-thả qua service `create`.
  *
@@ -85,7 +85,7 @@ export function buildKhcnBusinessObject(bpmnFactory: any, tmpl: KhcnTemplate): a
 }
 
 /**
- * Khởi động kéo-thả một mẫu KHCN trên modeler (drawer gọi khi BA bấm/kéo mẫu):
+ * Khởi động kéo-thả một Mẫu phần tử trên modeler (drawer gọi khi BA bấm/kéo mẫu):
  * phần tử dính theo con trỏ, click lên canvas để đặt — một lệnh, undo được.
  */
 export function startKhcnTemplate(modeler: any, tmpl: KhcnTemplate, event: Event): void {

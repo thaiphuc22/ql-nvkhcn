@@ -141,21 +141,39 @@ export default function BpmnViewer({
         height: isFs ? "100vh" : height,
         background: "#fff",
         overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       <div
-        ref={containerRef}
-        className="vht-diagram"
-        style={{ height: "100%" }}
-      />
-      <DiagramToolbar
-        isFs={isFs}
-        onZoomIn={() => zoomBy(1.2)}
-        onZoomOut={() => zoomBy(1 / 1.2)}
-        onFit={fit}
-        onToggleMinimap={toggleMinimap}
-        onToggleFullscreen={toggleFullscreen}
-      />
+        style={{
+          flex: "0 0 auto",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          gap: 8,
+          padding: "5px 12px",
+          borderBottom: "1px solid var(--vht-border)",
+          background: "var(--vht-surface-2)",
+        }}
+      >
+        <DiagramToolbar
+          inline
+          isFs={isFs}
+          onZoomIn={() => zoomBy(1.2)}
+          onZoomOut={() => zoomBy(1 / 1.2)}
+          onFit={fit}
+          onToggleMinimap={toggleMinimap}
+          onToggleFullscreen={toggleFullscreen}
+        />
+      </div>
+      <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
+        <div
+          ref={containerRef}
+          className="vht-diagram"
+          style={{ height: "100%" }}
+        />
+      </div>
     </div>
   );
 }
