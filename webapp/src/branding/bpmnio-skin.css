@@ -307,6 +307,21 @@
 .vht-fd-canvas .fjs-editor-container {
   height: 100%;
 }
+/* Font: form-js tự khai --font-family riêng (IBM Plex Sans, KHÔNG phải --cds-*) nên
+ * không nằm trong bảng ánh xạ token ở đầu file — phải ghi đè trực tiếp ở đây, nếu
+ * không toàn bộ field trên canvas vẫn hiện IBM Plex Sans thay vì Inter của AntD. */
+.vht-fd-canvas .fjs-container {
+  --font-family: var(--vht-font);
+  font-family: var(--vht-font);
+}
+/* Màu viền lỗi (validate): --color-warning của form-js suy từ --cds-text-error (cũng
+ * KHÔNG có trong bảng ánh xạ --cds-*) nên mặc định là đỏ Carbon. Ghi đè 1 biến này để
+ * TẤT CẢ field lỗi (Ô chữ/Thả xuống/Ô nhiều dòng/Số) lên đúng tông --vht-danger, không
+ * cần vá riêng từng field (rule .fjs-form-field-number.fjs-has-errors bên dưới giữ
+ * nguyên — giờ trùng giá trị nhưng vô hại). */
+.vht-fd-canvas .fjs-container {
+  --color-warning: var(--vht-danger);
+}
 
 /* ── Đợt AntD-parity: skin CANVAS form-js bám diện mạo AntD ───────────────────
  * Sau D13, palette + panel là AntD tự viết; chỉ CANVAS ở giữa còn là DOM form-js.
@@ -369,6 +384,12 @@
 }
 .vht-fd-canvas .fjs-form-field-error {
   font-size: 12px;
+  color: var(--vht-danger);
+}
+/* Dấu bắt buộc (*): form-js in mực đen NGAY SAU nhãn (AntD chuẩn in đỏ TRƯỚC nhãn) —
+ * chỉ đổi màu, giữ nguyên vị trí sau nhãn (quyết định đợt này, tránh đụng cấu trúc
+ * DOM/label có thể vỡ layout nhãn dài hoặc nhãn nhóm/checkbox dùng chung style). */
+.vht-fd-canvas .fjs-form-field.required label::after {
   color: var(--vht-danger);
 }
 /* Checkbox/radio theo màu brand */
@@ -481,6 +502,25 @@
 .vht-fd-canvas .fjs-input-adornment {
   display: flex;
   align-items: center;
+}
+/* Menu mở của Thả xuống (.fjs-dropdownlist): mặc định 100% Carbon (bo 3px, đệm
+ * 6px/8px, hover đảo màu nền-chữ) — khác hẳn menu Select AntD. Style theo đúng thông
+ * số Select AntD: bo --vht-radius, đệm option 5px/12px, hover nền nhạt thương hiệu. */
+.vht-fd-canvas .fjs-dropdownlist {
+  border-radius: var(--vht-radius);
+  border: 1px solid var(--vht-border);
+  box-shadow: 0 6px 16px rgba(15, 23, 34, 0.12);
+  padding: 4px;
+}
+.vht-fd-canvas .fjs-dropdownlist-item {
+  border-radius: var(--vht-radius-sm);
+  padding: 5px 12px;
+  border-bottom: none;
+  color: var(--vht-ink);
+}
+.vht-fd-canvas .fjs-dropdownlist-item.focused {
+  background: var(--vht-red-050);
+  color: var(--vht-red);
 }
 
 /* ── Đỡ "lộ kỹ thuật": footer lặp lại + gợi ý biểu thức trên canvas ───────────

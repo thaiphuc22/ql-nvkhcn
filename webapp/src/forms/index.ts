@@ -90,8 +90,8 @@ export const seedForms: FormMeta[] = [
   { key: 'phieu-dat-chua-dat', ten: 'Phiếu Đạt / Chưa đạt', moTa: 'Kết luận Đạt/Chưa đạt + lý do', loai: 'Thẩm định', schema: phieuDatChuaDatSchema },
   { key: 'bao-cao-tham-dinh', ten: 'Báo cáo thẩm định', moTa: 'Nội dung + kết luận + kiến nghị', loai: 'Thẩm định', schema: baoCaoThamDinhSchema },
   { key: 'phieu-phe-duyet', ten: 'Phiếu phê duyệt / ký', moTa: 'Phê duyệt / Từ chối + ý kiến', loai: 'Phê duyệt', schema: phieuPheDuyetSchema },
-  { key: 'phieu-du-toan-demo', ten: 'Phiếu thẩm định dự toán (demo Lát 2)', moTa: 'Demo ẩn/hiện có điều kiện + trường tự tính (eForm B-engine)', loai: 'Thẩm định', schema: phieuDuToanDemoSchema },
-  { key: 'phieu-thanh-vien-demo', ten: 'Đăng ký thành viên (demo Lát 3)', moTa: 'Demo bảng động: thêm/xoá dòng + tự tính & ẩn/hiện theo dòng (eForm B-engine)', loai: 'Soạn thảo', schema: phieuThanhVienDemoSchema },
+  { key: 'phieu-du-toan-demo', ten: 'Phiếu thẩm định dự toán', moTa: 'Demo ẩn/hiện có điều kiện + trường tự tính (eForm B-engine)', loai: 'Thẩm định', schema: phieuDuToanDemoSchema },
+  { key: 'phieu-thanh-vien-demo', ten: 'Đăng ký thành viên', moTa: 'Demo bảng động: thêm/xoá dòng + tự tính & ẩn/hiện theo dòng (eForm B-engine)', loai: 'Soạn thảo', schema: phieuThanhVienDemoSchema },
 ]
 
 /** Schema rỗng cho biểu mẫu mới tạo — chỉ có tiêu đề, chờ thiết kế trong designer. */

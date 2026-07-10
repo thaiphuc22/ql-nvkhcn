@@ -16,7 +16,7 @@ export const phieuThanhVienDemoSchema = {
     {
       type: 'text',
       id: 'h',
-      text: '## Đăng ký thành viên nhiệm vụ (demo Lát 3)\n\nMinh hoạ **bảng động** — thêm/xoá dòng, mỗi dòng có **trường tự tính** và **ẩn/hiện theo dòng**.',
+      text: '## Đăng ký thành viên nhiệm vụ\n\nMinh hoạ **bảng động** — thêm/xoá dòng, mỗi dòng có **trường tự tính** và **ẩn/hiện theo dòng**.',
     },
     {
       type: 'dynamiclist',

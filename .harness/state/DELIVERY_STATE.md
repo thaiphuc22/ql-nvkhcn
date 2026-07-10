@@ -1,7 +1,12 @@
 # Delivery State
 
 **Owner**: Delivery Manager
-**Last updated**: 2026-07-09 (**Gỡ theme `/danh-sach-phan-he`, đưa về design chuẩn các màn khác
+**Last updated**: 2026-07-10 (**Canvas Form Designer — nâng cấp hiển thị đúng AntD cho Ô chữ/Thả
+xuống/Số/Ô nhiều dòng DONE** — follow-up polish của D13, thuần CSS trong `bpmnio-skin.css`: font
+`--vht-font` thay IBM Plex Sans, viền lỗi đồng bộ `--vht-danger` qua `--color-warning`, menu mở
+Thả xuống skin theo Select AntD, dấu `*` đổi màu đỏ. `npm run build` GREEN. Chưa click-through
+trình duyệt. See `active-task.md`.
+Earlier 2026-07-09: **Gỡ theme `/danh-sach-phan-he`, đưa về design chuẩn các màn khác
 DONE** — user đảo chiều bỏ hẳn theme "Đỏ Tác Chiến"; trang portal nay dùng PageHeader + StatCard +
 FilterBar + lưới card trên nền sáng, CSS theme đã xóa khỏi `tokens.css`. See Your Next Action /
 `active-task.md`. Earlier same day: Theme "Đỏ Tác Chiến" Slice A DONE (đã bị gỡ).
@@ -29,7 +34,14 @@ screen (`/tich-hop`) upgrade Đợt 1+2 (Slice A-G) DONE** + **EPIC06 Approval M
 > **Do not start EPIC work (Configuration Service EPICs or further RD flows) until F1–F5
 > are COMPLETE.** See `active-task.md` for the concrete next step.
 >
-> **★ ACTIVE TASK (2026-07-09): Gỡ theme `/danh-sach-phan-he` → design chuẩn các màn khác — DONE.**
+> **★ ACTIVE TASK (2026-07-10): Canvas Form Designer — nâng cấp hiển thị đúng AntD (Ô chữ/Thả
+> xuống/Số/Ô nhiều dòng) — DONE.** Follow-up polish của D13. Thuần CSS trong `bpmnio-skin.css`:
+> font `--vht-font` thay IBM Plex Sans, viền lỗi đồng bộ `--vht-danger` (qua `--color-warning`),
+> menu mở Thả xuống skin theo Select AntD, dấu `*` đổi màu đỏ (giữ vị trí sau nhãn). `npm run
+> build` GREEN. Chưa click-through trình duyệt. Kế hoạch:
+> `C:\Users\phuctd7\.claude\plans\optimized-churning-horizon.md`. Chi tiết `active-task.md`.
+>
+> **Trước đó (2026-07-09): Gỡ theme `/danh-sach-phan-he` → design chuẩn các màn khác — DONE.**
 > User đảo chiều: bỏ hẳn theme "Đỏ Tác Chiến". `SubsystemList.tsx` viết lại theo khuôn
 > `ProcessCatalog` (PageHeader + dải StatCard + FilterBar + lưới card, nền sáng); `App.tsx` header
 > standalone bỏ glass tối/mono/màu sáng về chuẩn trắng, `Content` bg standalone về

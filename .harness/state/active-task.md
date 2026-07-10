@@ -1,11 +1,41 @@
 # Active Task
 
-**Last updated**: 2026-07-09
+**Last updated**: 2026-07-10
 **Agent role**: Delivery Manager / Frontend implementer
 
 ---
 
-## ★ CURRENT — Gỡ theme `/danh-sach-phan-he`, đưa về design chuẩn các màn khác — DONE 2026-07-09
+## ★ CURRENT — Canvas Form Designer: nâng cấp hiển thị đúng AntD cho Ô chữ/Thả xuống/Số/Ô nhiều dòng — DONE 2026-07-10
+
+Follow-up polish của D13 (builder AntD chrome) — user chỉ ra canvas (giữa, vẫn là DOM viewer
+form-js được skin CSS) còn lệch AntD so với "bản đích" thật (`FormRenderer.tsx`/D12, dùng thẳng
+component AntD ở pane Xem trước). Đọc trực tiếp CSS nguồn `@bpmn-io/form-js` tìm ra 3 khoảng lệch
+xác nhận được bằng source (không đoán): (1) `--font-family` của form-js là biến RIÊNG (IBM Plex
+Sans), không phải `--cds-*` nên không nằm trong bảng ánh xạ token cũ → canvas vẫn hiện sai font;
+(2) `--color-warning` (viền lỗi validate) suy từ `--cds-text-error`, cũng không có trong bảng ánh
+xạ → 3/4 field (trừ Số đã được vá riêng) lên viền lỗi đỏ Carbon thay vì `--vht-danger`; (3) menu mở
+của Thả xuống (`.fjs-dropdownlist`) chưa được skin — 100% mặc định Carbon (bo 3px, hover đảo màu).
+User chốt phạm vi: dấu `*` bắt buộc chỉ đổi màu đỏ, GIỮ vị trí sau nhãn (không đụng cấu trúc
+label); disabled/readonly để đợt sau.
+
+**Đã sửa — chỉ 1 file, thuần CSS**: `webapp/src/branding/bpmnio-skin.css`, 4 bổ sung nhỏ vào cụm
+"Đợt AntD-parity" có sẵn (D13 Lát C, ~dòng 305–500):
+- `--font-family`/`font-family: var(--vht-font)` trên `.vht-fd-canvas .fjs-container`.
+- `--color-warning: var(--vht-danger)` trên `.vht-fd-canvas .fjs-container` (đồng bộ viền lỗi cả
+  4 field qua đúng biến gốc thư viện, không vá riêng lẻ; rule vá riêng cho Số giữ nguyên — vô hại).
+- `.fjs-dropdownlist`/`.fjs-dropdownlist-item`/`.focused` theo thông số Select AntD (bo
+  `--vht-radius`, đệm option 5px/12px, hover nền `--vht-red-050`/chữ `--vht-red`).
+- `.fjs-form-field.required label::after { color: var(--vht-danger) }` — chỉ đổi màu, giữ vị trí.
+
+**Verify**: `npm run build` GREEN (12.87s, tsc + vite). Thuần CSS, không đụng
+`FormDesigner.tsx`/`FieldPalette.tsx`/`FieldProperties.tsx`/schema/engine/binding. Kế hoạch:
+`C:\Users\phuctd7\.claude\plans\optimized-churning-horizon.md`. **Chưa click-through trình duyệt**
+(Playwright chưa cài, nhất quán các phiên trước) — cần user mở `npm run dev` → Form Designer, so
+font/màu viền lỗi/menu Thả xuống với pane "Xem trước" (AntD thật) trước khi coi là chốt hẳn.
+
+---
+
+## Lịch sử — Gỡ theme `/danh-sach-phan-he`, đưa về design chuẩn các màn khác — DONE 2026-07-09
 
 User đảo chiều quyết định: **bỏ hẳn theme "Đỏ Tác Chiến"** (nền tối blueprint + constellation +
 beam quét + mono + glass tối), thiết kế lại trang portal theo cùng khuôn các màn danh sách khác
