@@ -1,0 +1,15 @@
+{
+  "name": "docs-to-drive",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Convert repo Markdown docs to Google Docs and publish them to a shared Drive folder.",
+  "type": "commonjs",
+  "main": "publish.js",
+  "scripts": {
+    "publish": "node publish.js"
+  },
+  "dependencies": {
+    "googleapis": "^144.0.0",
+    "marked": "^13.0.0"
+  }
+}

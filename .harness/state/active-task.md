@@ -5,7 +5,84 @@
 
 ---
 
-## ★ CURRENT — Canvas Form Designer: nâng cấp hiển thị đúng AntD cho Ô chữ/Thả xuống/Số/Ô nhiều dòng — DONE 2026-07-10
+## ★ CURRENT — PH2/PH3/PH4 mockup upgrade + domainCode scaffold + Phase 2 Connector framing — DONE 2026-07-10
+
+**Bối cảnh**: User yêu cầu đọc
+`docs/research/quan-tri-quy-trinh-bpm-platform-danh-gia-2026-07-10.md` (brainstorm/đánh giá
+BA-PM + Solution Architect, **chưa lock**, đánh giá mở rộng "Phân hệ Quản lý Quy trình" từ engine
+riêng của NVKHCN thành nền tảng "Quản trị Quy trình" dùng chung đa domain cho VHT) và lên kế
+hoạch nâng cấp mockup. Kế hoạch ghi tại
+`docs/research/quan-tri-quy-trinh-mockup-upgrade-plan-2026-07-10.md` (3 phase rủi ro tăng dần —
+chỉ Phase 1 domainCode scaffold + phần bug-fix/cấu trúc PH2/PH3/PH4 được chọn triển khai; Phase 2
+Connector-Worker framing và Phase 3 trang tổng quan platform-concept **chưa làm**, để tuỳ chọn
+sau). Sau khi hỏi lại, user chọn nâng cấp cụ thể 3 nhóm chức năng: **Quản trị quy trình** (PH4),
+**Phân quyền** (PH2), **Cấu hình biểu mẫu** (PH3/eForm).
+
+**Phát hiện khi rà code** (trước khi sửa):
+1. **Bug thật** (đã sửa) — `webapp/src/data/phanHe.ts` có 1 khối code chết (dòng ~148-156, sau
+   khi định nghĩa `DANH_SACH_PHAN_HE` đúng) ghi đè `PH4.modules` bằng text mojibake double-encoded
+   UTF-8 ("Quáº£n lÃ½ quy trÃ¬nh"...) — cùng loại lỗi đã sửa cho 5 file khác trong phiên
+   2026-07-08 nhưng bỏ sót file này. Đã nằm trong code committed (không phải WIP phiên này).
+2. **Bất đối xứng cấu trúc** (đã sửa) — PH2/PH3 có route `/phan-he/PHx/tong-quan` → `PhanHePage`
+   (trang "Tổng quan" liệt kê modules), nhưng PH4 redirect thẳng `/quy-trinh`, không có landing
+   tương tự; `PH4.modules` cũng thiếu "Ma trận Hành động"/"Tác vụ hệ thống" (đã tồn tại thật trong
+   nav "Quản trị quy trình") và "Tích hợp"/"Nhật ký"/"Giám sát tiến trình" (trước đó nằm ở nav
+   group riêng "Vận hành & Tích hợp").
+
+**Việc đã làm (frontend-mock, không đụng F1):**
+- **Fix bug** `webapp/src/data/phanHe.ts`: xoá khối mojibake ghi đè `PH4.modules`.
+- **Đồng bộ `PH4.modules`**: thêm "Ma trận Hành động" (`/cau-hinh-hanh-dong`), "Tác vụ hệ thống"
+  (`/cau-hinh-service-task`), "Tích hợp" (`/tich-hop`), "Nhật ký" (`/nhat-ky`) — cạnh 4 module cũ
+  (Quản lý quy trình/Ma trận quyết định/Ma trận phê duyệt/Giám sát tiến trình).
+- **Route PH4 Tổng quan** (`webapp/src/App.tsx`): `/phan-he/PH4` giờ redirect
+  `/phan-he/PH4/tong-quan` (trước: redirect thẳng `/quy-trinh`) → render `<PhanHePage
+  phanHeId="PH4" />`, đúng pattern PH2/PH3. Không thêm mini-sider riêng cho PH4 (module routes của
+  PH4 là top-level route đã có trong main nav, không giống PH2/PH3 có route namespace
+  `/phan-he/PHx/*` riêng — thêm mini-sider sẽ trùng lặp/rối, nên bỏ qua).
+- **Gộp nav** (`webapp/src/App.tsx`, theo lựa chọn user): nhóm "Vận hành & Tích hợp" (Giám sát
+  tiến trình/Tích hợp/Nhật ký, trước đây `canManageSystem`-gated riêng) nay nằm trong nhóm
+  "Quản trị quy trình" (`quytrinh-config`), cùng cấp với "Tác vụ hệ thống" — giữ nguyên toàn bộ
+  điều kiện hiển thị cũ (chỉ đổi cây/nhãn, không đổi quyền truy cập). Xoá import
+  `DeploymentUnitOutlined` không còn dùng.
+- **domainCode scaffold** (Configuration Service multi-domain prep, theo mục 3.3 tài liệu đánh
+  giá — hành vi không đổi vì chỉ có 1 domain thật):
+  - `webapp/src/data/rbac.ts`: thêm `DomainCode` type (`'KHCN'`) + `DEFAULT_DOMAIN_CODE`; field
+    `domainCode: DomainCode` **bắt buộc** trên `RolePermissionPolicy` + `UserRoleAssignment`, tất
+    cả seed đã gán `DEFAULT_DOMAIN_CODE`. `webapp/src/data/rbacEngine.ts`: `getMatchedPolicies`/
+    `getEffectivePermissions`/`getUserAssignments`/`getEffectiveDataScopes`/`checkPermission`/
+    `hasPermission`/`canAccessFeature` đều có thêm param `domainCode` cuối cùng (default
+    `DEFAULT_DOMAIN_CODE`) và filter theo domainCode — **backward-compatible 100%** (mọi call
+    site cũ không đổi vì param optional ở cuối + default khớp seed). `RbacContext.tsx`
+    `upsertAssignment` + `RolePermission.tsx` `ensure()` (tạo policy mới) cũng gán
+    `DEFAULT_DOMAIN_CODE`.
+  - `webapp/src/data/actionAvailabilityPolicy.ts` (`ActionAvailabilityPolicy`),
+    `webapp/src/data/actionRegistry.ts` (`ActionDefinition`),
+    `webapp/src/data/approvalMatrix.ts` (`ApprovalRule`),
+    `webapp/src/data/exceptionPolicy.ts` (`ExceptionActionPolicy`): thêm field
+    **`domainCode?: DomainCode` (optional, KHÔNG bắt buộc)** — quyết định có chủ đích khác với
+    rbac.ts: các file này có nhiều seed rows hơn (16+/7+ rows) và nhiều call site resolver hơn
+    (dùng ở DossierDetail/Worklist/ActionStudio/bpmnReconcile...); ép field bắt buộc + xâu chuỗi
+    param `domainCode` qua toàn bộ resolver sẽ tốn công sửa hàng chục nơi mà **hiện chưa có bất kỳ
+    domain thứ 2 nào cần lọc** — over-engineering. Field optional (mặc định hiểu ngầm = KHCN) đã
+    đủ để migrate schema rẻ hơn sau này mà không đụng logic/behaviour hiện tại.
+- **Phase 2 — khung "vai trò Connector"** (`webapp/src/pages/IntegrationStatus.tsx`,
+  `SystemDetailDrawer`): thêm 1 khối ghi chú (viền nét đứt, tách biệt trực quan khỏi phần dữ liệu
+  thật) ngay dưới Tag trạng thái/mô tả hệ: "Vai trò trong nền tảng (khái niệm — chờ đặc tả kỹ
+  thuật): hệ này tham gia như **data/service endpoint**, không sở hữu hay thay thế workflow nội
+  bộ của hệ nguồn." — thuần trình bày/label, gắn nhãn rõ "khái niệm — chờ đặc tả kỹ thuật" đúng
+  cảnh báo trong kế hoạch để không bị hiểu nhầm là đã có Connector Worker/Zeebe job worker/mTLS
+  thật. Không đổi hành vi, không đổi `IntegrationSystem`/`camundaOps.ts`.
+- **Verify**: `npm run build` GREEN (tsc + vite, chạy lại 3 lần xác nhận exit 0, không lỗi TS).
+  Chưa click-through trình duyệt (Playwright chưa cài, nhất quán các phiên trước).
+
+**Chưa làm (theo đúng kế hoạch, chờ chọn tiếp)**: Phase 3 (trang tổng quan khái niệm platform đa
+domain cho mục đích họp sign-off) — optional, chưa được yêu cầu triển khai. Cũng chưa đụng
+`docs/req/scope-2-phanhe.md`, chưa ghi gì vào `decisions.md` — đúng nguyên tắc "chờ sign-off"
+của tài liệu đánh giá gốc.
+
+---
+
+## Lịch sử — Canvas Form Designer: nâng cấp hiển thị đúng AntD cho Ô chữ/Thả xuống/Số/Ô nhiều dòng — DONE 2026-07-10
 
 Follow-up polish của D13 (builder AntD chrome) — user chỉ ra canvas (giữa, vẫn là DOM viewer
 form-js được skin CSS) còn lệch AntD so với "bản đích" thật (`FormRenderer.tsx`/D12, dùng thẳng

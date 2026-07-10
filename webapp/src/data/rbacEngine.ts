@@ -1,9 +1,11 @@
 import { ADMIN_ROLE_LABEL, ROLE_LABEL_TO_CODES, type AppUser } from './users'
 import {
   DATA_SCOPE_DEFINITIONS,
+  DEFAULT_DOMAIN_CODE,
   ROLE_PERMISSION_POLICIES,
   USER_ROLE_ASSIGNMENTS,
   type DataScopeCode,
+  type DomainCode,
   type FeatureCode,
   type PermissionCode,
   type RolePermissionPolicy,
@@ -52,6 +54,7 @@ export function getMatchedPolicies(
   user: AppUser | null | undefined,
   featureCode: FeatureCode,
   policies: RolePermissionPolicy[] = ROLE_PERMISSION_POLICIES,
+  domainCode: DomainCode = DEFAULT_DOMAIN_CODE,
 ): RolePermissionPolicy[] {
   const principal = getPrincipal(user)
   if (!principal) return []
@@ -59,6 +62,7 @@ export function getMatchedPolicies(
   return policies.filter(
     (policy) =>
       policy.enabled &&
+      policy.domainCode === domainCode &&
       policy.featureCode === featureCode &&
       principal.roleCodes.includes(policy.roleCode),
   )
@@ -68,9 +72,12 @@ export function getEffectivePermissions(
   user: AppUser | null | undefined,
   featureCode: FeatureCode,
   policies: RolePermissionPolicy[] = ROLE_PERMISSION_POLICIES,
+  domainCode: DomainCode = DEFAULT_DOMAIN_CODE,
 ): PermissionCode[] {
   return [
-    ...new Set(getMatchedPolicies(user, featureCode, policies).flatMap((policy) => policy.permissionCodes)),
+    ...new Set(
+      getMatchedPolicies(user, featureCode, policies, domainCode).flatMap((policy) => policy.permissionCodes),
+    ),
   ]
 }
 
@@ -89,11 +96,13 @@ function isAssignmentEffective(assignment: UserRoleAssignment, at: Date = new Da
 export function getUserAssignments(
   user: AppUser | null | undefined,
   assignments: UserRoleAssignment[] = USER_ROLE_ASSIGNMENTS,
+  domainCode: DomainCode = DEFAULT_DOMAIN_CODE,
 ): UserRoleAssignment[] {
   const principal = getPrincipal(user)
   if (!principal) return []
   return assignments.filter(
     (assignment) =>
+      assignment.domainCode === domainCode &&
       assignment.userId === principal.userId &&
       principal.roleCodes.includes(assignment.roleCode) &&
       isAssignmentEffective(assignment),
@@ -107,11 +116,12 @@ export function getUserAssignments(
 export function getEffectiveDataScopes(
   user: AppUser | null | undefined,
   assignments: UserRoleAssignment[] = USER_ROLE_ASSIGNMENTS,
+  domainCode: DomainCode = DEFAULT_DOMAIN_CODE,
 ): DataScopeCode[] {
   const scopeRank = new Map(DATA_SCOPE_DEFINITIONS.map((scope) => [scope.code, scope.rank]))
   return [
     ...new Set(
-      getUserAssignments(user, assignments)
+      getUserAssignments(user, assignments, domainCode)
         .map((assignment) => assignment.dataScope)
         .sort((a, b) => (scopeRank.get(b) ?? 0) - (scopeRank.get(a) ?? 0)),
     ),
@@ -123,6 +133,7 @@ export function checkPermission(
   featureCode: FeatureCode,
   permissionCode: PermissionCode,
   policies: RolePermissionPolicy[] = ROLE_PERMISSION_POLICIES,
+  domainCode: DomainCode = DEFAULT_DOMAIN_CODE,
 ): PermissionCheckResult {
   const principal = getPrincipal(user)
   if (!principal) {
@@ -136,9 +147,9 @@ export function checkPermission(
     }
   }
 
-  const matchedPolicies = getMatchedPolicies(user, featureCode, policies)
+  const matchedPolicies = getMatchedPolicies(user, featureCode, policies, domainCode)
   const permissionCodes = [...new Set(matchedPolicies.flatMap((policy) => policy.permissionCodes))]
-  const dataScopes = getEffectiveDataScopes(user)
+  const dataScopes = getEffectiveDataScopes(user, USER_ROLE_ASSIGNMENTS, domainCode)
   const allowed = permissionCodes.includes(permissionCode)
 
   return {
@@ -160,14 +171,19 @@ export function hasPermission(
   featureCode: FeatureCode,
   permissionCode: PermissionCode,
   policies: RolePermissionPolicy[] = ROLE_PERMISSION_POLICIES,
+  domainCode: DomainCode = DEFAULT_DOMAIN_CODE,
 ): boolean {
-  return checkPermission(user, featureCode, permissionCode, policies).allowed
+  return checkPermission(user, featureCode, permissionCode, policies, domainCode).allowed
 }
 
 export function canAccessFeature(
   user: AppUser | null | undefined,
   featureCode: FeatureCode,
   policies: RolePermissionPolicy[] = ROLE_PERMISSION_POLICIES,
+  domainCode: DomainCode = DEFAULT_DOMAIN_CODE,
 ): boolean {
-  return hasPermission(user, featureCode, 'VIEW', policies) || hasPermission(user, featureCode, 'CONFIGURE', policies)
+  return (
+    hasPermission(user, featureCode, 'VIEW', policies, domainCode) ||
+    hasPermission(user, featureCode, 'CONFIGURE', policies, domainCode)
+  )
 }

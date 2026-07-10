@@ -1,7 +1,17 @@
 # Delivery State
 
 **Owner**: Delivery Manager
-**Last updated**: 2026-07-10 (**Canvas Form Designer — nâng cấp hiển thị đúng AntD cho Ô chữ/Thả
+**Last updated**: 2026-07-10 (**PH2/PH3/PH4 mockup upgrade + domainCode scaffold + Phase 2
+Connector framing DONE** — xem `active-task.md` cho chi tiết đầy đủ; tóm tắt: sửa bug mojibake
+`data/phanHe.ts` đè `PH4.modules`, đồng bộ `PH4.modules` (thêm Ma trận Hành động/Tác vụ hệ thống/
+Tích hợp/Nhật ký), thêm route `/phan-he/PH4/tong-quan`, gộp nav "Vận hành & Tích hợp" vào nhóm
+"Quản trị quy trình", thêm field `domainCode` (Configuration Service multi-domain scaffold, xem
+`docs/research/quan-tri-quy-trinh-bpm-platform-danh-gia-2026-07-10.md`) vào rbac.ts/rbacEngine.ts
+(có filter + parity giữ nguyên) và optional trên ActionAvailabilityPolicy/Action Registry/
+ApprovalRule/ExceptionPolicy; thêm ghi chú "vai trò Connector" (khái niệm — chờ đặc tả kỹ thuật)
+trong `SystemDetailDrawer` của `/tich-hop` (Phase 2 của plan). `npm run build` GREEN. Frontend-mock,
+không đụng F1. Phase 3 (trang tổng quan platform-concept) còn optional, chưa làm.
+Earlier 2026-07-10: **Canvas Form Designer — nâng cấp hiển thị đúng AntD cho Ô chữ/Thả
 xuống/Số/Ô nhiều dòng DONE** — follow-up polish của D13, thuần CSS trong `bpmnio-skin.css`: font
 `--vht-font` thay IBM Plex Sans, viền lỗi đồng bộ `--vht-danger` qua `--color-warning`, menu mở
 Thả xuống skin theo Select AntD, dấu `*` đổi màu đỏ. `npm run build` GREEN. Chưa click-through
@@ -34,7 +44,18 @@ screen (`/tich-hop`) upgrade Đợt 1+2 (Slice A-G) DONE** + **EPIC06 Approval M
 > **Do not start EPIC work (Configuration Service EPICs or further RD flows) until F1–F5
 > are COMPLETE.** See `active-task.md` for the concrete next step.
 >
-> **★ ACTIVE TASK (2026-07-10): Canvas Form Designer — nâng cấp hiển thị đúng AntD (Ô chữ/Thả
+> **★ ACTIVE TASK (2026-07-10): PH2/PH3/PH4 mockup upgrade + domainCode scaffold + Phase 2
+> Connector framing — DONE.** Triggered by
+> `docs/research/quan-tri-quy-trinh-bpm-platform-danh-gia-2026-07-10.md` (brainstorm, chưa lock)
+> đánh giá mở rộng "Phân hệ Quản lý Quy trình" thành nền tảng đa domain; plan of record
+> `docs/research/quan-tri-quy-trinh-mockup-upgrade-plan-2026-07-10.md`. User chọn nâng cấp nhóm
+> PH2 (Phân quyền)/PH3 (Danh mục dùng chung)/PH4 (Quản trị quy trình), sau đó xác nhận làm tiếp
+> Phase 2 (ghi chú "vai trò Connector" trong `SystemDetailDrawer` của `/tich-hop`). Chi tiết đầy đủ
+> ở `active-task.md`. `npm run build` GREEN. Chưa click-through trình duyệt. Phase 3 (trang tổng
+> quan platform-concept, ưu tiên thấp nhất) vẫn optional, chưa làm — chờ user xác nhận mục đích cụ
+> thể (demo sign-off) trước khi triển khai.
+>
+> **Trước đó (2026-07-10): Canvas Form Designer — nâng cấp hiển thị đúng AntD (Ô chữ/Thả
 > xuống/Số/Ô nhiều dòng) — DONE.** Follow-up polish của D13. Thuần CSS trong `bpmnio-skin.css`:
 > font `--vht-font` thay IBM Plex Sans, viền lỗi đồng bộ `--vht-danger` (qua `--color-warning`),
 > menu mở Thả xuống skin theo Select AntD, dấu `*` đổi màu đỏ (giữ vị trí sau nhãn). `npm run

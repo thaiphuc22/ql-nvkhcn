@@ -105,7 +105,11 @@ export const DANH_SACH_PHAN_HE: PhanHe[] = [
       { label: "Quản lý quy trình", route: "/quy-trinh" },
       { label: "Ma trận quyết định", route: "/quan-ly-luat" },
       { label: "Ma trận phê duyệt", route: "/ma-tran-phe-duyet" },
+      { label: "Ma trận Hành động", route: "/cau-hinh-hanh-dong" },
+      { label: "Tác vụ hệ thống", route: "/cau-hinh-service-task" },
       { label: "Giám sát tiến trình", route: "/giam-sat" },
+      { label: "Tích hợp", route: "/tich-hop" },
+      { label: "Nhật ký", route: "/nhat-ky" },
     ],
     hasPermission: (p) => !p.isChuNhiemDeTai,
   },
@@ -145,15 +149,6 @@ export const DANH_SACH_PHAN_HE: PhanHe[] = [
 ];
 
 /* ---------- helper: xác định trạng thái phân hệ với user hiện tại ---------- */
-const ph4 = DANH_SACH_PHAN_HE.find((p) => p.id === "PH4");
-if (ph4) {
-  ph4.modules = [
-    { label: "Quáº£n lÃ½ quy trÃ¬nh", route: "/quy-trinh" },
-    { label: "Ma tráº­n quyáº¿t Ä‘á»‹nh", route: "/quan-ly-luat" },
-    { label: "Ma tráº­n phÃª duyá»‡t", route: "/ma-tran-phe-duyet" },
-    { label: "GiÃ¡m sÃ¡t tiáº¿n trÃ¬nh", route: "/giam-sat" },
-  ];
-}
 
 export function getPhanHeStatus(
   ph: PhanHe,

@@ -8,6 +8,7 @@ import {
   type SetStateAction,
 } from 'react'
 import {
+  DEFAULT_DOMAIN_CODE,
   RBAC_ROLES,
   ROLE_PERMISSION_POLICIES,
   USER_ROLE_ASSIGNMENTS,
@@ -66,6 +67,7 @@ export function RbacProvider({ children }: { children: ReactNode }) {
       const id = `URA-${input.userId}-${input.roleCode}`
       const row: UserRoleAssignment = {
         id,
+        domainCode: DEFAULT_DOMAIN_CODE,
         userId: input.userId,
         roleCode: input.roleCode,
         dataScope: input.dataScope,

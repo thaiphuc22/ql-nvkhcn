@@ -3,6 +3,7 @@
 .env
 .env.local
 *.key
+tools/docs-to-drive/.credentials/
 
 # OS / editor noise
 .DS_Store

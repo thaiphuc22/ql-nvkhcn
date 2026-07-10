@@ -62,8 +62,19 @@ export interface DataScopeDefinition {
   rank: number
 }
 
+/**
+ * Mã domain nghiệp vụ sở hữu policy/assignment này — chuẩn bị cho việc Configuration Service
+ * (RBAC/Action/Approval/Exception engine) mở rộng đa domain sau này (xem
+ * docs/research/quan-tri-quy-trinh-bpm-platform-danh-gia-2026-07-10.md mục 3.3). Hiện chỉ có
+ * 1 domain thật (KHCN); mọi seed + resolver mặc định lọc theo domainCode='KHCN' nên hành vi
+ * không đổi so với trước khi thêm field này.
+ */
+export type DomainCode = 'KHCN'
+export const DEFAULT_DOMAIN_CODE: DomainCode = 'KHCN'
+
 export interface RolePermissionPolicy {
   id: string
+  domainCode: DomainCode
   roleCode: string
   featureCode: FeatureCode
   permissionCodes: PermissionCode[]
@@ -78,6 +89,7 @@ export interface RolePermissionPolicy {
  */
 export interface UserRoleAssignment {
   id: string
+  domainCode: DomainCode
   userId: string
   roleCode: string
   dataScope: DataScopeCode
@@ -181,6 +193,7 @@ const OPERATOR_FEATURES: FeatureCode[] = ['DASHBOARD', 'WORKLIST', 'MISSION', 'D
 export const ROLE_PERMISSION_POLICIES: RolePermissionPolicy[] = [
   ...FEATURE_DEFINITIONS.map((feature, index) => ({
     id: `RP-ADMIN-${String(index + 1).padStart(2, '0')}`,
+    domainCode: DEFAULT_DOMAIN_CODE,
     roleCode: 'ADMIN',
     featureCode: feature.code,
     permissionCodes: ADMIN_PERMISSIONS,
@@ -188,6 +201,7 @@ export const ROLE_PERMISSION_POLICIES: RolePermissionPolicy[] = [
   })),
   ...OPERATOR_FEATURES.map((feature, index) => ({
     id: `RP-OPER-${String(index + 1).padStart(2, '0')}`,
+    domainCode: DEFAULT_DOMAIN_CODE,
     roleCode: 'OPERATOR',
     featureCode: feature,
     permissionCodes: ['VIEW', 'EDIT', 'EXPORT', 'AUDIT'] as PermissionCode[],
@@ -195,6 +209,7 @@ export const ROLE_PERMISSION_POLICIES: RolePermissionPolicy[] = [
   })),
   {
     id: 'RP-VIEWER-01',
+    domainCode: DEFAULT_DOMAIN_CODE,
     roleCode: 'VIEWER',
     featureCode: 'DASHBOARD',
     permissionCodes: ['VIEW'],
@@ -202,6 +217,7 @@ export const ROLE_PERMISSION_POLICIES: RolePermissionPolicy[] = [
   },
   {
     id: 'RP-VIEWER-02',
+    domainCode: DEFAULT_DOMAIN_CODE,
     roleCode: 'VIEWER',
     featureCode: 'WORKLIST',
     permissionCodes: ['VIEW'],
@@ -209,6 +225,7 @@ export const ROLE_PERMISSION_POLICIES: RolePermissionPolicy[] = [
   },
   {
     id: 'RP-PM-01',
+    domainCode: DEFAULT_DOMAIN_CODE,
     roleCode: 'PM',
     featureCode: 'MISSION',
     permissionCodes: ['VIEW', 'CREATE', 'EDIT', 'COMMENT', 'EXPORT'],
@@ -216,6 +233,7 @@ export const ROLE_PERMISSION_POLICIES: RolePermissionPolicy[] = [
   },
   {
     id: 'RP-PM-02',
+    domainCode: DEFAULT_DOMAIN_CODE,
     roleCode: 'PM',
     featureCode: 'DOSSIER',
     permissionCodes: ['VIEW', 'CREATE', 'EDIT', 'COMMENT', 'EXPORT'],
@@ -223,6 +241,7 @@ export const ROLE_PERMISSION_POLICIES: RolePermissionPolicy[] = [
   },
   {
     id: 'RP-REVIEW-01',
+    domainCode: DEFAULT_DOMAIN_CODE,
     roleCode: 'CQ_KHCN',
     featureCode: 'DOSSIER',
     permissionCodes: ['VIEW', 'EDIT', 'APPROVE', 'REJECT', 'RETURN', 'COMMENT', 'EXPORT'],
@@ -230,6 +249,7 @@ export const ROLE_PERMISSION_POLICIES: RolePermissionPolicy[] = [
   },
   {
     id: 'RP-REVIEW-02',
+    domainCode: DEFAULT_DOMAIN_CODE,
     roleCode: 'CQ_QLKHCN',
     featureCode: 'DOSSIER',
     permissionCodes: ['VIEW', 'EDIT', 'APPROVE', 'REJECT', 'RETURN', 'COMMENT', 'EXPORT', 'AUDIT'],
@@ -237,6 +257,7 @@ export const ROLE_PERMISSION_POLICIES: RolePermissionPolicy[] = [
   },
   {
     id: 'RP-BOARD-01',
+    domainCode: DEFAULT_DOMAIN_CODE,
     roleCode: 'HDKHCN',
     featureCode: 'DOSSIER',
     permissionCodes: ['VIEW', 'APPROVE', 'REJECT', 'COMMENT', 'SIGN'],
@@ -244,6 +265,7 @@ export const ROLE_PERMISSION_POLICIES: RolePermissionPolicy[] = [
   },
   {
     id: 'RP-TGD-01',
+    domainCode: DEFAULT_DOMAIN_CODE,
     roleCode: 'TGD_VHT',
     featureCode: 'DOSSIER',
     permissionCodes: ['VIEW', 'APPROVE', 'REJECT', 'SIGN', 'AUDIT'],
@@ -300,6 +322,7 @@ export const USER_ROLE_ASSIGNMENTS: UserRoleAssignment[] = users.flatMap((user) 
     return [
       {
         id: `URA-${user.id}-ADMIN`,
+        domainCode: DEFAULT_DOMAIN_CODE,
         userId: user.id,
         roleCode: 'ADMIN',
         dataScope: 'ALL',
@@ -310,6 +333,7 @@ export const USER_ROLE_ASSIGNMENTS: UserRoleAssignment[] = users.flatMap((user) 
   const roleCodes = [...new Set(user.vaiTro.flatMap((label) => ROLE_LABEL_TO_CODES[label] ?? []))]
   return roleCodes.map((roleCode) => ({
     id: `URA-${user.id}-${roleCode}`,
+    domainCode: DEFAULT_DOMAIN_CODE,
     userId: user.id,
     roleCode,
     dataScope: defaultScopeForRole(roleCode),

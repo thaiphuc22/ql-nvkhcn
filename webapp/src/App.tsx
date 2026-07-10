@@ -30,7 +30,6 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   LogoutOutlined,
-  DeploymentUnitOutlined,
   ThunderboltOutlined,
   ApiOutlined,
   HistoryOutlined,
@@ -297,26 +296,29 @@ export default function App() {
               { key: "matran", icon: null, label: "Ma trận phê duyệt" },
               { key: "hanhdong", icon: null, label: "Ma trận Hành động" },
               ...(canManageSystem
-                ? [{ key: "servicetask", icon: null, label: "Tác vụ hệ thống" }]
+                ? [
+                    {
+                      key: "servicetask",
+                      icon: null,
+                      label: "Tác vụ hệ thống",
+                    },
+                    {
+                      key: "giamsat",
+                      icon: <ThunderboltOutlined />,
+                      label: "Giám sát tiến trình",
+                    },
+                    {
+                      key: "tichhop",
+                      icon: <ApiOutlined />,
+                      label: "Tích hợp",
+                    },
+                    {
+                      key: "nhatky",
+                      icon: <HistoryOutlined />,
+                      label: "Nhật ký",
+                    },
+                  ]
                 : []),
-            ],
-          },
-        ]
-      : []),
-    ...(canManageSystem
-      ? [
-          {
-            key: "vanhanh",
-            icon: <DeploymentUnitOutlined />,
-            label: "Vận hành & Tích hợp",
-            children: [
-              {
-                key: "giamsat",
-                icon: <ThunderboltOutlined />,
-                label: "Giám sát tiến trình",
-              },
-              { key: "tichhop", icon: <ApiOutlined />, label: "Tích hợp" },
-              { key: "nhatky", icon: <HistoryOutlined />, label: "Nhật ký" },
             ],
           },
         ]
@@ -894,7 +896,11 @@ export default function App() {
               />
               <Route
                 path="/phan-he/PH4"
-                element={<Navigate to="/quy-trinh" replace />}
+                element={<Navigate to="/phan-he/PH4/tong-quan" replace />}
+              />
+              <Route
+                path="/phan-he/PH4/tong-quan"
+                element={<PhanHePage phanHeId="PH4" />}
               />
               <Route path="/phan-he/:id" element={<PhanHePage />} />
               <Route

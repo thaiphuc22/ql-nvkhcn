@@ -35,6 +35,7 @@ import { useToast, useConfirm } from '../components/ui/feedback'
 import { users } from '../data/users'
 import {
   DATA_SCOPE_LABEL,
+  DEFAULT_DOMAIN_CODE,
   FEATURE_DEFINITIONS,
   PERMISSION_DEFINITIONS,
   PERMISSION_LABEL,
@@ -433,6 +434,7 @@ function MatrixTab({
     if (!p) {
       p = {
         id: policyId(roleCode, feat),
+        domainCode: DEFAULT_DOMAIN_CODE,
         roleCode,
         featureCode: feat,
         permissionCodes: [],

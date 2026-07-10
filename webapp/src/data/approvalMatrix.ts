@@ -13,6 +13,7 @@
 
 import { users, ROLE_LABEL_TO_CODES, type AppUser } from './users'
 import { roleLabel } from './roles'
+import type { DomainCode } from './rbac'
 import {
   evaluateConditionTree,
   group,
@@ -78,6 +79,12 @@ export interface ApprovalAssignment {
  */
 export interface ApprovalRule {
   id: string
+  /**
+   * Domain sở hữu rule (Configuration Service multi-domain scaffold, xem
+   * docs/research/quan-tri-quy-trinh-bpm-platform-danh-gia-2026-07-10.md mục 3.3).
+   * undefined = KHCN (domain duy nhất hiện có).
+   */
+  domainCode?: DomainCode
   ten: string
   /** Slot phê duyệt mà rule này áp dụng (Need Role từ BPMN). Khớp riêng, ngoài cây. */
   slot: SlotCode

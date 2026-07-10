@@ -6,11 +6,18 @@
 
 import { EXCEPTION_TYPE_LABEL, type ExceptionType } from './exceptions'
 import type { RouteOutcome } from './stepRouting'
+import type { DomainCode } from './rbac'
 
 export type ActionType = 'STANDARD' | 'SUPPORT' | 'EXCEPTION'
 
 export interface ActionDefinition {
   actionCode: string
+  /**
+   * Domain sở hữu action (Configuration Service multi-domain scaffold, xem
+   * docs/research/quan-tri-quy-trinh-bpm-platform-danh-gia-2026-07-10.md mục 3.3).
+   * undefined = KHCN (domain duy nhất hiện có).
+   */
+  domainCode?: DomainCode
   actionName: string
   actionType: ActionType
   /**

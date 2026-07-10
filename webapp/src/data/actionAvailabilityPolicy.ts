@@ -4,6 +4,7 @@
 
 import type { ActionSurface } from "./actionPresentation";
 import type { DossierStatus } from "./dossiers";
+import type { DomainCode } from "./rbac";
 
 /** Danh mục quyền (mock) — `required_permissions` trong doc. Thực tế do IAM/RBAC cấp. */
 export const PERMISSIONS = {
@@ -47,6 +48,13 @@ export const DOSSIER_STATUS_LABEL: Record<DossierStatus, string> = {
  */
 export interface ActionAvailabilityPolicy {
   id: string;
+  /**
+   * Domain sở hữu policy (Configuration Service multi-domain scaffold, xem
+   * docs/research/quan-tri-quy-trinh-bpm-platform-danh-gia-2026-07-10.md mục 3.3).
+   * undefined = KHCN (domain duy nhất hiện có) — không có resolver nào lọc theo trường
+   * này lúc này, chỉ khai báo cột sẵn cho lúc cần migrate.
+   */
+  domainCode?: DomainCode;
   /** FK → ACTION_REGISTRY.actionCode. */
   actionCode: string;
   /** Business surface nơi action xuất hiện; null = mọi surface. */

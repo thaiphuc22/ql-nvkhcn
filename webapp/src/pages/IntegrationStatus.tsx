@@ -371,6 +371,24 @@ function SystemDetailDrawer({
           </Text>
         </div>
 
+        {/* Ghi chú vai trò Connector (Phase 2 — xem docs/research/quan-tri-quy-trinh-mockup-upgrade-plan-2026-07-10.md
+            mục "Khung hiển thị vai trò Connector"). Thuần trình bày, KHÔNG phải Connector Worker/Zeebe job worker thật. */}
+        <div
+          style={{
+            background: "#f5f3f3",
+            border: "1px dashed #d0d0d5",
+            borderRadius: 8,
+            padding: "10px 12px",
+          }}
+        >
+          <Text style={{ fontSize: 12, color: "#6b7280" }}>
+            <ApartmentOutlined style={{ marginInlineEnd: 6 }} />
+            Vai trò trong nền tảng (khái niệm — chờ đặc tả kỹ thuật): hệ này tham
+            gia như <Text strong style={{ fontSize: 12 }}>data/service endpoint</Text>,
+            không sở hữu hay thay thế workflow nội bộ của hệ nguồn.
+          </Text>
+        </div>
+
         <div>
           <Text strong style={{ fontSize: 13 }}>
             Thông tin kết nối

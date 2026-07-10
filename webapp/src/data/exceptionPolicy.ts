@@ -14,6 +14,7 @@ import type { Cap } from "./nhiemVu";
 import type { DossierStatus } from "./dossiers";
 import { EXCEPTION_TYPE_LABEL, type ExceptionType } from "./exceptions";
 import { EXCEPTION_ACTION_CODE } from "./actionRegistry";
+import type { DomainCode } from "./rbac";
 
 /** Ai được quyền DUYỆT Chi tiết theo cấp nhiệm vụ — khớp role code trong data/roles.ts. */
 const APPROVER_BY_CAP: Record<Cap, string[]> = {
@@ -31,6 +32,12 @@ export type ExceptionTargetType = "STEP" | "STATUS" | "COMPLETE";
 
 export interface ExceptionActionPolicy {
   id: string;
+  /**
+   * Domain so huu policy (Configuration Service multi-domain scaffold, xem
+   * docs/research/quan-tri-quy-trinh-bpm-platform-danh-gia-2026-07-10.md muc 3.3).
+   * undefined = KHCN (domain duy nhat hien co).
+   */
+  domainCode?: DomainCode;
   /** Ten nghiep vu cua ngoai le do admin dat. */
   exceptionName: string;
   description?: string;
