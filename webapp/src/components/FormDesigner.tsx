@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type ReactNode } from 'react'
-import { Button, Space, Tag, Tooltip, Typography } from 'antd'
+import { Button, Modal, Space, Tag, Tooltip, Typography } from 'antd'
 import {
   AppstoreOutlined,
   CloseOutlined,
@@ -30,7 +30,6 @@ const { Text } = Typography
 
 const PALETTE_W = 240
 const PANEL_W = 340
-const PREVIEW_W = 380
 
 export interface FormDesignerHandle {
   /** Lấy schema hiện tại từ editor (dùng khi Lưu). */
@@ -75,11 +74,12 @@ function DockHeader({ title, onClose, extra }: { title: string; onClose: () => v
  * - Dock trái "Thành phần" = palette NATIVE portal vào (config `palette.parent`),
  *   đóng/mở bằng width (không transform — né lỗi vị trí mirror của dragula).
  * - Canvas kéo–thả ở giữa, full-height (khung cha ghim chiều cao).
- * - Pane "Xem trước trực tiếp" (toggle) render schema hiện tại bằng FormRenderer,
+ * - "Xem trước trực tiếp" (toggle) mở Modal render schema hiện tại bằng FormRenderer,
  *   cập nhật debounce ~300ms qua sự kiện 'changed'.
  * - Dock phải "Thuộc tính trường" = properties panel portal (`propertiesPanel.parent`),
  *   2 chế độ Đơn giản/Nâng cao qua `khcnFormSimplePanelModule` (đọc ref, không rebuild).
- * - Toolbar nổi: Undo/Redo + Tag "Chưa lưu"; cảnh báo beforeunload khi dirty.
+ * - Toolbar nổi: Undo/Redo + Xem trước gom chung 1 cụm + Tag "Chưa lưu"; cảnh báo
+ *   beforeunload khi dirty.
  * Kết quả `saveSchema()` là JSON form-js chuẩn, gán được vào formKey của User Task.
  */
 const FormDesigner = forwardRef<FormDesignerHandle, Props>(({ schema }, ref) => {
@@ -316,25 +316,6 @@ const FormDesigner = forwardRef<FormDesignerHandle, Props>(({ schema }, ref) => 
       {/* Canvas kéo–thả */}
       <div ref={canvasRef} className="vht-fd-canvas" style={{ flex: 1, minWidth: 0, height: '100%' }} />
 
-      {/* Pane xem trước trực tiếp (toggle) */}
-      {previewOpen && (
-        <div
-          style={{
-            width: PREVIEW_W,
-            flex: '0 0 auto',
-            display: 'flex',
-            flexDirection: 'column',
-            borderLeft: '1px solid var(--vht-border)',
-            background: 'var(--vht-surface)',
-          }}
-        >
-          <DockHeader title="Xem trước trực tiếp" onClose={togglePreview} />
-          <div className="vht-form" style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: 12 }}>
-            {previewSchema != null && <FormRenderer schema={previewSchema} />}
-          </div>
-        </div>
-      )}
-
       {/* Dock phải: Thuộc tính trường (properties panel portal) */}
       <div
         style={{
@@ -363,21 +344,22 @@ const FormDesigner = forwardRef<FormDesignerHandle, Props>(({ schema }, ref) => 
           `propertiesPanel.parent`). Chỉ dùng service, không hiện UI. */}
       <div ref={propsRef} style={{ display: 'none' }} aria-hidden />
 
-      {/* Toolbar nổi trên-trái: mở lại palette + Undo/Redo + Chưa lưu */}
+      {/* Toolbar nổi trên-phải: mở lại palette/panel + Undo/Redo/Xem trước (gom 1 cụm) + Chưa lưu.
+          Đặt bên phải (thay vì trên-trái) để tránh đè lên tiêu đề biểu mẫu trên canvas. */}
       <div
         style={{
           position: 'absolute',
           top: 10,
-          left: (paletteOpen ? PALETTE_W : 0) + 12,
+          right: (panelOpen ? PANEL_W : 0) + 12,
           zIndex: 26,
           display: 'flex',
           gap: 8,
           alignItems: 'center',
-          transition: 'left 0.18s ease',
+          transition: 'right 0.18s ease',
         }}
       >
         {!paletteOpen && (
-          <Tooltip title="Mở danh sách thành phần" placement="right">
+          <Tooltip title="Mở danh sách thành phần" placement="bottom">
             <Button icon={<AppstoreOutlined />} onClick={() => setPaletteOpen(true)} />
           </Tooltip>
         )}
@@ -388,32 +370,31 @@ const FormDesigner = forwardRef<FormDesignerHandle, Props>(({ schema }, ref) => 
           <Tooltip title="Làm lại">
             <Button icon={<RedoOutlined />} disabled={!canRedo} onClick={redo} />
           </Tooltip>
+          <Button icon={previewOpen ? <EyeInvisibleOutlined /> : <EyeOutlined />} onClick={togglePreview}>
+            Xem trước
+          </Button>
         </Space.Compact>
         {isDirty && <Tag color="warning" style={{ marginInlineEnd: 0 }}>Chưa lưu</Tag>}
-      </div>
-
-      {/* Cụm điều khiển trên-phải: Xem trước + mở lại panel */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 10,
-          right: (panelOpen ? PANEL_W : 0) + (previewOpen ? PREVIEW_W : 0) + 12,
-          zIndex: 26,
-          display: 'flex',
-          gap: 8,
-          alignItems: 'center',
-          transition: 'right 0.18s ease',
-        }}
-      >
-        <Button icon={previewOpen ? <EyeInvisibleOutlined /> : <EyeOutlined />} onClick={togglePreview}>
-          Xem trước
-        </Button>
         {!panelOpen && (
           <Tooltip title="Mở panel thuộc tính" placement="left">
             <Button icon={<ProfileOutlined />} onClick={() => setPanelOpen(true)} />
           </Tooltip>
         )}
       </div>
+
+      {/* Modal xem trước trực tiếp */}
+      <Modal
+        title="Xem trước trực tiếp"
+        open={previewOpen}
+        onCancel={togglePreview}
+        footer={null}
+        width={640}
+        destroyOnClose
+      >
+        <div className="vht-form" style={{ maxHeight: '70vh', overflow: 'auto', padding: 4 }}>
+          {previewSchema != null && <FormRenderer schema={previewSchema} />}
+        </div>
+      </Modal>
     </div>
   )
 })

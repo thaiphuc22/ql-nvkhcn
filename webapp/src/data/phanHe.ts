@@ -70,7 +70,7 @@ export const DANH_SACH_PHAN_HE: PhanHe[] = [
   {
     id: "PH2",
     ten: "Phân quyền & Xác thực",
-    moTa: "Quản lý danh tính, SSO, phân quyền RBAC, phạm vi dữ liệu, ủy quyền xử lý và audit truy cập toàn hệ thống.",
+    moTa: "Quản trị tổ chức",
     icon: "SafetyOutlined",
     color: "#52c41a",
     route: "/phan-he/PH2",
@@ -85,7 +85,7 @@ export const DANH_SACH_PHAN_HE: PhanHe[] = [
   {
     id: "PH3",
     ten: "Danh mục dùng chung",
-    moTa: "Dữ liệu nền, danh mục, biểu mẫu động (eForm engine), cấu hình dùng chung cho toàn hệ thống.",
+    moTa: "Dữ liệu, cấu hình dùng chung.",
     icon: "DatabaseOutlined",
     color: "#fa8c16",
     route: "/phan-he/PH3",
