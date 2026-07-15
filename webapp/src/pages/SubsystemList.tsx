@@ -27,6 +27,7 @@ import {
   type PhanHeStatus,
   type PhanHePermissions,
 } from "../data/phanHe";
+import { openAppRoute } from "../utils/navigation";
 
 const { Text, Paragraph } = Typography;
 
@@ -480,7 +481,7 @@ export default function SubsystemList() {
   const totalCount = DANH_SACH_PHAN_HE.length;
 
   const handleNavigate = useCallback(
-    (route: string) => window.open(route, "_blank"),
+    (route: string) => openAppRoute(route),
     [],
   );
 

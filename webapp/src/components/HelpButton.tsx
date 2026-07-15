@@ -1,5 +1,6 @@
 import { Button, Tooltip } from "antd";
 import { QuestionCircleOutlined } from "@ant-design/icons";
+import { openAppRoute } from "../utils/navigation";
 
 export interface HelpButtonProps {
   /** Section key trên trang trợ giúp (vd: "hoso", "nhiemvu", "quytrinh"). */
@@ -20,7 +21,7 @@ export default function HelpButton({ section, tooltip }: HelpButtonProps) {
         type="text"
         shape="circle"
         icon={<QuestionCircleOutlined />}
-        onClick={() => window.open(href, "_blank")}
+        onClick={() => openAppRoute(href)}
         aria-label="Trợ giúp"
         style={{ color: "var(--vht-red, #bf0027)" }}
       />

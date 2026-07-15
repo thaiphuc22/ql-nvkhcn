@@ -47,6 +47,7 @@ import {
 } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
+import { openAppRoute } from "./utils/navigation";
 
 const ProcessCatalog = lazy(() => import("./pages/ProcessCatalog"));
 const ProcessCreate = lazy(() => import("./pages/ProcessCreate"));
@@ -518,7 +519,7 @@ export default function App() {
           </Sider>
 
           <div
-            onClick={() => window.open("/tro-giup", "_blank")}
+            onClick={() => openAppRoute("/tro-giup")}
             style={{
               position: "fixed",
               insetInlineStart: 8,
