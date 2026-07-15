@@ -17,6 +17,7 @@ import {
 import { PageHeader } from '../components/ui'
 import { usePermissions } from '../store/AuthContext'
 import { DANH_SACH_PHAN_HE, getPhanHeStatus, type PhanHePermissions } from '../data/phanHe'
+import { openAppRoute } from '../utils/navigation'
 
 const { Text, Paragraph } = Typography
 
@@ -155,10 +156,10 @@ export default function PhanHePage({ phanHeId }: { phanHeId?: string }) {
                   role="button"
                   tabIndex={0}
                   onClick={() => {
-                    if (!isDisabled) window.open(m.route, '_blank')
+                    if (!isDisabled) openAppRoute(m.route)
                   }}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !isDisabled) window.open(m.route, '_blank')
+                    if (e.key === 'Enter' && !isDisabled) openAppRoute(m.route)
                   }}
                   style={{
                     borderRadius: 8,

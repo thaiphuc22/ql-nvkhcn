@@ -14,6 +14,7 @@ import {
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { usePermissions } from '../store/AuthContext'
+import { openAppRoute } from '../utils/navigation'
 import {
   DANH_SACH_PHAN_HE,
   getPhanHeStatus,
@@ -179,7 +180,7 @@ export default function SubsystemSwitcher() {
               ph={ph}
               status={status}
               onClick={() => {
-                if (status === 'active') window.open(ph.route, '_blank')
+                if (status === 'active') openAppRoute(ph.route)
               }}
             />
           ))}
