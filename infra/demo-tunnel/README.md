@@ -10,6 +10,36 @@ winget install --id CaddyServer.Caddy --exact
 
 Máy cần Node.js/npm để chạy Runlocal. Script tunnel sẽ tải các package đã ghim phiên bản vào `%LOCALAPPDATA%\qtkhcn-demo\runlocal-runtime`, không ghi vào repository.
 
+## 1.5. Release riêng biệt khỏi workspace code (bắt buộc)
+
+Live demo **không bao giờ** được chạy trực tiếp từ workspace code (`C:\Users\phuctd7\ql-nvkhcn`) —
+xem `docs/plan_deploy/standard-deploy-workflow.md`. Mọi bản deploy phải đi qua:
+
+```powershell
+# 1) Build + verify release mới trong thư mục riêng (không đụng demo đang sống)
+& .\infra\demo-tunnel\New-DemoRelease.ps1
+# In ra release-id, ví dụ 2026-07-16.1_fcb71c4
+
+# 2) Cắt traffic sang release đó (dừng backend cũ trên 8090, khởi động release mới, đổi junction
+#    C:\Users\phuctd7\qtkhcn-demo\current). Cần QTKHCN_DEV_API_KEY đã set trong terminal, giống
+#    giá trị Caddy đang inject (infra/demo-tunnel/.env.local).
+$env:QTKHCN_DEV_API_KEY = '<giá-trị-hiện-tại-Caddy-đang-dùng>'
+& .\infra\demo-tunnel\Switch-DemoRelease.ps1 -ReleaseId '2026-07-16.1_fcb71c4'
+```
+
+`New-DemoRelease.ps1` tạo `git worktree` tại `C:\Users\phuctd7\qtkhcn-demo\releases\<release-id>`,
+build backend (`mvn -o package`) + frontend (`npm ci` + `ng build production,demo`), kiểm tra bundle
+không leak `localhost:8090`/`dev-local-only`, rồi health-check backend trên port tạm `8091` — hoàn
+toàn không đụng port 8090/Caddy/Runlocal đang sống.
+
+`Switch-DemoRelease.ps1` là script DUY NHẤT được phép dừng backend sống (port 8090). Người dùng
+thật gián đoạn vài giây trong lúc backend mới khởi động (Flyway validate + Spring context). Caddy
+luôn phục vụ từ junction `current` (xem `Start-DemoProxy.ps1` mặc định `-ReleaseRoot`), nên **không
+cần đụng Caddy hay Runlocal** ở các lần deploy sau lần đầu tiên trỏ Caddy vào junction.
+
+Giữ ít nhất 1 release cũ trong `releases\` để rollback: chạy lại
+`Switch-DemoRelease.ps1 -ReleaseId <release-id-cũ>`.
+
 ## 2. Chuẩn bị stack nội bộ
 
 Mọi Docker published port phải có tiền tố `127.0.0.1:`. Recreate container sau khi đổi Compose để binding mới có hiệu lực:

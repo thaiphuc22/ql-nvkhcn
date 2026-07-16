@@ -1,10 +1,19 @@
 [CmdletBinding()]
-param()
+param(
+    # Root of the release tree (see New-DemoRelease.ps1 / Switch-DemoRelease.ps1). Defaults to the
+    # stable 'current' junction so this script never needs to know about individual release IDs.
+    # Do NOT point this at the dev workspace (this repo) — the live demo must always be served from
+    # a separate release checkout, see docs/plan_deploy/standard-deploy-workflow.md.
+    [string]$ReleaseRoot = 'C:\Users\phuctd7\qtkhcn-demo\current'
+)
 
 $ErrorActionPreference = 'Stop'
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $caddyfile = Join-Path $PSScriptRoot 'Caddyfile'
-$distRoot = Join-Path $repoRoot 'frontend-angular\dist\frontend-angular\browser'
+$distRoot = Join-Path $ReleaseRoot 'frontend-angular\dist\frontend-angular\browser'
+
+if (-not (Test-Path -LiteralPath $ReleaseRoot)) {
+    throw "Release root not found at '$ReleaseRoot'. Run New-DemoRelease.ps1 and Switch-DemoRelease.ps1 first."
+}
 
 foreach ($command in @('caddy')) {
     if (-not (Get-Command $command -ErrorAction SilentlyContinue)) {

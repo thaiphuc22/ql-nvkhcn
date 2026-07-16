@@ -1,10 +1,10 @@
 [CmdletBinding()]
 param(
-    [switch]$SkipHttp
+    [switch]$SkipHttp,
+    [string]$ReleaseRoot = 'C:\Users\phuctd7\qtkhcn-demo\current'
 )
 
 $ErrorActionPreference = 'Stop'
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $failures = [System.Collections.Generic.List[string]]::new()
 
 foreach ($command in @('docker', 'node', 'npm', 'caddy')) {
@@ -13,9 +13,9 @@ foreach ($command in @('docker', 'node', 'npm', 'caddy')) {
     }
 }
 
-$indexPath = Join-Path $repoRoot 'frontend-angular\dist\frontend-angular\browser\index.html'
+$indexPath = Join-Path $ReleaseRoot 'frontend-angular\dist\frontend-angular\browser\index.html'
 if (-not (Test-Path -LiteralPath $indexPath)) {
-    $failures.Add("Angular demo build is missing: $indexPath")
+    $failures.Add("Angular demo build is missing: $indexPath (is 'current' pointed at a built release? see New-DemoRelease.ps1 / Switch-DemoRelease.ps1)")
 }
 
 $internalPorts = @(5432, 8080, 8086, 8090, 8092, 8443, 9600, 9610, 26500, 26510)
@@ -29,6 +29,9 @@ foreach ($listener in $unsafe) {
 if (-not $SkipHttp) {
     if ([string]::IsNullOrWhiteSpace($env:QTKHCN_DEV_API_KEY)) {
         $failures.Add('QTKHCN_DEV_API_KEY is required for the backend smoke test.')
+    }
+    elseif ([string]::IsNullOrWhiteSpace($env:QTKHCN_CORS_ALLOWED_ORIGINS)) {
+        $failures.Add('QTKHCN_CORS_ALLOWED_ORIGINS must include the current HTTPS Runlocal origin.')
     }
     else {
         try {
