@@ -1,0 +1,32 @@
+// Entry theme cho ng-zorro-antd — override biến Less TRƯỚC KHI build, thay cho
+// ng-zorro-antd.min.css mặc định (không thể override bằng CSS custom property vì
+// ng-zorro-antd v21 chỉ publish CSS đã biên dịch sẵn, không có --ant-* var).
+// Ghi đè phải ĐẶT SAU import (Less lazy-eval: giá trị cuối cùng khai báo trong toàn
+// bộ file thắng, bất kể thứ tự import) — đây là cách chính thức ng-zorro-antd khuyến nghị.
+//
+// `ng-zorro-antd/ng-zorro-antd.less` (KHÔNG phải `style/entry.less`) — entry.less chỉ có
+// theme vars + core/animation, KHÔNG có CSS riêng của từng component (menu/modal/button/
+// table/upload/drawer/...). Dùng nhầm entry.less khiến toàn bộ UI render gần như không có
+// style Ant Design (menu ra <li> trần, modal đè lên nav thay vì overlay giữa màn hình) —
+// phát hiện qua ảnh chụp UI thật 2026-07-15, xem `active-task.md`.
+@root-entry-name: default;
+@import 'ng-zorro-antd/ng-zorro-antd.less';
+
+// Ánh xạ 1:1 từ webapp/src/branding/tokens.css (D17 — "sửa lại design system" kế thừa
+// từ token cũ, không thiết kế lại từ số 0). Giữ tên biến gốc của ng-zorro để dễ tra cứu
+// docs, KHÔNG đổi tên biến — chỉ đổi giá trị.
+@primary-color: #ee0033; // --vht-red
+@link-color: #ee0033; // --vht-red
+@success-color: #006e0d; // --vht-success
+@warning-color: #daa520; // --vht-warning
+@error-color: #ba1a1a; // --vht-danger
+@border-radius-base: 8px; // --vht-radius
+@font-size-base: 14px;
+@font-family: Inter, system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; // --vht-font
+
+// Sider/menu tối — port từ webapp/src/theme.ts (Layout.siderBg=INK, Menu.darkItemSelectedBg=RED).
+// Sider KHÔNG phải nền đỏ đặc — nền mực đen ấm (INK), đỏ chỉ dùng làm điểm nhấn mục đang chọn.
+@layout-header-background: #1c1c1c; // INK — kéo theo @menu-dark-bg (derive từ biến này)
+@layout-trigger-background: #bf0027; // RED_CHROME
+@menu-dark-inline-submenu-bg: #1c1c1c; // INK — khớp darkSubMenuItemBg bản React
+@menu-dark-item-hover-bg: rgba(255, 255, 255, 0.1);

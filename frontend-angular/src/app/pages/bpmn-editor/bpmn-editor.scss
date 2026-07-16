@@ -1,0 +1,14 @@
+.be-page { height: calc(100vh - 96px); min-height: 680px; display: flex; flex-direction: column; gap: 12px; }
+.be-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.be-header h2 { margin: 0; }
+.be-back { height: auto; padding: 0; margin-bottom: 2px; }
+.be-subtitle { color: var(--vht-ink-2); font-size: 13px; }
+.be-actions { display: flex; align-items: center; gap: 8px; padding-top: 18px; }
+.be-alert { flex: 0 0 auto; }
+.be-metadata { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(320px, 2fr); gap: 14px; padding: 12px 14px; background: var(--vht-surface); border: 1px solid var(--vht-border); border-radius: var(--vht-radius); }
+.be-metadata label { display: grid; gap: 5px; font-weight: 600; }
+.be-metadata label span, .be-metadata small { color: #cf1322; }
+.be-metadata small { font-weight: 400; }
+.be-editor { min-height: 0; flex: 1; }
+.be-loading { height: 100%; display: grid; place-items: center; }
+@media (max-width: 900px) { .be-page { height: auto; } .be-header { flex-direction: column; } .be-actions { padding-top: 0; flex-wrap: wrap; } .be-metadata { grid-template-columns: 1fr; } .be-editor { height: 620px; } }

@@ -1,0 +1,80 @@
+<nz-layout class="app-shell">
+  <nz-sider
+    class="app-sider"
+    nzCollapsible
+    [nzWidth]="siderWidth"
+    [nzCollapsedWidth]="siderCollapsedWidth"
+    [nzCollapsed]="collapsed()"
+    [nzTrigger]="null"
+  >
+    <div class="brand">
+      <div class="brand-badge">VHT</div>
+      @if (!collapsed()) {
+        <div class="brand-text">
+          <div class="brand-title">QTKHCN</div>
+          <div class="brand-sub">Quản trị KHCN</div>
+        </div>
+      }
+    </div>
+    <ul nz-menu nzTheme="dark" nzMode="inline" [nzInlineCollapsed]="collapsed()" class="app-menu">
+      @for (item of navItems; track item.key) {
+        @if (isGroup(item)) {
+          <li
+            nz-submenu
+            [nzTitle]="item.label"
+            [nzIcon]="item.icon"
+            [nzOpen]="openKeys().has(item.key)"
+            (nzOpenChange)="toggleGroup(item.key, $event)"
+          >
+            <ul>
+              @for (leaf of item.children; track leaf.key) {
+                <li nz-menu-item nzMatchRouter>
+                  <a [routerLink]="leaf.route">{{ leaf.label }}</a>
+                </li>
+              }
+            </ul>
+          </li>
+        } @else {
+          <li nz-menu-item nzMatchRouter>
+            <a [routerLink]="item.route"><nz-icon [nzType]="item.icon" /> {{ item.label }}</a>
+          </li>
+        }
+      }
+    </ul>
+  </nz-sider>
+
+  <nz-layout>
+    <nz-header class="app-header">
+      <div class="header-left">
+        <button nz-button nzType="text" class="collapse-btn" (click)="toggleCollapsed()">
+          <nz-icon [nzType]="collapsed() ? 'menu-unfold' : 'menu-fold'" />
+        </button>
+        <nz-breadcrumb>
+          <nz-breadcrumb-item>Hệ thống QTKHCN</nz-breadcrumb-item>
+          <nz-breadcrumb-item>{{ sectionTitle() }}</nz-breadcrumb-item>
+        </nz-breadcrumb>
+      </div>
+
+      <div class="header-right" nz-dropdown [nzDropdownMenu]="userMenu" nzTrigger="click">
+        <span class="user-name">{{ user()?.hoTen }}</span>
+        <nz-avatar [nzText]="userInitials()" class="user-avatar" />
+      </div>
+      <nz-dropdown-menu #userMenu="nzDropdownMenu">
+        <ul nz-menu>
+          <li nz-menu-item nzDisabled>
+            <div class="user-meta">
+              <div>{{ user()?.hoTen }}</div>
+              <div class="user-email">{{ user()?.email }}</div>
+            </div>
+          </li>
+          <li nz-menu-divider></li>
+          <li nz-menu-item (click)="logout()"><nz-icon nzType="logout" /> Đăng xuất</li>
+        </ul>
+      </nz-dropdown-menu>
+    </nz-header>
+
+    <nz-content class="app-content">
+      <router-outlet />
+    </nz-content>
+  </nz-layout>
+</nz-layout>

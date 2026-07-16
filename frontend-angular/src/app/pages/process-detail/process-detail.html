@@ -1,0 +1,110 @@
+<nz-page-header nzBackIcon="" [nzTitle]="detail()?.name ?? 'Chi tiết quy trình'" (nzBack)="backToCatalog()">
+  <nz-page-header-tags>
+    @if (selectedVersion(); as v) {
+      <nz-tag nzColor="success">v{{ v.version }}</nz-tag>
+    }
+  </nz-page-header-tags>
+  @if (detail(); as d) {
+    <nz-page-header-content>
+      <span class="pd-subline">
+        Mã: <code>{{ d.bpmnProcessId }}</code>
+        · Tạo lúc {{ d.createdAt | date: 'dd/MM/yyyy HH:mm' }}
+        · Cập nhật lúc {{ d.updatedAt | date: 'dd/MM/yyyy HH:mm' }}
+      </span>
+    </nz-page-header-content>
+  }
+</nz-page-header>
+
+<div class="pd-body">
+  @if (loading()) {
+    <div class="pd-loading"><nz-spin nzTip="Đang tải..."></nz-spin></div>
+  } @else if (notFound()) {
+    <nz-result
+      nzStatus="404"
+      nzTitle="Không tìm thấy quy trình"
+      nzSubTitle="Quy trình này không tồn tại hoặc đã bị xoá khỏi danh mục."
+    >
+      <div nz-result-extra>
+        <button nz-button nzType="primary" (click)="backToCatalog()">Về danh mục quy trình</button>
+      </div>
+    </nz-result>
+  } @else if (errorMessage()) {
+    <nz-alert nzType="error" nzShowIcon [nzMessage]="errorMessage()"></nz-alert>
+  } @else if (detail(); as d) {
+    <nz-tabs [nzSelectedIndex]="activeTabIndex()" (nzSelectedIndexChange)="activeTabIndex.set($event)">
+      <nz-tab nzTitle="Thông tin">
+        <nz-descriptions [nzColumn]="1" nzBordered nzSize="small" class="pd-descriptions">
+          <nz-descriptions-item nzTitle="Mã quy trình (BPMN)"><code>{{ d.bpmnProcessId }}</code></nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Tên quy trình">{{ d.name }}</nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Phiên bản hiện hành">
+            v{{ d.latestVersion.version }} · <nz-tag nzColor="success">{{ d.latestVersion.status }}</nz-tag>
+          </nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Tạo lúc">{{ d.createdAt | date: 'dd/MM/yyyy HH:mm:ss' }}</nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Cập nhật lúc">{{ d.updatedAt | date: 'dd/MM/yyyy HH:mm:ss' }}</nz-descriptions-item>
+        </nz-descriptions>
+
+        <h4 nz-typography class="pd-section-title">Lịch sử phiên bản</h4>
+        @if (versionsList().length) {
+          <nz-collapse class="pd-version-collapse">
+            @for (v of versionsList(); track v.id; let first = $first) {
+              <nz-collapse-panel [nzHeader]="panelHeader" [nzActive]="first">
+                <ng-template #panelHeader>
+                  <span class="pd-version-header">
+                    <strong>v{{ v.version }}</strong>
+                    <nz-tag nzColor="success">{{ v.status }}</nz-tag>
+                    <span class="pd-version-header-date">{{ v.importedAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+                  </span>
+                </ng-template>
+                <nz-descriptions [nzColumn]="1" nzBordered nzSize="small">
+                  <nz-descriptions-item nzTitle="Tên tài nguyên">{{ v.resourceName }}</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Camunda deployment key">{{ v.camundaDeploymentKey }}</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Camunda process-definition key">{{ v.camundaProcessDefinitionKey }}</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Checksum SHA-256"><code class="pd-checksum">{{ v.checksumSha256 }}</code></nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Người nhập">{{ v.importedBy }}</nz-descriptions-item>
+                  <nz-descriptions-item nzTitle="Thời điểm nhập">{{ v.importedAt | date: 'dd/MM/yyyy HH:mm:ss' }}</nz-descriptions-item>
+                  @if (v.warnings.length) {
+                    <nz-descriptions-item nzTitle="Cảnh báo">
+                      <ul class="pd-warnings">
+                        @for (w of v.warnings; track w) {
+                          <li>{{ w }}</li>
+                        }
+                      </ul>
+                    </nz-descriptions-item>
+                  }
+                </nz-descriptions>
+                <button nz-button nzType="link" nzSize="small" class="pd-view-diagram-btn" (click)="viewDiagram(v.id)">
+                  <span nz-icon nzType="apartment"></span>
+                  Xem sơ đồ BPMN của phiên bản này
+                </button>
+              </nz-collapse-panel>
+            }
+          </nz-collapse>
+        } @else {
+          <span class="pd-no-versions">Chưa tải được lịch sử phiên bản.</span>
+        }
+      </nz-tab>
+
+      <nz-tab nzTitle="Sơ đồ BPMN">
+        @if (versionsList().length) {
+          <div class="pd-diagram-toolbar">
+            <span>Phiên bản:</span>
+            <nz-select
+              [ngModel]="selectedVersionId()"
+              (ngModelChange)="selectedVersionId.set($event)"
+              style="width: 160px"
+            >
+              @for (v of versionsList(); track v.id) {
+                <nz-option [nzValue]="v.id" [nzLabel]="'v' + v.version"></nz-option>
+              }
+            </nz-select>
+          </div>
+          @if (selectedVersion(); as v) {
+            <app-bpmn-viewer [xml]="v.bpmnXml"></app-bpmn-viewer>
+          }
+        } @else {
+          <span class="pd-no-versions">Chưa tải được sơ đồ BPMN.</span>
+        }
+      </nz-tab>
+    </nz-tabs>
+  }
+</div>

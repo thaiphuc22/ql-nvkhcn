@@ -1,0 +1,41 @@
+.bpmn-viewer-shell {
+  position: relative;
+  height: 64vh;
+  background: #fff;
+}
+
+.bpmn-viewer-canvas {
+  height: 100%;
+
+  &.hidden {
+    visibility: hidden;
+  }
+}
+
+.bpmn-viewer-error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--vht-danger, #cf1322);
+  text-align: center;
+  padding: 24px;
+}
+
+/* SVG do bpmn-js vẽ imperatively, không qua Angular template compiler nên cần ::ng-deep để xuyên
+   view encapsulation. Marker "qtkhcn-bpmn-active" gắn bằng canvas.addMarker() từ BpmnViewerComponent. */
+.bpmn-viewer-shell {
+  ::ng-deep .qtkhcn-bpmn-active .djs-visual > :first-child {
+    stroke: #17935a !important;
+    fill: rgba(23, 147, 90, 0.15) !important;
+    stroke-width: 3px !important;
+  }
+
+  /* Marker "qtkhcn-bpmn-incident" — gateway/phần tử đang có incident (vd. CONDITION_ERROR). */
+  ::ng-deep .qtkhcn-bpmn-incident .djs-visual > :first-child {
+    stroke: #cf1322 !important;
+    fill: rgba(207, 19, 34, 0.15) !important;
+    stroke-width: 3px !important;
+  }
+}

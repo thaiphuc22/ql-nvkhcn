@@ -1,0 +1,28 @@
+<div #shell class="bm-shell">
+  <div class="bm-toolbar">
+    <button type="button" title="Hoàn tác (Ctrl+Z)" (click)="undo()" [disabled]="!canUndo()">↶</button>
+    <button type="button" title="Làm lại (Ctrl+Y)" (click)="redo()" [disabled]="!canRedo()">↷</button>
+    <span class="bm-separator"></span>
+    <button type="button" title="Thu nhỏ" (click)="zoom(0.85)">−</button>
+    <span class="bm-zoom">{{ zoomPercent() }}%</span>
+    <button type="button" title="Phóng to" (click)="zoom(1.15)">+</button>
+    <button type="button" title="Vừa khung nhìn" (click)="fit()">Vừa khung</button>
+    <span class="bm-spacer"></span>
+    @if (dirty()) { <span class="bm-dirty">Có thay đổi chưa lưu</span> }
+    <button type="button" class="bm-icon-button" (click)="toggleFullscreen()" [title]="fullscreen() ? 'Thoát toàn màn hình' : 'Toàn màn hình'" [attr.aria-label]="fullscreen() ? 'Thoát toàn màn hình' : 'Toàn màn hình'">
+      @if (fullscreen()) {
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5M4 4l6 6M20 4l-6 6M4 20l6-6M20 20l-6-6" /></svg>
+      } @else {
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5" /></svg>
+      }
+    </button>
+    <button type="button" (click)="toggleProperties()">
+      {{ propertiesOpen() ? 'Ẩn thuộc tính' : 'Hiện thuộc tính' }}
+    </button>
+  </div>
+  <div class="bm-workspace">
+    @if (error()) { <div class="bm-error">{{ error() }}</div> }
+    <div #canvas class="bm-canvas" [class.bm-hidden]="!!error()"></div>
+    <div #properties class="bm-properties" [class.bm-properties-hidden]="!propertiesOpen()"></div>
+  </div>
+</div>

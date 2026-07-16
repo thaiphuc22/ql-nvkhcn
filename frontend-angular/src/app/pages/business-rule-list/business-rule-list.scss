@@ -1,0 +1,128 @@
+.br-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.br-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.br-header h2 {
+  margin: 0;
+}
+.br-header p {
+  margin: 4px 0 0;
+  color: var(--vht-ink-2);
+}
+.br-stat {
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px;
+  background: var(--vht-surface);
+  border: 1px solid var(--vht-border);
+  border-radius: var(--vht-radius);
+}
+.br-stat strong {
+  color: #722ed1;
+  font-size: 24px;
+  line-height: 1.2;
+}
+.br-stat span {
+  color: var(--vht-ink-2);
+  font-size: 13px;
+}
+.br-stat--green strong {
+  color: #17935a;
+}
+.br-stat--gold strong {
+  color: #d48806;
+}
+.br-stat--blue strong {
+  color: #1677ff;
+}
+.br-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.br-filters nz-select {
+  min-width: 150px;
+}
+.br-search {
+  width: 290px;
+}
+.br-count {
+  margin-left: auto;
+  color: var(--vht-ink-2);
+  font-size: 13px;
+}
+.br-name {
+  display: block;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #1677ff;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+td small {
+  display: -webkit-box;
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--vht-ink-2);
+  font-size: 12px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.br-detail-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.br-detail-title h3 {
+  margin: 5px 0 8px;
+}
+.br-detail-alert {
+  margin-top: 16px;
+}
+.br-form {
+  display: grid;
+  gap: 7px;
+}
+.br-form label {
+  margin-top: 6px;
+  font-weight: 600;
+}
+.br-form label span {
+  color: var(--vht-danger, #cf1322);
+}
+.br-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.br-form-row > div {
+  display: grid;
+  gap: 7px;
+}
+.br-form nz-select {
+  width: 100%;
+}
+@media (max-width: 767px) {
+  .br-header {
+    align-items: flex-start;
+  }
+  .br-count {
+    width: 100%;
+    margin-left: 0;
+  }
+  .br-form-row {
+    grid-template-columns: 1fr;
+  }
+}
