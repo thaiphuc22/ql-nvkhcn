@@ -1,8 +1,173 @@
 # Delivery State
 
+> **⚠️ 2026-07-16 — LIVE DEMO IS PUBLIC, NO RELEASE ISOLATION.** `https://drab-quail.runlocal.eu/` is
+> live and has real users on it right now. Verified on-disk: Caddy serves
+> `frontend-angular/dist/frontend-angular/browser` and the running backend JAR
+> (`backend/target/qtkhcn-backend.jar`) directly from **this dev workspace** — the
+> release/workspace-separation design in `docs/plan_deploy/standard-deploy-workflow.md` was never
+> implemented (no `qtkhcn-demo/releases/` directory exists). Any edit/rebuild/restart under
+> `backend/`, `frontend-angular/`, or `infra/demo-tunnel/` can affect live users immediately. Read
+> `.harness/rules/demo-environment-safety.md` before touching those paths. This note stays until the
+> release separation is actually built.
+
+> **2026-07-16 — PROPERTIES PANEL (màn Vẽ/Sửa BPMN) VIỆT HOÁ + ICON NHÓM + POLISH LIST DONE + VERIFIED
+> (owner Claude):** user yêu cầu lên kế hoạch rồi triển khai nâng cấp UI Properties Panel; qua
+> `AskUserQuestion` user chọn polish sâu trên nền CSS skin hiện tại (không rebuild custom AntD như D13).
+> Port dictionary Việt hoá có sẵn từ React reference (`webapp/src/branding/translate-vi.ts`, D7-era) sang
+> Angular (`shared/bpmn-modeler/bpmn-properties-i18n.ts`), nạp qua module `translate` (didi) —
+> `additionalModules` của `BpmnModelerComponent`. Thêm icon theo `data-group-id` thật (CSS mask, tự đổi
+> màu theo theme) cho các nhóm hay dùng nhất (general/documentation/taskDefinition/headers/
+> assignmentDefinition/form/inputs/outputs/condition/listeners/extensionProperties/multiInstance/
+> calledElement/calledDecision) và style empty-state + list-entry/badge/nút thêm-xoá cho nhóm dạng
+> ListGroup (Headers/Input-Output mapping/Listeners/Extension properties) trong `styles/
+> bpmn-modeler-panel.scss`. `npx ng build` GREEN, `npx ng test --watch=false` **28/28 PASS**. Chưa
+> click-through trình duyệt thật. Chi tiết ở đầu `active-task.md`.
+
+> **2026-07-16 — NÂNG CẤP “KIỂM TRA BPMN” THÀNH LINT 3 MỨC DONE + VERIFIED (owner Codex):**
+> backend có contract `issues[]` (`code/severity/message/elementId/elementName`), core graph/Camunda static lint
+> và ERROR guard cho chạy thử/deploy; vẫn giữ `errors[]`/`warnings[]` tương thích. Angular editor + drawer catalog
+> nhóm Lỗi/Cảnh báo/Gợi ý; click issue trong editor focus phần tử. Backend **76/76 PASS**, Angular **30/30 PASS**,
+> production build GREEN. Registry-aware lookup chưa bật vì chưa có registry contract; chưa real-stack smoke hoặc
+> browser click-through. Chi tiết rule và phạm vi ở đầu `active-task.md`.
+
+> **2026-07-16 — FIX: "event executor terminated" khi tạo Test BPMN trên test engine cô lập (owner
+> Claude):** user báo lỗi 409 `Không thể khởi tạo BPMN test session trên test engine cô lập: event
+> executor terminated` khi bấm "Chạy thử BPMN". Tái hiện được trực tiếp bằng curl thật trên backend
+> 8090 đang chạy (PID 24228, uptime ~40 phút, khởi động 09:43 — không restart lại lần nào trong suốt
+> nhiều lượt giao hàng tính năng trong ngày). Nguyên nhân: `BpmnTestClient`/`CamundaClient` (gRPC/Netty)
+> của backend sống lâu bị hỏng kênh gRPC nội bộ (Netty event executor đã terminate) dù TCP socket tới
+> `bpmn-test-orchestration` (cổng 26510) vẫn ESTABLISHED — không phải do test engine Docker (đã xác
+> nhận `Up 2 hours (healthy)`). Thêm phát hiện phụ: `target/qtkhcn-backend.jar` trên đĩa (rebuild
+> 10:09) chỉ có `mvn compile`, thiếu bước Spring Boot repackage nên **không có manifest** (`no main
+> manifest attribute`) — chạy `java -jar` sẽ fail ngay từ đầu. **Khắc phục**: dừng PID 24228, `mvn -o
+> package` để repackage đúng jar Spring Boot (manifest có `Main-Class:
+> org.springframework.boot.loader.launch.JarLauncher`), khởi động lại backend cổng 8090 (PID mới
+> 22648). Xác nhận bằng real API: tạo lại đúng session từng lỗi → HTTP 201 `status:RUNNING`, cancel
+> sạch sau khi verify. Không đụng Docker/test engine, không mất dữ liệu draft nào.
+>
+> **Bài học/khuyến nghị cho lần sau**: quy trình "sửa code backend xong" phải luôn chạy `mvn -o
+> package` (không phải `mvn compile`/`test-compile`) trước khi restart cổng 8090, và nếu backend sống
+> đã chạy rất lâu (nhiều giờ, qua nhiều lượt smoke test bằng instance tạm khác cổng) mà Test BPMN báo
+> lỗi gRPC lạ ("event executor terminated" hoặc tương tự) trong khi test engine Docker vẫn healthy —
+> nghi ngờ đầu tiên là kênh gRPC nội bộ của backend sống bị stale, khắc phục bằng restart sạch backend
+> (không cần đụng Docker).
+
+> **2026-07-16 — BPMN EDITOR EXPORT/FULLSCREEN/PANEL POLISH DONE + VERIFIED (owner Codex):** màn
+> Vẽ/sửa có kết xuất `.bpmn` về thiết bị, icon Full screen có resize/fit canvas, và Properties Panel
+> đã được bố cục/skin lại bằng stylesheet global dành cho DOM bpmn-js (380px, 420px fullscreen,
+> header/group/form controls rõ ràng). Angular **28/28 test PASS**, production build **GREEN**;
+> không còn warning CSS component budget. Chưa browser click-through.
+
+> **2026-07-16 — BYPASS SERVICE TASK TẠM THỜI (TEST BPMN) DONE + VERIFIED (owner Claude):** user yêu
+> cầu tạm thêm khả năng bypass Service Task khi chạy Test BPMN, lấy draft thật `Process_RD0202`
+> (RD02.02) làm chuẩn. Service Task duy nhất của draft đó là `B04` (`zeebe:taskDefinition
+> type=”rd0202-check-draft1”`), gateway `B05` rẽ nhánh theo `draft1Valid` — xác nhận qua API thật
+> trên backend 8090. API mới `POST /api/bpmn-tests/{id}/jobs/{jobKey}/bypass` hoàn tất thủ công job
+> BLOCKED (`client.newCompleteCommand`, cùng cơ chế completeTask dùng cho user task) với variables do
+> người test cung cấp; Angular có nút “Bypass — hoàn tất thủ công” trong khu “Job bị chặn”. Backend
+> `mvn -o test` **71/71 GREEN** (từ 67), Angular `ng build` GREEN + `ng test` **27/27 PASS**. Real-stack
+> smoke mới `smoke-bypass-service-task.ps1` (chạy `mvn spring-boot:run` cổng 8091 tạm — không đụng
+> `target/qtkhcn-backend.jar` đang bị khoá bởi backend 8090 sống của user — trên test engine cô lập có
+> sẵn) tái hiện đúng id/type Service Task thật của RD0202: session BLOCKED tại B04 → bypass
+> `draft1Valid=true` → COMPLETED cùng processInstanceKey. Dọn sạch sau smoke, không đụng 8090/Docker.
+> Chưa click-through trình duyệt thật. Chi tiết ở đầu `active-task.md`.
+
+> **2026-07-16 — ANGULAR “TẠO & VẼ BPMN” DONE + VERIFIED (owner Codex):** `/quy-trinh` đã có
+> luồng tạo mới và mở lại draft để vẽ/sửa bằng `bpmn-js` Modeler + properties panel Camunda 8.
+> Lưu dùng đúng REST draft hiện hữu (`POST` tạo, `PUT` cập nhật với expectedRevision), validate tự lưu
+> nội dung mới nhất trước; có dirty guard, lỗi/warning và chặn draft đã deploy. Editor lazy-load để giữ
+> initial bundle trong budget. Angular **27/27 test PASS**, production build **GREEN**. Chưa browser click-through.
+
+> **2026-07-16 — DMN CAMUNDA DEPLOY/EVALUATE DONE + VERIFIED (owner Codex):** activate version giờ deploy
+> `dmnXml` thật lên Camunda rồi mới chuyển rule sang ACTIVE; version lưu `deployStatus`, deployment key,
+> decision key/id/version, deployedAt và deployError. API mới `POST /api/dmn-rules/{id}/evaluate` nhận input
+> variables, evaluate đúng decision key active và trả outputs + matchedRules; Angular đã bỏ evaluator cục bộ,
+> hiển thị lỗi deploy/FEEL và tô matched row. Backend 67/67 PASS, Angular build GREEN + 25/25 PASS. Real-stack
+> smoke PASS: deployment `2251799813699262`, decision `2251799813699264`, evaluation `2251799813699265`,
+> matched `R_HIGH`, output `APPROVE`. Backend JAR mới chạy cổng 8090 PID 22068. Chi tiết ở đầu
+> `active-task.md` và `backend/README.md`.
+
+> **2026-07-16 — Nâng cấp UX Test BPMN DONE + VERIFIED (owner Claude):** form biến thông minh (parse
+> BPMN → field có nhãn thay JSON thô, dùng chung biến khởi tạo/hoàn tất task), API mới
+> `POST /api/bpmn-tests/{id}/incidents/{incidentKey}/resolve` (setVariables+resolveIncident) sửa
+> CONDITION_ERROR tại chỗ trên cùng instance, gateway lỗi tô đỏ trên sơ đồ + giải thích điều kiện thật
+> + nút "Sửa biến & tiếp tục", và cảnh báo sớm (không chặn) khi "Kiểm tra BPMN" gặp gateway thiếu
+> default flow. Backend `mvn -o test` 63/63 GREEN, Angular `ng build` GREEN + `ng test` 24/24 PASS,
+> real-stack smoke mới `scripts/smoke-condition-error-resolve.ps1` PASS 2 lần liên tiếp (gateway
+> CONDITION_ERROR thật → resolve-incident → COMPLETED cùng processInstanceKey, không tạo lại instance).
+> Chưa click-through trình duyệt thật. Chi tiết đầy đủ ở đầu `active-task.md`.
+
+> **2026-07-16 — DMN Angular persistence DONE:** Angular Rule Manager đã nối `/api/dmn-rules`, lưu bảng cấu
+> trúc thành `dmnXml` và parse artifact/version về bảng theo cơ chế fail-closed. Build GREEN, frontend 24/24
+> test PASS, backend 63/63 PASS. Backend đã restart trên cổng 8090 (PID 27624), GET contract thật trả 200.
+> Duplicate/delete được bỏ khỏi UI vì REST Lát A chưa cung cấp contract; execution/deploy DMN vẫn là lát sau.
+
 **Owner**: Delivery Manager
-**Last updated**: 2026-07-10 (**PH2/PH3/PH4 mockup upgrade + domainCode scaffold + Phase 2
-Connector framing DONE** — xem `active-task.md` cho chi tiết đầy đủ; tóm tắt: sửa bug mojibake
+**Last updated**: 2026-07-16 (**CURRENT — Angular UI cho Test BPMN (`/api/bpmn-tests`), DONE +
+VERIFIED, owner Claude**. User hỏi Test BPMN có cần deploy Camunda thật không → trả lời không cần
+(session chạy trên test engine cô lập, đọc thẳng draft/revision trong DB App) → user yêu cầu triển
+khai FE+BE luôn. Backend Test BPMN đã DONE từ Lát A+B+C trước đó (xác nhận lại `mvn -o test` 44/44
+GREEN, không sửa gì thêm); gap duy nhất là Angular UI. Thêm trang mới `pages/bpmn-test-session/`
+(route `/quy-trinh/nhap/:draftId/chay-thu`): chọn revision → tạo session → poll snapshot 3s → sơ đồ
+BPMN tô sáng phần tử active (`BpmnViewerComponent` + input mới `activeElementIds`, không đổi hành vi
+cũ) → hoàn tất user task / huỷ phiên. Nối tối thiểu vào `process-catalog` (nút "Chạy thử BPMN").
+`ng build` GREEN (1.39 MB), `ng test` 8/8 PASS. Làm việc song song thật với luồng "hiển thị/quản lý
+draft" bên dưới (owner Codex, cùng ngày) trên cùng `frontend-angular/` — đã re-read file dùng chung
+ngay trước khi sửa để tránh ghi đè; không đụng logic import/validate/deploy draft của luồng đó. Chưa
+click-through trình duyệt thật; chưa chạy real-stack với Docker test engine. Chi tiết ở đầu
+`active-task.md`.) Trước đó: (**hiển thị/quản lý draft BPMN trên `/quy-trinh`, DONE + VERIFIED,
+owner Codex**. Đã có API list/filter/order draft nhẹ, tab `Bản nháp`/`Đã deploy`, reload+mở draft sau
+import, xác nhận mã trùng và drawer validate/deploy dùng expected revision. Backend 44/44, Angular
+8/8, real-stack 8091 đọc đúng 5 draft `Process_RD0202`; không deploy/xóa dữ liệu thật. Backend 8090
+của user cần restart để nạp code mới. Global Angular build hiện bị workstream `bpmn-test-session`
+đồng thời ngoài task chặn; build của task đã xanh trước thay đổi đó. Chi tiết ở đầu `active-task.md`.) Trước đó:
+(**đổi modal nhập/deploy BPMN thành lưu nháp,
+PLAN READY, owner Codex**. Modal Angular sẽ có file + mã + tên, tự điền metadata từ XML và gọi endpoint
+multipart draft mới; `Lưu nháp` chỉ ghi PostgreSQL `DRAFT` + revision, tuyệt đối không gọi Camunda.
+Plan gồm 4 lát: BE import/list draft; Angular modal; tab/vòng đời draft với deploy riêng; tests + real
+smoke chứng minh Camunda/version bất biến khi save. Tận dụng Flyway V4 và draft CRUD/validate/deploy
+đã có; bổ sung gap bắt buộc là list draft để bản nháp không biến mất sau reload. Chi tiết/DoD ở đầu
+`active-task.md`; trạng thái `NOT STARTED`.) Trước đó: (**Test BPMN Lát C DONE + VERIFIED, owner Codex** — failure/security
+coverage đã khóa invalid XML/variables, TTL scheduler `TIMED_OUT`, incident snapshot, engine outage,
+API key/CORS và stable 400 envelopes; snapshot/complete/cancel failure lưu audit và fail-closed. Script
+`smoke-bpmn-lifecycle.ps1` chạy lặp lại chuỗi auth/CORS → draft/validate → test exact revision trên
+engine cô lập → `COMPLETED` → deploy production → restart idempotent, không đổi `RD01_01`. `mvn clean
+verify` 38/38 GREEN; hai real repeat-run liên tiếp tạo production smoke v2 rồi v3 và PASS sau khi sửa polling cho Camunda
+eventual indexing. **DoD tổng Lát A+B+C: DONE + VERIFIED. CURRENT NEXT: quay lại roadmap Foundation/F1;
+không còn hạng mục Lát C.**) Trước đó: **Angular global CSS bug FIXED, owner Claude** — user's first-ever real
+browser screenshot of `/quy-trinh` showed sider menu and modal rendering with almost no Ant Design
+styling. Root cause: `frontend-angular/src/theme.less` imported `ng-zorro-antd/style/entry.less`
+[theme vars + core only] instead of `ng-zorro-antd/ng-zorro-antd.less` [full bundle incl. every
+component's CSS] — a bug present since the Mốc 4 Angular scaffold that had gone undetected because no
+prior session had a browser/Playwright tool to visually check. Fixed the import, bumped the
+`angular.json` production bundle budget (900kB/1.5MB → 1.8MB/2.5MB, the extra size is legitimate
+component CSS, not bloat), confirmed real `.ant-modal-content`/`.ant-btn` rules now compile and the
+running dev server hot-reloaded them. See `active-task.md` top entry.). Trước đó (same day):
+**Test BPMN Lát B DONE + VERIFIED, owner Codex** — API session cô lập
+`/api/bpmn-tests` đã có create/inspect/user-task-complete/cancel, TTL, correlation/audit,
+elements/tasks/variables/incidents/blockedJobs; Camunda test engine tách storage/cổng và không có
+Connectors/production workers, backend fail-closed nếu tắt hoặc address trùng production. Real smoke:
+session `f331957c-1c18-4040-a45a-412b2e9b3482` step đến `COMPLETED`, session thứ hai `CANCELLED`,
+worker giả `sap-production-write` quan sát `BLOCKED`; REST engine chứng minh process test production=0,
+test engine=1, production `RD01_01` vẫn v5. `mvn clean verify` 31/31 green; backend và test engine smoke
+đã dừng sạch, volume test giữ lại cho audit. **Follow-up Lát C nay DONE; xem đầu file.** Trước đó:
+**"Nhập từ .bpmn" BE↔FE wiring
+verified E2E + real bug fixed DONE,
+owner Claude** — user ran backend for real for the first time this session; verifying against it via
+curl (no browser tool) found a real HTTP 500 on re-importing byte-identical BPMN content, since Zeebe's
+content-addressable deploy returns the same `processDefinitionKey` and the service unconditionally
+inserted a new version row, violating a DB unique constraint. Fixed with a pre-insert existence check
+that now returns a clean 422 `{message,errors[]}` (no Angular change needed); confirmed the genuine-new-
+content happy path still creates a new version (v4→v5); added a regression test,
+`mvn test` 25/25 green. See `active-task.md` top entry for full evidence.). Trước đó (same day):
+**Test BPMN Lát B hiện DONE; Lát A draft/revision/optimistic locking DONE + VERIFIED**. Trước đó:
+**Angular `/quy-trinh` Quản lý quy trình DONE** — real page wired to
+`/api/process-definitions/*`, real upload/import/version-history, `ng build` GREEN; owner Claude.
+Parallel: **Backend BPMN import/deploy hardening DONE** — startup deploy
+if-absent, 17/17 tests, real-stack smoke v3 → import v4 → restart giữ v4; owner Codex. Xem
+`active-task.md`.
+Earlier 2026-07-10: **PH2/PH3/PH4 mockup upgrade + domainCode scaffold + Phase 2 Connector framing
+DONE** — xem `active-task.md` cho chi tiết đầy đủ; tóm tắt: sửa bug mojibake
 `data/phanHe.ts` đè `PH4.modules`, đồng bộ `PH4.modules` (thêm Ma trận Hành động/Tác vụ hệ thống/
 Tích hợp/Nhật ký), thêm route `/phan-he/PH4/tong-quan`, gộp nav "Vận hành & Tích hợp" vào nhóm
 "Quản trị quy trình", thêm field `domainCode` (Configuration Service multi-domain scaffold, xem
@@ -38,13 +203,93 @@ screen (`/tich-hop`) upgrade Đợt 1+2 (Slice A-G) DONE** + **EPIC06 Approval M
 
 ## Your Next Action
 
-> **Status**: FOUNDATIONS IN PROGRESS — F0 complete, F1 blocked on architect decisions
-> (backend stack, DB engine, Camunda deployment model). F2/F3/F5 have working prototypes
-> in the frontend mock that still need to be formalized server-side. F4 not started.
+> **★ Nâng cấp UX Test BPMN — DONE + VERIFIED (2026-07-16, owner Claude).** Cả 5 lát đã triển khai:
+> (1) FE parser BPMN + form biến thông minh dùng chung biến khởi tạo/hoàn tất task (thay JSON thô,
+> fallback "Nâng cao — JSON thô" khi không phát hiện được biến); (2) BE endpoint mới
+> `POST /api/bpmn-tests/{id}/incidents/{incidentKey}/resolve` (`setVariables`+`resolveIncident`) sửa
+> CONDITION_ERROR **tại chỗ, cùng instance**, không tạo lại session; (3) FE tô đỏ gateway lỗi trên sơ đồ
+> (`qtkhcn-bpmn-incident` marker) + giải thích đúng điều kiện từng luồng ra kèm biến hiện có/thiếu + nút
+> "Sửa biến & tiếp tục"; (4) BE cảnh báo sớm (không chặn) khi "Kiểm tra BPMN" gặp gateway thiếu default
+> flow — tái dùng `warnings[]` có sẵn, không đổi DTO; FE cũng lần đầu hiển thị warnings này (trước đây
+> hoàn toàn không hiện trên UI). Backend `mvn -o test` 63/63 GREEN; Angular `ng build` GREEN + `ng test`
+> 24/24 PASS; real-stack smoke `scripts/smoke-condition-error-resolve.ps1` PASS 2 lần liên tiếp trên
+> backend owned port 8091 + test engine cô lập có sẵn, không đụng production. Chưa click-through trình
+> duyệt thật. Chi tiết/evidence đầy đủ ở đầu `active-task.md`.
+
+> **★ DMN LÁT A DONE + VERIFIED (2026-07-16): REST contract + schema quản lý phiên bản.**
+> Flyway V6 + 3 bảng DMN; `/api/dmn-rules` create/list/get/version/activate/disable; immutable XML
+> snapshots, expectedVersion, SHA-256, XXE-safe validation và audit. `mvn verify` **60/60 GREEN** trên
+> trạng thái hợp nhất cuối; real PostgreSQL applied V6 và authenticated GET trả 200. Có overlap tạm
+> với workstream Test BPMN nhưng đã re-read/re-run xanh sau khi bên kia hoàn tất, không ghi đè.
+> Next: Angular wiring + grid↔DMN XML, vẫn chưa Camunda execution.
+
+> **Status**: DONE — backend cổng 8090 đã được restart sạch từ JAR mới (`mvn -o package` +
+> `java -jar`, PID **22648**, xem entry "FIX: event executor terminated" ở đầu file). `Process_RD0202`
+> sẽ xuất hiện trong tab `Bản nháp`; không cần import lại. Không xóa 5 draft trùng cho tới khi user
+> chọn bản cần giữ. Workstream `bpmn-test-session` (Angular UI cho Test BPMN, owner Claude) đã hoàn
+> tất và tự green — `npx ng build` production PASS sau khi cả hai luồng gộp lại; lỗi build tạm thời
+> trước đó (đang giữa lúc viết `bpmn-test-session.html`) đã sửa xong, không còn chặn global production
+> build. **Next action còn lại**: user tự `ng serve` + reload `/quy-trinh` để xác nhận UI thật (chưa
+> click-through trình duyệt trong các phiên trước).
+
+> **Status**: FOUNDATIONS IN PROGRESS — F0 complete, F1 IN PROGRESS (D14–D17 unblocked
+> 2026-07-15, Angular scaffold + two real pages now live). F2/F3/F5 have working
+> prototypes in the frontend mock that still need to be formalized server-side. F4 not started.
 > **Do not start EPIC work (Configuration Service EPICs or further RD flows) until F1–F5
 > are COMPLETE.** See `active-task.md` for the concrete next step.
 >
-> **★ ACTIVE TASK (2026-07-10): PH2/PH3/PH4 mockup upgrade + domainCode scaffold + Phase 2
+> **★ CURRENT PLAN READY (2026-07-15): “Nhập BPMN” chỉ Lưu nháp, không deploy trực tiếp.** Thực hiện
+> theo 4 lát ở đầu `active-task.md`: (1) BE `POST /api/process-definition-drafts/import` multipart +
+> `GET /api/process-definition-drafts`, reuse hardened validator nhưng không publication; (2) Angular
+> modal file/mã/tên, prefill XML, nút `Lưu nháp`; (3) tab/drawer quản lý draft và đưa deploy thành action
+> riêng dùng expected revision; (4) contract tests + Angular build + real-stack smoke chứng minh save
+> không đổi Camunda/immutable version, chỉ explicit deploy mới tạo version. **Next concrete action: Lát
+> 1 — khóa DTO/HTTP tests trước, sau đó implement controller/service/repository list/import.**
+> Review follow-up đã được gộp: Lát 2 phải chứng minh end-to-end `nzOnOk → handler → service → HTTP`
+> để không lặp bug modal hiện tại; XML prefill chỉ chọn đúng một process `isExecutable=true|1`, không
+> lấy process đầu tiên; 5 debug `console.log('[DEBUG submitImport]...')` tạm đã được gỡ khỏi component;
+> cleanup được verify bằng `npx ng build` GREEN (initial 1.70 MB).
+>
+> **★ LÁT A+B+C DONE + VERIFIED (2026-07-15, owner Codex).** Lát C đã bổ sung HTTP/security/failure
+> coverage, stable error envelopes và smoke script repeatable cho chuỗi draft→test→deploy/restart.
+> `mvn clean verify` 38/38 GREEN; real smoke v2 rồi v3 đều PASS, test engine/backend owned đã dừng sạch, production
+> `RD01_01` giữ v5. **CURRENT NEXT: quay lại roadmap Foundation/F1 và chọn gap kế tiếp theo thứ tự ưu
+> tiên; không tự mở EPIC mới.** Chi tiết/evidence trong `active-task.md` và `backend/README.md`.
+>
+> **★ ACTIVE TASK (2026-07-15): second real Angular page — `/quy-trinh` Quản lý quy trình —
+> DONE.** Replaces the `PlaceholderPage` for `/quy-trinh` with a real page calling the real
+> `/api/process-definitions/*` contract (backend BPMN import/deploy workstream, already
+> DONE+VERIFIED). New `core/models/process-definition.ts` + `core/services/process-definition.
+> service.ts` + `pages/process-catalog/`. Catalog table + search; "Nhập từ .bpmn" opens a modal
+> with a **real** drag-drop upload (unlike the React reference `ProcessCatalog.tsx`, which only
+> simulates upload) — posts multipart `FormData` to the real import endpoint, surfaces real
+> 400/422 `{message,errors[]}` failures, toasts success with the real Camunda deployment key, and
+> reloads the list; a per-row "Xem phiên bản" drawer calls the real `GET /{id}/versions` and shows
+> full version detail (deployment/process-definition keys, checksum, importer, warnings).
+> Deliberately simplified vs. the React reference: no "Tạo & vẽ BPMN" (bpmn-js editor not yet
+> ported to Angular) and no separate detail route — version history via drawer instead.
+> `npx ng build` GREEN (1.09 MB initial, still a budget *warning* not error — up from 929 kB after
+> adding upload/modal/drawer/descriptions/message modules). **Not yet verified**: no
+> Playwright/browser tool this session, so no real browser click-through of the upload/error/toast
+> flow — user should exercise `ng serve` → `/quy-trinh` with a real `.bpmn` file to confirm.
+> See `active-task.md` for the full writeup.
+>
+> **Earlier (2026-07-15): first real Angular page — `/ho-so` Danh sách Hồ sơ KHCN —
+> DONE (pending user backend restart to confirm CORS).** Replaces the Mốc-4 `PlaceholderPage`
+> for `/ho-so` with a real page calling the real `GET /api/ho-so` (Spring Boot, Mốc 2/3).
+> Added `backend/.../config/WebConfig.java` (new — CORS was previously entirely unconfigured,
+> which would have silently blocked the browser call despite a 200 response) allowing
+> `http://localhost:4200`; new Angular `core/models/ho-so.ts` + `core/services/ho-so.service.ts`
+> + `pages/ho-so-list/`. `mvn -o compile` BUILD SUCCESS, `ng build` GREEN (929.51 kB, still a
+> budget *warning* not error). Verified the real running backend's JSON payload matches the new
+> TS model field-by-field via curl. **Not yet verified**: the currently-running backend process
+> (PID from a prior session, not started this session) still runs pre-CORS code — the
+> permission system correctly refused an unauthorized `Stop-Process` on it, so CORS itself and
+> an actual browser click-through are unconfirmed until the user restarts the backend. See
+> `active-task.md` for the full writeup and next suggested page (`DossierDetail`/`DossierCreate`
+> or `/nhiem-vu`).
+>
+> **Earlier (2026-07-10): PH2/PH3/PH4 mockup upgrade + domainCode scaffold + Phase 2
 > Connector framing — DONE.** Triggered by
 > `docs/research/quan-tri-quy-trinh-bpm-platform-danh-gia-2026-07-10.md` (brainstorm, chưa lock)
 > đánh giá mở rộng "Phân hệ Quản lý Quy trình" thành nền tảng đa domain; plan of record
@@ -125,11 +370,89 @@ If you are ever unsure what to do, read this section._
 ## Foundations
 
 - [x] F0: Workspace & Agent Readiness — `COMPLETE` (CLAUDE.md 105 lines, hooks active, skills present, repo on local path)
-- [ ] F1: Project Scaffold (Frontend done / Backend + Camunda topology) — `BLOCKED`
-      — Frontend (React+Vite+AntD+TS, deployed to Vercel) is done. Backend does not exist yet.
-      Blocked on: backend language/framework, domain DB engine, Camunda 8 deployment model
-      (Self-Managed vs SaaS) — all explicitly left open by the user on 2026-07-07, see
-      `decisions.md` → "Open decisions blocking Foundation 1".
+- [ ] F1: Project Scaffold (Frontend rebuild + Backend + Camunda topology) — `IN PROGRESS`
+      — **Unblocked 2026-07-15**: backend language/framework = Java 21 + Spring Boot (D14), domain
+      DB = PostgreSQL (D15), Camunda 8 dev environment = Self-Managed via local Docker Compose
+      (D16) — all locked, see `decisions.md`. **Scope also expanded 2026-07-15**: frontend stack
+      changes from React+AntD to Angular + ng-zorro-antd (D17, supersedes D7) with a design-system
+      token refresh. The old React frontend (`webapp/`, deployed to Vercel) is kept as a living
+      reference implementation during migration, not deleted. Migration plan (Mốc 0–6, strangler-
+      fig per RD flow starting with RD01.01): `C:\Users\phuctd7\.claude\plans\generic-pondering-parnas.md`.
+      Still open: Camunda 8 *production* deployment model (SaaS vs Self-Managed K8s) — D16 only
+      covers the dev environment. **Mốc 1–3 và Mốc 5 nhánh (a) backend verified working end-to-end
+      2026-07-15** (real run, not
+      mock): Docker stack up (3 healthy containers), Spring Boot backend (Java 21 + **Spring Boot
+      4.0.7**, bumped from 3.3.4 after real compatibility failures) compiles and starts, RD01.01
+      deployed to real Zeebe, full REST flow (create NhiemVu → HoSo draft → submit → real Zeebe
+      process instance) verified, and — via Camunda's own REST API — Task_1→Task_2→
+      Gateway_SystemCheck (our custom job worker auto-completed it)→Gateway_SystemResult routed
+      correctly to Task_3. 6 real bugs found and fixed during this run (Camunda SDK package names,
+      Spring Boot 4 module split, dependency version conflict, **a real BPMN casing bug in the
+      pre-existing mock** `webapp/src/data/rd0101Bpmn.ts` now fixed, Hibernate bag-fetch conflict)
+      — full list in `active-task.md`. **Mốc 5 nhánh (a) backend DONE 2026-07-15 — người thực hiện:
+      Codex**: app endpoint
+      `/api/ho-so/{id}/actions` now completes the corresponding real
+      `io.camunda.zeebe:userTask` job through `CamundaClient` before advancing PostgreSQL; Camunda
+      failure/missing task fails closed with 409. `REJECT_STEP` cancels the process instance;
+      gateway variables are supplied for approve/return routes. The public path/body/response
+      contract is unchanged. Verified via `mvn test` (3/3) and real E2E calls through `/actions`:
+      Task_1→Task_2→system worker/gateway→Task_3 ACTIVE while domain advanced 1→3; reject produced
+      domain REJECTED + Camunda TERMINATED. Remaining F1/Mốc 5 work is Angular branch (b) plus full
+      browser click-through. Residual distributed-commit edge (Camunda success then DB commit
+      failure) requires later outbox/reconciliation design.
+      **Mốc 4 (Angular app scaffold + design system) DONE 2026-07-15 — owner Claude, parallel to
+      Codex's backend work above**: new `frontend-angular/` (Angular 21 — pinned below latest
+      22 because ng-zorro-antd's stable release only targets Angular 21 peer deps; the Angular
+      22 build of ng-zorro is still beta). ng-zorro-antd themed via Less source (`src/theme.less`,
+      not the precompiled CSS ng-zorro ships by default — confirmed the CSS has no `--ant-*`
+      custom properties to override, so recompiling from Less was the only way to reach the VHT
+      "Military Red" palette) mapped 1:1 from `webapp/src/theme.ts`; VHT `--vht-*` CSS tokens
+      ported verbatim from `webapp/src/branding/tokens.css` for hand-written UI; `vi_VN` locale;
+      auth stub (5 demo accounts, localStorage session, route guards, an HTTP interceptor that
+      attaches the real dev API key header for future backend calls); a layout shell (sider +
+      header + content) mirroring `App.tsx`'s nav IA across a single flat sider (deliberately
+      simplified — dropped the PH2/PH3 context-switch mini-sider and RBAC-based nav gating,
+      neither blocks Mốc 4's goal); a login page; and a shared placeholder page wired to 16
+      module routes (no real data yet, matching Mốc 4's scope). Verified `ng build` green and
+      `ng serve` reachable via curl; no real browser click-through (no Playwright/browser tool
+      available this session, consistent with every prior `webapp/` session). **This is the
+      general Angular scaffold, not the narrower `/quy-trinh` BPMN-import page that the newer
+      "Mốc 4/5 nhánh (b)" note in `active-task.md` describes** — that page now has the completed
+      `/api/process-definitions/*` backend contract available; see
+      `active-task.md` for the full distinction.
+      **Backend BPMN import/deploy workstream DONE + VERIFIED 2026-07-15 — owner Codex**: stable
+      multipart import plus catalog/detail/version APIs; Flyway V2/V3 catalog and immutable version
+      history with BPMN XML/checksum/audit/correlation keys; XXE-safe validation and 5 MB/type limits;
+      shared deployment service used by startup runner and API; fail-closed DB persistence; stable
+      `{message,errors[]}` validation/deploy failures. `mvn verify` green (9/9). Real E2E proved
+      business API → PostgreSQL → Camunda definition/version search → process instance creation, then
+      backend restart still read the persisted catalog. React/Angular UI remained untouched. Angular
+      now owns file-picker/page wiring and later browser click-through. Deferred unchanged: production
+      SSO/RBAC, activation/rollback, object storage, dependency registry, transactional outbox and
+      production topology. Full evidence/keys are in `active-task.md`.
+      **Backend hardening DONE + VERIFIED 2026-07-15, owner Codex**: bundled RD01.01 startup deploy
+      is now idempotent/if-absent using Camunda Search on the real engine id `RD01_01`; existing
+      definition logs skip with version/key, lookup failure fails closed, while explicit import remains
+      the only intentional version-creation path. Added HTTP contract/failure/security/CORS tests and
+      repeatable `backend/scripts/smoke-process-import.ps1`. `mvn verify` green (17/17). Real smoke:
+      startup held v3, import created exactly v4 with correlated PostgreSQL XML/catalog
+      `d877084c-005f-4ee6-aa69-a2d9fecc62fc` and definition key `2251799813689491`, Camunda instance
+      `2251799813689492` started, restart stayed v4/read API retained XML. Backend stopped cleanly after
+      smoke; Docker remains healthy. API contract handed to Angular is unchanged. Activation/rollback,
+      outbox, production SSO/RBAC and deletion of existing engine versions remain deferred. Full
+      evidence is in `active-task.md` and `backend/README.md`.
+      **Second real Angular page — `/quy-trinh` Quản lý quy trình — DONE 2026-07-15, owner Claude**:
+      replaces the Mốc-4 `PlaceholderPage` for `/quy-trinh` with a real page wired to the
+      `/api/process-definitions/*` contract above (no backend changes). New
+      `core/models/process-definition.ts` + `core/services/process-definition.service.ts` +
+      `pages/process-catalog/`: catalog table + search; a real drag-drop import modal (multipart
+      `FormData`, unlike the React reference's simulated upload) that surfaces real 400/422
+      `{message,errors[]}` failures and toasts the real Camunda deployment key on success; a
+      per-row version-history drawer backed by the real `GET /{id}/versions`. Deliberately
+      simplified vs. the React reference: no "Tạo & vẽ BPMN" (bpmn-js not yet in Angular), no
+      separate detail route. `ng build` GREEN (1.09 MB initial, still a budget warning not error).
+      No browser click-through this session (no Playwright/browser tool) — full detail in
+      `active-task.md`.
 - [ ] F2: Core Data Schema (NhiemVu / HoSo / Organization / Role / User) — `PARTIAL`
       — Data model decided (`docs/req/data-model-NV-vs-HoSo.md`) and prototyped as TS mock
       types (`webapp/src/data/nhiemVu.ts`, `dossiers.ts`, `roles.ts`, `users.ts`, `orgUnits.ts`).
@@ -139,10 +462,11 @@ If you are ever unsure what to do, read this section._
       — 26 role/candidateGroup codes + fail-closed step-permission logic prototyped in
       `webapp/src/data/permissions.ts` (frontend-only mock). Missing: server-side enforcement,
       SSO/IAM protocol decision (`OQ-021`), RBAC granularity sign-off (`OQ-006`).
-- [ ] F4: Core Domain Engine (Dossier/Mission status + SLA-escalation + DMN routing) — `NOT STARTED`
-      — `hanXuLy` (SLA due date) exists as a mock field only; no escalation computation yet.
-      DMN decision tables for Đạt/Chưa đạt and phân cấp Cơ sở/Tập đoàn routing (D5 in
-      `decisions.md`) not yet built.
+- [ ] F4: Core Domain Engine (Dossier/Mission status + SLA-escalation + DMN routing) — `PARTIAL`
+      — DMN management foundation DONE 2026-07-16: Flyway V6, immutable `dmnXml` versions,
+      `/api/dmn-rules` REST lifecycle, optimistic expectedVersion and secure artifact validation.
+      Missing: Angular wiring/grid↔XML, Camunda deploy/evaluate, runtime routing integration;
+      `hanXuLy` (SLA due date) remains mock-only and escalation computation is not built.
 - [ ] F5: Auth + App Shell — `PARTIAL`
       — Shell (Sider + Header, routing) exists in `webapp/src/App.tsx`. Login is a mock
       (`DEMO_PASSWORD`), not wired to real SSO/Camunda Identity — blocked on the same
@@ -186,6 +510,8 @@ If you are ever unsure what to do, read this section._
   - **BPMN wiring (Option A, 2026-07-07)**: Approval Matrix now resolves dossier approval steps → concrete people in `webapp/src/pages/DossierDetail.tsx`. Extracted `resolveGroups(codes, ngay)` (org layer: candidateGroup→users + effective-date delegation overlay) shared by the Simulation page and the dossier view; added `DEMO_TODAY='2026-07-07'` so the TGĐ→Phó TGĐ delegation window fires deterministically in the mock. Current approval step shows a "Người nhận việc — Ma trận phê duyệt" card; pending approval steps show resolved "Dự kiến" assignees inline in the timeline (so the delegation swap is visible on downstream TGĐ steps). Deliberately resolves each step's OWN candidateGroups (no coarse slot inference) to avoid fabricating wrong councils; rule-based group selection by cap/budget stays demonstrated on the Ma trận page's Simulation. Real runtime wiring (Zeebe job worker sets `candidateUsers` at task creation) still waits on F1.
   - **Refactor plan adopted (2026-07-08, `docs/research/approval-matrix-refactor-plan.md` + review notes `approval-matrix-conversation-2026-07-08.md`)** — turns the module from hard-coded conditions (`cap`/`loaiHoiDong`/`budgetMin/Max`) + `approverRoleCodes`-only result into a configurable assignment resolver: dynamic condition tree (AND/OR, 11 operators), metadata-driven variable registry, assignment types (GROUP/USER/ORG_POSITION/COUNCIL/EXPRESSION) + modes (ANY_ONE/ALL/SEQUENTIAL), conflict/coverage analyzer, audit payload, and DossierDetail consuming `resolveApprovers(slot+conditions)` instead of `resolveGroups(step.vaiTroCodes)`. Sliced A–I; suggested order in plan §5. **Đợt 1 (plan §9 near-term) — DONE 2026-07-08**: Slice A condition engine `data/approvalConditions.ts` (11 operators + `evaluateConditionTree` + `describeConditionTree`, fail-closed, empty group = wildcard; **35/35 assert harness**) + Slice B variable registry `data/approvalVariableRegistry.ts` (11 seed vars, enum options aligned to `variableContract.ts`, 3 core `simulated:true`) + Slice C schema migration (`ApprovalRule.conditions: ConditionGroup` replacing cap/loaiHoiDong/budgetMin/Max; seed AM-01…AM-07 migrated; `slot` matched separately; `resolveApprovers` via `toEvalContext`) **with parity gate PASSED — 216 contexts, matched-rule identical old-vs-new, 0 mismatch** + Slice D Condition Builder `components/ConditionBuilder.tsx` (recursive AND/OR editor, controls by registry type, live VN preview) wired into the rule modal + table summary + audit-minimum (`ResolveResult.evaluatedRules` → Simulation shows chosen/skipped rules with reasons). Assignment kept **GROUP-only**. The 5 refactor files are **type-clean**; runtime covered by the two harnesses. ⚠️ **Full `npm run build` is RED from PRE-EXISTING unrelated WIP** (`TroGiup.tsx` untracked missing icon imports; `RolePermission.tsx` modified unused vars) — dirty at session start, owned by other workstreams, left untouched. **Đợt 2 — DONE 2026-07-08 (Slices E/F/G/H/I + shared store)**: `store/ApprovalMatrixContext.tsx` (new, mounted `main.tsx`) = single source for rules → page edits reach runtime; Slice E assignment model `ApprovalAssignment{mode,targets}` (GROUP/USER resolve real + delegation; ORG_POSITION/COUNCIL/EXPRESSION placeholders) + `components/AssignmentBuilder.tsx` (other 3 = disabled "sắp có") — **parity still 216-ctx/0-mismatch incl. approver-set**; Slice H `ResolveResult.audit`+`warnings`+`mode`; Slice F `data/approvalMatrixAnalyzer.ts` (empty-assignment error / dup-priority / broad-before-specific shadow / disabled-fallback / no-fallback coverage) → banner + per-row ⚠, harness-verified; Slice G `data/approvalSlotMap.ts` (step→slot, ⚠ DEMO ASSUMPTION plan §8) + `buildApprovalContext` → `DossierDetail` resolves current step via `resolveApprovers(store rules)` (fallback `resolveGroups`) + shows "Khớp luật: …"; Slice I `data/approvalMatrixDto.ts` (5-endpoint DTOs). **Full `npm run build` GREEN + 3 harnesses green.** Fixed to get green: 2 pre-existing mojibake `TS2367` bugs in `DossierDetail.tsx` (`d.cap`/`d.loai` comparisons — were always-false at runtime) + unused `StatCard`/`stats` in `RolePermission.tsx`. **⚠️ `DossierDetail.tsx` has ~214 pre-existing mojibake lines** (garbled Vietnamese UI from prior-session tool damage; this session's edits verified non-corrupting — `ApprovalMatrix.tsx` stayed clean through heavy edits) → needs a **separate encoding-repair pass**. All frontend-mock; real persistence/enforcement waits on F1.
 - [ ] **EPIC09 Rule Manager UI/UX upgrade (`docs/research/EPIC09-dmn-design.md` §2/§8/§12.4 "Custom Rule Builder Pha 2")** — `IN PROGRESS (frontend mock, 2026-07-08)` — nâng cấp `/quan-ly-luat` từ 1 trình soạn dmn-js thô (raw Camunda chrome, 1 DRD hardcode) sang mô hình danh sách + CRUD + lưới thân thiện cho người dùng lowtech. Đã làm:
+  - **Angular port — danh sách + màn chi tiết soạn/lưu version/chạy thử DONE 2026-07-16:** `frontend-angular` có route `/quan-ly-luat/:id`, bảng luật FIRST-hit chỉnh sửa được theo kiểu dữ liệu, thêm/nhân đôi/xoá dòng, dirty/reset, snapshot version bất biến + nạp version cũ, và form chạy thử/evaluator cục bộ tô dòng khớp. Store/evaluator cố ý chỉ chạy trong bộ nhớ browser vì backend chưa khóa contract quản lý/thực thi DMN; không dựng API giả. Luật SERVICE hiển thị read-only. Verify Angular production build GREEN và **14/14 test PASS**. Chưa browser click-through.
+  - **Angular modal Tạo luật — RD áp dụng từ catalog thật DONE 2026-07-16:** trường chọn quy trình gọi `GET /api/process-definitions` qua service hiện hữu, chỉ giữ `DEPLOYED`, hiển thị mã+tên+version, search và chọn nhiều; bỏ chế độ tags/nhập mã tự do. Có loading/empty/error/retry. Build GREEN, 14/14 test PASS; real backend 8090 trả 2/2 process DEPLOYED.
   - **Bước ② (cái ghim kỹ thuật) — DONE & verified:** `webapp/src/dmn/ruleGrid.ts` (mới) = lớp chuyển đổi **hai chiều lưới ↔ DMN XML** (`dmnToGrid`/`gridToDmn` + `feelInputToCondition`/`conditionToFeelInput`/`feelOutputToResult`/`resultToFeelOutput` + `describeCondition`/`describeResult` hiển thị tiếng Việt). Người dùng thao tác trên `GridCondition{op,value}` có cấu trúc, KHÔNG chạm FEEL; DMN XML vẫn là nguồn chuẩn (execution `evaluateDrd`/sau này `EvaluateDecision` không đổi). **Chứng minh round-trip 21/21 assert** qua harness Node (esbuild + `@xmldom/xmldom` polyfill DOMParser, cài `--no-save`) trên seed RD02 thật: parse→grid cấu trúc đúng, grid→XML parse lại + topo-sort đúng, **bất biến ngữ nghĩa `eval(seed)===eval(round-trip)` trên 8 input phủ biên**, idempotent byte-identical, luật mới soạn từ lưới eval đúng. Harness đã xoá sau verify.
   - **Bước ①② lớp dữ liệu + danh sách + chi tiết — DONE (build xanh):** `data/rules.ts` (model `BusinessRule` bọc `dmnXml` nguồn chuẩn + metadata: category/kind DMN|SERVICE theo §7/status/version/rdApDung; **seed 5 luật** đa dạng, các luật nhỏ dogfood `gridToDmn`), `store/RuleContext.tsx` (CRUD: create/update/saveXml-bump-version/duplicate/setStatus/remove; mounted trong `main.tsx`). `pages/RuleList.tsx` (mặt tiền mới cho `/quan-ly-luat`: StatCard + FilterBar + EntityTable + Modal tạo luật + row-action nhân bản/vô hiệu/xoá) thay `pages/RuleManager.tsx` cũ (**đã xoá 2026-07-08**). `pages/RuleDetail.tsx` (route mới `/quan-ly-luat/:id`): Descriptions metadata + tab **"Soạn bảng luật"** + tab **"Chế độ nâng cao (DMN)"** (dmn-js lùi về đây, có nút Lưu → `saveXml`) + panel **Test tổng quát** (tự dựng form input từ biến gốc DRD, `evaluateDrd` client-side); luật SERVICE hiện interface thay vì DMN. `App.tsx` route cả 2. Verified `npm run build` xanh (tsc 0 lỗi + vite bundle). **Chưa**: click-through trình duyệt (Playwright không cài).
   - **Bước ④ trình soạn lưới có thể chỉnh sửa — DONE (build xanh, 2026-07-08):** `components/RuleGridBuilder.tsx` (mới) = trình soạn "bảng luật" edit được, thay lưới read-only ở tab "Soạn bảng luật". Người dùng lowtech: thêm/xoá/nhân đôi **dòng luật**; mỗi ô NẾU = Select toán tử (Bất kỳ/=/≥/>/≤/</trong khoảng theo kiểu cột) + InputNumber/Input/Select giá trị; mỗi ô THÌ = ValueInput theo kiểu; toggle **"Cấu hình cột"** để thêm/xoá/đổi nhãn+kiểu cột NẾU/THÌ + đổi tên bảng + hit policy (Select). Lưới rỗng (luật DMN mới chưa có `dmnXml`) → nút "Tạo bảng quyết định" seed 1 bảng starter. Draft cục bộ (`structuredClone` immutable), badge "Có thay đổi chưa lưu"; **Lưu → `gridToDmn` → `saveXml` (bump version)**; `resetKey=${id}:v${version}` nạp lại draft sau lưu. KHÔNG chạm FEEL ở bất kỳ đâu. `describeCondition`/`describeResult` giờ chỉ dùng cho panel Test kết quả.
@@ -196,6 +522,12 @@ If you are ever unsure what to do, read this section._
 
 ## Blockers
 
-- **F1 cannot complete** until an architect/stakeholder decides: backend language/framework, domain DB engine, Camunda 8 deployment model (Self-Managed vs SaaS). Owner: Solution Architect. See `decisions.md`.
+- **Live demo has no release isolation (flagged 2026-07-16).** `https://drab-quail.runlocal.eu/` is
+  live with real users; Caddy/backend/frontend all serve directly out of this dev workspace (no
+  `qtkhcn-demo/releases/` separation exists despite being designed in
+  `docs/plan_deploy/standard-deploy-workflow.md`). See `.harness/rules/demo-environment-safety.md`.
+  Not a foundation blocker, but changes to `backend/`, `frontend-angular/`, `infra/demo-tunnel/` need
+  human awareness/confirmation before rebuild/restart until this is fixed.
+- **F1 stack decisions RESOLVED 2026-07-15** (D14–D17: Java/Spring Boot backend, PostgreSQL, Camunda 8 Self-Managed dev via Docker Compose, Angular+ng-zorro-antd frontend). F1 no longer blocked on architect input; it is now in-progress scaffold work — see the migration plan referenced in the F1 line above (Mốc 0 done, Mốc 1+ not started). Camunda 8 **production** deployment model (SaaS vs Self-Managed K8s) remains open, but does not block dev-environment scaffold work.
 - **F3/F5 server-side work** blocked on SSO/IAM protocol choice (`OQ-021`) and RBAC granularity sign-off (`OQ-006`). Owner: Solution Architect + client.
 - Several RD flows (RD03, RD04, RD06, RD08) remain requirement-only per `RTM.md` — not a foundation blocker, but flagged so Feature work doesn't assume they're ready.

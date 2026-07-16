@@ -55,7 +55,9 @@ Each entry: what was decided, when, and why.
 **Decision**: Web SPA built with React 18 + TypeScript, Vite (dev/build), Ant Design v5 (+ icons), React Router v6, Vietnamese locale (`antd/locale/vi_VN`). BPMN authoring uses `bpmn-js` + `bpmn-js-properties-panel` + `zeebe-bpmn-moddle`.
 **Rationale**: Already implemented and deployed (Vercel); mock-data phase covers RD01/RD02/RD05 dossier flows.
 **Source**: `webapp/package.json`, `webapp/README.md`
-**Status**: LOCKED
+**Status**: **SUPERSEDED BY D17** (2026-07-15) — kept for history. `webapp/` (React) remains as a
+living reference spec for already-approved UX/business rules until each module reaches parity on
+the new Angular stack; it is not deleted at D17's lock date.
 
 ## D8 — Nhiệm vụ (Mission) and Hồ sơ (Dossier) are separate entities, 1–N
 **Decision**: `NhiemVu` (one master record per đề tài, spans full lifecycle) and `HoSo` (one row per document package per business-flow stage: RD01/RD02/RD03.6/RD04/RD05/RD06) are modeled as two normalized tables with a 1–N relationship, joined only in UI view models — not merged into one table.
@@ -133,12 +135,42 @@ click-through trình duyệt (Playwright chưa cài) — kiểm chứng runtime 
 
 ---
 
+## D14 — Backend stack: Java 21 + Spring Boot + Spring Zeebe
+**Date**: 2026-07-15
+**Decision**: Backend is Java 21 + Spring Boot (`spring-boot-starter-web`, `spring-boot-starter-data-jpa`, `spring-boot-starter-validation`) with `io.camunda:spring-zeebe-starter` as the Camunda 8 Java SDK for the Zeebe client and job workers.
+**Rationale**: Most mature Camunda 8 SDK (already the illustrative example in `docs/arch/camunda-design.md`), largest community/hiring pool. Resolves the "Backend language/framework" item that was previously open and blocking Foundation 1.
+**Source**: User decision, session 2026-07-15. Resolves the open item below (kept struck through for history, see superseded note).
+**Status**: LOCKED
+
+## D15 — Domain database: PostgreSQL, Flyway-managed, separate from Camunda's own storage
+**Date**: 2026-07-15
+**Decision**: The application's domain DB (NhiemVu/HoSo/Organization/Role/User etc., per D8/D9) is PostgreSQL, with schema migrations managed by Flyway. This DB is fully separate from whatever storage Camunda's own components (Zeebe/Operate/Identity) use internally — consistent with D3 (Camunda holds no business data).
+**Rationale**: Already the assumption in the topology diagram (`camunda-design.md`), open-source, strong JSONB support (useful for eForm schema storage later), no license cost. Resolves the "Domain database engine" item that was previously open and blocking Foundation 1.
+**Source**: User decision, session 2026-07-15.
+**Status**: LOCKED
+
+## D16 — Camunda 8 dev environment: Self-Managed via local Docker Compose
+**Date**: 2026-07-15
+**Decision**: The Camunda 8 development/integration environment runs Self-Managed (Zeebe, Operate, Tasklist, Identity, Elasticsearch) via a local Docker Compose stack (`infra/docker-compose.yml`), not Camunda SaaS. Production deployment topology (Kubernetes vs. SaaS) remains open and will be decided after the dev stack is proven.
+**Rationale**: Matches the Self-Managed topology already sketched in `docs/arch/camunda-integration-explained.md`; no trial time-box or SaaS data-residency concern for early integration work. Resolves the "Camunda 8 deployment model" (`OQ-CAM-DEPLOY`) item for the *dev* environment specifically — production topology is a separate, still-open decision.
+**Source**: User decision, session 2026-07-15.
+**Status**: LOCKED (dev environment only) — production topology still open, see remaining open items below.
+
+## D17 — Frontend stack: Angular + ng-zorro-antd (supersedes D7)
+**Date**: 2026-07-15
+**Decision**: The web SPA is rebuilt in Angular (current LTS at scaffold time) using `ng-zorro-antd` as the component library, with `vi_VN` locale — replacing the React + Ant Design stack locked in D7. Design-system refresh happens at the design-token layer (colors/spacing/typography), starting from `webapp/src/branding/tokens.css` as the baseline rather than a from-scratch visual redesign. `webapp/` (the React app) is kept as a living reference implementation of already-approved UX and business rules until each module reaches parity on Angular; it is retired module-by-module, not deleted upfront.
+**Rationale**: User-directed stack change (Solution Architect decision, not an agent-initiated reopening of D7). Reusing the ng-zorro-antd component set preserves most of the already-validated UX/interaction patterns from the React mock, keeping migration cost bounded while still allowing an intentional design-system refresh at the token level.
+**Source**: User decision, session 2026-07-15. Migration plan: `C:\Users\phuctd7\.claude\plans\generic-pondering-parnas.md` (Mốc 0–6, strangler-fig per RD flow, RD01.01 first).
+**Status**: LOCKED (approach) — implementation not started.
+
+---
+
 ## Open decisions blocking Foundation 1 (Project Scaffold)
 
-These were surfaced while setting up the harness (2026-07-07) and explicitly left open by the user pending architect input. **Do not guess these — ask again before starting F1 implementation.**
+**RESOLVED 2026-07-15** — backend language/framework (D14), domain database engine (D15), and the Camunda 8 *dev-environment* deployment model (D16) are now locked above. Foundation 1 is unblocked for scaffold work; see `DELIVERY_STATE.md`.
 
-- **Backend language/framework** — not chosen. `docs/arch/camunda-design.md` shows Java/Spring Zeebe as an *illustrative* example only (most mature Camunda 8 SDK), not a locked choice. Alternatives on the table: Node.js/TypeScript (`@camunda8/sdk`), .NET (`zeebe-client-csharp`).
-- **Camunda 8 deployment model** (`OQ-CAM-DEPLOY`) — Self-Managed on internal Kubernetes vs. Camunda SaaS. `camunda-design.md` topology diagram assumes Self-Managed (separate `qlnvkhcn`/`camunda`/`iam` namespaces) but this is not confirmed.
-- **Domain database engine** — PostgreSQL appears in the topology diagram but is not in the formal D1–D6 decision table. Oracle/SQL Server remain on the table if VHT/Viettel infra standardizes on one of those.
-- **SSO/IAM protocol** (`OQ-021`) — OIDC vs SAML, and which VHT IAM product, undecided. Blocks real F5 (Auth) and the server-side half of F3 (RBAC enforcement).
+Still open (do not guess — ask again before depending on these):
+
+- **Camunda 8 *production* deployment model** — Self-Managed on internal Kubernetes vs. Camunda SaaS for production is still undecided; D16 only locks the local dev environment. `camunda-design.md` topology diagram assumes Self-Managed (separate `qlnvkhcn`/`camunda`/`iam` namespaces) but this is not confirmed for production.
+- **SSO/IAM protocol** (`OQ-021`) — OIDC vs SAML, and which VHT IAM product, undecided. Blocks real F5 (Auth) and the server-side half of F3 (RBAC enforcement). Backend scaffold (D14) uses a temporary JWT stub until this is resolved.
 - Related open questions tracked in `docs/req/ENGINE-NFR-requirements.md` and `docs/req/RTM.md`: `OQ-002` (rework flow), `OQ-006` (NFR/RBAC granularity + numeric SLA targets), `OQ-009` (5-system sync model), `OQ-020` (AI-Agent integration scope), `OQ-CAM-COMPONENTS` (which Camunda components are bundled).
