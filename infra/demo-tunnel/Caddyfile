@@ -1,0 +1,24 @@
+http://127.0.0.1:8443 {
+	bind 127.0.0.1
+
+	log {
+		output stderr
+		format console
+	}
+
+	basic_auth {
+		demo {$DEMO_BASIC_AUTH_HASH}
+	}
+
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8090 {
+			header_up X-QTKHCN-Dev-Key {$QTKHCN_DEV_API_KEY}
+		}
+	}
+
+	handle {
+		root * {$DEMO_STATIC_ROOT}
+		try_files {path} /index.html
+		file_server
+	}
+}
