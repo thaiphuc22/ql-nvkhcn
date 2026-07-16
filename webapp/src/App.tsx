@@ -95,6 +95,11 @@ const { Text } = Typography;
 const SIDER_W = 230;
 const SIDER_COLLAPSED_W = 80;
 
+type BackendDemoLink = {
+  url: string;
+  note: string;
+};
+
 const ROUTE_BY_KEY: Record<string, string> = {
   dashboard: "/tong-quan",
   worklist: "/viec-cua-toi",
@@ -125,6 +130,8 @@ const ROUTE_BY_KEY: Record<string, string> = {
 
 export default function App() {
   const [collapsed, setCollapsed] = useState(false);
+  const [backendDemoLink, setBackendDemoLink] =
+    useState<BackendDemoLink | null>(null);
   const screens = Grid.useBreakpoint();
   const isNarrow = useViewportBelow(BREAKPOINTS.lg);
   const wasNarrowRef = useRef(isNarrow);
@@ -135,6 +142,39 @@ export default function App() {
       wasNarrowRef.current = isNarrow;
     }
   }, [isNarrow]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    void fetch(`${import.meta.env.BASE_URL}be-demo-link.json`, {
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json() as Promise<Partial<BackendDemoLink>>;
+      })
+      .then((value) => {
+        const rawUrl = typeof value.url === "string" ? value.url.trim() : "";
+        if (!rawUrl) return;
+
+        const parsedUrl = new URL(rawUrl);
+        if (parsedUrl.protocol !== "https:") return;
+
+        setBackendDemoLink({
+          url: parsedUrl.toString(),
+          note: typeof value.note === "string" ? value.note.trim() : "",
+        });
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError")
+          return;
+        // Fail closed: the mock remains fully usable when the optional demo link is unavailable.
+        setBackendDemoLink(null);
+      });
+
+    return () => controller.abort();
+  }, []);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -624,6 +664,24 @@ export default function App() {
             )}
           </div>
           <Space size={4} align="center">
+            {backendDemoLink && (
+              <Tooltip
+                title={
+                  backendDemoLink.note || "Mở bản demo kết nối backend thật"
+                }
+              >
+                <Button
+                  type="link"
+                  icon={<ApiOutlined />}
+                  href={backendDemoLink.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ paddingInline: 8 }}
+                >
+                  {screens.md ? "Demo có Backend" : "Demo BE"}
+                </Button>
+              </Tooltip>
+            )}
             <SubsystemSwitcher />
             <Dropdown
               trigger={["click"]}
