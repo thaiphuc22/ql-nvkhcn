@@ -18,6 +18,7 @@ import {
 import zeebeModdle from 'zeebe-bpmn-moddle/resources/zeebe.json';
 
 import { TranslateViModule } from './bpmn-properties-i18n';
+import { BpmnElement, BpmnModdleElement, resolveExecutableProcess } from './executable-process';
 
 type Canvas = {
   zoom: (value?: number | string) => number;
@@ -33,8 +34,14 @@ type ElementRegistry = {
   filter: (predicate: (element: BpmnElement) => boolean) => BpmnElement[];
   get: (id: string) => BpmnElement | undefined;
 };
-type BpmnElement = { type?: string; businessObject?: { isExecutable?: boolean } };
-type Modeling = { updateProperties: (element: BpmnElement, properties: Record<string, unknown>) => void };
+type Modeling = {
+  updateProperties: (element: BpmnElement, properties: Record<string, unknown>) => void;
+  updateModdleProperties: (
+    element: BpmnElement,
+    moddleElement: BpmnModdleElement,
+    properties: Record<string, unknown>,
+  ) => void;
+};
 type Selection = { select: (element: BpmnElement) => void };
 
 @Component({
@@ -104,15 +111,14 @@ export class BpmnModelerComponent implements AfterViewInit, OnDestroy {
   async exportXml(processId: string, processName: string): Promise<string> {
     const modeler = this.requireModeler();
     const registry = modeler.get('elementRegistry') as ElementRegistry;
-    const process = registry.filter(
-      (element) => element.type === 'bpmn:Process' || element.businessObject?.isExecutable === true,
-    )[0];
-    if (!process) throw new Error('Sơ đồ phải có một process executable.');
-    (modeler.get('modeling') as Modeling).updateProperties(process, {
-      id: processId,
-      name: processName,
-      isExecutable: true,
-    });
+    const target = resolveExecutableProcess(registry);
+    const properties = { id: processId, name: processName, isExecutable: true };
+    const modeling = modeler.get('modeling') as Modeling;
+    if (target.element.businessObject === target.process) {
+      modeling.updateProperties(target.element, properties);
+    } else {
+      modeling.updateModdleProperties(target.element, target.process, properties);
+    }
     const result = await modeler.saveXML({ format: true });
     if (!result.xml) throw new Error('Không thể xuất BPMN XML.');
     return result.xml;
