@@ -1,5 +1,74 @@
 # Active Task
 
+## ★ CURRENT — Tách release demo khỏi dev workspace (Runlocal) — DONE + VERIFIED 2026-07-16
+
+**Yêu cầu của user**: implement thật kế hoạch tách workspace/release đã viết ở
+`docs/plan_deploy/standard-deploy-workflow.md`, sau khi phiên trước phát hiện demo live
+(`https://drab-quail.runlocal.eu/`) đang chạy trực tiếp từ chính dev workspace này (không có cách
+ly), có người dùng thật đang dùng.
+
+**Đã triển khai**:
+
+1. **Gate 3.1 (version control)**: `backend/`, `frontend-angular/`, `infra/demo-tunnel/` trước đó
+   hoàn toàn untracked. Commit theo từng nhóm rõ ràng (`466c224` backend, `82df984` frontend-angular,
+   `c7ed96d` infra, `d577264` webapp banner, `fcb71c4` docs/harness, `3850279` scripts release) — rà
+   soát `.gitignore` xác nhận không leak secret (`.env.local`, log, `target/`, `dist/` đều đã bị
+   ignore đúng trước khi add).
+2. **Release worktree**: `New-DemoRelease.ps1` (mới, `infra/demo-tunnel/`) tạo `git worktree` tại
+   `C:\Users\phuctd7\qtkhcn-demo\releases\<release-id>` từ một commit sạch, build backend
+   (`mvn -o package`) + frontend (`npm ci` + `ng build production,demo`), kiểm tra bundle không leak
+   `localhost:8090`/`dev-local-only`, rồi health-check trên port tạm `8091` — không đụng gì tới
+   backend/Caddy/Runlocal đang sống. Release đầu tiên `2026-07-16.1_fcb71c4` build + health-check
+   PASS (curl `X-QTKHCN-Dev-Key` → 200 dữ liệu thật).
+3. **Cutover script**: `Switch-DemoRelease.ps1` (mới) — script DUY NHẤT được phép dừng/khởi động lại
+   backend cổng 8090 sống; dừng process cũ, start backend release mới (dùng lại đúng
+   `QTKHCN_DEV_API_KEY` hiện tại để không phải đụng Caddy), health-check, rồi repoint junction
+   `C:\Users\phuctd7\qtkhcn-demo\current` → thư mục release. `Start-DemoProxy.ps1` đổi default sang
+   phục vụ từ junction `current` thay vì `frontend-angular/dist` trong dev workspace;
+   `Test-DemoReadiness.ps1` cập nhật theo. Từ nay mỗi lần deploy chỉ cần
+   `New-DemoRelease.ps1` → `Switch-DemoRelease.ps1 -ReleaseId <id>`, không cần đụng Caddy/Runlocal
+   nữa (chỉ cần đụng Caddy nếu tự đổi `Caddyfile`).
+4. **Cutover thật đã thực hiện** (qua `AskUserQuestion` xác nhận cửa sổ deploy trước): dừng backend
+   cũ PID 27284 → start backend release `2026-07-16.1_fcb71c4` trên 8090 (PID mới, healthy) →
+   `caddy validate` rồi `caddy reload` một lần duy nhất để Caddy chuyển sang phục vụ qua junction.
+   Có 1 lần retry: `Switch-DemoRelease.ps1` gốc có ký tự em-dash non-ASCII làm PowerShell 5.1
+   parse-fail — **parse error xảy ra trước khi script chạy bất kỳ dòng nào** nên live backend không
+   hề bị đụng ở lần thử đầu (xác nhận PID không đổi + public URL vẫn 401 trước khi sửa). Đã thay hết
+   em-dash bằng dấu gạch ngang thường trong cả 4 script, xác nhận parse sạch bằng
+   `[System.Management.Automation.Language.Parser]::ParseFile` trước khi chạy lại — lần 2 thành
+   công.
+
+**Verify sau cutover**:
+
+- `127.0.0.1:8443` không auth/sai auth → `401`; public `https://drab-quail.runlocal.eu/` (root và
+  `/api/ho-so`) không auth → `401` cả hai.
+- Backend trực tiếp `127.0.0.1:8090/api/ho-so` với dev key hiện tại → `200`.
+- PID backend cũ (27284) xác nhận đã terminate; junction `current` trỏ đúng
+  `qtkhcn-demo\releases\2026-07-16.1_fcb71c4`; Docker stack (`orchestration`, `qtkhcn-postgres`,
+  `bpmn-test-orchestration`, `connectors`) không bị đụng, vẫn healthy.
+- `git worktree list` sạch, không có worktree rác.
+
+**Phát hiện phụ trong lúc làm** (không phải lỗi của task này): có phiên khác đang chỉnh sửa đồng thời
+`frontend-angular/src/app/pages/approval-matrix/` và
+`frontend-angular/src/app/shared/approval-simulation-panel/` (file mới, tạo trong lúc tôi đang
+build/commit), cùng vài dòng bổ sung ở `docs/plan_deploy/v1.md`/`standard-deploy-workflow.md` về
+CORS/Origin header của Runlocal. Cố tình **không** commit các file/đổi này (không phải việc của
+commit này, có thể đang dở dang) — để nguyên trong working tree cho phiên đó tự commit.
+
+**⚠️ CHƯA verify được (cần user)**: đăng nhập Basic Auth thật (mật khẩu thật) trên
+`https://drab-quail.runlocal.eu/` từ trình duyệt để xác nhận UI tải đúng — agent cố tình không đọc
+password thật (chỉ dùng `DEMO_BASIC_AUTH_HASH`/`QTKHCN_DEV_API_KEY` đã có sẵn trong
+`infra/demo-tunnel/.env.local`, nạp vào env var mà không bao giờ in ra). Đây là bước cuối trong
+checklist Go/No-Go ở `docs/plan_deploy/v1.md` §11 mà chỉ user làm được.
+
+**Next action cho lần deploy tiếp theo**: từ dev workspace, `git commit` thay đổi cần release rồi
+chạy `& .\infra\demo-tunnel\New-DemoRelease.ps1` (không cần tham số), đợi PASS, rồi
+`$env:QTKHCN_DEV_API_KEY = '<giá trị hiện tại>'; & .\infra\demo-tunnel\Switch-DemoRelease.ps1 -ReleaseId '<id-in-ra>'`.
+Giữ lại `2026-07-16.1_fcb71c4` trong `qtkhcn-demo\releases\` làm bản rollback cho tới khi có release
+kế tiếp chạy ổn định.
+
+---
+
 ## ★ CURRENT — Properties Panel (màn Vẽ/Sửa BPMN): Việt hoá + icon nhóm + polish list — DONE + VERIFIED 2026-07-16
 
 **Yêu cầu của user**: lên kế hoạch rồi triển khai nâng cấp UI cho Properties Panel trong màn Vẽ/Sửa BPMN

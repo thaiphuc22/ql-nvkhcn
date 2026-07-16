@@ -1,63 +1,55 @@
 # Demo Environment Safety
 
-## ⚠️ Live status
+## Status (updated 2026-07-16): release isolation is now implemented
 
 **A public demo is live at `https://drab-quail.runlocal.eu/` and real users are actively using it.**
-This is not a hypothetical future risk — check current status before assuming otherwise (the URL
-rotates on tunnel restart; if unsure whether it's still live, ask the human before touching anything
-in the paths below).
+This is not hypothetical — check current status before assuming otherwise (the URL rotates on
+tunnel restart).
 
-See `docs/plan_deploy/v1.md` (deploy design) and `docs/plan_deploy/standard-deploy-workflow.md`
-(intended coding/release workflow) for the full plan. **That plan describes a release/workspace
-separation (`C:\Users\phuctd7\qtkhcn-demo\releases\<release-id>`) that has NOT been implemented.**
-As of 2026-07-16, verified on-disk:
+The release/workspace separation designed in `docs/plan_deploy/standard-deploy-workflow.md` is now
+built and was used for a live cutover on 2026-07-16 (see the dated `DELIVERY_STATE.md` entry). As of
+that cutover:
 
-- Caddy (`infra/demo-tunnel/Start-DemoProxy.ps1`) serves static files directly from
-  `frontend-angular/dist/frontend-angular/browser` **inside this dev workspace** — not a separate
-  release checkout.
-- The running backend JAR (`backend/target/qtkhcn-backend.jar`) is built **inside this dev
-  workspace** — not a separate release checkout.
-- No `qtkhcn-demo/releases/` directory exists anywhere on the machine.
+- The live backend on port 8090 runs from `C:\Users\phuctd7\qtkhcn-demo\releases\<release-id>\`, a
+  separate `git worktree` checked out from a committed SHA — **not** from this dev workspace.
+- Caddy (`infra/demo-tunnel/Start-DemoProxy.ps1`, default `-ReleaseRoot`) serves static files from
+  `C:\Users\phuctd7\qtkhcn-demo\current\frontend-angular\dist\...`, where `current` is a directory
+  junction repointed atomically by each release cutover.
+- Editing/rebuilding files in `backend/`, `frontend-angular/`, or `infra/demo-tunnel/` in this dev
+  workspace **no longer reaches the live demo** until someone deliberately runs
+  `New-DemoRelease.ps1` + `Switch-DemoRelease.ps1`.
 
-**Practical consequence: this dev workspace IS the demo's live deployment root.** There is currently
-no isolation between "coding" and "serving the live demo." Editing, rebuilding, or restarting
-anything under `backend/`, `frontend-angular/`, or `infra/demo-tunnel/` can immediately affect real
-users on the live URL.
+**This meaningfully lowers routine risk**, but does not eliminate it — the release/switch scripts
+themselves still exist in this repo, and running them (or manually touching the release directory,
+the `current` junction, Caddy, or Runlocal) still affects live users.
 
 ---
 
-## Hard rules while this gap exists
+## Hard rules
 
-1. **Before rebuilding or restarting the backend or frontend-angular**, check whether the demo is
-   currently live and in use (ask the human if unsure) — do not assume it's safe just because it's
-   "just a dev change."
-2. **Never run destructive or interrupting commands** against the live backend process, the
-   `frontend-angular/dist` output, PostgreSQL, or Camunda without explicit human confirmation:
-   `taskkill` on the live backend PID, `docker compose down`, deleting/overwriting
-   `frontend-angular/dist`, database migrations, `docker volume` operations.
-3. **Prefer isolated verification over touching the live processes.** This project's existing
-   pattern — used repeatedly in `active-task.md` smoke tests — is to run a *second* backend instance
-   on a temporary port (e.g. `8091`) against the isolated test-engine stack, verify there, then stop
-   it cleanly. Do not `mvn -o package` + restart port `8090` (the live port) just to test something
-   that can be verified on a temp port first.
-4. **If a change legitimately needs to ship to the live demo** (bug fix, requested feature), that is
-   a deploy action with real-user impact — flag it to the human explicitly before restarting the live
-   port 8090 backend or rebuilding `frontend-angular/dist` in place, per the "hard-to-reverse /
-   affects shared state" guidance in top-level `CLAUDE.md`. State what will be interrupted and for how
-   long.
-5. **Do not restart the Runlocal tunnel** unless necessary — the free-tier URL changes on every
+1. **Never run `New-DemoRelease.ps1` or, especially, `Switch-DemoRelease.ps1` without the human's
+   go-ahead on timing.** `Switch-DemoRelease.ps1` is the only script allowed to stop/restart the
+   live backend on port 8090 — it causes a real (few-second) interruption for live users. Confirm
+   the deploy window first, per the "hard-to-reverse / affects shared state" guidance in top-level
+   `CLAUDE.md`.
+2. **`New-DemoRelease.ps1` itself is safe to run any time** — it builds and health-checks in an
+   isolated worktree + temp port (`8091` by default) and never touches port 8090, Caddy, or
+   Runlocal. Use it freely to prepare a release; the risky step is only the switch.
+3. **Never manually edit files inside `C:\Users\phuctd7\qtkhcn-demo\releases\<id>\` or the `current`
+   junction target** — those are build outputs of a specific commit, not a place to hand-patch. Fix
+   the source in this dev workspace, commit, then cut a new release.
+4. **Do not restart the Runlocal tunnel** unless necessary — the free-tier URL changes on every
    restart, breaking the link already shared with users (see `standard-deploy-workflow.md` §1, §6).
+   Routine releases never need to touch it (only backend + the `current` junction change).
+5. **Do not restart/reload Caddy for routine releases.** Caddy already serves from the `current`
+   junction; `Switch-DemoRelease.ps1` only repoints the junction and restarts the backend. A Caddy
+   reload is only needed if `infra/demo-tunnel/Caddyfile` itself changes (routing, auth) — that is
+   its own confirm-with-human moment, separate from a routine release.
+6. **The agent should not read or transmit the real Basic Auth password.** Verifying a real end-user
+   login on the public URL is the human's job; the agent can and should verify `401`
+   on missing/wrong auth, and reuse the existing `QTKHCN_DEV_API_KEY`/`DEMO_BASIC_AUTH_HASH` values
+   from `infra/demo-tunnel/.env.local` programmatically (load into env vars, never print them) when
+   scripting a cutover.
 
----
-
-## Longer-term fix
-
-The actual fix is implementing the release/workspace separation already designed in
-`docs/plan_deploy/standard-deploy-workflow.md` (separate release directory, blue-green port
-switchover, Caddy reload instead of full restart). Until that exists, treat every edit to
-`backend/`, `frontend-angular/`, and `infra/demo-tunnel/` as potentially live-user-facing, not as
-ordinary local dev work.
-
-This rule should be removed or rewritten once the release-separation described above is actually
-implemented and verified — at that point, dev-workspace changes will no longer be able to reach the
-live demo directly, and rule 1–3 above no longer apply.
+See `docs/plan_deploy/v1.md` and `docs/plan_deploy/standard-deploy-workflow.md` for the full design
+and the Go/No-Go checklist to run before sharing a URL after any change to routing or auth.

@@ -1,14 +1,26 @@
 # Delivery State
 
-> **⚠️ 2026-07-16 — LIVE DEMO IS PUBLIC, NO RELEASE ISOLATION.** `https://drab-quail.runlocal.eu/` is
-> live and has real users on it right now. Verified on-disk: Caddy serves
-> `frontend-angular/dist/frontend-angular/browser` and the running backend JAR
-> (`backend/target/qtkhcn-backend.jar`) directly from **this dev workspace** — the
-> release/workspace-separation design in `docs/plan_deploy/standard-deploy-workflow.md` was never
-> implemented (no `qtkhcn-demo/releases/` directory exists). Any edit/rebuild/restart under
-> `backend/`, `frontend-angular/`, or `infra/demo-tunnel/` can affect live users immediately. Read
-> `.harness/rules/demo-environment-safety.md` before touching those paths. This note stays until the
-> release separation is actually built.
+> **2026-07-16 — LIVE DEMO RELEASE ISOLATION IMPLEMENTED (owner Claude).** The gap flagged earlier
+> today (live demo serving directly from this dev workspace) is fixed. Baseline committed
+> (`backend/`, `frontend-angular/`, `infra/` were untracked before — see commits `466c224`,
+> `82df984`, `c7ed96d`). New scripts `infra/demo-tunnel/New-DemoRelease.ps1` (git worktree under
+> `C:\Users\phuctd7\qtkhcn-demo\releases\<release-id>`, builds backend+frontend from a clean
+> checkout, dev-secret leak check, health check on a temp port — never touches live 8090/Caddy) and
+> `Switch-DemoRelease.ps1` (the only script allowed to stop/restart the live backend; repoints the
+> `qtkhcn-demo\current` junction). `Start-DemoProxy.ps1`/`Test-DemoReadiness.ps1` now default to
+> serving from that junction. Cutover executed live: release `2026-07-16.1_fcb71c4` verified (health
+> check on port 8091, no `localhost:8090`/`dev-local-only` in the demo bundle), then switched onto
+> port 8090 with a one-time Caddy reload (config validated first). Post-cutover smoke: `401` with no
+> auth and with wrong auth on both `127.0.0.1:8443` and the public
+> `https://drab-quail.runlocal.eu/` (UI root and `/api/ho-so`), `200` on direct backend `/api/ho-so`
+> with the (unchanged) dev API key, old backend PID confirmed terminated, Docker stack untouched.
+> **Not yet done by Claude** (needs the human, since the real Basic Auth password was intentionally
+> never read by the agent): log into `https://drab-quail.runlocal.eu/` with the real credential and
+> confirm the UI loads and a read flow works, per the Go/No-Go checklist in
+> `docs/plan_deploy/v1.md` §11. Future deploys: `New-DemoRelease.ps1` then
+> `Switch-DemoRelease.ps1 -ReleaseId <id>` — no more editing this dev workspace's live output or
+> touching Caddy/Runlocal for routine releases. `.harness/rules/demo-environment-safety.md` updated
+> to match.
 
 > **2026-07-16 — PROPERTIES PANEL (màn Vẽ/Sửa BPMN) VIỆT HOÁ + ICON NHÓM + POLISH LIST DONE + VERIFIED
 > (owner Claude):** user yêu cầu lên kế hoạch rồi triển khai nâng cấp UI Properties Panel; qua
@@ -522,12 +534,11 @@ If you are ever unsure what to do, read this section._
 
 ## Blockers
 
-- **Live demo has no release isolation (flagged 2026-07-16).** `https://drab-quail.runlocal.eu/` is
-  live with real users; Caddy/backend/frontend all serve directly out of this dev workspace (no
-  `qtkhcn-demo/releases/` separation exists despite being designed in
-  `docs/plan_deploy/standard-deploy-workflow.md`). See `.harness/rules/demo-environment-safety.md`.
-  Not a foundation blocker, but changes to `backend/`, `frontend-angular/`, `infra/demo-tunnel/` need
-  human awareness/confirmation before rebuild/restart until this is fixed.
+- ~~Live demo has no release isolation~~ **RESOLVED 2026-07-16.** Fixed same day it was flagged —
+  see the dated entry near the top of this file and `.harness/rules/demo-environment-safety.md`.
+  Routine deploys now go through `New-DemoRelease.ps1` + `Switch-DemoRelease.ps1`; this dev
+  workspace no longer serves the live demo directly. Still open: human should confirm real Basic
+  Auth login on the public URL (agent never had the plaintext password).
 - **F1 stack decisions RESOLVED 2026-07-15** (D14–D17: Java/Spring Boot backend, PostgreSQL, Camunda 8 Self-Managed dev via Docker Compose, Angular+ng-zorro-antd frontend). F1 no longer blocked on architect input; it is now in-progress scaffold work — see the migration plan referenced in the F1 line above (Mốc 0 done, Mốc 1+ not started). Camunda 8 **production** deployment model (SaaS vs Self-Managed K8s) remains open, but does not block dev-environment scaffold work.
 - **F3/F5 server-side work** blocked on SSO/IAM protocol choice (`OQ-021`) and RBAC granularity sign-off (`OQ-006`). Owner: Solution Architect + client.
 - Several RD flows (RD03, RD04, RD06, RD08) remain requirement-only per `RTM.md` — not a foundation blocker, but flagged so Feature work doesn't assume they're ready.
