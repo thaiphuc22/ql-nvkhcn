@@ -30,14 +30,25 @@ jobs:
           cache: npm
           cache-dependency-path: webapp/package-lock.json
 
-      - name: Pin known-good npm
-        run: npm install -g npm@10.8.2
-
       - name: Install dependencies
         working-directory: webapp
         env:
           NODE_OPTIONS: --dns-result-order=ipv4first
-        run: npm ci --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
+        run: |
+          set +e
+          for attempt in 1 2 3 4; do
+            echo "npm ci attempt $attempt"
+            rm -rf node_modules
+            timeout 240 npm ci --no-audit --no-fund
+            status=$?
+            if [ $status -eq 0 ] && npm ls --depth=0 >/dev/null 2>&1; then
+              echo "npm ci succeeded and verified complete on attempt $attempt"
+              exit 0
+            fi
+            echo "::warning::npm ci attempt $attempt failed or left node_modules incomplete (exit $status), retrying"
+          done
+          echo "::error::npm ci did not produce a complete node_modules after 4 attempts"
+          exit 1
 
       - name: Build application
         working-directory: webapp
