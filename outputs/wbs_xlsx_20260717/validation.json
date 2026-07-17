@@ -1,0 +1,19 @@
+﻿{
+    "output":  "C:\\Users\\phuctd7\\ql-nvkhcn\\outputs\\wbs_xlsx_20260717\\wbs_khcn_platform_v1.0.xlsx",
+    "sheets":  [
+                   "Dashboard",
+                   "WBS",
+                   "Milestones",
+                   "BR Traceability",
+                   "Dependencies",
+                   "Gates \u0026 Decisions"
+               ],
+    "wbsItems":  88,
+    "milestones":  9,
+    "traceabilityRows":  21,
+    "dependencyRows":  7,
+    "gateRows":  5,
+    "formulaErrors":  [
+
+                      ]
+}

@@ -117,7 +117,8 @@ Không xóa release trước ngay sau deploy. Giữ tối thiểu release đang 
 ### Bước 2: Khởi động release mới
 
 1. Sinh API key nội bộ mới nếu chính sách yêu cầu.
-2. Khởi động backend mới trên loopback và port tạm, ví dụ `127.0.0.1:8091`.
+2. Đặt `QTKHCN_CORS_ALLOWED_ORIGINS` gồm `http://localhost:4200` và chính xác URL HTTPS Runlocal hiện tại,
+   rồi khởi động backend mới trên loopback và port tạm, ví dụ `127.0.0.1:8091`.
 3. Chạy health check trực tiếp vào backend mới.
 4. Kiểm tra Angular static files của release mới.
 5. Áp dụng migration có kiểm soát nếu release yêu cầu.

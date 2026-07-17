@@ -76,15 +76,24 @@ try {
 
     Write-Host "Health-checking backend on temp port $HealthCheckPort (isolated from live 8090)..." -ForegroundColor Cyan
     $tempKey = [guid]::NewGuid().ToString('N')
-    $proc = Start-Process -FilePath "$JavaHome\bin\java.exe" `
-        -ArgumentList @(
-            '-jar', 'target\qtkhcn-backend.jar',
-            "--server.port=$HealthCheckPort",
-            '--server.address=127.0.0.1',
-            "--qtkhcn.dev-api-key=$tempKey"
-        ) `
-        -WorkingDirectory (Join-Path $releasePath 'backend') `
-        -PassThru -WindowStyle Hidden
+    $healthOrigin = 'https://release-health.runlocal.eu'
+    $previousKey = $env:QTKHCN_DEV_API_KEY
+    $previousCorsOrigins = $env:QTKHCN_CORS_ALLOWED_ORIGINS
+    try {
+        $env:QTKHCN_DEV_API_KEY = $tempKey
+        $env:QTKHCN_CORS_ALLOWED_ORIGINS = "http://localhost:4200,$healthOrigin"
+        $proc = Start-Process -FilePath "$JavaHome\bin\java.exe" `
+            -ArgumentList @(
+                '-jar', 'target\qtkhcn-backend.jar',
+                "--server.port=$HealthCheckPort",
+                '--server.address=127.0.0.1'
+            ) `
+            -WorkingDirectory (Join-Path $releasePath 'backend') `
+            -PassThru -WindowStyle Hidden
+    } finally {
+        $env:QTKHCN_DEV_API_KEY = $previousKey
+        $env:QTKHCN_CORS_ALLOWED_ORIGINS = $previousCorsOrigins
+    }
 
     try {
         $healthy = $false
@@ -92,8 +101,19 @@ try {
             Start-Sleep -Seconds 2
             try {
                 $r = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:$HealthCheckPort/api/ho-so" `
-                    -Headers @{ 'X-QTKHCN-Dev-Key' = $tempKey } -TimeoutSec 5
-                if ($r.StatusCode -eq 200) { $healthy = $true; break }
+                    -Headers @{ 'X-QTKHCN-Dev-Key' = $tempKey; Origin = $healthOrigin } -TimeoutSec 5
+                $preflight = Invoke-WebRequest -UseBasicParsing -Method Options `
+                    -Uri "http://127.0.0.1:$HealthCheckPort/api/ho-so" -Headers @{
+                        Origin = $healthOrigin
+                        'Access-Control-Request-Method' = 'GET'
+                        'Access-Control-Request-Headers' = 'x-qtkhcn-dev-key'
+                    } -TimeoutSec 5
+                if ($r.StatusCode -eq 200 -and $preflight.StatusCode -eq 200 -and
+                    $r.Headers['Access-Control-Allow-Origin'] -eq $healthOrigin -and
+                    $preflight.Headers['Access-Control-Allow-Origin'] -eq $healthOrigin) {
+                    $healthy = $true
+                    break
+                }
             } catch { }
         }
         if (-not $healthy) { throw 'Release backend failed health check on temp port.' }

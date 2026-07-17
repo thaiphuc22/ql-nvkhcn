@@ -24,10 +24,12 @@ public record HoSoResponse(
         int buocHienTai,
         Long zeebeProcessInstanceKey,
         List<DossierStepResponse> steps,
+        List<TaiLieuResponse> taiLieu,
         String maDeTai,
         String tenDeTai,
         String chuNhiem,
         String donVi,
+        String thoiGianThucHien,
         String duToan,
         Cap cap
 ) {
@@ -37,7 +39,8 @@ public record HoSoResponse(
                 h.getNguoiKhoiTao(), h.getNgayTao(), h.getTrangThai(), h.getBuocHienTai(),
                 h.getZeebeProcessInstanceKey(),
                 h.getSteps().stream().map(DossierStepResponse::from).toList(),
+                h.getTaiLieu().stream().map(TaiLieuResponse::from).toList(),
                 nv.getMa(), nv.getTen(), nv.getChuNhiem().label(), nv.getDonViChuTri(),
-                nv.getDuToan(), nv.getCap());
+                nv.getThoiGianThucHien(), nv.getDuToan(), nv.getCap());
     }
 }

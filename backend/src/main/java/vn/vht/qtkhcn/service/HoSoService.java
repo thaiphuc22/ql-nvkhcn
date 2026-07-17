@@ -6,13 +6,13 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import vn.vht.qtkhcn.camunda.Rd0101ProcessService;
 import vn.vht.qtkhcn.domain.ActionOutcome;
 import vn.vht.qtkhcn.domain.DossierStatus;
 import vn.vht.qtkhcn.domain.DossierStep;
@@ -24,9 +24,14 @@ import vn.vht.qtkhcn.domain.TaiLieu;
 import vn.vht.qtkhcn.repository.HoSoRepository;
 import vn.vht.qtkhcn.repository.NhiemVuRepository;
 import vn.vht.qtkhcn.web.dto.CreateHoSoRequest;
+import vn.vht.qtkhcn.web.dto.CreateTaiLieuRequest;
 import vn.vht.qtkhcn.web.dto.HoSoActionRequest;
 import vn.vht.qtkhcn.web.dto.SubmitHoSoRequest;
 import vn.vht.qtkhcn.web.dto.TaskStepDef;
+import vn.vht.qtkhcn.workflow.StartWorkflowCommand;
+import vn.vht.qtkhcn.workflow.WorkflowAction;
+import vn.vht.qtkhcn.workflow.WorkflowActionCommand;
+import vn.vht.qtkhcn.workflow.WorkflowClient;
 
 /**
  * Port từ webapp/src/data/dossiers.ts (createDraftHoSo/stepsFromTaskSteps) +
@@ -47,13 +52,13 @@ public class HoSoService {
 
     private final HoSoRepository hoSoRepository;
     private final NhiemVuRepository nhiemVuRepository;
-    private final Rd0101ProcessService rd0101ProcessService;
+    private final WorkflowClient workflowClient;
 
     public HoSoService(HoSoRepository hoSoRepository, NhiemVuRepository nhiemVuRepository,
-                        Rd0101ProcessService rd0101ProcessService) {
+                        WorkflowClient workflowClient) {
         this.hoSoRepository = hoSoRepository;
         this.nhiemVuRepository = nhiemVuRepository;
-        this.rd0101ProcessService = rd0101ProcessService;
+        this.workflowClient = workflowClient;
     }
 
     @Transactional
@@ -67,8 +72,8 @@ public class HoSoService {
         h.setLoai(req.loai() != null ? req.loai() : HoSoLoai.CHU_TRUONG);
         h.setQuyTrinh("");
         h.setQuyTrinhTen("Chưa vào quy trình");
-        h.setNguoiKhoiTao(req.nguoiKhoiTao());
-        h.setNgayTao(LocalDate.now());
+        h.setNguoiKhoiTao(req.nguoiKhoiTao().trim());
+        h.setNgayTao(req.ngayTao() != null ? req.ngayTao() : LocalDate.now());
         h.setTrangThai(DossierStatus.DRAFT);
         h.setBuocHienTai(0);
 
@@ -77,14 +82,17 @@ public class HoSoService {
         khoiTao.setTen("Khởi tạo hồ sơ");
         khoiTao.setVaiTro("Chủ nhiệm đề tài (PM)");
         khoiTao.setVaiTroCodes(Set.of("PM"));
-        khoiTao.setNguoi(req.nguoiKhoiTao());
+        khoiTao.setNguoi(h.getNguoiKhoiTao());
         khoiTao.setTrangThai(StepStatus.DONE);
         khoiTao.setThoiDiem(LocalDateTime.now().format(THOI_DIEM_FMT));
         khoiTao.setHoSo(h);
         h.getSteps().add(khoiTao);
 
-        h.getTaiLieu().add(new TaiLieu("Thuyết minh đề tài.pdf", "PDF"));
-        h.getTaiLieu().add(new TaiLieu("Dự toán PL1-PL6.xlsx", "Excel"));
+        List<CreateTaiLieuRequest> requestedDocuments = req.taiLieu() != null
+                ? req.taiLieu()
+                : defaultDocuments(h.getLoai());
+        requestedDocuments.forEach(document -> h.getTaiLieu().add(
+                new TaiLieu(document.ten().trim(), document.loai().trim())));
 
         return hoSoRepository.save(h);
     }
@@ -126,7 +134,16 @@ public class HoSoService {
 
         NhiemVu nv = nhiemVuRepository.findById(h.getMaNV())
                 .orElseThrow(() -> new NoSuchElementException("Không tìm thấy NhiemVu " + h.getMaNV()));
-        h.setZeebeProcessInstanceKey(rd0101ProcessService.startInstance(h.getId(), nv.getCap()));
+        StartWorkflowCommand startCommand = new StartWorkflowCommand(
+                h.getId(),
+                req.quyTrinh(),
+                h.getId(),
+                h.getMaNV(),
+                h.getNguoiKhoiTao(),
+                Map.of("maHoSo", h.getId(), "cap", nv.getCap().name()));
+        h.setZeebeProcessInstanceKey(workflowClient.startWorkflow(startCommand)
+                .map(instance -> Long.valueOf(instance.processInstanceId()))
+                .orElse(null));
 
         return hoSoRepository.save(h);
     }
@@ -159,7 +176,9 @@ public class HoSoService {
 
         // Apply to Camunda first. A Camunda error aborts this transaction, so PostgreSQL is not
         // advanced independently. The request/response REST contract remains unchanged.
-        rd0101ProcessService.applyAction(processInstanceKey, req.outcome());
+        workflowClient.applyAction(new WorkflowActionCommand(
+                String.valueOf(processInstanceKey),
+                toWorkflowAction(req.outcome())));
 
         String now = LocalDateTime.now().format(THOI_DIEM_FMT);
 
@@ -201,6 +220,41 @@ public class HoSoService {
 
     private static DossierStep findByIndex(List<DossierStep> steps, int index) {
         return steps.stream().filter(s -> s.getBuocIndex() == index).findFirst().orElse(null);
+    }
+
+    private static WorkflowAction toWorkflowAction(ActionOutcome outcome) {
+        return switch (outcome) {
+            case APPROVE_STEP -> WorkflowAction.APPROVE_STEP;
+            case RETURN_STEP -> WorkflowAction.RETURN_STEP;
+            case REJECT_STEP -> WorkflowAction.REJECT_STEP;
+        };
+    }
+
+    private static List<CreateTaiLieuRequest> defaultDocuments(HoSoLoai loai) {
+        return switch (loai) {
+            case CHU_TRUONG -> List.of(
+                    new CreateTaiLieuRequest("Thuyết minh đề tài.pdf", "PDF"),
+                    new CreateTaiLieuRequest("Dự toán PL1-PL6.xlsx", "Excel"));
+            case XET_DUYET -> List.of(
+                    new CreateTaiLieuRequest("Hồ sơ xét duyệt.pdf", "PDF"),
+                    new CreateTaiLieuRequest("Dự toán PL1-PL6.xlsx", "Excel"),
+                    new CreateTaiLieuRequest("Biên bản họp HĐXD.pdf", "PDF"));
+            case BAO_CAO -> List.of(
+                    new CreateTaiLieuRequest("Báo cáo định kỳ.pdf", "PDF"),
+                    new CreateTaiLieuRequest("Phụ lục tiến độ.xlsx", "Excel"));
+            case DIEU_CHINH -> List.of(
+                    new CreateTaiLieuRequest("Tờ trình điều chỉnh.pdf", "PDF"),
+                    new CreateTaiLieuRequest("Căn cứ điều chỉnh.pdf", "PDF"),
+                    new CreateTaiLieuRequest("Phụ lục dự toán-thời gian.xlsx", "Excel"));
+            case NGHIEM_THU -> List.of(
+                    new CreateTaiLieuRequest("Báo cáo tổng kết.pdf", "PDF"),
+                    new CreateTaiLieuRequest("Sản phẩm và kết quả.zip", "Archive"),
+                    new CreateTaiLieuRequest("Biên bản nghiệm thu.pdf", "PDF"));
+            case QUYET_TOAN -> List.of(
+                    new CreateTaiLieuRequest("Báo cáo quyết toán.pdf", "PDF"),
+                    new CreateTaiLieuRequest("Bảng tổng hợp chi phí.xlsx", "Excel"),
+                    new CreateTaiLieuRequest("Chứng từ kèm theo.zip", "Archive"));
+        };
     }
 
     /** Port từ webapp/src/data/dossiers.ts::nextHoSoId — HS-<year>-<seq3>. */

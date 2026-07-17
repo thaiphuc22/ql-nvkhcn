@@ -1,0 +1,150 @@
+@if (!selectedDefinition()) {
+  <nz-empty nzNotFoundContent="Chưa có cấu hình service task để kiểm thử."></nz-empty>
+} @else {
+  @let definition = selectedDefinition()!;
+  @let defMeta = statusMeta[definition.status];
+  @let version = selectedVersion();
+
+  <div nz-row [nzGutter]="[12, 12]">
+    <div nz-col [nzXs]="24" [nzXl]="8">
+      <div class="sttp-card">
+        <div class="sttp-card-header">
+          <span class="sttp-card-title">Mẫu kiểm thử</span>
+          <button nz-button (click)="resetSamples()">
+            <span nz-icon nzType="reload"></span>
+            Reset
+          </button>
+        </div>
+
+        <div class="sttp-field">
+          <nz-select
+            nzShowSearch
+            class="sttp-block"
+            [ngModel]="definition.id"
+            (ngModelChange)="selectDefinition($event)"
+          >
+            @for (opt of definitionOptions(); track opt.value) {
+              <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+            }
+          </nz-select>
+        </div>
+        <div class="sttp-field">
+          <nz-select class="sttp-block" [ngModel]="selectedVersionNo()" (ngModelChange)="selectVersion($event)">
+            @for (opt of versionOptions(); track opt.value) {
+              <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+            }
+          </nz-select>
+        </div>
+        <div class="sttp-field">
+          <nz-select class="sttp-block" [ngModel]="selectedProcessKey()" (ngModelChange)="selectProcess($event)">
+            @for (opt of processOptions; track opt.value) {
+              <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+            }
+          </nz-select>
+        </div>
+
+        <nz-descriptions nzBordered [nzColumn]="1" nzSize="small" class="sttp-field">
+          <nz-descriptions-item nzTitle="Definition">
+            <strong>{{ definition.code }}</strong>
+            <nz-tag [nzColor]="defMeta.color">{{ defMeta.label }}</nz-tag>
+            <nz-tag>{{ definition.typeCode }}</nz-tag>
+          </nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Version">
+            @if (version) {
+              <nz-tag [nzColor]="version.status === 'ACTIVE' ? 'green' : 'blue'">v{{ version.versionNo }}</nz-tag>
+              <nz-tag>{{ version.status }}</nz-tag>
+            } @else {
+              <span nz-typography nzType="secondary">Chưa có version</span>
+            }
+          </nz-descriptions-item>
+        </nz-descriptions>
+
+        <nz-divider></nz-divider>
+
+        <div class="sttp-field">
+          <span class="sttp-json-label">Variables JSON</span>
+          <textarea nz-input rows="8" class="sttp-mono" spellcheck="false" [ngModel]="variablesJson()" (ngModelChange)="variablesJson.set($event)"></textarea>
+        </div>
+        <div class="sttp-field">
+          <span class="sttp-json-label">Dossier JSON</span>
+          <textarea nz-input rows="8" class="sttp-mono" spellcheck="false" [ngModel]="dossierJson()" (ngModelChange)="dossierJson.set($event)"></textarea>
+        </div>
+        <div class="sttp-field">
+          <span class="sttp-json-label">User/org context JSON</span>
+          <textarea nz-input rows="10" class="sttp-mono" spellcheck="false" [ngModel]="userContextJson()" (ngModelChange)="userContextJson.set($event)"></textarea>
+        </div>
+
+        <button nz-button nzType="primary" nzBlock class="sttp-field" [disabled]="!version" (click)="runPreview()">
+          <span nz-icon nzType="play-circle"></span>
+          Chạy preview
+        </button>
+      </div>
+    </div>
+
+    <div nz-col [nzXs]="24" [nzXl]="16">
+      <div class="sttp-card">
+        <span class="sttp-card-title">Kết quả preview</span>
+        <nz-tabs nzSize="small">
+          <nz-tab nzTitle="Input sau mapping">
+            @if (result(); as r) {
+              <pre class="sttp-json-block">{{ pretty(r.resolvedInput) }}</pre>
+            } @else {
+              <nz-empty></nz-empty>
+            }
+          </nz-tab>
+          <nz-tab nzTitle="Payload">
+            @if (result(); as r) {
+              <pre class="sttp-json-block">{{ pretty(r.payload) }}</pre>
+            } @else {
+              <nz-empty></nz-empty>
+            }
+          </nz-tab>
+          <nz-tab nzTitle="Response giả lập">
+            @if (result(); as r) {
+              <pre class="sttp-json-block">{{ pretty(r.simulatedResponse) }}</pre>
+            } @else {
+              <nz-empty></nz-empty>
+            }
+          </nz-tab>
+          <nz-tab nzTitle="Output mapping">
+            @if (result(); as r) {
+              <pre class="sttp-json-block">{{ pretty(r.mappedOutput) }}</pre>
+            } @else {
+              <nz-empty></nz-empty>
+            }
+          </nz-tab>
+          <nz-tab nzTitle="Validation">
+            @if (jsonError(); as err) {
+              <nz-alert nzType="error" nzShowIcon nzMessage="Sample JSON chưa hợp lệ" [nzDescription]="err"></nz-alert>
+            } @else if (result(); as r) {
+              <div class="sttp-validation">
+                <nz-alert
+                  [nzType]="r.valid ? 'success' : 'error'"
+                  nzShowIcon
+                  [nzMessage]="r.valid ? 'Preview hợp lệ' : 'Preview có lỗi validation'"
+                  [nzDescription]="r.valid
+                    ? 'Input mapping, payload giả lập và output mapping đều sẵn sàng để kiểm tra.'
+                    : 'Cấu hình chưa được phép xem như hợp lệ; kiểm tra danh sách lỗi bên dưới.'"
+                ></nz-alert>
+                @if (r.errors.length) {
+                  <span class="sttp-validation-title">Lỗi</span>
+                  @for (error of r.errors; track error) {
+                    <nz-alert nzType="error" nzShowIcon [nzMessage]="error"></nz-alert>
+                  }
+                }
+                @if (r.warnings.length) {
+                  <span class="sttp-validation-title">Cảnh báo</span>
+                  @for (warning of r.warnings; track warning) {
+                    <nz-alert nzType="warning" nzShowIcon [nzMessage]="warning"></nz-alert>
+                  }
+                }
+              </div>
+            } @else {
+              <nz-empty nzNotFoundContent="Chưa chạy preview."></nz-empty>
+            }
+          </nz-tab>
+        </nz-tabs>
+      </div>
+    </div>
+  </div>
+}

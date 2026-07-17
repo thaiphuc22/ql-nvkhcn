@@ -1,0 +1,68 @@
+.sttp-card {
+  background: var(--vht-surface);
+  border: 1px solid var(--vht-border);
+  border-radius: var(--vht-radius);
+  padding: 14px;
+  height: 100%;
+}
+
+.sttp-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.sttp-card-title {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.sttp-field {
+  margin-top: 12px;
+
+  &:first-of-type {
+    margin-top: 0;
+  }
+}
+
+.sttp-block {
+  width: 100%;
+}
+
+.sttp-json-label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.sttp-mono {
+  font-family: 'Fira Code', ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 12px;
+}
+
+.sttp-json-block {
+  margin: 0;
+  padding: 12px;
+  min-height: 220px;
+  max-height: 420px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--vht-surface-2, #f6f8fa);
+  border: 1px solid var(--vht-border);
+  border-radius: 6px;
+  font-family: 'Fira Code', ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 12px;
+}
+
+.sttp-validation {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sttp-validation-title {
+  font-weight: 600;
+}

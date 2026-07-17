@@ -18,6 +18,8 @@
   margin-bottom: 0;
 }
 
+.hsl-header-actions { display: flex; gap: 8px; }
+
 .hsl-stats {
   margin: 0;
 }
@@ -60,3 +62,6 @@
   color: var(--vht-ink-2);
   font-size: 12px;
 }
+
+.hsl-row { cursor: pointer; }
+.hsl-row:hover td { background: #f5f9ff !important; }

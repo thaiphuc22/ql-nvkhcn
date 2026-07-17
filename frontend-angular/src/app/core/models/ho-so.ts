@@ -31,7 +31,7 @@ export const CAP_LABEL: Record<Cap, string> = {
   TD: 'Tập đoàn',
 };
 
-export type StepStatus = 'PENDING' | 'CURRENT' | 'DONE' | 'SKIPPED';
+export type StepStatus = 'PENDING' | 'CURRENT' | 'DONE' | 'REJECTED' | 'SKIPPED';
 
 export interface DossierStepResponse {
   buocIndex: number;
@@ -59,10 +59,38 @@ export interface HoSoResponse {
   buocHienTai: number;
   zeebeProcessInstanceKey: number | null;
   steps: DossierStepResponse[];
+  taiLieu: CreateHoSoDocument[];
   maDeTai: string;
   tenDeTai: string;
   chuNhiem: string;
   donVi: string;
+  thoiGianThucHien: string | null;
   duToan: string;
   cap: Cap;
+}
+
+export interface CreateHoSoDocument {
+  ten: string;
+  loai: 'PDF' | 'Excel' | 'Archive';
+}
+
+export interface CreateHoSoRequest {
+  maNV: string;
+  loai: HoSoLoai;
+  nguoiKhoiTao: string;
+  ngayTao: string;
+  taiLieu: CreateHoSoDocument[];
+}
+
+export interface SubmitHoSoRequest {
+  quyTrinh: string;
+  quyTrinhTen: string;
+}
+
+export type HoSoActionOutcome = 'APPROVE_STEP' | 'RETURN_STEP' | 'REJECT_STEP';
+
+export interface HoSoActionRequest {
+  outcome: HoSoActionOutcome;
+  actor: string;
+  yKien: string | null;
 }

@@ -1,0 +1,64 @@
+.fl-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.fl-header-icon {
+  font-size: 22px;
+  color: var(--vht-red);
+  margin-right: 8px;
+}
+
+.fl-stats {
+  margin-bottom: 16px;
+}
+
+.fl-stat-card {
+  padding: 12px 16px;
+  border: 1px solid var(--vht-border);
+  border-radius: var(--vht-radius);
+  background: #fff;
+}
+
+.fl-stat-value {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.fl-stat-label {
+  color: var(--vht-ink-2);
+  font-size: 13px;
+}
+
+.fl-card {
+  border: 1px solid var(--vht-border);
+  border-radius: var(--vht-radius);
+  background: #fff;
+  padding: 12px;
+}
+
+.fl-form-name {
+  font-weight: 600;
+}
+
+.fl-form-desc {
+  color: var(--vht-ink-3);
+  font-size: 12px;
+}
+
+.fl-form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  label {
+    margin-top: 8px;
+    font-weight: 500;
+  }
+}
+
+.fl-required {
+  color: #ff4d4f;
+}

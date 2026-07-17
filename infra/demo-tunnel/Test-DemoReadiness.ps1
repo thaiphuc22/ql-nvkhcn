@@ -34,9 +34,27 @@ if (-not $SkipHttp) {
         $failures.Add('QTKHCN_CORS_ALLOWED_ORIGINS must include the current HTTPS Runlocal origin.')
     }
     else {
+        $publicOrigins = @($env:QTKHCN_CORS_ALLOWED_ORIGINS.Split(',') | ForEach-Object { $_.Trim() } |
+            Where-Object { $_ -match '^https://[^/]+\.runlocal\.eu$' })
+        if ($publicOrigins.Count -ne 1) {
+            $failures.Add('QTKHCN_CORS_ALLOWED_ORIGINS must contain exactly one HTTPS *.runlocal.eu origin.')
+        }
+        $publicOrigin = $publicOrigins | Select-Object -First 1
         try {
-            $headers = @{ 'X-QTKHCN-Dev-Key' = $env:QTKHCN_DEV_API_KEY }
-            Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1:8090/api/ho-so' -Headers $headers -TimeoutSec 10 | Out-Null
+            if ($publicOrigin) {
+                $response = Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1:8090/api/ho-so' `
+                    -Headers @{ 'X-QTKHCN-Dev-Key' = $env:QTKHCN_DEV_API_KEY; Origin = $publicOrigin } -TimeoutSec 10
+                $preflight = Invoke-WebRequest -UseBasicParsing -Method Options -Uri 'http://127.0.0.1:8090/api/ho-so' `
+                    -Headers @{
+                        Origin = $publicOrigin
+                        'Access-Control-Request-Method' = 'GET'
+                        'Access-Control-Request-Headers' = 'x-qtkhcn-dev-key'
+                    } -TimeoutSec 10
+                if ($response.Headers['Access-Control-Allow-Origin'] -ne $publicOrigin -or
+                    $preflight.Headers['Access-Control-Allow-Origin'] -ne $publicOrigin) {
+                    $failures.Add("Backend CORS response does not allow $publicOrigin.")
+                }
+            }
         }
         catch {
             $failures.Add("Backend smoke test failed: $($_.Exception.Message)")

@@ -1,0 +1,184 @@
+.stc-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.stc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  h2 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+.stc-header-icon {
+  color: var(--vht-red, #cf1322);
+  font-size: 24px;
+}
+
+.stc-stats {
+  margin: 0;
+}
+
+.stc-stat-card {
+  background: var(--vht-surface);
+  border: 1px solid var(--vht-border);
+  border-radius: var(--vht-radius);
+  padding: 14px 16px;
+}
+
+.stc-stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.stc-stat-suffix {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--vht-ink-2);
+}
+
+.stc-stat-label {
+  color: var(--vht-ink-2);
+  font-size: 12px;
+}
+
+.stc-card {
+  background: var(--vht-surface);
+  border: 1px solid var(--vht-border);
+  border-radius: var(--vht-radius);
+  padding: 14px;
+}
+
+.stc-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.stc-card-title {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.stc-mb {
+  margin-bottom: 0;
+}
+
+.stc-mt {
+  margin-top: 12px;
+}
+
+.stc-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.stc-filter-select {
+  width: 160px;
+}
+
+.stc-filter-select-wide {
+  width: 260px;
+}
+
+.stc-filter-total {
+  color: var(--vht-ink-2);
+  font-size: 12px;
+  margin-left: auto;
+}
+
+.stc-code-cell,
+.stc-name-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stc-muted {
+  color: var(--vht-ink-2);
+  font-size: 12px;
+}
+
+.stc-danger {
+  color: var(--vht-danger, #cf1322);
+}
+
+.stc-success-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stc-progress {
+  width: 56px;
+}
+
+.stc-type-group {
+  margin-bottom: 12px;
+}
+
+.stc-type-group-label {
+  display: block;
+  color: var(--vht-ink-2);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.stc-type-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--vht-border);
+}
+
+.stc-type-icon {
+  font-size: 18px;
+  opacity: 0.55;
+  flex-shrink: 0;
+}
+
+.stc-type-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.stc-type-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.stc-type-desc {
+  font-size: 11px;
+  color: var(--vht-ink-2);
+}
+
+.stc-activity-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--vht-border);
+}
+
+.stc-activity-text {
+  flex: 1;
+  font-size: 12px;
+}

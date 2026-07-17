@@ -1,0 +1,139 @@
+<nz-drawer
+  [nzVisible]="open()"
+  [nzTitle]="log() ? 'Execution log ' + log()!.processInstanceKey : 'Execution log'"
+  [nzWidth]="760"
+  (nzOnClose)="close()"
+>
+  <ng-container *nzDrawerContent>
+    @if (!log() || !currentStatusMeta()) {
+      <nz-empty nzNotFoundContent="Chưa chọn execution log."></nz-empty>
+    } @else {
+      @let l = log()!;
+      @let meta = currentStatusMeta()!;
+      @let def = definition();
+      @let ver = version();
+
+      <div class="stxd-toolbar">
+        <button nz-button [disabled]="l.status !== 'FAILED'" (click)="onRetry()">
+          <span nz-icon nzType="retweet"></span>
+          Retry
+        </button>
+        <button nz-button [disabled]="l.status !== 'FAILED' && l.status !== 'RETRYING'" (click)="openManualResolve()">
+          <span nz-icon nzType="tool"></span>
+          Manual resolve
+        </button>
+      </div>
+
+      <div class="stxd-body">
+        <nz-alert
+          [nzType]="l.status === 'FAILED' ? 'error' : l.status === 'SUCCESS' ? 'success' : 'info'"
+          nzShowIcon
+          [nzMessage]="alertMessage"
+          [nzDescription]="l.processCode + ' v' + l.processVersion + ' / ' + l.taskDefinitionKey"
+        ></nz-alert>
+        <ng-template #alertMessage>
+          <strong>{{ l.taskName }}</strong>
+          <nz-tag [nzColor]="meta.color">{{ meta.label }}</nz-tag>
+          @if (l.incidentId) {
+            <nz-tag nzColor="error">{{ l.incidentId }}</nz-tag>
+          }
+        </ng-template>
+
+        <nz-descriptions nzBordered [nzColumn]="1" nzSize="small">
+          <nz-descriptions-item nzTitle="Instance key">{{ l.processInstanceKey }}</nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Definition">
+            @if (def) {
+              <strong>{{ def.name }}</strong>
+              <nz-tag>{{ def.code }}</nz-tag>
+              <nz-tag>{{ def.typeCode }}</nz-tag>
+            } @else {
+              <span nz-typography nzType="secondary">Không tìm thấy definition</span>
+            }
+          </nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Config version">
+            @if (ver) {
+              <nz-tag [nzColor]="ver.status === 'ACTIVE' ? 'green' : 'blue'">v{{ ver.versionNo }}</nz-tag>
+              <nz-tag>{{ ver.status }}</nz-tag>
+              <span nz-typography nzType="secondary">{{ ver.changeNote }}</span>
+            } @else {
+              <nz-tag>v{{ l.configVersionNo }}</nz-tag>
+            }
+          </nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Thời gian">
+            {{ l.startedAt }} -&gt; {{ l.finishedAt ?? 'đang xử lý' }} ({{ formatDuration(l.durationMs) }})
+          </nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Worker">{{ l.actor ?? '-' }}</nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Error">
+            @if (l.errorCode) {
+              <nz-tag nzColor="error">{{ l.errorCode }}</nz-tag>
+              <div>{{ l.errorMessage }}</div>
+            } @else {
+              <span nz-typography nzType="secondary">Không có lỗi.</span>
+            }
+          </nz-descriptions-item>
+        </nz-descriptions>
+
+        <nz-descriptions nzBordered [nzColumn]="1" nzSize="small">
+          <nz-descriptions-item nzTitle="Error policy áp dụng">
+            @if (ver) {
+              <nz-tag>timeout {{ ver.errorPolicy.timeoutMs }} ms</nz-tag>
+              <nz-tag>retry {{ ver.errorPolicy.maxRetry }}</nz-tag>
+              <nz-tag>delay {{ ver.errorPolicy.retryDelayMs }} ms</nz-tag>
+              <nz-tag>{{ ver.errorPolicy.retryBackoff }}</nz-tag>
+              <nz-tag>{{ ver.errorPolicy.onFailure }}</nz-tag>
+            } @else {
+              <span nz-typography nzType="secondary">Không có snapshot policy trong mock log.</span>
+            }
+          </nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Liên kết mock">
+            <nz-tag nzColor="blue">Process {{ l.processCode }}</nz-tag>
+            <nz-tag nzColor="purple">Job {{ l.taskDefinitionKey }}</nz-tag>
+            @if (l.incidentId) {
+              <nz-tag nzColor="red">Incident {{ l.incidentId }}</nz-tag>
+            }
+          </nz-descriptions-item>
+        </nz-descriptions>
+
+        <div class="stxd-section">
+          <span class="stxd-section-title">Request summary masked</span>
+          <pre class="stxd-json-block">{{ prettyRequest() }}</pre>
+        </div>
+
+        <div class="stxd-section">
+          <span class="stxd-section-title">Response summary masked</span>
+          <pre class="stxd-json-block">{{ prettyResponse() }}</pre>
+        </div>
+
+        <div class="stxd-section">
+          <span class="stxd-section-title">Timeline attempt</span>
+          <nz-timeline>
+            @for (item of timelineItems(); track item.attempt) {
+              <nz-timeline-item [nzColor]="item.color">
+                <span nz-icon [nzType]="item.icon"></span>
+                <strong>Attempt {{ item.attempt }}</strong>
+                <div class="stxd-timeline-time">{{ item.timeText }}</div>
+                @if (item.errorMessage) {
+                  <div class="stxd-timeline-error">{{ item.errorMessage }}</div>
+                }
+              </nz-timeline-item>
+            }
+          </nz-timeline>
+        </div>
+      </div>
+    }
+  </ng-container>
+</nz-drawer>
+
+<nz-modal
+  [nzVisible]="manualResolveOpen()"
+  nzTitle="Xử lý thủ công service task?"
+  (nzOnCancel)="closeManualResolve()"
+  (nzOnOk)="confirmManualResolve()"
+  nzOkText="Xử lý thủ công"
+  nzCancelText="Hủy"
+>
+  <ng-container *nzModalContent>
+    <p>Ghi chú sẽ được lưu vào execution log mock và audit in-memory.</p>
+    <textarea nz-input rows="4" placeholder="Nhập lý do xử lý tay" [ngModel]="manualNote()" (ngModelChange)="manualNote.set($event)"></textarea>
+  </ng-container>
+</nz-modal>

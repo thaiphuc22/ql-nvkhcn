@@ -36,6 +36,9 @@
               "node_modules/bpmn-js/dist/assets/bpmn-js.css",
               "node_modules/bpmn-js/dist/assets/bpmn-font/css/bpmn.css",
               "node_modules/@bpmn-io/properties-panel/dist/assets/properties-panel.css",
+              "node_modules/@bpmn-io/form-js/dist/assets/form-js.css",
+              "node_modules/@bpmn-io/form-js/dist/assets/form-js-editor.css",
+              "node_modules/@bpmn-io/form-js/dist/assets/properties-panel.css",
               "src/styles.scss"
             ]
           },
@@ -44,7 +47,7 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "2.2MB",
+                  "maximumWarning": "2.5MB",
                   "maximumError": "2.8MB"
                 },
                 {

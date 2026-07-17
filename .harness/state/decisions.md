@@ -165,6 +165,29 @@ click-through trình duyệt (Playwright chưa cài) — kiểm chứng runtime 
 
 ---
 
+## D18 — Tách Service Quản lý NV KHCN & Hồ sơ khỏi Service Quản trị quy trình
+
+**Date**: 2026-07-16
+**Decision**: `NhiemVu`, `HoSo`, tài liệu, phiên bản và trạng thái nghiệp vụ thuộc một service Quản
+lý NV KHCN & Hồ sơ riêng. Service Quản trị quy trình sở hữu BPMN/DMN/eForm/action policy, Camunda,
+process instance/task/incident. Khi gửi hồ sơ, service Hồ sơ phát lệnh start idempotent chỉ chứa
+định danh/correlation và control variables tối thiểu; không sao chép toàn bộ hồ sơ sang service Quy
+trình hoặc Camunda. Tích hợp ghi dùng transactional outbox + inbox/idempotency, không dùng
+distributed transaction hoặc dual-write. Workflow events cập nhật projection trạng thái về service
+Hồ sơ.
+
+**Rationale**: Giữ một nguồn chuẩn cho business data theo D3/D8, tránh coupling schema hồ sơ vào
+Camunda, cho phép hai bounded context phát triển/deploy độc lập và xử lý timeout/retry mà không tạo
+trùng process instance.
+
+**Source**: User architecture discussion 2026-07-16. Kế hoạch triển khai:
+`docs/arch/nvkhcn-ho-so-service-extraction-plan.md`.
+
+**Status**: LOCKED (service boundary and integration principles). Tên service, topology database,
+service authentication và transport ban đầu được chốt ở Lát 0 trước khi scaffold.
+
+---
+
 ## Open decisions blocking Foundation 1 (Project Scaffold)
 
 **RESOLVED 2026-07-15** — backend language/framework (D14), domain database engine (D15), and the Camunda 8 *dev-environment* deployment model (D16) are now locked above. Foundation 1 is unblocked for scaffold work; see `DELIVERY_STATE.md`.

@@ -1,0 +1,233 @@
+<nz-drawer
+  [nzVisible]="open()"
+  [nzTitle]="definition() ? 'Sửa cấu hình Service Task' : 'Tạo cấu hình Service Task'"
+  [nzWidth]="920"
+  [nzFooter]="stfdFooter"
+  (nzOnClose)="close()"
+>
+  <ng-container *nzDrawerContent>
+    <nz-tabs>
+      <nz-tab nzTitle="Tổng quan">
+        <div nz-row [nzGutter]="12">
+          <div nz-col [nzSpan]="10">
+            <label class="stfd-label">Mã <span class="stfd-required">*</span></label>
+            <input nz-input placeholder="SYNC_SAP_BUDGET" [ngModel]="code()" (ngModelChange)="code.set($event)" />
+          </div>
+          <div nz-col [nzSpan]="14">
+            <label class="stfd-label">Tên <span class="stfd-required">*</span></label>
+            <input nz-input placeholder="Đồng bộ dự toán sang SAP" [ngModel]="name()" (ngModelChange)="name.set($event)" />
+          </div>
+          <div nz-col [nzSpan]="24" class="stfd-field">
+            <label class="stfd-label">Mô tả</label>
+            <textarea nz-input rows="3" [ngModel]="description()" (ngModelChange)="description.set($event)"></textarea>
+          </div>
+          <div nz-col [nzSpan]="12" class="stfd-field">
+            <label class="stfd-label">Loại <span class="stfd-required">*</span></label>
+            <nz-select
+              class="stfd-block"
+              [ngModel]="typeCode()"
+              (ngModelChange)="typeCode.set($event)"
+              [nzDisabled]="!!definition()"
+            >
+              @for (t of types(); track t.code) {
+                <nz-option [nzLabel]="t.name + ' (' + t.code + ')'" [nzValue]="t.code"></nz-option>
+              }
+            </nz-select>
+          </div>
+          <div nz-col [nzSpan]="12" class="stfd-field">
+            <label class="stfd-label">Module sở hữu <span class="stfd-required">*</span></label>
+            <input nz-input placeholder="Workflow Platform" [ngModel]="ownerModule()" (ngModelChange)="ownerModule.set($event)" />
+          </div>
+          <div nz-col [nzSpan]="24" class="stfd-field">
+            <label class="stfd-label">Tags</label>
+            <nz-select nzMode="tags" class="stfd-block" [ngModel]="tags()" (ngModelChange)="tags.set($event)"></nz-select>
+          </div>
+        </div>
+      </nz-tab>
+
+      <nz-tab nzTitle="Cấu hình thực thi">
+        <span nz-typography nzType="secondary" class="stfd-hint">
+          Không hỗ trợ script tùy ý; chỉ chọn executor và tham số đã kiểm soát.
+        </span>
+
+        @switch (typeCode()) {
+          @case ('CALL_API') {
+            <div nz-row [nzGutter]="12">
+              <div nz-col [nzSpan]="12">
+                <label class="stfd-label">Connector <span class="stfd-required">*</span></label>
+                <nz-select nzShowSearch class="stfd-block" [ngModel]="connectorKey()" (ngModelChange)="connectorKey.set($event)">
+                  @for (opt of connectorOptions; track opt.value) {
+                    <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+                  }
+                </nz-select>
+              </div>
+              <div nz-col [nzSpan]="12">
+                <label class="stfd-label">Mapping active <span class="stfd-required">*</span></label>
+                <nz-select nzShowSearch class="stfd-block" [ngModel]="mappingConfigId()" (ngModelChange)="mappingConfigId.set($event)">
+                  @for (opt of mappingOptions(); track opt.value) {
+                    <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+                  }
+                </nz-select>
+              </div>
+              <div nz-col [nzSpan]="12" class="stfd-field">
+                <label class="stfd-label">Endpoint/action <span class="stfd-required">*</span></label>
+                <input nz-input placeholder="budget/sync" [ngModel]="endpointAction()" (ngModelChange)="endpointAction.set($event)" />
+              </div>
+              <div nz-col [nzSpan]="12" class="stfd-field">
+                <label class="stfd-label">Method <span class="stfd-required">*</span></label>
+                <nz-select class="stfd-block" [ngModel]="method()" (ngModelChange)="method.set($event)">
+                  @for (opt of methodOptions; track opt.value) {
+                    <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+                  }
+                </nz-select>
+              </div>
+              <div nz-col [nzSpan]="24" class="stfd-field">
+                <label class="stfd-label">Idempotency key</label>
+                <input nz-input placeholder="${dossier.id}-${variables.configVersion}" [ngModel]="idempotencyKeyExpression()" (ngModelChange)="idempotencyKeyExpression.set($event)" />
+              </div>
+            </div>
+          }
+          @case ('UPDATE_DOSSIER') {
+            <div nz-row [nzGutter]="12">
+              <div nz-col [nzSpan]="24">
+                <label class="stfd-label">Field hồ sơ được phép cập nhật <span class="stfd-required">*</span></label>
+                <nz-select nzMode="multiple" class="stfd-block" [ngModel]="allowedFields()" (ngModelChange)="allowedFields.set($event)">
+                  @for (opt of dossierFieldOptions; track opt.value) {
+                    <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+                  }
+                </nz-select>
+              </div>
+              <div nz-col [nzSpan]="10" class="stfd-field">
+                <label class="stfd-label">Field cập nhật <span class="stfd-required">*</span></label>
+                <nz-select class="stfd-block" [ngModel]="updateField()" (ngModelChange)="updateField.set($event)">
+                  @for (opt of dossierFieldOptions; track opt.value) {
+                    <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+                  }
+                </nz-select>
+              </div>
+              <div nz-col [nzSpan]="14" class="stfd-field">
+                <label class="stfd-label">Giá trị <span class="stfd-required">*</span></label>
+                <input nz-input placeholder="${variables.nextDossierStatus}" [ngModel]="updateValueExpression()" (ngModelChange)="updateValueExpression.set($event)" />
+              </div>
+            </div>
+          }
+          @case ('GENERATE_DOCUMENT') {
+            <div nz-row [nzGutter]="12">
+              <div nz-col [nzSpan]="12">
+                <label class="stfd-label">Template tài liệu <span class="stfd-required">*</span></label>
+                <input nz-input placeholder="qd-cong-nhan" [ngModel]="templateCode()" (ngModelChange)="templateCode.set($event)" />
+              </div>
+              <div nz-col [nzSpan]="12">
+                <label class="stfd-label">Thư mục xuất</label>
+                <input nz-input placeholder="dossier/${dossier.id}/documents" [ngModel]="outputFolderExpression()" (ngModelChange)="outputFolderExpression.set($event)" />
+              </div>
+              <div nz-col [nzSpan]="24" class="stfd-field">
+                <label class="stfd-label">Gắn vào hồ sơ</label>
+                <div>
+                  <nz-switch [ngModel]="attachToDossier()" (ngModelChange)="attachToDossier.set($event)"></nz-switch>
+                </div>
+              </div>
+            </div>
+          }
+          @case ('EVALUATE_DECISION') {
+            <div nz-row [nzGutter]="12">
+              <div nz-col [nzSpan]="10">
+                <label class="stfd-label">Mã decision <span class="stfd-required">*</span></label>
+                <input nz-input placeholder="rd02-routing" [ngModel]="decisionCode()" (ngModelChange)="decisionCode.set($event)" />
+              </div>
+              <div nz-col [nzSpan]="6">
+                <label class="stfd-label">Version</label>
+                <input nz-input placeholder="1.0" [ngModel]="decisionVersion()" (ngModelChange)="decisionVersion.set($event)" />
+              </div>
+              <div nz-col [nzSpan]="8">
+                <label class="stfd-label">Biến kết quả <span class="stfd-required">*</span></label>
+                <input nz-input placeholder="rd02RoutingDecision" [ngModel]="resultVariable()" (ngModelChange)="resultVariable.set($event)" />
+              </div>
+            </div>
+          }
+          @default {
+            <div nz-row [nzGutter]="12">
+              <div nz-col [nzSpan]="12">
+                <label class="stfd-label">Template thông báo <span class="stfd-required">*</span></label>
+                <input nz-input placeholder="tpl-dossier-approved" [ngModel]="templateCode()" (ngModelChange)="templateCode.set($event)" />
+              </div>
+              <div nz-col [nzSpan]="12">
+                <label class="stfd-label">Kênh gửi <span class="stfd-required">*</span></label>
+                <nz-select nzMode="multiple" class="stfd-block" [ngModel]="channels()" (ngModelChange)="channels.set($event)">
+                  @for (opt of channelOptions; track opt.value) {
+                    <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+                  }
+                </nz-select>
+              </div>
+              <div nz-col [nzSpan]="12" class="stfd-field">
+                <label class="stfd-label">Người nhận <span class="stfd-required">*</span></label>
+                <input nz-input placeholder="${initiator.email}" [ngModel]="recipientExpression()" (ngModelChange)="recipientExpression.set($event)" />
+              </div>
+              <div nz-col [nzSpan]="12" class="stfd-field">
+                <label class="stfd-label">Tiêu đề</label>
+                <input nz-input placeholder="Hồ sơ ${dossier.id} đã được phê duyệt" [ngModel]="subjectExpression()" (ngModelChange)="subjectExpression.set($event)" />
+              </div>
+            </div>
+          }
+        }
+      </nz-tab>
+
+      <nz-tab nzTitle="Input mapping">
+        <app-service-task-mapping-editor mode="input" [value]="inputMapping()" (valueChange)="inputMapping.set($any($event))"></app-service-task-mapping-editor>
+      </nz-tab>
+
+      <nz-tab nzTitle="Output mapping">
+        <app-service-task-mapping-editor mode="output" [value]="outputMapping()" (valueChange)="outputMapping.set($any($event))"></app-service-task-mapping-editor>
+      </nz-tab>
+
+      <nz-tab nzTitle="Chính sách lỗi">
+        <div nz-row [nzGutter]="12">
+          <div nz-col [nzSpan]="8">
+            <label class="stfd-label">Timeout (ms) <span class="stfd-required">*</span></label>
+            <nz-input-number class="stfd-block" [nzMin]="1" [ngModel]="timeoutMs()" (ngModelChange)="timeoutMs.set($event ?? 1)"></nz-input-number>
+          </div>
+          <div nz-col [nzSpan]="8">
+            <label class="stfd-label">Số lần retry <span class="stfd-required">*</span></label>
+            <nz-input-number class="stfd-block" [nzMin]="0" [ngModel]="maxRetry()" (ngModelChange)="maxRetry.set($event ?? 0)"></nz-input-number>
+          </div>
+          <div nz-col [nzSpan]="8">
+            <label class="stfd-label">Delay retry (ms) <span class="stfd-required">*</span></label>
+            <nz-input-number class="stfd-block" [nzMin]="0" [ngModel]="retryDelayMs()" (ngModelChange)="retryDelayMs.set($event ?? 0)"></nz-input-number>
+          </div>
+          <div nz-col [nzSpan]="8" class="stfd-field">
+            <label class="stfd-label">Backoff <span class="stfd-required">*</span></label>
+            <nz-select class="stfd-block" [ngModel]="retryBackoff()" (ngModelChange)="retryBackoff.set($event)">
+              @for (opt of retryBackoffOptions; track opt.value) {
+                <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+              }
+            </nz-select>
+          </div>
+          <div nz-col [nzSpan]="8" class="stfd-field">
+            <label class="stfd-label">Khi lỗi <span class="stfd-required">*</span></label>
+            <nz-select class="stfd-block" [ngModel]="onFailure()" (ngModelChange)="onFailure.set($event)">
+              @for (opt of onFailureOptions; track opt.value) {
+                <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+              }
+            </nz-select>
+          </div>
+          <div nz-col [nzSpan]="8" class="stfd-field">
+            <label class="stfd-label">Vai trò nhận cảnh báo</label>
+            <nz-select nzMode="tags" class="stfd-block" [ngModel]="notifyRoles()" (ngModelChange)="notifyRoles.set($event)"></nz-select>
+          </div>
+          <div nz-col [nzSpan]="24" class="stfd-field">
+            <label class="stfd-label">Ghi chú thay đổi</label>
+            <textarea nz-input rows="2" [ngModel]="changeNote()" (ngModelChange)="changeNote.set($event)"></textarea>
+          </div>
+        </div>
+      </nz-tab>
+    </nz-tabs>
+  </ng-container>
+</nz-drawer>
+
+<ng-template #stfdFooter>
+  <button nz-button (click)="close()">Hủy</button>
+  <button nz-button nzType="primary" (click)="submit()">
+    <span nz-icon nzType="save"></span>
+    Lưu nháp
+  </button>
+</ng-template>

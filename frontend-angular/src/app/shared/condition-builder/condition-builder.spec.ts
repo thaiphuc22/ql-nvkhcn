@@ -1,9 +1,15 @@
 import { TestBed } from '@angular/core/testing';
+import { NzIconService } from 'ng-zorro-antd/icon';
 
 import { anyCondition, group, leaf, type ConditionGroup } from '../../core/models/approval-conditions';
+import { APPROVAL_MATRIX_ICONS, NAV_ICONS } from '../../core/icons-provider';
 import { ConditionBuilderComponent } from './condition-builder';
 
 describe('ConditionBuilderComponent', () => {
+  beforeEach(() => {
+    TestBed.inject(NzIconService).addIcon(...NAV_ICONS, ...APPROVAL_MATRIX_ICONS);
+  });
+
   function create(value: ConditionGroup) {
     const fixture = TestBed.createComponent(ConditionBuilderComponent);
     fixture.componentRef.setInput('value', value);

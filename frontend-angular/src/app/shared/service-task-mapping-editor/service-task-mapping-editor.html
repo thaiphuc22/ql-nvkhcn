@@ -1,0 +1,117 @@
+@if (mode() === 'input') {
+  <div class="stme-wrap">
+    <span nz-typography nzType="secondary">
+      Chỉ dùng expression dạng {{ '${variables.xxx}' }}, {{ '${dossier.xxx}' }}, {{ '${initiator.xxx}' }}.
+    </span>
+    <nz-table
+      #inputTable
+      nzSize="small"
+      [nzData]="inputRows"
+      [nzShowPagination]="false"
+      [nzScroll]="{ x: '900px' }"
+    >
+      <thead>
+        <tr>
+          <th nzWidth="160px">Đích</th>
+          <th nzWidth="280px">Expression</th>
+          <th nzWidth="160px">Nguồn</th>
+          <th nzWidth="100px" nzAlign="center">Bắt buộc</th>
+          <th nzWidth="240px">Mô tả</th>
+          <th nzWidth="56px"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of inputTable.data; track row.id) {
+          <tr>
+            <td>
+              <input nz-input placeholder="maHoSo" [ngModel]="row.target" (ngModelChange)="updateInput(row.id, { target: $event })" />
+            </td>
+            <td>
+              <input nz-input placeholder="${dossier.id}" [ngModel]="row.expression" (ngModelChange)="updateInput(row.id, { expression: $event })" />
+            </td>
+            <td>
+              <nz-select [ngModel]="row.source" style="width: 100%" (ngModelChange)="updateInput(row.id, { source: $event })">
+                @for (opt of inputSourceOptions; track opt.value) {
+                  <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+                }
+              </nz-select>
+            </td>
+            <td nzAlign="center">
+              <label nz-checkbox [ngModel]="row.required" (ngModelChange)="updateInput(row.id, { required: $event })"></label>
+            </td>
+            <td>
+              <input nz-input [ngModel]="row.description" (ngModelChange)="updateInput(row.id, { description: $event })" />
+            </td>
+            <td>
+              <button nz-button nzType="text" aria-label="Xóa mapping" (click)="removeInput(row.id)">
+                <span nz-icon nzType="delete"></span>
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+    <button nz-button (click)="addInput()">
+      <span nz-icon nzType="plus"></span>
+      Thêm input
+    </button>
+  </div>
+} @else {
+  <div class="stme-wrap">
+    <span nz-typography nzType="secondary">
+      Output chỉ ghi về biến quy trình, field hồ sơ whitelist hoặc metadata thực thi.
+    </span>
+    <nz-table
+      #outputTable
+      nzSize="small"
+      [nzData]="outputRows"
+      [nzShowPagination]="false"
+      [nzScroll]="{ x: '900px' }"
+    >
+      <thead>
+        <tr>
+          <th nzWidth="220px">Nguồn response</th>
+          <th nzWidth="180px">Đích</th>
+          <th nzWidth="220px">Path đích</th>
+          <th nzWidth="100px" nzAlign="center">Bắt buộc</th>
+          <th nzWidth="240px">Mô tả</th>
+          <th nzWidth="56px"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of outputTable.data; track row.id) {
+          <tr>
+            <td>
+              <input nz-input placeholder="$.externalId" [ngModel]="row.sourcePath" (ngModelChange)="updateOutput(row.id, { sourcePath: $event })" />
+            </td>
+            <td>
+              <nz-select [ngModel]="row.target" style="width: 100%" (ngModelChange)="updateOutput(row.id, { target: $event })">
+                @for (opt of outputTargetOptions; track opt.value) {
+                  <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+                }
+              </nz-select>
+            </td>
+            <td>
+              <input nz-input placeholder="sapBudgetRequestId" [ngModel]="row.targetPath" (ngModelChange)="updateOutput(row.id, { targetPath: $event })" />
+            </td>
+            <td nzAlign="center">
+              <label nz-checkbox [ngModel]="row.required" (ngModelChange)="updateOutput(row.id, { required: $event })"></label>
+            </td>
+            <td>
+              <input nz-input [ngModel]="row.description" (ngModelChange)="updateOutput(row.id, { description: $event })" />
+            </td>
+            <td>
+              <button nz-button nzType="text" aria-label="Xóa mapping" (click)="removeOutput(row.id)">
+                <span nz-icon nzType="delete"></span>
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+    <button nz-button (click)="addOutput()">
+      <span nz-icon nzType="plus"></span>
+      Thêm output
+    </button>
+  </div>
+}

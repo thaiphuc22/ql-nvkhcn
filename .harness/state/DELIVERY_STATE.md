@@ -1,5 +1,152 @@
 # Delivery State
 
+> **2026-07-16 — BACKEND DEV 8091 RESTART + FLYWAY V12 APPLIED (owner Codex):** migration
+> `V12__eform_rd0202.sql` đã được copy byte-identical vào worktree jar tổng hợp, `clean package`
+> **111/111 test PASS**, restart PID 26948 → PID **23944**. Flyway nâng PostgreSQL `qtkhcn.public`
+> từ v11 lên **v12** thành công. Real API: eForm HTTP 200 trả **39 form** (8 gốc + 31 RD02.02),
+> Approval Matrix HTTP 200, Action Studio HTTP 200. Log tại `backend-8091-v12.log`.
+
+> **2026-07-16 — PORT ANGULAR + GHÉP BE MÀN CHI TIẾT HỒ SƠ DONE + VERIFIED (owner Codex):**
+> route lazy `/ho-so/:id` port màn React tham chiếu `/ho-so/HS-2026-031`, gồm thông tin hồ sơ,
+> trạng thái/cảnh báo, sơ đồ bước, tài liệu, timeline và các mutation gửi duyệt/phê duyệt/trả lại/
+> từ chối gọi API thật. Backend `HoSoResponse` thêm `taiLieu[]` + `thoiGianThucHien`; contract được
+> đồng bộ vào service Hồ sơ tách mới để read-canary không lệch shape. Link từ danh sách Hồ sơ và
+> Chi tiết Nhiệm vụ đã trỏ tới route mới. Backend chính **127 tests (1 skipped) PASS**; service Hồ
+> sơ **8/8 PASS**; Angular **31 files/130 tests PASS**, production build GREEN. Chưa restart jar
+> tổng hợp 8091/click-through để không phá topology của các workstream song song.
+
+> **2026-07-16 — KHỞI TẠO eFORM CHO RD02.02 DONE + VERIFIED (owner Claude):** seed 31 eForm mới
+> (`backend/src/main/resources/db/migration/V12__eform_rd0202.sql`) vào bảng `eform` có sẵn, theo
+> đúng cột "Mã biểu mẫu" ở Bảng A của tài liệu nguồn RD02.02 — 20 mã BM.02.01→BM.02.20 (gộp trùng các
+> bước dùng lại cùng bộ biểu mẫu) + 11 mã `[MỚI]` (PNX nội bộ VHT/Tập đoàn, biên bản bàn giao, phiếu
+> kiểm tra hồ sơ, CV đề nghị thẩm định); `bm-02-17-ttr-nv` giữ nguyên cảnh báo `[CHƯA CHỐT]` của tài
+> liệu nguồn. Mỗi form là bản scaffold (header + vài trường theo Bảng B), cố ý không có trường
+> `ketLuan` quyết định (đúng D10). Verify thật: áp `V11`+`V12` vào DB Postgres tạm trên container
+> `qtkhcn-postgres` (không đụng `qtkhcn` dùng chung) → 39/39 dòng đúng, JSON hợp lệ, không vi phạm
+> CHECK; `EformServiceTest` 7/7 + `EformHttpContractTest` 5/5 PASS. Chưa binding formKey vào Action
+> Studio, chưa restart 8091 (giữ nguyên topology cho task song song khác), chưa gộp sang worktree
+> Approval Matrix, chưa click-through UI. Chi tiết ở đầu `active-task.md`.
+
+> **2026-07-16 — GHÉP BE VÀO FE `/phan-he/PH3/bieu-mau` (eForm) DONE + VERIFIED (owner Claude):**
+> `/api/eform` mới (Flyway `V11__eform.sql`, seed đúng 8 form gốc) thay `EformService` signal
+> in-memory bằng HTTP-backed store (`load`/`loadOne`/`addForm`/`updateMeta`/`updateSchema`/
+> `removeForm`, optimistic lock `If-Match`, actor header) — đúng pattern Ma trận phê duyệt/Action
+> Studio. Xoá ~220 dòng seed data chết khỏi `core/models/eform.ts`. Backend `mvn -o test` full
+> suite PASS (2 test file mới); Angular `ng test` **28/28 file, 123/123 PASS**; `ng build` GREEN.
+> **Phát hiện + xử lý lệch môi trường có thật** (không phải do lát này): DB Postgres dev dùng chung
+> thiếu file `V9__approval_matrix.sql` (chỉ có trong worktree riêng `ql-nvkhcn-be-approval-matrix`)
+> khiến workspace chính không restart được — user chọn copy file đó (nguyên byte) vào workspace
+> chính qua `AskUserQuestion`; sau đó **real Postgres smoke test PASS đầy đủ** (create/update/
+> If-Match 409/delete/404, 8 seed không bị đụng). Theo lựa chọn thứ 2 của user qua
+> `AskUserQuestion`, đã **gộp code eForm (9 file, nguyên byte) vào worktree Approval Matrix**
+> thành 1 jar tổng hợp 3-trong-1 — `mvn -o test` GREEN tại worktree, real-stack xác nhận cả
+> `/api/approval-matrix`, `/api/action-studio`, `/api/eform` cùng sống trên cổng 8091 (PID 26948).
+> Angular dev server (`ng serve` trỏ `localhost:8091`) nay gọi `/api/eform` thật được. Live demo
+> 8090 không bị đụng trong suốt quá trình. Chi tiết đầy đủ ở đầu `active-task.md`.
+
+> **2026-07-16 — PORT "THƯ VIỆN BIỂU MẪU" (eFORM) REACT → ANGULAR DONE + VERIFIED (owner Claude):**
+> route `/phan-he/PH3/bieu-mau` (trước đó `PlaceholderPage`) nay là bản port đầy đủ của
+> `webapp/src/pages/FormLibrary.tsx` + `FormDesignerPage.tsx`/`FormDesigner.tsx` (D12 B-engine renderer
+> + D13 AntD builder chrome trên engine `@bpmn-io/form-js`). User chọn full parity qua
+> `AskUserQuestion`. Thêm dependency mới `@bpmn-io/form-js`/`feelin` + CSS vendor vào `angular.json`
+> (bump budget 2.3→2.5MB). 6 lát: `core/models/eform.ts` (+ `eform-runtime.ts` tách logic FEEL/
+> validate/dynamiclist) → `core/services/eform.service.ts` (signal store, **cố ý bỏ stat "Đang dùng"**
+> vì nguồn mock `ProcessContext.taskSteps` gốc đã bị thay bằng backend BPMN thật, không có dữ liệu
+> tương đương) → `shared/form-renderer/` (renderer AntD thuần, không cần engine form-js) →
+> `shared/form-designer/` (wrapper `FormEditor` + palette/properties panel AntD tự viết D13, dictionary
+> Việt hoá form-js riêng, **cố ý bỏ `khcnFormSimplePanelModule` và phần vá relabel palette/panel
+> NATIVE** vì panel đó bị ẩn trong kiến trúc Angular — port sẽ là code chết) → CSS skin canvas scoped
+> từ `bpmnio-skin.css` → `pages/form-library/` + `pages/form-designer-page/` + routes/icons
+> (`EFORM_ICONS`, 23 icon mới). Không đụng file của phiên song song khác đang chạy "Tách Service Quản
+> lý NV KHCN & Hồ sơ" (đã xác nhận qua `git status`). `npx ng build` GREEN (`form-designer-page` lazy
+> chunk 509.49 kB, `form-library` 8.45 kB); `npx ng test --watch=false` **28/28 file, 119/119 test
+> PASS** (11 test mới). Chưa click-through trình duyệt thật. Chi tiết đầy đủ ở đầu `active-task.md`.
+
+> **2026-07-16 — PORT "TÁC VỤ HỆ THỐNG" (SERVICE TASK CONFIG) REACT → ANGULAR DONE + VERIFIED (owner
+> Claude):** route `/cau-hinh-service-task` (trước đó `PlaceholderPage`) nay là bản port đầy đủ 6 tab
+> của `webapp/src/pages/ServiceTaskConfig.tsx`. Không backend: signal-based `ServiceTaskService` thay
+> `ServiceTaskContext.tsx`. Kiến trúc tách shared component (mapping-editor/form-drawer/binding-table/
+> test-panel/execution-drawer) giống Ma trận phê duyệt, cộng 3 data model scoped mới
+> (`integration-system.ts`/`integration-mapping.ts`/`process-registry.ts` — subset các file React phụ
+> thuộc, bỏ phần chưa cần vì màn Tích hợp/Danh mục quy trình chưa lên Angular). Sửa mojibake encoding
+> trong `ServiceTaskExecutionDrawer.tsx` gốc khi port (gõ lại đúng UTF-8, không copy chuỗi hỏng).
+> **Đụng độ phiên song song thật**: giữa lúc làm, một phiên khác tự làm y hệt feature này độc lập
+> (page 1-file không đủ chức năng, tự nhận "bản port nhanh" — thiếu 2/6 tab và form không lưu được),
+> đồng thời cũng đang làm Action Studio (backend Java + Flyway V10) và đụng
+> `app.routes.ts`/`app.ts`/`icons-provider.ts`. Dừng lại dùng `AskUserQuestion` báo cáo thay vì tự ý
+> ghi đè; user xác nhận phiên kia đã xong và yêu cầu kiểm tra/giữ 1 bản — xóa bản thiếu chức năng, giữ
+> `core/models/service-task.ts` (không bị phá), hoàn thiện kiến trúc đầy đủ. `npx ng build` GREEN
+> (lazy chunk 138.65 kB); `npx ng test --watch=false` **23/23 file, 102/102 test PASS** (15 test mới).
+> Chưa click-through trình duyệt thật. Chi tiết đầy đủ ở đầu `active-task.md`.
+
+> **2026-07-16 — TÁCH SERVICE QUẢN LÝ NV KHCN & HỒ SƠ — LÁT 0 IN PROGRESS (owner Codex):**
+> user thống nhất tách `NhiemVu`/`HoSo` và dữ liệu nghiệp vụ sang service mới; service Quản trị quy
+> trình chỉ nhận lệnh start chứa correlation/control data tối thiểu và tiếp tục sở hữu Camunda cùng
+> cấu hình workflow. Plan tại `docs/arch/nvkhcn-ho-so-service-extraction-plan.md`: transactional
+> outbox + start idempotent, workflow events/inbox, DB ownership, gateway routing, migration theo
+> strangler, failure tests và rollback. Đã thêm `NhiemVuHttpContractTest` (5 test) và
+> `HoSoHttpContractTest` (8 test), khóa schema/status/error/auth/CORS cùng submit/action legacy;
+> test riêng 13/13 và toàn backend 103/103 PASS. Next: hoàn tất characterization `HoSoServiceTest`
+> và baseline/rollback artifacts của Lát 0.
+
+> **2026-07-16 — ACTION STUDIO ANGULAR ↔ SPRING BOOT INTEGRATION DONE + VERIFIED (owner Codex):**
+> `/cau-hinh-hanh-dong` không còn resolve/mutation bằng runtime seed store. Spring Boot + Flyway V10
+> lưu action/presentation, luật khả dụng, chính sách Chi tiết và audit; `/api/action-studio` cung cấp
+> config, CRUD/status với `If-Match`, simulate fail-closed, reconcile/scaffold. Angular gọi HTTP thật
+> cho toàn bộ luồng và chỉ cập nhật signal cache sau thành công. Backend chính 90/90 PASS; backend
+> tổng hợp Approval+Action 99/99 PASS + package; Angular 21/21 file · 87/87 PASS, build GREEN.
+> PostgreSQL smoke V10 + GET/simulate/create-delete/audit PASS; Approval Matrix không regression.
+> Backend dev 8091 đang chạy JAR tổng hợp PID 21584. Chưa browser click-through, chưa commit/deploy.
+
+> **2026-07-16 — APPROVAL MATRIX ANGULAR ↔ SPRING BOOT INTEGRATION DONE + VERIFIED (owner Codex):**
+> `/ma-tran-phe-duyet` không còn dùng seed store cho runtime. Angular đã nối đủ rules CRUD/status
+> (optimistic `If-Match`), slots CRUD/status (`force=true` sau confirm), versions/audit, analyze và
+> resolve vào `/api/approval-matrix`; signal chỉ còn là cache sau HTTP thành công. Full Simulation
+> gọi backend thật; mini-simulator bản nháp vẫn chạy local có chủ đích. Angular 20/20 file · 82/82
+> test PASS, production build GREEN. Backend 91/91 test PASS. Real PostgreSQL/Flyway smoke trả 7
+> rules, 5 slots và resolve `PHE_DUYET + TD + 12 tỷ` → `AM-05 / U-013 / ANY_ONE`. Backend dev 8091
+> đã chạy jar mới; backend live 8090/Caddy/Docker không bị đụng. BE nằm ở worktree
+> `fix/approval-matrix-backend`, FE ở workspace chính; cả hai chưa commit theo nguyên tắc chỉ commit
+> khi user yêu cầu.
+
+> **2026-07-16 — FIX: LƯU NHÁP BPMN BÁO LỖI "process executable" KHI CÓ POOL — DONE + LIVE (owner
+> Claude).** `bpmn-modeler.ts` `exportXml()` chỉ nhận diện `bpmn:Process` render trực tiếp trong
+> `elementRegistry`; khi sơ đồ có Pool (root đổi thành `bpmn:Collaboration`), process thật nằm ở
+> `participant.processRef` nên bị coi là "không có process executable". Thêm
+> `executable-process.ts` (`resolveExecutableProcess`, có unit test) xử lý cả 2 trường hợp, dùng
+> đúng API `modeling.updateModdleProperties()` cho trường hợp Pool; chặn rõ khi có >1 Pool có
+> process (khớp rule backend chỉ 1 process executable). Làm trên nhánh `fix/bpmn-modeler-process-
+> executable` (từ `agent/deploy-github-pages`, quy ước `fix/<ten-loi>` ở
+> `docs/plan_deploy/standard-deploy-workflow.md`) trong git worktree riêng để không đụng các thay
+> đổi chưa commit của workstream khác đang chạy song song trên cùng repo. Verify: `tsc --noEmit`
+> sạch, `ng test` 16/16 file · 63/63 test PASS (lỗi icon `plus-o` trong `assignment-builder.spec.ts`
+> là pre-existing, không liên quan), `ng build` production GREEN. Đã fast-forward merge vào
+> `agent/deploy-github-pages` (commit `2b47b70`), cắt release demo mới (`New-DemoRelease.ps1
+> -Commit 2b47b70`, health-check port đổi sang 8095 vì 8091 mặc định bị một tiến trình lạ khác
+> chiếm — không kill tiến trình không rõ chủ) và `Switch-DemoRelease.ps1 -ReleaseId
+> 2026-07-16.1_2b47b70` theo yêu cầu trực tiếp của user. Live demo `https://drab-quail.runlocal.eu/`
+> đã chạy release này (SHA `2b47b70` xác nhận qua `git rev-parse` tại `qtkhcn-demo/current`, chuỗi
+> "process executable" xác nhận có trong bundle deploy); post-cutover: backend 8090 healthy, CORS
+> đúng origin, Caddy vẫn chạy, `401` không auth qua public URL. Chưa test click-through UI thật
+> (không có browser tool) — người dùng nên tự vẽ Pool + lưu nháp trên live để xác nhận UX.
+
+> **2026-07-16 — PORT "MA TRẬN PHÊ DUYỆT" REACT → ANGULAR DONE + VERIFIED (owner Claude):** route
+> `/ma-tran-phe-duyet` (trước đó `PlaceholderPage`) nay là bản port đầy đủ của
+> `webapp/src/pages/ApprovalMatrix.tsx` — trang lớn/phức tạp nhất trong React app (~5300 dòng gộp cả
+> file liên quan). User chọn full parity qua `AskUserQuestion`. Không backend: signal-based service
+> (`ApprovalMatrixService`/`ApprovalSlotCatalogService`) thay React Context, y hệt hành vi mock gốc
+> (first-match theo priority, uỷ quyền theo hiệu lực, phân tích xung đột/thiếu fallback). UI gồm
+> Condition Builder (cây AND/OR **tự đệ quy**), Assignment Builder, Simulation Panel (kịch bản lưu
+> `localStorage`), 2 tab (Ma trận / Danh mục Loại phê duyệt). Route lazy-load (đo thực tế thấy eager
+> đẩy initial bundle vượt budget 300kB; lazy giữ trong ngưỡng, bump budget tối thiểu 2.2→2.3MB).
+> Phát hiện thật khi verify: `nz-icon` chưa đăng ký tĩnh cần mạng để fetch SVG động (vỡ trong unit
+> test, không vỡ trong trình duyệt thật có mạng) — đăng ký tĩnh 10 icon mới; `NzModalService` cần
+> `NzModalModule` trong `imports` (không phải `providedIn:'root'`). `npx ng build` GREEN (chunk lazy
+> riêng 228.78 kB); `npx ng test --watch=false` **19/19 file, 80/80 test PASS** (6 spec mới). Chưa
+> click-through trình duyệt thật. Chạy song song với workstream tách release demo Runlocal (owner
+> Claude, entry ngay dưới) trên cùng repo — không đụng file deploy/infra của workstream đó; chưa
+> commit gì (chỉ commit khi được yêu cầu rõ ràng). Chi tiết đầy đủ ở đầu `active-task.md`.
+
 > **2026-07-16 — LIVE DEMO RELEASE ISOLATION IMPLEMENTED (owner Claude).** The gap flagged earlier
 > today (live demo serving directly from this dev workspace) is fixed. Baseline committed
 > (`backend/`, `frontend-angular/`, `infra/` were untracked before — see commits `466c224`,

@@ -1,0 +1,22 @@
+.stfd-label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.stfd-required {
+  color: var(--vht-danger, #cf1322);
+}
+
+.stfd-block {
+  width: 100%;
+}
+
+.stfd-field {
+  margin-top: 12px;
+}
+
+.stfd-hint {
+  display: block;
+  margin-bottom: 12px;
+}

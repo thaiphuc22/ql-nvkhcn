@@ -82,6 +82,43 @@ $env:DEMO_BASIC_AUTH_HASH = caddy hash-password
 & .\infra\demo-tunnel\Start-DemoProxy.ps1
 ```
 
+Read traffic của `/api/ho-so*` và `/api/nhiem-vu*` vẫn đi monolith theo mặc định. Chỉ sau khi backfill,
+count/checksum và contract comparison đều xanh, start service mới rồi bật canary bằng switch tường minh:
+
+```powershell
+$env:QTKHCN_HO_SO_SERVICE_TOKEN = '<service-token>'
+& .\infra\demo-tunnel\Start-DemoProxy.ps1 -EnableHoSoReadRoute
+```
+
+Không truyền switch (hoặc restart proxy không có switch) là rollback read-route về monolith. Mutation
+routes luôn đi monolith trong lát này.
+
+Sau khi Caddy đã chạy, ưu tiên reload không gián đoạn thay vì restart proxy:
+
+```powershell
+# Các secret được load từ .env.local vào process environment, không in ra console.
+& .\infra\demo-tunnel\Switch-HoSoReadRoute.ps1 -Target Canary
+& .\infra\demo-tunnel\Switch-HoSoReadRoute.ps1 -Target Monolith
+```
+
+Script kiểm tra readiness/API trước canary, validate trước reload, đối chiếu upstream qua Caddy admin và
+giữ Basic Auth fail-closed. `Caddyfile.ho-so-canary-smoke` chỉ dành cho smoke Angular trên loopback
+`127.0.0.1:8444`; không được nối listener này với Runlocal.
+
+Không giữ canary mở thủ công. Dùng cửa sổ hữu hạn có metric và rollback tự động (mặc định 30 phút):
+
+```powershell
+& .\infra\demo-tunnel\Invoke-HoSoReadCanaryWindow.ps1 `
+  -DurationMinutes 30 `
+  -MinimumObservedRequests 5 `
+  -MaximumServerErrorPercent 0 `
+  -MaximumAverageLatencyMs 1000
+```
+
+Script chỉ tính request đi qua nhánh canary, kiểm tra readiness mỗi 30 giây, ghi report JSON ngoài repo
+tại `C:\Users\phuctd7\qtkhcn-demo\observations` và luôn trả GET route về monolith. Không đủ request là
+không đủ bằng chứng và bị đánh `FAIL`; mutation route không đổi trong toàn bộ cửa sổ.
+
 `caddy hash-password` hỏi password tương tác. Có thể giữ một Basic Auth password ổn định giữa các lần deploy demo; chỉ rotate khi lộ/nghi ngờ lộ hoặc theo chính sách bảo mật.
 
 Kiểm tra `http://127.0.0.1:8443`: thiếu hoặc sai Basic Auth phải nhận `401`.

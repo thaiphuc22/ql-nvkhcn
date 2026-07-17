@@ -1,6 +1,7 @@
 /**
  * Ma trận phê duyệt (Approval Matrix). Port của webapp/src/data/approvalMatrix.ts
- * (EPIC06, D17 Angular migration). Prototype mock — không nối backend.
+ * (EPIC06, D17 Angular migration). Model dùng chung cho HTTP contract và resolver cục bộ
+ * của bản nháp chưa lưu trong Rule Builder.
  *
  * BPMN trả lời "cần phê duyệt Ở ĐÂU" (slot), DMN trả lời "cần LOẠI/CẤP phê duyệt
  * nào", Approval Matrix trả lời câu hỏi cuối cùng: "chính xác AI sẽ phê duyệt",

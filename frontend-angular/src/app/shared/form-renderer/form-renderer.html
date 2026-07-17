@@ -1,0 +1,24 @@
+<div class="vht-form">
+  @for (c of components(); track (c.id ?? c.key ?? $index)) {
+    @if (!isHidden(c)) {
+      @if (c.type === 'dynamiclist') {
+        <app-form-dynamic-list
+          [comp]="c"
+          [rows]="listRows(c)"
+          [rootCtx]="derived().ctx"
+          [errors]="fieldErrorsMap()"
+          errPrefix=""
+          (rowsChange)="c.key && setValue(c, $event)"
+        ></app-form-dynamic-list>
+      } @else {
+        <app-form-field
+          [comp]="c"
+          [value]="fieldValue(c)"
+          [error]="fieldError(c)"
+          [disabled]="isComputed(c) || c.readonly === true"
+          (valueChange)="setValue(c, $event)"
+        ></app-form-field>
+      }
+    }
+  }
+</div>

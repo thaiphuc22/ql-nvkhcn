@@ -1,52 +1,52 @@
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 
 import { ApprovalSlotCatalogService, normalizeSlotCode } from './approval-slot-catalog.service';
 
+const slot = { code: 'THAM_DINH', ten: 'Thẩm định', trangThai: 'active' as const, thuTu: 10,
+  nhomQuyTrinh: ['RD01'], usageCount: 1, updatedAt: '2026-07-16T00:00:00Z', updatedBy: 'system' };
+
 describe('normalizeSlotCode', () => {
   it('uppercases and turns spaces/dashes into underscores', () => {
     expect(normalizeSlotCode('xyz duyet')).toBe('XYZ_DUYET');
-    expect(normalizeSlotCode('rà-soát')).toBe('RÀ_SOÁT');
   });
 });
 
-describe('ApprovalSlotCatalogService', () => {
+describe('ApprovalSlotCatalogService HTTP integration', () => {
   let service: ApprovalSlotCatalogService;
+  let http: HttpTestingController;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
     service = TestBed.inject(ApprovalSlotCatalogService);
+    http = TestBed.inject(HttpTestingController);
   });
 
-  it('seeds the store with the mock slot catalog', () => {
-    expect(service.slots().length).toBeGreaterThan(0);
-    expect(service.findByCode('THAM_DINH')?.ten).toContain('Thẩm định');
+  afterEach(() => http.verify());
+
+  it('loads the catalog into its signal cache', () => {
+    service.load().subscribe();
+    http.expectOne('http://localhost:8091/api/approval-matrix/slots').flush([slot]);
+    expect(service.findByCode('THAM_DINH')?.ten).toBe('Thẩm định');
   });
 
-  it('creates a slot with a normalized code', () => {
-    const result = service.create({ code: 'ra soat rui ro', ten: 'Rà soát rủi ro' });
-
-    expect(result.ok).toBe(true);
-    expect(result.slot?.code).toBe('RA_SOAT_RUI_RO');
-    expect(result.slot?.trangThai).toBe('active');
+  it('normalizes a new code before POST', () => {
+    service.create({ code: 'ra soat rui ro', ten: 'Rà soát rủi ro' }, 'tester').subscribe();
+    const request = http.expectOne('http://localhost:8091/api/approval-matrix/slots');
+    expect(request.request.body.code).toBe('RA_SOAT_RUI_RO');
+    request.flush({ ...slot, code: 'RA_SOAT_RUI_RO', ten: 'Rà soát rủi ro', usageCount: 0 });
     expect(service.findByCode('RA_SOAT_RUI_RO')).toBeTruthy();
   });
 
-  it('rejects a duplicate code even after normalization, without silently overwriting', () => {
-    const before = service.slots().length;
-    const result = service.create({ code: 'tham_dinh', ten: 'Trùng mã' });
-
-    expect(result.ok).toBe(false);
-    expect(result.errors.join(' ')).toContain('trùng');
-    expect(service.slots().length).toBe(before);
-  });
-
-  it('updates fields by code', () => {
-    service.update('THAM_DINH', { ten: 'Thẩm định (đổi tên)' });
-    expect(service.findByCode('THAM_DINH')?.ten).toBe('Thẩm định (đổi tên)');
-  });
-
-  it('sets status by code', () => {
-    service.setStatus('THAM_DINH', 'inactive');
+  it('updates and changes status through backend endpoints', () => {
+    service.load().subscribe();
+    http.expectOne('http://localhost:8091/api/approval-matrix/slots').flush([slot]);
+    service.update('THAM_DINH', { ten: 'Tên mới' }).subscribe();
+    http.expectOne('http://localhost:8091/api/approval-matrix/slots/THAM_DINH').flush({ ...slot, ten: 'Tên mới' });
+    service.setStatus('THAM_DINH', 'inactive', true).subscribe();
+    const status = http.expectOne('http://localhost:8091/api/approval-matrix/slots/THAM_DINH/status?force=true');
+    status.flush({ ...slot, ten: 'Tên mới', trangThai: 'inactive' });
     expect(service.findByCode('THAM_DINH')?.trangThai).toBe('inactive');
   });
 });

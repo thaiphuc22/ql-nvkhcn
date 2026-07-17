@@ -17,6 +17,8 @@ import vn.vht.qtkhcn.service.DmnValidationException;
 import vn.vht.qtkhcn.service.DraftRevisionConflictException;
 import vn.vht.qtkhcn.service.ProcessImportException;
 import vn.vht.qtkhcn.camunda.DmnCamundaException;
+import vn.vht.qtkhcn.service.ActionStudioConflictException;
+import vn.vht.qtkhcn.service.EformConflictException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -57,6 +59,16 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DmnRuleConflictException.class)
     public ResponseEntity<ErrorBody> dmnConflict(DmnRuleConflictException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorBody(e.getMessage()));
+    }
+
+    @ExceptionHandler(ActionStudioConflictException.class)
+    public ResponseEntity<ErrorBody> actionStudioConflict(ActionStudioConflictException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorBody(e.getMessage()));
+    }
+
+    @ExceptionHandler(EformConflictException.class)
+    public ResponseEntity<ErrorBody> eformConflict(EformConflictException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorBody(e.getMessage()));
     }
 

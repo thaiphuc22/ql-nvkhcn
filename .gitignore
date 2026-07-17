@@ -15,7 +15,11 @@ tools/docs-to-drive/.credentials/
 **/node_modules/
 **/dist/
 **/.angular/
-backend/target/
+**/target/
+
+# Local rendering runtimes/browser profiles (may contain session data)
+outputs/**/pdf_runtime/
+outputs/**/previews/edge_profile/
 
 # Runtime logs / local database snapshots
 *.log

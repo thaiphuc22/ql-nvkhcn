@@ -1,0 +1,31 @@
+<div class="fp-wrap">
+  <div class="fp-search">
+    <input nz-input [ngModel]="query()" (ngModelChange)="query.set($event)" nzSize="small" placeholder="Tìm thành phần…" />
+  </div>
+
+  <div class="fp-list">
+    @if (groups().length === 0) {
+      <nz-empty nzNotFoundImage="simple" nzNotFoundContent="Không tìm thấy thành phần" class="fp-empty"></nz-empty>
+    }
+
+    @for (g of groups(); track g.id) {
+      <div class="fp-group">
+        <div class="vht-fp-group-title">{{ g.title }}</div>
+        <div class="fjs-palette-fields fjs-drag-container fjs-no-drop vht-fp-list">
+          @for (e of g.entries; track e.type) {
+            <button
+              type="button"
+              class="fjs-drag-copy vht-fp-item"
+              [attr.data-field-type]="e.type"
+              [title]="'Thêm \'' + e.label + '\' (kéo lên biểu mẫu hoặc bấm)'"
+              (click)="add.emit(e.type)"
+            >
+              <span class="vht-fp-item-icon" nz-icon [nzType]="e.icon"></span>
+              <span class="vht-fp-item-label">{{ e.label }}</span>
+            </button>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>

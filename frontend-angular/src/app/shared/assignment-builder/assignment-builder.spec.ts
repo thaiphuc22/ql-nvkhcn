@@ -1,9 +1,15 @@
 import { TestBed } from '@angular/core/testing';
+import { NzIconService } from 'ng-zorro-antd/icon';
 
 import { groupAssignment, type ApprovalAssignment } from '../../core/models/approval-matrix';
+import { APPROVAL_MATRIX_ICONS, NAV_ICONS } from '../../core/icons-provider';
 import { AssignmentBuilderComponent } from './assignment-builder';
 
 describe('AssignmentBuilderComponent', () => {
+  beforeEach(() => {
+    TestBed.inject(NzIconService).addIcon(...NAV_ICONS, ...APPROVAL_MATRIX_ICONS);
+  });
+
   function create(value: ApprovalAssignment) {
     const fixture = TestBed.createComponent(AssignmentBuilderComponent);
     fixture.componentRef.setInput('value', value);

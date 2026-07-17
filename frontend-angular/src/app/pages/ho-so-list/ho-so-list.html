@@ -1,10 +1,10 @@
 <div class="hsl-page">
   <div class="hsl-header">
     <h2 nz-typography>Hồ sơ Nhiệm vụ KHCN</h2>
-    <button nz-button nzType="default" (click)="reload()" [nzLoading]="loading()">
-      <span nz-icon nzType="reload"></span>
-      Tải lại
-    </button>
+    <div class="hsl-header-actions">
+      <button nz-button nzType="default" (click)="reload()" [nzLoading]="loading()"><span nz-icon nzType="reload"></span> Tải lại</button>
+      <button nz-button nzType="primary" (click)="create()"><span nz-icon nzType="file-add"></span> Tạo hồ sơ</button>
+    </div>
   </div>
 
   @if (errorMessage()) {
@@ -82,7 +82,7 @@
     </thead>
     <tbody>
       @for (row of tbl.data; track row.id) {
-        <tr>
+        <tr class="hsl-row" (click)="openDetail(row)">
           <td><code>{{ row.id }}</code></td>
           <td>
             <div class="hsl-title-cell">{{ row.tenDeTai }}</div>

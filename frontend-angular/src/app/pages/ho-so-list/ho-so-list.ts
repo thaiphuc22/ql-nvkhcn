@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -38,8 +39,7 @@ const STATUS_COLOR: Record<DossierStatus, NzStatusColor> = {
  * Trang thật đầu tiên của F1 Mốc 5 nhánh Angular — thay `PlaceholderPage` cho route `/ho-so`.
  * Gọi thẳng `GET /api/ho-so` (backend Spring Boot Mốc 2/3, đã verify thật), KHÔNG dùng mock data.
  * Đối chiếu UX với `webapp/src/pages/DossierList.tsx` (bản tham chiếu React) nhưng đơn giản hoá:
- * chưa có nút "Tạo hồ sơ" / điều hướng chi tiết vì `DossierCreate`/`DossierDetail` chưa được port
- * sang Angular (F1 Mốc 5+ tiếp theo).
+ * Các luồng tạo mới và chi tiết đã được port sang Angular và gọi backend thật.
  */
 @Component({
   selector: 'app-ho-so-list',
@@ -62,6 +62,8 @@ const STATUS_COLOR: Record<DossierStatus, NzStatusColor> = {
 })
 export class HoSoListPage {
   private readonly hoSoService = inject(HoSoService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   readonly statusLabel = DOSSIER_STATUS_LABEL;
   readonly loaiLabel = HO_SO_LOAI_LABEL;
@@ -111,7 +113,16 @@ export class HoSoListPage {
   });
 
   constructor() {
+    this.query.set(this.route.snapshot.queryParamMap.get('id') ?? '');
     this.reload();
+  }
+
+  create(): void {
+    void this.router.navigate(['/ho-so/tao-moi']);
+  }
+
+  openDetail(row: HoSoResponse): void {
+    void this.router.navigate(['/ho-so', row.id]);
   }
 
   reload(): void {

@@ -1,0 +1,25 @@
+.fp-wrap {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.fp-search {
+  padding: 8px;
+  flex: 0 0 auto;
+}
+
+.fp-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 8px 10px;
+}
+
+.fp-group {
+  margin-top: 10px;
+}
+
+.fp-empty {
+  margin-top: 28px;
+}

@@ -1,5 +1,630 @@
 # Active Task
 
+## ★ CURRENT — Restart backend dev 8091, áp Flyway V12 — DONE + VERIFIED 2026-07-16
+
+**Yêu cầu user**: restart backend cổng 8091 ngay để Flyway tự chạy V12.
+
+**Đã thực hiện**:
+
+- Xác định PID 26948 là jar tổng hợp Approval Matrix + Action Studio + eForm trong worktree
+  `C:\Users\phuctd7\ql-nvkhcn-be-approval-matrix\backend`.
+- Copy nguyên byte `V12__eform_rd0202.sql` từ workspace chính sang worktree tổng hợp; SHA-256 hai
+  file giống nhau (`F2EB319F...B4B8`). Dừng PID cũ, chạy `mvnw.cmd -o clean package`; toàn bộ
+  **111/111 test PASS**, Spring Boot repackage thành công.
+- Khởi động lại cổng 8091 bằng jar mới, PID **23944**. Flyway log xác nhận schema từ v11 lên v12:
+  `Migrating schema "public" to version "12 - eform rd0202"` và `Successfully applied 1 migration`,
+  hiện ở version v12.
+- Smoke API thật: `/api/eform` HTTP 200, đúng **39 form** (8 gốc + 31 RD02.02), có key
+  `bm-02-01-dki-nv`; `/api/approval-matrix/rules` HTTP 200 và `/api/action-studio` HTTP 200.
+
+**Lưu ý**: jar này không expose `/actuator/health`; readiness được xác nhận bằng API eForm thật và
+listener cổng 8091. Log startup: `backend-8091-v12.log`.
+
+---
+
+## ★ CURRENT — Port Angular + ghép BE màn Chi tiết Hồ sơ — DONE + VERIFIED 2026-07-16
+
+**Yêu cầu user**: port màn React `/ho-so/HS-2026-031` sang Angular, đồng thời hoàn thiện backend
+và nối backend vào frontend.
+
+**Đã triển khai**:
+
+- Route lazy `/ho-so/:id` với `HoSoDetailPage`: loading/404/error, header và tag trạng thái, cảnh
+  báo vòng đời, sơ đồ bước, thông tin hồ sơ + nhiệm vụ, tài liệu, timeline, gửi duyệt hồ sơ draft
+  và 3 outcome xử lý bước (phê duyệt/trả lại/từ chối).
+- `HoSoService` Angular nối trực tiếp `GET /api/ho-so/{id}`, `POST /api/ho-so/{id}/submit` và
+  `POST /api/ho-so/{id}/actions`; actor lấy từ tài khoản demo đang đăng nhập. Danh sách Hồ sơ và
+  bảng Hồ sơ trong Chi tiết Nhiệm vụ điều hướng thẳng sang màn mới.
+- `HoSoResponse` backend thêm `taiLieu[]` và `thoiGianThucHien`, nên màn chi tiết không dùng mock.
+  Đồng bộ cùng shape ở service Hồ sơ tách mới để route read-canary không lệch contract.
+- UI phản ánh đúng gap BE: RD01.01 cấp Cơ sở gửi duyệt được; quy trình chưa được BE hỗ trợ bị khoá
+  và cảnh báo rõ. Kho tệp chưa có API binary nên Xem/Tải vẫn disabled như màn React; metadata tài
+  liệu lấy từ backend thật.
+- Thêm 2 unit test màn Angular và mở rộng contract test của cả backend chính/service Hồ sơ.
+
+**Verify**: backend chính **127 tests, 0 failure, 0 error, 1 skipped**; service Hồ sơ **8/8 PASS**;
+Angular **31/31 files, 130/130 tests PASS**; production build **GREEN** (chỉ warning có sẵn).
+Không restart cổng dev 8091 vì đang chạy jar tổng hợp của nhiều workstream.
+
+---
+
+## ★ CURRENT — Khởi tạo eForm cho RD02.02 (theo cột Mã biểu mẫu, Bảng A) — DONE + VERIFIED 2026-07-16
+
+**Yêu cầu user**: đọc tài liệu nguồn `RD02.02 Xét duyệt NV KHCN cấp Tập đoàn.md` (paste vào chat,
+file gốc bị lỗi encoding mojibake — đọc theo ngữ cảnh, không copy nguyên văn chuỗi hỏng) và khởi tạo
+sẵn các eForm dùng cho RD02.02 theo cột "Mã biểu mẫu" ở Bảng A — Luồng chính.
+
+**Đã triển khai**: `backend/src/main/resources/db/migration/V12__eform_rd0202.sql` — seed 31 eForm
+mới vào bảng `eform` có sẵn (hạ tầng CRUD/API `/api/eform` đã DONE từ lát trước, xem entry eForm bên
+dưới), dùng đúng schema form-js đã khoá (D12/D13):
+
+- **20 mã BM.02.01 → BM.02.20** rút từ Bảng A (đã gộp trùng — nhiều bước dùng lại cùng 1 bộ biểu mẫu,
+  vd. Bộ HSXD BM.02.01-07 xuất hiện lại ở B12/B17/B28-31/B33/B39; BM.02.08 dùng chung cho cả HĐXD VHT
+  và Tập đoàn; BM.02.09-15 dùng chung phiên 1/phiên 2 cả 2 cấp). `form_key` slug hoá từ mã (vd.
+  `bm-02-01-dki-nv`), `loai` map vào đúng 5 giá trị CHECK constraint hiện có (Soạn thảo/Nhận xét/Thẩm
+  định/Phê duyệt — không có "Biên bản" nên BM.02.15.BBH.NV xếp vào Thẩm định).
+- **11 mã `[MỚI]`** (PNX_KHCN/TCKT/MS/NS nội bộ VHT, BIEN_BAN_BAN_GIAO_HS, PHIEU_KIEM_TRA_HO_SO_TD,
+  CV_DE_NGHI_THAM_DINH_HS, PNX_BAN_CNCNC/DTXD/TCKT/TCNL Tập đoàn) — các mã tài liệu nguồn đánh dấu
+  chưa có trong bộ BM.02 chính thức. `bm-02-17-ttr-nv` giữ nguyên cảnh báo `[CHƯA CHỐT]` của tài liệu
+  nguồn (B26 gọi là "CV đề nghị xét duyệt", mã BM.02.17 lại định nghĩa là Tờ trình — cần xác nhận
+  mapping) trong cả `ten` lẫn `mo_ta`, không tự quyết định thay.
+- Mỗi form là bản **khởi tạo/scaffold** (header + 2-4 trường theo đúng gợi ý cột "Dữ liệu vào/ra
+  chính" ở Bảng B của tài liệu nguồn), không phải bản hoàn thiện nghiệp vụ — cố ý **không** thêm
+  trường quyết định kiểu `ketLuan` Đạt/Chưa đạt vào các form mới cho khớp D10 ("nút bấm mới là quyết
+  định, form chỉ chứa dữ liệu hỗ trợ"); vài form gốc trong `V11__eform.sql` (seed trước D10) vẫn có
+  `ketLuan` — không đụng, không phải phạm vi lát này.
+- Binding các form này vào Action Studio (`formKey` trên `ActionAvailabilityPolicy`, theo D10) **chưa
+  làm** — nằm ngoài phạm vi "khởi tạo sẵn eForm" mà user yêu cầu; cần một lát riêng khi BPMN RD02.02
+  thật + `taskDefinitionKey`/`processCode`/`dossierStatus` đã có.
+
+**Verify (real, không giả định)**:
+- Áp thử `V11__eform.sql` rồi `V12__eform_rd0202.sql` vào database Postgres tạm
+  `qtkhcn_v12_verify` trên container `qtkhcn-postgres` (không đụng DB `qtkhcn` dùng chung) — cả 2
+  chạy sạch, không lỗi cú pháp/constraint. `SELECT count(*)` xác nhận đúng 39 dòng (8 gốc + 31 mới),
+  0 dòng `loai` NULL/vi phạm CHECK, 0 dòng `schema_json::jsonb` cast lỗi (JSON hợp lệ toàn bộ), thứ
+  tự `ORDER BY created_at DESC` đúng thứ tự Bảng A → 11 mã `[MỚI]` → 8 form gốc. Đã `DROP DATABASE`
+  dọn sạch sau khi verify.
+- Backend `EformServiceTest` (7/7) + `EformHttpContractTest` (5/5) **PASS** — xác nhận thêm migration
+  không phá vỡ service/contract hiện có (test này mock repository, không tự chạy Flyway, nên phần
+  xác nhận SQL thật nằm ở bước DB tạm phía trên).
+
+**Chưa làm**: chưa restart backend dev cổng 8091 để migration này thật sự chạy trên DB `qtkhcn` dùng
+chung — một phiên khác (entry "BE + FE luồng Tạo mới Hồ sơ" ngay dưới) đang chủ động tránh đụng
+topology cổng 8091 vì có task song song khác đang ghi nhận trên cổng đó; giữ nguyên tinh thần đó,
+không tự restart. Migration sẽ tự áp dụng ở lần restart/deploy kế tiếp (Flyway migrate-on-boot).
+Chưa gộp file migration này sang worktree `ql-nvkhcn-be-approval-matrix` (nơi eForm code đã được gộp
+trước đó) — cần làm khi có nhu cầu chạy thật trên cổng 8091/deploy demo. Chưa click-through Form
+Library trên trình duyệt thật để xem 31 form mới hiển thị đúng.
+
+---
+
+## ★ CURRENT — BE + FE luồng Tạo mới Hồ sơ — DONE + VERIFIED 2026-07-16
+
+**Yêu cầu user**: code backend và port Angular từ màn React `/ho-so/tao-moi` cho tính năng tạo mới Hồ sơ.
+
+**Đã triển khai**:
+
+- Mở rộng `POST /api/ho-so` nhận thêm `ngayTao` và danh sách `taiLieu`; giữ constructor 3 tham số
+  để tương thích caller cũ. Backend trim người khởi tạo/tài liệu, lưu ngày và đúng tài liệu người dùng
+  chọn; khi caller cũ không gửi tài liệu vẫn sinh bộ tài liệu mặc định theo từng loại hồ sơ.
+- Angular thêm route lazy `/ho-so/tao-moi`, trang `HoSoCreatePage` tải nhiệm vụ + lịch sử hồ sơ từ API
+  thật, hỗ trợ query `maNV`, tự điền chủ nhiệm, chọn loại/ngày/tài liệu, cảnh báo lệch giai đoạn,
+  preview nhóm quy trình RD01–RD06 và submit về backend.
+- Thêm nút `Tạo hồ sơ` ở danh sách hồ sơ và chi tiết nhiệm vụ. Sau khi tạo thành công quay về danh
+  sách và lọc theo mã hồ sơ vừa tạo.
+- Bổ sung contract/service tests backend và 2 unit tests Angular cho prefill + payload create.
+
+**Verify**: backend full suite **127 tests, 0 failure, 0 error, 1 skipped**; Angular full suite
+**30/30 files, 128/128 tests PASS**; `npx ng build` production **GREEN** (chỉ còn các warning budget/
+CommonJS đã có sẵn). Chưa restart backend dev/click-through live để tránh làm thay đổi topology cổng
+8091 đang được ghi nhận bởi các task song song.
+
+---
+
+## ★ CURRENT — Ghép BE vào FE `/phan-he/PH3/bieu-mau` (eForm) — DONE + VERIFIED 2026-07-16
+
+**Yêu cầu user**: xây backend thật cho màn Angular "Thư viện biểu mẫu" (eForm) và thay
+`EformService` signal-based (seed in-memory) bằng API, theo đúng pattern đã làm cho Ma trận phê
+duyệt / Action Studio.
+
+**Đã triển khai**:
+
+- Flyway `V11__eform.sql` (bảng `eform`: `form_key` PK, `ten`/`mo_ta`/`loai`, `schema_json` TEXT,
+  optimistic-lock `version`, audit `updated_by`/`updated_at`/`created_at`) + seed đúng 8 biểu mẫu
+  gốc (thứ tự hiển thị giữ nguyên bằng `created_at` giảm dần, so le 1 giây/dòng).
+- `Eform` entity + `EformRepository` + `EformService` (CRUD, `If-Match` optimistic lock,
+  `EformConflictException` → 409 qua `GlobalExceptionHandler`) + `EformController`
+  (`/api/eform`: `GET`/`GET {key}`/`POST`/`PUT {key}/meta`/`PUT {key}/schema`/`DELETE {key}`).
+  DTO `schema` dùng kiểu `Object` (không phải `JsonNode`) — xác nhận thật bằng test rằng
+  Spring Boot 4 (Jackson 3 message converter) không tự khởi tạo được `com.fasterxml.jackson.
+  databind.JsonNode` khi bind `@RequestBody`, `Object` (Map/List generic) là lựa chọn tương thích
+  đa phiên bản Jackson đúng.
+- Angular `EformService` chuyển HTTP-backed (`load`/`loadOne`/`addForm`/`updateMeta`/
+  `updateSchema`/`removeForm`, actor header + `If-Match`, cache là signal sau khi backend xác
+  nhận). `FormMeta` thêm field `version`. Xoá ~220 dòng seed data chết (8 schema mẫu +
+  `seedForms`) khỏi `core/models/eform.ts` — backend nay là nguồn dữ liệu thật.
+- `FormLibraryPage`: `ngOnInit` gọi `load()`, tạo/xoá bất đồng bộ có xử lý lỗi backend
+  (409 trùng mã hiện đúng message server trả về). `FormDesignerPage`: gọi `loadOne(key)` khi vào
+  route (không chỉ đọc cache) để deep-link/refresh trực tiếp vào `/thiet-ke` vẫn tải đúng dữ liệu;
+  có state loading riêng tránh chớp "Không tìm thấy" trước khi API trả lời.
+
+**Phát hiện + xử lý một vấn đề môi trường có thật, không phải do lát này gây ra**: khi build lại
+backend workspace chính để restart cổng 8091 test that thật, Flyway validate fail — DB Postgres
+dev dùng chung (`qtkhcn`) đã có `flyway_schema_history` version 9 = "approval matrix", áp từ
+worktree riêng `C:\Users\phuctd7\ql-nvkhcn-be-approval-matrix` (nhánh `fix/approval-matrix-
+backend`) — file `V9__approval_matrix.sql` chưa từng có trong workspace chính (workspace chính
+nhảy thẳng V8→V10). Đã dừng lại, `AskUserQuestion` báo cáo thay vì tự sửa; user chọn copy file
+migration đó (nguyên byte, đã diff xác nhận giống hệt) vào workspace chính. Sau khi copy, `mvn -o
+clean package` (dùng `clean` vì phát hiện phụ: `target/classes` có sẵn `V9__action_studio.sql` cũ
+từ lần build trước khi Action Studio migration đổi từ V9→V10, gây lẫn migration rác vào jar nếu
+không `clean`) + restart 8091 → Flyway validate 11 migrations OK, migrate thẳng lên v11.
+
+**Real-stack smoke test thật trên Postgres dev** (cổng 8091, sau khi copy V9 + build sạch):
+`GET /api/eform` trả đúng 8 seed, đúng thứ tự, tiếng Việt hiển thị đúng; `POST` tạo mới → 201
+version 0; `PUT .../schema` với `If-Match` đúng → 200 version tăng; lặp lại với `If-Match` cũ → 409
+đúng message `EformConflictException`; `DELETE` với `If-Match` đúng → 204; `GET` lại → 404. Xác
+nhận 8 seed gốc không bị đụng sau khi xoá form test. Backend `mvn -o test` **full suite PASS**
+(gồm `EformServiceTest`, `EformHttpContractTest` mới).
+
+**Dọn lại môi trường sau smoke test**: vì cổng 8091 dev (Angular trỏ vào theo `environment.ts`)
+trước đó đang chạy jar tổng hợp Approval Matrix + Action Studio từ worktree riêng, và jar workspace
+chính KHÔNG có code Approval Matrix (chỉ copy đúng file migration để Flyway resolve được, không
+copy Java code), việc restart 8091 bằng jar workspace chính (có eform) đã tạm thời làm mất
+`/api/approval-matrix` trên cổng đó. Sau khi xác nhận smoke test eform PASS, đã dừng jar đó và khởi
+động lại đúng jar tổng hợp cũ (worktree Approval Matrix) trên 8091 để không để môi trường dev tệ
+hơn lúc bắt đầu — xác nhận `/api/approval-matrix/rules` và `/api/action-studio` đều 200 trở lại.
+Live demo cổng 8090 không bị đụng trong suốt quá trình (xác nhận `401` không đổi, PID không đổi).
+
+**Gộp vào jar tổng hợp (user chọn qua `AskUserQuestion`)**: copy nguyên byte 9 file eForm (domain/
+repository/service/controller/dto + `V11__eform.sql` + 2 test) từ workspace chính sang worktree
+`ql-nvkhcn-be-approval-matrix` (đã diff xác nhận giống hệt), thêm handler `EformConflictException`
+vào `GlobalExceptionHandler.java` của worktree đó (file này đã khác bản workspace chính — chỉ thêm
+đúng block cần, không ghi đè). Copy thêm Maven Wrapper (`.mvn/`, `mvnw.cmd`) sang worktree vì nó
+chưa có sẵn. `mvn -o test` full suite tại worktree **GREEN** (bao gồm cả `EformServiceTest`/
+`EformHttpContractTest` chạy lại đúng trong context Approval Matrix + Action Studio + eForm gộp
+chung, không xung đột tên bean/route). `mvn -o clean package` (dừng jar cũ đang giữ file trước khi
+clean, tránh lỗi lock file Windows) → jar mới bundle đủ 11 migration (V1–V11).
+
+**Trạng thái CUỐI CÙNG của cổng 8091 dev**: đang chạy jar tổng hợp 3-trong-1 (PID **26948**,
+worktree `ql-nvkhcn-be-approval-matrix`) — xác nhận real-stack cả 3 API cùng sống: `GET /api/
+approval-matrix/rules` → 200, `GET /api/action-studio` → 200, `GET /api/eform` → 200 trả đúng 8
+seed theo đúng thứ tự. Angular dev server (`ng serve`, trỏ `localhost:8091` theo `environment.ts`)
+nay gọi được `/api/eform` thật — sẵn sàng để user click-through UI `/phan-he/PH3/bieu-mau`. Live
+demo cổng 8090 không bị đụng trong suốt toàn bộ quá trình (PID không đổi, vẫn `401` không auth).
+
+**Verify tổng**: Backend `mvn -o test` full suite GREEN (cả workspace chính lẫn worktree gộp).
+Angular `npx ng test --watch=false` **28/28 file, 123/123 PASS**; `npx ng build` production GREEN.
+Real Postgres smoke test PASS đầy đủ CRUD + optimistic lock trên cả 2 lần chạy (workspace chính
+đơn lẻ, rồi worktree gộp 3-trong-1). Chưa click-through trình duyệt thật (không có browser tool) —
+user nên tự mở `/phan-he/PH3/bieu-mau` trên `ng serve` để xác nhận UI.
+
+---
+
+## ★ CURRENT — Port "Thư viện biểu mẫu" (eForm) React → Angular — DONE + VERIFIED 2026-07-16
+
+**Yêu cầu của user**: port trang "Thư viện biểu mẫu" (PH3 Danh mục dùng chung, route
+`/phan-he/PH3/bieu-mau`) từ `webapp/` (React) sang `frontend-angular/`. Route đã tồn tại nhưng trỏ
+`PlaceholderPage`; route con `/thiet-ke` (Form Designer) chưa tồn tại. Trang gồm 2 phần: danh sách
+`FormLibrary.tsx` (235 dòng) và trình thiết kế `FormDesignerPage.tsx` → `FormDesigner.tsx` (403 dòng,
+builder kéo-thả tự viết AntD theo D13, chạy trên engine `@bpmn-io/form-js`) + `FormRenderer.tsx` (634
+dòng, custom AntD renderer B-engine theo D12 dùng `feelin` để eval FEEL) + `FieldPalette`/
+`FieldProperties` (524 dòng) + data `forms/` (~320 dòng, 8 schema mẫu gồm 2 demo minh hoạ B-engine).
+Qua `AskUserQuestion`, user chọn **full parity** (list + designer đầy đủ) thay vì chỉ port riêng
+trang danh sách.
+
+**Không có collision với các phiên song song khác** (đã `git status` xác nhận): một phiên khác đang
+chạy đồng thời trên "Tách Service Quản lý NV KHCN & Hồ sơ" (đã tiến tới Lát 1/2a/2b, thêm
+`InProcessWorkflowClient.java`, `services/`, sửa `HoSoService.java`) — không đụng file nào của lát
+này.
+
+**Đã thêm dependency mới**: `@bpmn-io/form-js@^1.23.0` + `feelin@^7.0.1` vào `frontend-angular`
+(khớp version dùng ở `webapp`). CSS vendor `form-js.css`/`form-js-editor.css`/`properties-panel.css`
+thêm vào `angular.json` styles (giống cách `bpmn-js.css` đã làm cho BPMN modeler). Bump
+`maximumWarning` bundle budget 2.3MB → 2.5MB (CSS vendor luôn eager dù route lazy, đo thực tế lệch
+~108kB).
+
+**Đã triển khai (6 lát)**:
+
+- **Lát 1** — `core/models/eform.ts`: port `FormMeta`, `FormComponent`/`FormSchema` (kiểu schema
+  form-js dùng chung cho renderer + designer panel), `seedForms` (8 schema mẫu, gõ lại nguyên văn từ
+  3 file `webapp/src/forms/*.ts`), `emptySchema`, `countFields`, `buildYKien`, `slugifyFormKey`.
+- **Lát 2** — `core/services/eform.service.ts`: `EformService` signal store (`providedIn:'root'`,
+  seed đồng bộ) thay `store/FormContext.tsx` — `getForm/addForm/updateMeta/updateSchema/removeForm`.
+  **Cố ý KHÔNG port cột/stat "Đang dùng"**: bản gốc tính từ mock `store/ProcessContext`
+  (`taskSteps`+`formKey`), đã bị Angular thay bằng backend BPMN thật (`ProcessDefinitionService`,
+  không có model kiểu `taskSteps` mock để tính lại đúng) — port lại bằng mock riêng sẽ là dữ liệu giả
+  mâu thuẫn với hướng bỏ mock của app; bỏ hẳn stat này thay vì hiện số sai.
+- **Lát 3** — `shared/form-renderer/`: `FormRendererComponent` + `FormFieldComponent` (leaf, mọi loại
+  trường trừ dynamiclist) + `FormDynamicListComponent` (bảng động) — port đầy đủ 3 lát B-engine gốc
+  (trường phẳng + validate/submit, ẩn-hiện điều kiện + trường tính toán qua `feelin`, bảng động thêm/
+  xoá dòng với context `{...gốc, ...dòng}`). Logic thuần (eval FEEL/deriveState/validate/processLevel)
+  tách vào `core/models/eform-runtime.ts` để dùng chung với preview trong designer. Không dùng
+  `useImperativeHandle` như React — thay bằng phương thức public `submit()` gọi qua `ViewChild` (đúng
+  quy ước `BpmnModelerComponent`). Test mới `form-renderer.spec.ts`: ẩn/hiện điều kiện + validate,
+  trường tính toán, dynamiclist add/submit.
+- **Lát 4** — `shared/form-designer/`: `form-js-i18n.ts` (dictionary Việt hoá form-js riêng, KHÔNG gộp
+  vào `shared/bpmn-modeler/bpmn-properties-i18n.ts` để tránh trộn 2 phạm vi không liên quan),
+  `khcn-field-defaults.ts` (port `khcnFieldDefaultsModule` — nhãn mặc định tiếng Việt cho field mới),
+  `relabel-canvas-vi.ts` (port SCOPED của `relabel-vi.ts` — chỉ giữ phần vá canvas 'Select'/
+  'Repeatable'/'Expression...'; **bỏ hẳn phần vá palette/properties panel NATIVE** vì panel đó bị ẩn
+  trong kiến trúc Angular, vá DOM không hiển thị là code chết). **Cố ý KHÔNG port
+  `khcnFormSimplePanelModule`** (chế độ Đơn giản/Nâng cao) — cùng lý do, chỉ lọc nhóm panel native ẩn,
+  React cũng hardcode `() => false` (không có UI toggle thật). `form-field-palette.ts` (port
+  `FieldPalette.tsx`) + `form-field-properties.ts` (port `FieldProperties.tsx` — text/số commit khi
+  blur để giữ 1 lần undo/field, không mất focus khi gõ, đúng hành vi gốc) + `form-designer.ts` (wrapper
+  `FormEditor` — palette/properties panel native portal vào div ẩn, dock trái/phải AntD tự viết,
+  live preview debounce 300ms, undo/redo, `addField/editField/removeField` gọi thẳng service
+  `modeling`/`selection`/`formFieldRegistry`/`formLayouter` của form-js, beforeunload guard khi dirty).
+  Test mới cho 2 component thuần `form-field-palette.spec.ts`/`form-field-properties.spec.ts` (lọc
+  tìm kiếm, emit type khi click, commit label khi blur không phải mỗi keystroke, merge validate).
+  **Không viết spec cho `form-designer.ts`** (wrapper `FormEditor` thật) — đúng tiền lệ đã có trong
+  repo (`bpmn-editor.spec.ts` cũng chỉ test helper thuần `starterBpmn`, không mount
+  `BpmnModelerComponent` thật vì thư viện canvas nặng dễ vỡ trong jsdom).
+- **Lát 5** — CSS skin `src/styles/form-designer-canvas.scss` (port scoped từ 760 dòng
+  `webapp/src/branding/bpmnio-skin.css` — chỉ phần canvas `.vht-fd-canvas .fjs-*` + palette
+  `.vht-fp-*` + mapping token `--cds-*`; bỏ phần skin palette/panel NATIVE cùng lý do trên).
+- **Lát 6** — `pages/form-library/` (danh sách: bảng, tạo mới + tự mở designer, xem trước bằng
+  `FormRendererComponent`, xoá qua `nz-popconfirm`) + `pages/form-designer-page/` (điều phối route
+  param `:key` qua `ActivatedRoute.paramMap`, cảnh báo `NzModalService.confirm` khi thoát còn thay đổi
+  chưa lưu, Lưu gọi `designer.getSchema()` → `EformService.updateSchema`). `app.routes.ts`: 2 route
+  `phan-he/PH3/bieu-mau` và `phan-he/PH3/bieu-mau/:key/thiet-ke` đổi từ `PlaceholderPage`/chưa tồn tại
+  sang `loadComponent` lazy. `icons-provider.ts`: thêm `EFORM_ICONS` (23 icon mới, xác nhận tồn tại
+  trong `@ant-design/icons-angular/icons` trước khi dùng), đăng ký trong `app.ts`. Test mới
+  `form-library.spec.ts` (render seed, chặn tạo trùng key, tạo mới điều hướng đúng URL, xoá).
+
+**Phát hiện thật khi verify (không giả định)**: unit test icon dùng `TestBed.inject(NzIconService)
+.addIcon(...)` — quên nạp `APPROVAL_MATRIX_ICONS`/`SERVICE_TASK_ICONS` (nơi `plus`/`file-text` đã
+đăng ký) gây `IconNotFoundError` async không chặn test nhưng làm nhiễu output; sửa bằng nạp đủ 4 mảng
+icon giống `app.ts` thật. Xác nhận nguyên nhân bằng cách chạy riêng từng spec file, không đoán.
+
+**Verify**:
+
+- `npx ng build` (production): **GREEN**, `form-designer-page` tách lazy chunk riêng 509.49 kB,
+  `form-library` 8.45 kB. Chỉ còn cảnh báo có sẵn (`classnames` CommonJS) + 2 cảnh báo CommonJS mới từ
+  chính thư viện `@bpmn-io/form-js` (`lodash/isEqual`, `downloadjs`) — không chặn build, cùng loại với
+  cảnh báo `classnames` đã chấp nhận trước đó.
+- `npx ng test --watch=false`: **28/28 file, 119/119 test PASS** (11 test mới, từ 108 baseline).
+
+**⚠️ CHƯA verify được**: chưa click-through trình duyệt thật (nhất quán các phiên Angular trước) — UI
+mới chỉ xác nhận qua build/test. User nên tự mở `/phan-he/PH3/bieu-mau`, thử: xem danh sách 8 biểu
+mẫu seed, xem trước 1 biểu mẫu (bao gồm 2 demo B-engine "Phiếu thẩm định dự toán"/"Đăng ký thành
+viên" — kiểm tra ẩn/hiện điều kiện + trường tự tính + bảng động render đúng), tạo biểu mẫu mới (tự mở
+designer), trong designer: kéo-thả field từ palette, click field trên canvas để sửa thuộc tính, xem
+trước trực tiếp, Undo/Redo, Lưu thiết kế rồi quay lại danh sách xác nhận số trường cập nhật.
+
+---
+
+## ★ CURRENT — Port "Tác vụ hệ thống" (Service Task Config) React → Angular — DONE + VERIFIED 2026-07-16
+
+**Yêu cầu của user**: port trang "Cấu hình Service Task" (nav "Tác vụ hệ thống", route
+`/cau-hinh-service-task`) từ `webapp/` (React) sang `frontend-angular/`. Route đã tồn tại nhưng trỏ
+`PlaceholderPage`. Trang gồm: page 1550 dòng + `ServiceTaskContext` 610 dòng + 4 component con
+(MappingEditor/FormDrawer/BindingTable/TestPanel/ExecutionDrawer ~1850 dòng) + data model
+`serviceTasks.ts` 1446 dòng + `serviceTaskReconcile.ts` 325 dòng — không backend (đã grep xác nhận
+không có contract `ServiceTaskDefinition/Version/Binding` trong `backend/src/main/java`). Qua
+`AskUserQuestion`, user chọn **full parity, chia lát trong 1 phiên**, giống Ma trận phê duyệt.
+
+**⚠️ Đụng độ phiên song song thật (đã xảy ra, đã xử lý xong)**: giữa lúc port, phát hiện MỘT PHIÊN
+KHÁC đang chạy song song trên cùng repo, tự làm đúng y hệt feature này ĐỘC LẬP — tự tạo
+`pages/service-task-config/` (kiến trúc 1-file, không tách shared component) và
+`core/services/service-task.service.ts` riêng, ghi đè lên `core/models/service-task.ts` mà agent này
+vừa tạo (may mắn chỉ nối thêm 3 interface ở cuối, không phá nội dung gốc). Phiên đó còn làm song song
+cả module Action Studio (backend Java + Flyway V10) và đã đụng `app.routes.ts`/`app.ts`/
+`icons-provider.ts` — đúng những file agent này cũng cần sửa để wire route/icon. Đã dừng lại, dùng
+`AskUserQuestion` báo cáo phát hiện cho user thay vì tự ý ghi đè tiếp. User xác nhận phiên kia đã xong,
+yêu cầu kiểm tra lại và giữ đúng 1 bản. Đọc kỹ bản của phiên kia: **chưa đạt full parity** — thiếu hẳn
+2/6 tab (Đối soát BPMN, Kiểm thử — `runPreview` không tồn tại trong service của họ), và modal Tạo/Sửa
+không lưu được gì (`(nzOnOk)="closeDrawer()"` chỉ đóng modal), tự nhận trong UI là "bản port nhanh...
+sẽ hoàn thiện ở iteration sau". Qua `AskUserQuestion` lần 2, user chọn xóa bản đó, giữ
+`core/models/service-task.ts` (đã đúng), làm tiếp kiến trúc đầy đủ của agent này. **Lưu ý cho phiên
+sau**: tại thời điểm hoàn tất lát này, ít nhất MỘT phiên thứ 3 khác cũng đang chạy song song trên cùng
+repo (đang sửa `active-task.md` cho task "Tách Service Quản lý NV KHCN & Hồ sơ" — xem entry ngay bên
+dưới) — luôn `git status`/đọc lại file ngay trước khi ghi để tránh mất nội dung của phiên khác.
+
+**Đã triển khai (full parity, kiến trúc tách shared component giống Ma trận phê duyệt)**:
+
+- **Data model mới, scoped theo nhu cầu thật** (không port nguyên các file phụ thuộc gốc vì các màn
+  đó chưa lên Angular): `core/models/integration-system.ts` (subset `IntegrationSystem`/
+  `seedIntegrations` từ `camundaOps.ts` — chỉ phần connector, bỏ instances/job runs/events),
+  `core/models/integration-mapping.ts` (subset `MappingConfig`/`seedMappingConfigs`/
+  `validateMappingConfig` từ `integrationMapping.ts` — bỏ `sampleRecordsFor`/`previewMapping` phụ
+  thuộc `nhiemVu.ts`/`dossiers.ts` không cần ở đây), `core/models/process-registry.ts` (subset
+  `ProcessDef`/`seedProcesses`/`curVer` từ `processes.ts` — bỏ `taskSteps`/`bpmnXml` để không phải kéo
+  theo các hằng số XML lớn của màn Danh mục quy trình).
+- `core/models/service-task.ts` (port đầy đủ `serviceTasks.ts` gốc: types, `validateServiceTaskConfig`,
+  `previewServiceTaskConfig`, resolve/apply mapping, mask payload, toàn bộ seed data) +
+  `core/models/service-task-reconcile.ts` (port `serviceTaskReconcile.ts`).
+- `core/services/service-task.service.ts`: signal store thay `ServiceTaskContext.tsx` (không HTTP, in-
+  memory CRUD y hệt bản gốc) — `createDefinition/updateDefinition/duplicateDefinition/
+  saveDraftVersion/validateVersion/activateVersion/deprecateDefinition/bindTask/unbindTask/
+  runPreview/retryExecution/manualResolveExecution`.
+- `shared/service-task-mapping-editor/`: bảng sửa input/output mapping dùng chung (gộp 2 nhánh theo
+  `mode` trong 1 template vì Angular không tiện generic input/output như React).
+- `shared/service-task-form-drawer/`: drawer Tạo/Sửa 5 tab con (Tổng quan/Cấu hình thực thi theo
+  `typeCode`/Input mapping/Output mapping/Chính sách lỗi) — dùng signal cho từng field + `effect()`
+  reset khi mở/đổi definition, theo đúng quy ước ngModel+signal đã dùng ở
+  `approval-matrix-rules-tab` (không dùng Reactive Forms).
+- `shared/service-task-binding-table/`: tab "Đối soát BPMN" — đối chiếu metadata service task mock với
+  binding thật, modal gắn/đổi cấu hình.
+- `shared/service-task-test-panel/`: tab "Kiểm thử" — chọn definition/version/kịch bản mẫu, gọi
+  `runPreview` thật, hiện input sau mapping/payload/response giả lập/output mapping/validation.
+- `shared/service-task-execution-drawer/`: drawer chi tiết execution log (timeline attempt, request/
+  response summary masked, Retry/Manual resolve). **Bản React gốc bị lỗi encoding mojibake** ở nhiều
+  chuỗi tiếng Việt (vd. `"KhÃ´ng cÃ³ dá»¯ liá»‡u."`) — gõ lại đúng UTF-8 từ ngữ cảnh khi port, không copy
+  nguyên văn chuỗi hỏng. Đổi từ `NzModalService.confirm()` (không bind được ngModel vào nzContent
+  string) sang modal inline trong template để bind ghi chú xử lý tay đúng cách.
+- `pages/service-task-config/`: page shell 6 tab (Tổng quan/Cấu hình/Đối soát BPMN/Kiểm thử/Log thực
+  thi/Phiên bản & audit) + stat card + phân bổ trạng thái/loại + filter bar, gộp 2 drawer (form + log).
+- `icons-provider.ts`: thêm `SERVICE_TASK_ICONS` (15 icon mới: CheckCircle/ClockCircle/CloseCircle/
+  Disconnect/ExclamationCircle/Eye/FileText/Filter/Link/More/PlayCircle/Reload/Retweet/Send/Tool —
+  xác nhận tồn tại trong `@ant-design/icons-angular/icons` trước khi dùng), đăng ký trong `app.ts`.
+- `app.routes.ts`: route `cau-hinh-service-task` đổi từ eager `component:` (do phiên kia để lại) sang
+  `loadComponent` lazy, đúng pattern `ma-tran-phe-duyet`/`cau-hinh-hanh-dong`.
+
+**Verify**:
+- `npx ng build` (production): **GREEN**, `service-task-config` tách lazy chunk riêng 138.65 kB. Chỉ
+  còn cảnh báo có sẵn từ trước (`classnames` CommonJS, `action-studio.scss` budget — không liên quan).
+- `npx ng test --watch=false`: **23/23 file, 102/102 test PASS** (15 test mới:
+  `service-task.service.spec.ts` 9 test — seed/create/validate-invalid/activate/duplicate/bind/
+  preview/retry/manual-resolve; `service-task-config.spec.ts` 6 test — render/create/edit/filter/
+  duplicate/execution-log-drawer). `fixture.detectChanges()` full page (kéo theo toàn bộ 5 shared
+  component + 2 drawer) không lỗi DI/icon — xác nhận sớm các lỗi từng gặp ở Ma trận phê duyệt (icon
+  chưa đăng ký tĩnh, `NzModalService` thiếu `NzModalModule`) không lặp lại ở đây.
+
+**⚠️ CHƯA verify được**: chưa click-through trình duyệt thật (nhất quán các phiên Angular trước) — UI
+mới chỉ xác nhận qua build/test. User nên tự mở `/cau-hinh-service-task`, thử cả 6 tab: tạo/sửa cấu
+hình (đủ execution config theo từng loại + input/output mapping + chính sách lỗi), validate/activate/
+nhân bản, gắn/đổi/bỏ gắn binding ở Đối soát BPMN, chạy Kiểm thử với JSON mẫu, retry/manual resolve ở
+Log thực thi.
+
+---
+
+## ★ CURRENT — Tách Service Quản lý NV KHCN & Hồ sơ — LÁT 2D DONE + VERIFIED 2026-07-16
+
+**Yêu cầu user**: tách phần Quản lý NV KHCN và Hồ sơ sang service mới; khi gửi/khởi tạo luồng xử lý
+hồ sơ, service mới truyền lệnh khởi tạo sang service Quản trị quy trình.
+
+**Hướng đã thống nhất**:
+
+- Service Hồ sơ sở hữu `NhiemVu`, `HoSo`, tài liệu, phiên bản và trạng thái nghiệp vụ.
+- Service Quy trình sở hữu BPMN/DMN/eForm/action policy, Camunda, process instance/task/incident.
+- Không copy toàn bộ hồ sơ sang service Quy trình; chỉ gửi `hoSoId`, `nhiemVuId`, `businessKey`,
+  `processCode`, actor và các control variables tối thiểu.
+- Tạo nháp không start Camunda; hành động Gửi hồ sơ ghi transactional outbox rồi gọi endpoint start
+  idempotent. Workflow events đồng bộ projection trạng thái về service Hồ sơ.
+- Tách theo strangler, có seam `WorkflowClient`, không dual-write và không transaction phân tán.
+
+**Plan chi tiết**: `docs/arch/nvkhcn-ho-so-service-extraction-plan.md` — gồm ownership matrix,
+contract start/event v1, data migration, gateway routing, security/observability, 8 lát triển khai,
+test bắt buộc và rollback.
+
+**Đã bổ sung characterization HTTP contract tests**:
+
+- `NhiemVuHttpContractTest`: 5 test khóa đúng 8 field JSON, 201 + format mã/default giai đoạn,
+  validation 400, not-found 404, API key và CORS preflight.
+- `HoSoHttpContractTest`: 8 test khóa đúng 17 field view join + 11 field/step, create defaults và
+  không lộ tài liệu trong legacy response, validation/not-found, submit RD01.01 + step chain/process
+  key, 501/409, action not-found/missing process key, API key và CORS preflight.
+- `HoSoServiceTest`: đã khóa create/submit/fail-soft/return/reject; test mô tả collision được giữ
+  `@Disabled` có chủ đích.
+- Thêm Maven Wrapper 3.9.9 trong `backend/`; full backend baseline: 109 test, 108 pass, 1 skipped có
+  chủ đích, không failure/error.
+- Angular baseline: 23/23 file, 102/102 test pass; production build green, route
+  `/cau-hinh-service-task` lazy-load thành công (chunk 138.65 kB).
+- Rollback DB: `C:\Users\phuctd7\qtkhcn-backups\qtkhcn-slice0-20260716-164558.dump`, SHA-256
+  `57395caf30cd0f8bc92fc19bd5dd72bc6680d5cd07bcf723d37d2d729249eaf4`; đã verify bằng
+  `pg_restore --list`. Có worktree manifest + checksum cùng thư mục backup.
+
+**Duyệt Lát 0**: user đã duyệt contract v1 và baseline ngày 2026-07-16.
+
+**Lát 1 đã triển khai**:
+
+- Thêm application port `WorkflowClient` cùng `StartWorkflowCommand`, `WorkflowInstance`,
+  `WorkflowActionCommand` và `WorkflowAction`; không dùng Camunda DTO trong contract của port.
+- `HoSoService` chỉ phụ thuộc `WorkflowClient`, không còn import/gọi trực tiếp `Rd0101ProcessService`.
+- `InProcessWorkflowClient` bọc implementation RD01.01 cũ trong cùng Spring Boot process; không thêm HTTP,
+  container, database hoặc migration và không đổi runtime topology.
+- Giữ nguyên thứ tự workflow-before-save, start fail-soft legacy, action fail-closed và public REST contract.
+- Thêm `InProcessWorkflowClientTest` 4/4; full backend 113 test, 112 pass, 1 skipped có chủ đích.
+- Tài liệu chi tiết: `docs/arch/nvkhcn-ho-so-slice-1-workflow-seam.md`.
+
+**Lát 2A đã triển khai**:
+
+- Scaffold `services/ho-so-service`: Spring Boot 4.0.7, Java 21, Maven Wrapper 3.9.9, port mặc định 8093.
+- Database riêng `qtkhcn_ho_so`; Flyway V1 tạo 5 bảng Hồ sơ/Nhiệm vụ, Hibernate validate xanh.
+- API GET Nhiệm vụ/Hồ sơ tương thích contract legacy; không expose mutation endpoint.
+- Bearer service token fail-closed từ environment, read audit/correlation log và actuator probes.
+- Test 7/7 pass; executable JAR build thành công; runtime smoke readiness/liveness UP, auth 401/200 đúng.
+- Chưa nạp dữ liệu, chưa đổi gateway/Caddy/Angular, chưa start service thường trực và không dual-write.
+- Chi tiết: `docs/arch/nvkhcn-ho-so-slice-2a-scaffold.md`.
+
+**Lát 2B đã triển khai**:
+
+- `Invoke-HoSoBackfill.ps1`: snapshot nhất quán bằng `pg_dump`, restore atomic một chiều cho 5 bảng,
+  giữ identity/FK, reset sequence, hỗ trợ `-WhatIf` và chạy lặp; không write-back/dual-write.
+- Backfill local thật: `5 nhiem_vu / 5 ho_so / 30 dossier_step / 50 dossier_step_code /
+  10 ho_so_tai_lieu`; lần lỗi kiểm chứng rollback target thành công, lần cuối COMMIT xanh.
+- `Test-HoSoDataParity.ps1`: count và checksum chuẩn hóa khớp 5/5 bảng.
+- `Compare-HoSoReadContracts.ps1`: exact JSON comparison pass 12/12 (2 list + 10 item endpoints).
+- Gateway có seam `-EnableHoSoReadRoute`, mặc định OFF và fail-closed bằng readiness/API check; mutation
+  luôn về monolith. Chưa bật flag và chưa đổi traffic live.
+- Service test 7/7 pass, executable JAR build xanh; PowerShell parser 4/4 script và Caddy validate pass.
+- Chi tiết: `docs/arch/nvkhcn-ho-so-slice-2b-backfill.md`.
+
+**Lát 2C đã triển khai và diễn tập**:
+
+- Service release `slice2c-20260716-173255-2b47b70` chạy thường trực trên loopback `8093`, readiness UP;
+  artifact SHA-256 `71bae31ae12ee3e1a9eba451f9e14dbb967b6b64dbf2f09dad8ed87c8308271e`.
+- `Switch-HoSoReadRoute.ps1` chuyển Canary/Monolith bằng `caddy reload`, fail-closed trước canary và xác
+  nhận upstream thật cùng Basic Auth `401`; không restart Runlocal.
+- Exact contract 12/12 pass lại; Angular release/SPA/auth shell và gateway GET 5 hồ sơ smoke xanh.
+- Rollback drill hoàn tất; trạng thái cuối read route ở monolith `8090`, service `8093` vẫn resident.
+- Không chuyển write ownership, không dual-write. Chi tiết: `docs/arch/nvkhcn-ho-so-slice-2c-canary.md`.
+
+**Lát 2D đã triển khai và diễn tập**:
+
+- `ReadAuditFilter` thêm timer `qtkhcn.read.requests`, tag hữu hạn `traffic/route/outcome`; Caddy gắn
+  canary header, direct probe không làm sai số traffic. Audit log thêm `traffic`, vẫn không log secret.
+- `Invoke-HoSoReadCanaryWindow.ps1`: mặc định 30 phút, poll readiness/metric 30 giây, ngưỡng 0% 5xx,
+  average latency 1.000 ms, tối thiểu 5 request; không đủ mẫu là FAIL; report JSON ngoài repo.
+- Route luôn rollback Monolith trong `finally`; mutation/write ownership luôn ở monolith.
+- Service release `slice2d-20260716-175633` resident loopback 8093, readiness UP; build/test 8/8 xanh,
+  parser PowerShell 5.1 pass.
+- Diễn tập bounded window sau sửa phép tính delta: 5 request tổng hợp, 0 lỗi 5xx, average 12,47 ms,
+  max 26,73 ms; verdict PASS; admin config cuối là monolith 8090, Basic Auth thiếu credential vẫn 401.
+- Chi tiết: `docs/arch/nvkhcn-ho-so-slice-2d-observed-canary.md`.
+
+**Next concrete action**: chạy cửa sổ 30 phút với traffic người dùng thật đủ mẫu; chỉ khi report PASS mới
+cân nhắc giữ/tăng read traffic. Chưa chuyển quyền ghi và chưa bắt đầu Lát 3.
+
+---
+
+## ★ CURRENT — Ghép BE vào FE `/cau-hinh-hanh-dong` — DONE + VERIFIED 2026-07-16
+
+**Yêu cầu user**: xây backend thật cho màn Angular Ma trận Hành động và thay store seed bằng API.
+
+**Đã triển khai**:
+
+- Flyway `V10__action_studio.sql` + JPA persistence cho 17 action/presentation, 13 luật khả dụng,
+  3 chính sách Chi tiết và audit. Routing catalog 3 quy trình nằm ở backend, chỉ đọc từ FE.
+- REST `/api/action-studio`: tải config, action status/presentation, CRUD/status luật khả dụng và
+  chính sách Chi tiết, simulate fail-closed, reconcile BPMN và scaffold. Mutation dùng `If-Match`,
+  actor header và audit server-side; stale write trả 409 ổn định.
+- Angular `ActionStudioService` là HTTP-backed signal cache; page tải config khi vào route, mọi thao
+  tác ghi là bất đồng bộ, lỗi backend được hiển thị, mô phỏng/đối soát/scaffold đều gọi server thật.
+- Module BE được ghép vào worktree backend tổng hợp Approval Matrix để FE cổng 8091 dùng đồng thời
+  được cả `/api/approval-matrix` và `/api/action-studio`, không làm mất module trước.
+
+**Verify**:
+
+- Backend workspace chính: `mvn -o test` **90/90 PASS**.
+- Backend tổng hợp `ql-nvkhcn-be-approval-matrix`: `mvn -o package` **99/99 PASS**, executable JAR.
+- Angular `npx ng test --watch=false`: **21/21 file, 87/87 PASS**; `npx ng build` GREEN, lazy chunk
+  `action-studio` 73.00 kB. Còn warning budget initial 2.36 MB, action SCSS 4.89 kB và CommonJS
+  `classnames`; không có lỗi build.
+- PostgreSQL/Flyway thật: version `10:action studio:true`; smoke GET trả 17/13/3/3, simulate
+  `RD01.01 · t2 · TD · PROCESS_STEP` cho `APPROVE_STEP` visible+enabled; tạo/xóa luật smoke sạch,
+  ghi 2 audit event. Approval Matrix vẫn trả dữ liệu sau khi ghép.
+- Backend dev 8091 đã restart từ JAR tổng hợp, PID **21584**. Angular dev server 4200 đã hot reload.
+
+**Chưa làm**: chưa click-through bằng browser thật; chưa commit/deploy demo vì user chưa yêu cầu.
+
+---
+
+## ★ CURRENT — Ghép BE vào FE `/ma-tran-phe-duyet` — DONE + VERIFIED 2026-07-16
+
+**Yêu cầu user**: thay dữ liệu mock của màn Angular Ma trận phê duyệt bằng backend thật.
+
+**Đã triển khai**:
+
+- `ApprovalMatrixService` chuyển thành HTTP-backed signal store cho toàn bộ contract
+  `/api/approval-matrix`: tải luật, tạo/cập nhật/xoá với optimistic locking `If-Match`, bật/tắt,
+  lịch sử phiên bản, audit, analyze và resolve. Response resolve được ánh xạ lại vào model UI và
+  danh mục người dùng Angular.
+- `ApprovalSlotCatalogService` nối CRUD/status của `/api/approval-matrix/slots`; khi huỷ kích hoạt
+  slot đang được tham chiếu, xác nhận của người dùng được chuyển thành `force=true` đúng contract BE.
+- Shell tải đồng thời rules/slots/analyze khi vào route. Rule/slot UI chuyển toàn bộ thao tác ghi
+  sang bất đồng bộ, chỉ cập nhật signal cache sau khi backend thành công và hiện lỗi trả về từ API.
+- Simulation Panel gọi thật `POST /api/approval-matrix/resolve`. Mini-simulator trong Rule Builder
+  vẫn dùng resolver cục bộ có chủ đích vì nó cần thử bản nháp chưa lưu.
+- Test service/component được chuyển từ giả định seed đồng bộ sang `HttpTestingController`, có kiểm
+  tra URL, payload, actor header và `If-Match`.
+
+**Verify**:
+
+- Angular `npx ng test --watch=false`: **20/20 file, 82/82 PASS**.
+- Angular production `npx ng build`: **GREEN**; lazy chunk `approval-matrix` 230.97 kB; chỉ còn
+  warning CommonJS `classnames` có sẵn từ bpmn properties panel.
+- Backend worktree `fix/approval-matrix-backend`: `mvn -o test` **91/91 PASS**, gồm service/analyzer/
+  condition engine và HTTP contract Approval Matrix.
+- Real PostgreSQL/Flyway smoke trên backend tạm: **7 rules, 5 slots**, resolve context
+  `PHE_DUYET + TD + 12 tỷ` → `AM-05`, approver `U-013`, mode `ANY_ONE`.
+- Backend dev cổng **8091** đã được chuyển an toàn sang jar Approval Matrix (PID 27564); GET rules
+  thực tế trả 7 dòng. Không đụng backend live 8090, Caddy hay Docker.
+
+**Git/worktree**: phần BE hiện vẫn là thay đổi chưa commit trong worktree
+`C:\Users\phuctd7\ql-nvkhcn-be-approval-matrix`; phần FE là thay đổi chưa commit trong workspace
+chính. Không commit vì user chưa yêu cầu.
+
+---
+
+## ★ CURRENT — Port "Ma trận phê duyệt" (Approval Matrix) React → Angular — DONE + VERIFIED 2026-07-16
+
+**Yêu cầu của user**: port trang "Ma trận phê duyệt" từ `webapp/` (React, EPIC06) sang
+`frontend-angular/` (D17). Route `/ma-tran-phe-duyet` đã tồn tại nhưng trỏ `PlaceholderPage`. Đây là
+trang phức tạp/lớn nhất trong React app (~5300 dòng gộp cả file liên quan): bảng luật first-match,
+Condition Builder cây AND/OR đệ quy, Assignment Builder, Simulation Panel (kịch bản lưu
+localStorage), tab Danh mục Loại phê duyệt. Qua `AskUserQuestion`, user chọn **full parity, chia Lát
+trong 1 phiên** thay vì slice tối giản trước.
+
+**Không có backend contract** cho domain này (xác nhận qua grep `backend/src/main/java`) — giữ
+frontend-mock như bản React, dùng Angular signal-based service thay React Context (không HTTP).
+
+**Đã triển khai (5 lát, chi tiết trong kế hoạch `graceful-munching-stallman.md`)**:
+
+- **Lát 1** — `core/models/`: port thuần TS không phụ thuộc Angular từ `webapp/src/data/*.ts`:
+  `approval-conditions.ts` (cây điều kiện AND/OR), `approval-variable-registry.ts` (metadata biến),
+  `approval-slot-catalog.ts`, `roles.ts`, `org-users.ts` (mới, tách khỏi `core/auth/demo-users.ts` —
+  file đó chỉ 5 tài khoản đăng nhập, không phải danh mục tổ chức đầy đủ), `approval-matrix.ts` (635
+  dòng gốc: `ApprovalRule/Assignment/Target`, `resolveApprovers` first-match + uỷ quyền theo hiệu
+  lực; bỏ `domainCode?` không dùng và `resolveGroups()` không có consumer Angular), `approval-matrix-analyzer.ts`
+  (`analyzeRules` phát hiện xung đột/thiếu fallback).
+- **Lát 2** — `core/services/`: `ApprovalMatrixService`/`ApprovalSlotCatalogService`
+  (`providedIn:'root'`, signal store seed đồng bộ, thay `ApprovalMatrixContext`/
+  `ApprovalSlotCatalogContext` React) + `ApprovalSimulationScenarioService` (wrap `localStorage` trực
+  tiếp như `auth.service.ts` đã làm, tách thành service để panel mô phỏng test được).
+- **Lát 3** — `shared/`: `condition-builder` (component **tự đệ quy** — tự import chính nó trong
+  `imports`, xác nhận đây không phải vấn đề với standalone component), `assignment-builder`,
+  `approval-simulation-panel` (716 dòng gốc, form động theo kiểu biến + preset + diff + kịch bản
+  lưu/tải/xoá qua scenario service).
+- **Lát 4** — `pages/approval-matrix/`: shell 2 tab (`approval-matrix.ts`) + `approval-matrix-rules-tab`
+  (~1080 dòng gốc: bảng luật, drawer thêm/sửa với Condition/Assignment Builder + bản xem trước +
+  mini-simulator, drawer Mô phỏng, drawer Lịch sử phiên bản/audit, thẻ Uỷ quyền) +
+  `approval-slot-catalog-tab` (~260 dòng gốc: CRUD slot + `NzModalService.confirm` khi huỷ kích hoạt
+  slot đang được luật tham chiếu).
+- **Lát 5** — `app.routes.ts`: route `ma-tran-phe-duyet` đổi từ `PlaceholderPage` sang
+  `loadComponent` **lazy** (không phải eager như dự tính ban đầu — đo thực tế thấy route eager đẩy
+  initial bundle 2.20MB → 2.50MB, vượt budget cảnh báo; lazy giữ initial ở 2.28MB, đúng tinh thần
+  `bpmn-editor` đã lazy-load trước đó cho trang cấu hình lớn/ít dùng). Bump `maximumWarning` bundle
+  budget 2.2MB → 2.3MB (tăng tối thiểu, phần dư 2.28MB là code hợp lệ của tính năng, không phải phình
+  to vô cớ).
+
+**Phát hiện thật trong lúc verify (không giả định)**: `nz-icon` với icon **chưa đăng ký tĩnh** qua
+`NzIconService.addIcon()` yêu cầu `HttpClientModule` fetch SVG động qua mạng — chạy được trong trình
+duyệt thật (có mạng) nhưng **crash ngay trong unit test** (`IconNotFoundError`, không có HTTP mock).
+Đăng ký tĩnh 10 icon mới (`APPROVAL_MATRIX_ICONS` trong `core/icons-provider.ts`, nạp cùng
+`NAV_ICONS` ở `app.ts`) — sửa đúng phạm vi tính năng này, không đụng icon của các trang khác (dù
+nhiều trang khác trong codebase cũng đang dùng icon chưa đăng ký tĩnh tương tự — vấn đề tiềm ẩn có
+thật nhưng ngoài phạm vi lát này, chưa từng lộ ra vì đây là lần đầu tiên có component-level spec
+dùng `fixture.detectChanges()` trong `frontend-angular/`). Riêng lỗi `NG0201: No provider found for
+NzModalService` ở `approval-matrix-rules-tab` — do gọi `NzModalService.confirm()` mà không import
+`NzModalModule` (provider của service này đăng ký qua NgModule, không phải `providedIn:'root'`) —
+sửa bằng cách thêm `NzModalModule` vào `imports`, đúng pattern `business-rule-list.ts` đã dùng.
+
+**Verify**:
+
+- `npx ng build` (production): **GREEN**, không lỗi, chỉ còn cảnh báo `classnames` CommonJS có sẵn
+  từ trước (không liên quan). `approval-matrix` tách thành lazy chunk riêng 228.78 kB.
+- `npx ng test --watch=false`: **19/19 file, 80/80 test PASS** — bao gồm 6 spec mới cho tính năng
+  này (`approval-matrix.spec.ts` model resolver, 2 service spec, `condition-builder`/
+  `assignment-builder`/`approval-simulation-panel` component spec, `approval-slot-catalog-tab`/
+  `approval-matrix-rules-tab` page spec).
+
+**⚠️ CHƯA verify được**: chưa click-through trình duyệt thật (nhất quán các phiên Angular trước) —
+UI mới chỉ xác nhận qua build/test, chưa xác nhận bằng mắt trên `ng serve`. User nên tự mở
+`/ma-tran-phe-duyet`, thử cả 2 tab (thêm/sửa luật với Condition/Assignment Builder, chạy Mô phỏng,
+xem Lịch sử, CRUD Danh mục Loại phê duyệt).
+
+**Lưu ý phát hiện trong lúc làm (không phải việc của lát này)**: một phiên khác đang chạy song song
+trên cùng repo, thực hiện tách release demo Runlocal khỏi dev workspace (commit lần đầu
+`backend/`/`frontend-angular/`/`infra/` vào git — trước đó hoàn toàn untracked) — xem entry
+"Tách release demo khỏi dev workspace" ngay bên dưới. Phiên đó đã chủ động **không** commit các file
+mới của lát này (`pages/approval-matrix/`, `shared/approval-simulation-panel/`) để tránh xung đột,
+để lại nguyên trong working tree. Không commit gì trong lát này (đúng theo yêu cầu chỉ commit khi
+được yêu cầu rõ ràng) — toàn bộ thay đổi vẫn ở working tree, sẵn sàng để commit khi user xác nhận.
+
+---
+
 ## ★ CURRENT — Tách release demo khỏi dev workspace (Runlocal) — DONE + VERIFIED 2026-07-16
 
 **Yêu cầu của user**: implement thật kế hoạch tách workspace/release đã viết ở

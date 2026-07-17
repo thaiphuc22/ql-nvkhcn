@@ -10,6 +10,20 @@ http://127.0.0.1:8443 {
 		demo {$DEMO_BASIC_AUTH_HASH}
 	}
 
+	# Read-route strangler seam. Start-DemoProxy.ps1 pins this upstream to the monolith unless the
+	# explicit -EnableHoSoReadRoute switch is supplied after Slice 2B gates have passed.
+	@ho_so_reads {
+		method GET
+		path /api/ho-so /api/ho-so/* /api/nhiem-vu /api/nhiem-vu/*
+	}
+	handle @ho_so_reads {
+		reverse_proxy {$QTKHCN_HO_SO_READ_UPSTREAM} {
+			header_up X-QTKHCN-Dev-Key {$QTKHCN_DEV_API_KEY}
+			header_up Authorization "Bearer {$QTKHCN_HO_SO_SERVICE_TOKEN}"
+			header_up X-QTKHCN-Read-Canary true
+		}
+	}
+
 	handle /api/* {
 		reverse_proxy 127.0.0.1:8090 {
 			header_up X-QTKHCN-Dev-Key {$QTKHCN_DEV_API_KEY}
