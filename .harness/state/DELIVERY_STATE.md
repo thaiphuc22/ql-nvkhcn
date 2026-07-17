@@ -1,7 +1,12 @@
 # Delivery State
 
 **Owner**: Delivery Manager
-**Last updated**: 2026-07-10 (**PH2/PH3/PH4 mockup upgrade + domainCode scaffold + Phase 2
+**Last updated**: 2026-07-17 (**Dashboard Optimize lãnh đạo DONE** trên branch `trangdt` —
+rewrite `/tong-quan`: KPI tháng/quý, cycle/SLA/incident, charts tải bước + backlog + outcome DMN,
+năng lực đơn vị, heatmap Unit×SLA + heatmap BPMN RD01.01 via `BpmnViewer` heat markers;
+seed `data/optimizeAnalytics.ts`; thêm `recharts`. Frontend-mock, không đụng F1. Chi tiết
+`active-task.md`.
+Earlier 2026-07-10: **PH2/PH3/PH4 mockup upgrade + domainCode scaffold + Phase 2
 Connector framing DONE** — xem `active-task.md` cho chi tiết đầy đủ; tóm tắt: sửa bug mojibake
 `data/phanHe.ts` đè `PH4.modules`, đồng bộ `PH4.modules` (thêm Ma trận Hành động/Tác vụ hệ thống/
 Tích hợp/Nhật ký), thêm route `/phan-he/PH4/tong-quan`, gộp nav "Vận hành & Tích hợp" vào nhóm
@@ -44,7 +49,11 @@ screen (`/tich-hop`) upgrade Đợt 1+2 (Slice A-G) DONE** + **EPIC06 Approval M
 > **Do not start EPIC work (Configuration Service EPICs or further RD flows) until F1–F5
 > are COMPLETE.** See `active-task.md` for the concrete next step.
 >
-> **★ ACTIVE TASK (2026-07-10): PH2/PH3/PH4 mockup upgrade + domainCode scaffold + Phase 2
+> **★ ACTIVE TASK (2026-07-17, branch `trangdt`): Dashboard Optimize lãnh đạo — DONE
+> (frontend mock).** Màn `/tong-quan` hiển thị KPI + charts + heatmap BPMN theo mô tả Optimize;
+> seed mock, chưa nối API. Chờ feedback UI từ user.
+>
+> **Trước đó (2026-07-10): PH2/PH3/PH4 mockup upgrade + domainCode scaffold + Phase 2
 > Connector framing — DONE.** Triggered by
 > `docs/research/quan-tri-quy-trinh-bpm-platform-danh-gia-2026-07-10.md` (brainstorm, chưa lock)
 > đánh giá mở rộng "Phân hệ Quản lý Quy trình" thành nền tảng đa domain; plan of record
