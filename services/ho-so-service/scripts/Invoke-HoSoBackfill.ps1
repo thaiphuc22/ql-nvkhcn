@@ -81,6 +81,18 @@ SELECT setval(
     COALESCE((SELECT MAX(id) FROM public.dossier_step), 1),
     EXISTS (SELECT 1 FROM public.dossier_step)
 );
+SELECT setval(
+    'public.nhiem_vu_business_seq',
+    GREATEST(COALESCE((SELECT MAX(NULLIF(regexp_replace(ma, '^.*\.', ''), ma)::INTEGER)
+        FROM public.nhiem_vu WHERE ma ~ '^RD\.[0-9]{4}\.[0-9]+$'), 0), 1),
+    EXISTS (SELECT 1 FROM public.nhiem_vu WHERE ma ~ '^RD\.[0-9]{4}\.[0-9]+$')
+);
+SELECT setval(
+    'public.ho_so_business_seq',
+    GREATEST(COALESCE((SELECT MAX(NULLIF(regexp_replace(id, '^.*-', ''), id)::INTEGER)
+        FROM public.ho_so WHERE id ~ '^HS-[0-9]{4}-[0-9]+$'), 0), 1),
+    EXISTS (SELECT 1 FROM public.ho_so WHERE id ~ '^HS-[0-9]{4}-[0-9]+$')
+);
 COMMIT;
 "@
     [System.IO.File]::AppendAllText($restorePath, $suffix, $utf8)

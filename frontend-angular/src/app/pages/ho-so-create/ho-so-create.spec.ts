@@ -81,6 +81,7 @@ describe('HoSoCreatePage', () => {
 
     const request = http.expectOne('http://localhost:8091/api/ho-so');
     expect(request.request.method).toBe('POST');
+    expect(request.request.headers.get('X-QTKHCN-Actor')).toBe("UTF-8''unknown-demo-user");
     expect(request.request.body).toEqual({
       maNV: mission.ma,
       loai: 'NGHIEM_THU',

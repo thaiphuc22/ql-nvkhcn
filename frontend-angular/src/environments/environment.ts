@@ -1,4 +1,4 @@
 export const environment = {
-  apiBaseUrl: 'http://localhost:8091',
+  apiBaseUrl: '',
   devApiKeyValue: 'dev-local-only',
 };

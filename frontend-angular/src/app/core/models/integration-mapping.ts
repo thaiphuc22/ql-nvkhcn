@@ -1,13 +1,39 @@
-// Port scoped của webapp/src/data/integrationMapping.ts — chỉ phần cần cho Service
-// Task (`MappingConfig` + seed + validate dùng trong CALL_API config). Không port
-// sampleRecordsFor/previewMapping (phụ thuộc nhiemVu.ts/dossiers.ts và chỉ dùng ở
-// màn Tích hợp `/tich-hop`, chưa lên Angular).
+// Port của webapp/src/data/integrationMapping.ts. Ban đầu chỉ port phần cần cho
+// Service Task (`MappingConfig` + seed + validate dùng trong CALL_API config); nay
+// mở rộng thêm nhãn hiển thị + previewMapping cho màn Tích hợp thật (`/tich-hop`,
+// xem core/services/integration-mapping.service.ts — GET /api/integration-mappings
+// là nguồn dữ liệu thật). `sampleRecordsFor` KHÔNG port theo đúng dạng gốc (đọc từ
+// seed tĩnh nhiemVu.ts/dossiers.ts) — Angular đã có backend thật cho NhiemVu/HoSo
+// (NhiemVuService/HoSoService), nên trang Tích hợp lấy bản ghi mẫu trực tiếp từ đó
+// thay vì fabricate lại một seed riêng; NhanSu vẫn trả rỗng vì NhiemVuResponse hiện
+// không tách maNhanVien/email/donViCongTac (trung thực về giới hạn, giống TaiSan).
 
 export type MappingDirection = 'out' | 'in';
 
+export const MAPPING_DIRECTION_LABEL: Record<MappingDirection, string> = {
+  out: 'QTKHCN → hệ ngoài',
+  in: 'Hệ ngoài → QTKHCN',
+};
+
 export type BusinessObject = 'HoSo' | 'NhiemVu' | 'DuToan' | 'NhanSu' | 'TaiSan';
 
+export const BUSINESS_OBJECT_LABEL: Record<BusinessObject, string> = {
+  HoSo: 'Hồ sơ',
+  NhiemVu: 'Nhiệm vụ',
+  DuToan: 'Dự toán',
+  NhanSu: 'Nhân sự',
+  TaiSan: 'Tài sản',
+};
+
 export type MappingFieldType = 'string' | 'number' | 'boolean' | 'date' | 'enum';
+
+export const MAPPING_FIELD_TYPE_LABEL: Record<MappingFieldType, string> = {
+  string: 'Chuỗi',
+  number: 'Số',
+  boolean: 'Đúng/Sai',
+  date: 'Ngày',
+  enum: 'Danh mục (enum)',
+};
 
 /** Danh sách transform AN TOÀN duy nhất được chọn trong MVP (không cho nhập script tự do). */
 export type TransformKind =
@@ -17,6 +43,15 @@ export type TransformKind =
   | 'split'
   | 'enum-map'
   | 'default-value';
+
+export const TRANSFORM_LABEL: Record<TransformKind, string> = {
+  'format-date': 'Định dạng lại ngày',
+  'to-string': 'Đổi số sang chuỗi',
+  concat: 'Nối field',
+  split: 'Tách field',
+  'enum-map': 'Đổi enum/trạng thái (theo bảng value mapping)',
+  'default-value': 'Gán giá trị mặc định khi rỗng',
+};
 
 export interface ValueMapping {
   qtkhcn: string;
@@ -38,6 +73,14 @@ export interface FieldMapping {
 
 export type MappingStatus = 'draft' | 'ready' | 'active' | 'deprecated' | 'error';
 
+export const MAPPING_STATUS_META: Record<MappingStatus, { label: string; color: string }> = {
+  draft: { label: 'Draft', color: 'default' },
+  ready: { label: 'Ready', color: 'blue' },
+  active: { label: 'Active', color: 'success' },
+  deprecated: { label: 'Deprecated', color: 'default' },
+  error: { label: 'Error', color: 'error' },
+};
+
 export interface MappingConfig {
   id: string;
   /** IntegrationSystem.key (core/models/integration-system.ts). */
@@ -45,11 +88,18 @@ export interface MappingConfig {
   doiTuong: BusinessObject;
   chieu: MappingDirection;
   trangThai: MappingStatus;
+  /** JPA @Version — dùng làm ETag cho If-Match khi sửa field/trạng thái (GET /api/integration-mappings). */
   version: number;
   capNhatLuc: string;
   capNhatBoi: string;
   fields: FieldMapping[];
   jobType?: string;
+}
+
+export interface CreateMappingRequest {
+  he: string;
+  doiTuong: BusinessObject;
+  chieu: MappingDirection;
 }
 
 const TODAY = '2026-07-08';
@@ -222,4 +272,79 @@ export function validateMappingConfig(config: MappingConfig): MappingValidationR
   }
 
   return { valid: errors.length === 0, errors };
+}
+
+/* ─────────────────────────── Preview payload (màn Tích hợp) ─────────────────────────── */
+
+export interface SampleRecord {
+  id: string;
+  label: string;
+  data: Record<string, unknown>;
+}
+
+export interface FieldPreview {
+  fieldId: string;
+  truongQTKHCN: string;
+  truongHeNgoai: string;
+  giaTriGoc: unknown;
+  giaTriSauMapping: unknown;
+  thieu: boolean;
+  loi: boolean;
+}
+
+export interface PreviewResult {
+  payload: Record<string, unknown>;
+  fields: FieldPreview[];
+  missingCount: number;
+  invalidCount: number;
+}
+
+/** Áp 1 field mapping lên giá trị nguồn — dùng chung bởi previewMapping. */
+function applyField(field: FieldMapping, raw: unknown): { value: unknown; missing: boolean; invalid: boolean } {
+  let value = raw;
+  let missing = value === undefined || value === null || value === '';
+  let invalid = false;
+
+  if (missing && field.transform === 'default-value' && field.giaTriMacDinh !== undefined) {
+    value = field.giaTriMacDinh;
+    missing = false;
+  }
+
+  if (!missing && field.transform === 'enum-map') {
+    const vm = field.valueMappings?.find((v) => v.qtkhcn === String(value));
+    if (vm) value = vm.heNgoai;
+    else invalid = true;
+  }
+
+  if (!missing && field.transform === 'to-string') value = String(value);
+
+  return { value, missing, invalid };
+}
+
+/** Preview payload: áp toàn bộ field mapping của 1 config lên 1 bản ghi nguồn mẫu. */
+export function previewMapping(config: MappingConfig, source: Record<string, unknown>): PreviewResult {
+  const fields: FieldPreview[] = [];
+  const payload: Record<string, unknown> = {};
+  let missingCount = 0;
+  let invalidCount = 0;
+
+  for (const f of config.fields) {
+    const raw = source[f.truongQTKHCN];
+    const { value, missing, invalid } = applyField(f, raw);
+    const isMissing = missing && f.batBuoc;
+    if (isMissing) missingCount += 1;
+    if (invalid) invalidCount += 1;
+    if (!missing && f.truongHeNgoai) payload[f.truongHeNgoai] = value;
+    fields.push({
+      fieldId: f.id,
+      truongQTKHCN: f.truongQTKHCN,
+      truongHeNgoai: f.truongHeNgoai,
+      giaTriGoc: raw,
+      giaTriSauMapping: missing ? undefined : value,
+      thieu: isMissing,
+      loi: invalid,
+    });
+  }
+
+  return { payload, fields, missingCount, invalidCount };
 }

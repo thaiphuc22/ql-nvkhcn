@@ -21,9 +21,9 @@ public class NhiemVuQueryService {
         return repository.findAll().stream().map(NhiemVuResponse::from).toList();
     }
 
-    public NhiemVuResponse findById(String ma) {
+    public VersionedResponse<NhiemVuResponse> findById(String ma) {
         return repository.findById(ma)
-                .map(NhiemVuResponse::from)
+                .map(entity -> new VersionedResponse<>(NhiemVuResponse.from(entity), entity.getVersion()))
                 .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy NhiemVu " + ma));
     }
 }

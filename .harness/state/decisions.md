@@ -188,6 +188,61 @@ service authentication và transport ban đầu được chốt ở Lát 0 trư�
 
 ---
 
+## D19 — Một Angular shell với 3 App logic và route gate theo entitlement
+
+**Date**: 2026-07-18
+
+**Decision**: Giữ một Angular SPA/deployment hiện có và biểu diễn ba App logic độc lập trong cùng shell:
+`qlnvkhcn` (Quản lý NV KHCN & Hồ sơ), `quytrinh` (Quản trị quy trình), `he-thong` (Quản trị hệ thống).
+Sau đăng nhập, người dùng luôn đi qua màn `/chon-ung-dung`; quyền vào từng App là một lớp entitlement
+nằm trên RBAC role/permission hiện có. Route và navigation fail-closed theo App đang chọn. Ở giai đoạn demo,
+entitlement lấy từ `DemoUser.apps`; khi IAM thật được chốt chỉ thay nguồn claims, không thay registry/guard.
+
+Kênh theo dõi tích hợp nội bộ Hồ sơ ↔ Quy trình đọc outbox/inbox của D18 và hiển thị trong Nhật ký của App
+Quy trình; không tái sử dụng registry `/tich-hop`, vốn mô tả các hệ thống bên ngoài.
+
+**Rationale**: D18 mới đang hoàn thiện việc tách backend và OQ-021 về SSO/IAM vẫn mở. Tách thêm frontend
+deployment hoặc áp dụng Module Federation lúc này làm tăng rủi ro vận hành mà chưa đem lại lợi ích tương
+xứng. Một shell với ranh giới App rõ ràng đáp ứng UX/phân quyền demo hiện tại và giữ đường nâng cấp sang
+frontend độc lập về sau.
+
+**Source**: BA/PM architecture plan `C:\Users\DELL\.claude\plans\sorted-herding-shannon.md`.
+
+**Status**: LOCKED (frontend application boundary and demo entitlement approach). Client-side entitlement
+không thay thế authorization thật ở backend; IAM/SSO và server-side enforcement vẫn theo OQ-021/F3/F5.
+
+---
+
+## D20 — Action Studio và runtime task action thuộc Service Quản trị quy trình
+
+**Date**: 2026-07-19
+
+**Decision**: Action Studio và toàn bộ lệnh người dùng thực thi trên workflow task (`Phê duyệt`, `Trả lại`,
+`Từ chối`) thuộc Service Quản trị quy trình. API runtime phải lấy task làm trung tâm (task key), tự kiểm tra
+assignee/candidate group và Action Studio policy server-side, rồi điều khiển Camunda. Service Quản lý
+NVKHCN & Hồ sơ sở hữu dữ liệu Hồ sơ và chỉ phản ánh kết quả workflow qua event inbox/projection; Service
+Quy trình không được trực tiếp ghi aggregate/bảng Hồ sơ. Màn `/viec-cua-toi` có thể nằm trong App NVKHCN,
+đọc projection từ `ho-so-service`, nhưng lệnh xử lý task phải gọi Service Quy trình.
+
+Endpoint monolith hiện tại `POST /api/ho-so/{id}/actions` không được chuyển sang `ho-so-service`; phải được
+thay bằng task-centric API ở Service Quy trình và loại bỏ phần cập nhật trực tiếp `HoSo`/`DossierStep`.
+Kết quả `REJECTED` phải được phân biệt với hủy vận hành `CANCELLED` trong event/projection.
+
+**Rationale**: Task lifecycle, routing và action availability là workflow state do Camunda/Service Quy
+trình sở hữu; Hồ sơ là business aggregate theo D3/D8/D18. Event-driven projection giữ một nguồn sự thật,
+tránh dual-write giữa Camunda và database Hồ sơ, đồng thời cho phép idempotency/reconcile khi Camunda có
+kết quả không chắc chắn.
+
+**Source**: Chỉ đạo trực tiếp của user ngày 2026-07-19; kế hoạch triển khai chi tiết ở đầu
+`.harness/state/active-task.md`.
+
+**Status**: LOCKED. Không diễn giải gap `/actions` thành việc chuyển runtime action sang Service Hồ sơ.
+Backend implementation Lát 0–5 hoàn tất và E2E thật ngày 2026-07-19; Angular/gateway cutover cuối
+Lát 6–8 còn lại. Endpoint cũ chỉ được tồn tại tạm sau kill switch như rollback bridge, không phải
+đường sở hữu chính.
+
+---
+
 ## Open decisions blocking Foundation 1 (Project Scaffold)
 
 **RESOLVED 2026-07-15** — backend language/framework (D14), domain database engine (D15), and the Camunda 8 *dev-environment* deployment model (D16) are now locked above. Foundation 1 is unblocked for scaffold work; see `DELIVERY_STATE.md`.

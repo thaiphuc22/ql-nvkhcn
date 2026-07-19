@@ -30,9 +30,12 @@ type StatusFilter = DossierStatus | 'ALL';
 
 const STATUS_COLOR: Record<DossierStatus, NzStatusColor> = {
   DRAFT: 'default',
+  START_PENDING: 'processing',
+  START_FAILED: 'error',
   PROCESSING: 'processing',
   APPROVED: 'success',
   REJECTED: 'error',
+  CANCELLED: 'default',
 };
 
 /**

@@ -17,7 +17,7 @@
       }
     </div>
     <ul nz-menu nzTheme="dark" nzMode="inline" [nzInlineCollapsed]="collapsed()" class="app-menu">
-      @for (item of navItems; track item.key) {
+      @for (item of navItems(); track item.key) {
         @if (isGroup(item)) {
           <li
             nz-submenu
@@ -50,11 +50,14 @@
           <nz-icon [nzType]="collapsed() ? 'menu-unfold' : 'menu-fold'" />
         </button>
         <nz-breadcrumb>
-          <nz-breadcrumb-item>Hệ thống QTKHCN</nz-breadcrumb-item>
+          <nz-breadcrumb-item>{{ activeApp()?.label ?? 'Hệ thống QTKHCN' }}</nz-breadcrumb-item>
           <nz-breadcrumb-item>{{ sectionTitle() }}</nz-breadcrumb-item>
         </nz-breadcrumb>
       </div>
 
+      <button nz-button class="switch-app-btn" (click)="switchApp()">
+        <nz-icon nzType="appstore" /> Đổi ứng dụng
+      </button>
       <div class="header-right" nz-dropdown [nzDropdownMenu]="userMenu" nzTrigger="click">
         <span class="user-name">{{ user()?.hoTen }}</span>
         <nz-avatar [nzText]="userInitials()" class="user-avatar" />
@@ -68,6 +71,7 @@
             </div>
           </li>
           <li nz-menu-divider></li>
+          <li nz-menu-item (click)="switchApp()"><nz-icon nzType="appstore" /> Đổi ứng dụng</li>
           <li nz-menu-item (click)="logout()"><nz-icon nzType="logout" /> Đăng xuất</li>
         </ul>
       </nz-dropdown-menu>

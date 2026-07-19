@@ -6,6 +6,8 @@
  * chỉ khác cách điều hướng tới. Việc đó thuộc phần polish tương tác, không chặn mục tiêu
  * Mốc 4 ("layout + nav render đúng nhóm phân hệ, không cần dữ liệu thật") lẫn Mốc 5.
  */
+import type { AppCode } from '../core/auth/app-registry';
+
 export interface NavLeaf {
   key: string;
   label: string;
@@ -19,17 +21,18 @@ export interface NavGroup {
   children: NavLeaf[];
 }
 
-export type NavItem = (NavLeaf & { icon: string }) | NavGroup;
+export type NavItem = ((NavLeaf & { icon: string }) | NavGroup) & { app: AppCode };
 
-export function isNavGroup(item: NavItem): item is NavGroup {
+export function isNavGroup(item: NavItem): item is NavGroup & { app: AppCode } {
   return 'children' in item;
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { key: 'dashboard', label: 'Tổng quan', route: '/tong-quan', icon: 'dashboard' },
-  { key: 'worklist', label: 'Việc của tôi', route: '/viec-cua-toi', icon: 'carry-out' },
+  { key: 'dashboard', label: 'Tổng quan', route: '/tong-quan', icon: 'dashboard', app: 'qlnvkhcn' },
+  { key: 'worklist', label: 'Việc của tôi', route: '/viec-cua-toi', icon: 'carry-out', app: 'qlnvkhcn' },
   {
     key: 'nvkhcn',
+    app: 'qlnvkhcn',
     label: 'Quản trị KHCN',
     icon: 'experiment',
     children: [
@@ -39,6 +42,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     key: 'quytrinh-config',
+    app: 'quytrinh',
     label: 'Quản trị quy trình',
     icon: 'partition',
     children: [
@@ -54,6 +58,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     key: 'ph2',
+    app: 'he-thong',
     label: 'Phân quyền & Xác thực',
     icon: 'safety',
     children: [
@@ -64,11 +69,16 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     key: 'ph3',
+    app: 'he-thong',
     label: 'Danh mục dùng chung',
     icon: 'database',
     children: [{ key: 'bieumau', label: 'Thư viện biểu mẫu', route: '/phan-he/PH3/bieu-mau' }],
   },
 ];
+
+export function navItemsForApp(app: AppCode | null | undefined): NavItem[] {
+  return app ? NAV_ITEMS.filter((item) => item.app === app) : [];
+}
 
 /** Tiêu đề khu vực hiển thị trên breadcrumb header — khoá theo route hiện tại. */
 export const SECTION_TITLE_BY_ROUTE: Record<string, string> = {

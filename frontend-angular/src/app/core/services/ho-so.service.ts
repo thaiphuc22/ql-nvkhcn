@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { API_BASE_URL } from '../api-config';
+import { API_BASE_URL, encodeAuditActor } from '../api-config';
 import { CreateHoSoRequest, HoSoActionRequest, HoSoResponse, SubmitHoSoRequest } from '../models/ho-so';
 
 /** Gọi thật `GET /api/ho-so` (backend Spring Boot, Mốc 2/3) — không phải mock. */
@@ -19,13 +19,17 @@ export class HoSoService {
     return this.http.get<HoSoResponse>(`${this.endpoint}/${encodeURIComponent(id)}`);
   }
 
-  create(payload: CreateHoSoRequest): Observable<HoSoResponse> {
-    return this.http.post<HoSoResponse>(this.endpoint, payload);
+  create(payload: CreateHoSoRequest, actor: string): Observable<HoSoResponse> {
+    return this.http.post<HoSoResponse>(this.endpoint, payload, {
+      headers: { 'X-QTKHCN-Actor': encodeAuditActor(actor) },
+    });
   }
 
 
-  submit(id: string, payload: SubmitHoSoRequest): Observable<HoSoResponse> {
-    return this.http.post<HoSoResponse>(`${this.endpoint}/${encodeURIComponent(id)}/submit`, payload);
+  submit(id: string, payload: SubmitHoSoRequest, actor: string): Observable<HoSoResponse> {
+    return this.http.post<HoSoResponse>(`${this.endpoint}/${encodeURIComponent(id)}/submit`, payload, {
+      headers: { 'X-QTKHCN-Actor': encodeAuditActor(actor) },
+    });
   }
 
   applyAction(id: string, payload: HoSoActionRequest): Observable<HoSoResponse> {

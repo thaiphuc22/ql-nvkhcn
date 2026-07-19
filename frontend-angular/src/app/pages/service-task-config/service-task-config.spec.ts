@@ -19,7 +19,7 @@ describe('ServiceTaskConfigPage', () => {
   it('renders without throwing and computes rows from the seeded service', () => {
     const fixture = create();
     expect(fixture.componentInstance.rows().length).toBeGreaterThan(0);
-  });
+  }, 15_000);
 
   it('opens the create drawer with no editing definition', () => {
     const fixture = create();

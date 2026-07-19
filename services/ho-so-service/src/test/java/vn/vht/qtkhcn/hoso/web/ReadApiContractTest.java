@@ -27,6 +27,7 @@ import vn.vht.qtkhcn.hoso.observability.ReadAuditFilter;
 import vn.vht.qtkhcn.hoso.security.InternalServiceTokenFilter;
 import vn.vht.qtkhcn.hoso.service.HoSoQueryService;
 import vn.vht.qtkhcn.hoso.service.NhiemVuQueryService;
+import vn.vht.qtkhcn.hoso.service.VersionedResponse;
 import vn.vht.qtkhcn.hoso.web.dto.DossierStepResponse;
 import vn.vht.qtkhcn.hoso.web.dto.HoSoResponse;
 import vn.vht.qtkhcn.hoso.web.dto.NhiemVuResponse;
@@ -107,7 +108,7 @@ class ReadApiContractTest {
 
     @Test
     void readMetricsSeparateCanaryTrafficAndNormalizeItemRoutes() throws Exception {
-        when(hoSoService.findById("HS-2026-001")).thenReturn(hoSo());
+        when(hoSoService.findById("HS-2026-001")).thenReturn(new VersionedResponse<>(hoSo(), 0));
 
         mvc.perform(get("/api/ho-so/HS-2026-001")
                         .header(HttpHeaders.AUTHORIZATION, AUTHORIZATION)

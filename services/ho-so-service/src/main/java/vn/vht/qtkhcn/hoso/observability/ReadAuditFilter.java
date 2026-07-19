@@ -92,6 +92,9 @@ public class ReadAuditFilter extends OncePerRequestFilter {
         if (path.startsWith("/api/nhiem-vu/")) {
             return "/api/nhiem-vu/{id}";
         }
+        if ("/api/my-tasks".equals(path) || "/api/my-tasks/".equals(path)) {
+            return "/api/my-tasks";
+        }
         return "/api/other";
     }
 }

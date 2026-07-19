@@ -41,6 +41,9 @@ foreach ($name in @('DEMO_BASIC_AUTH_HASH', 'QTKHCN_DEV_API_KEY')) {
 }
 
 $env:DEMO_STATIC_ROOT = $distRoot.Replace('\', '/')
+$env:QTKHCN_MY_TASKS_UPSTREAM = if ([string]::IsNullOrWhiteSpace($env:QTKHCN_MY_TASKS_UPSTREAM)) {
+    '127.0.0.1:8090'
+} else { $env:QTKHCN_MY_TASKS_UPSTREAM }
 $expectedUpstream = '127.0.0.1:8090'
 
 if ($Target -eq 'Canary') {

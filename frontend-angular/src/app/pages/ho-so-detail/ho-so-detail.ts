@@ -29,9 +29,12 @@ import {
   StepStatus,
 } from '../../core/models/ho-so';
 import { HoSoService } from '../../core/services/ho-so.service';
+import { TaskAvailableAction } from '../../core/models/task-action';
+import { TaskActionService } from '../../core/services/task-action.service';
 
 const STATUS_COLOR: Record<DossierStatus, string> = {
-  DRAFT: 'default', PROCESSING: 'processing', APPROVED: 'success', REJECTED: 'error',
+  DRAFT: 'default', START_PENDING: 'processing', START_FAILED: 'error', PROCESSING: 'processing',
+  APPROVED: 'success', REJECTED: 'error', CANCELLED: 'default',
 };
 
 const STEP_LABEL: Record<StepStatus, string> = {
@@ -53,6 +56,7 @@ const STEP_COLOR: Record<StepStatus, string> = {
 })
 export class HoSoDetailPage {
   private readonly service = inject(HoSoService);
+  private readonly taskActionService = inject(TaskActionService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
@@ -74,6 +78,13 @@ export class HoSoDetailPage {
   readonly selectedOutcome = signal<HoSoActionOutcome>('APPROVE_STEP');
   readonly actionNote = signal('');
 
+  /** Task key mang theo từ `/viec-cua-toi` qua query param — Hồ sơ/DossierStep KHÔNG mang taskKey
+   * (D20 gap đã ghi trong active-task.md), nên chi tiết mở trực tiếp (không qua Việc của tôi) sẽ
+   * không có quyền thao tác task, chỉ xem. */
+  readonly taskKey = signal<string | null>(null);
+  readonly availableActions = signal<TaskAvailableAction[]>([]);
+  readonly actionsLoading = signal(false);
+
   readonly currentStep = computed(() => {
     const dossier = this.item();
     return dossier?.steps.find((step) => step.buocIndex === dossier.buocHienTai) ?? null;
@@ -86,8 +97,13 @@ export class HoSoDetailPage {
       ? { code: 'RD01.01', name: 'Xét duyệt Chủ trương cấp Cơ sở', supported: true }
       : { code: 'RD01.02', name: 'Xét duyệt Chủ trương cấp Tập đoàn', supported: false };
   });
+  readonly selectedAction = computed(
+    () => this.availableActions().find((a) => a.actionCode === this.selectedOutcome()) ?? null,
+  );
 
   constructor() {
+    const key = this.route.snapshot.queryParamMap.get('taskKey');
+    this.taskKey.set(key && key.trim() ? key.trim() : null);
     this.load(decodeURIComponent(this.route.snapshot.paramMap.get('id') ?? ''));
   }
 
@@ -96,13 +112,42 @@ export class HoSoDetailPage {
     this.notFound.set(false);
     this.errorMessage.set(null);
     this.service.get(id).subscribe({
-      next: (item) => { this.item.set(item); this.loading.set(false); },
+      next: (item) => {
+        this.item.set(item);
+        this.loading.set(false);
+        this.loadAvailableActions();
+      },
       error: (error: HttpErrorResponse) => {
         this.notFound.set(error.status === 404);
         if (error.status !== 404) this.errorMessage.set(this.errorText(error, 'Không thể tải chi tiết hồ sơ'));
         this.loading.set(false);
       },
     });
+  }
+
+  private loadAvailableActions(): void {
+    const key = this.taskKey();
+    if (!key || this.item()?.trangThai !== 'PROCESSING') {
+      this.availableActions.set([]);
+      return;
+    }
+    this.actionsLoading.set(true);
+    this.taskActionService.availableActions(key).subscribe({
+      next: (response) => {
+        this.availableActions.set(response.actions);
+        this.actionsLoading.set(false);
+      },
+      error: () => {
+        // Task không còn ACTIVE hoặc user không phải assignee/candidate — không có quyền thao tác.
+        this.taskKey.set(null);
+        this.availableActions.set([]);
+        this.actionsLoading.set(false);
+      },
+    });
+  }
+
+  hasAction(code: HoSoActionOutcome): boolean {
+    return this.availableActions().some((a) => a.actionCode === code);
   }
 
   back(): void { void this.router.navigate(['/ho-so']); }
@@ -119,7 +164,8 @@ export class HoSoDetailPage {
     const process = this.submitProcess();
     if (!dossier || !process?.supported) return;
     this.saving.set(true);
-    this.service.submit(dossier.id, { quyTrinh: process.code, quyTrinhTen: process.name }).subscribe({
+    const actor = this.auth.user()?.hoTen ?? 'Người dùng hệ thống';
+    this.service.submit(dossier.id, { quyTrinh: process.code, quyTrinhTen: process.name }, actor).subscribe({
       next: (updated) => {
         this.item.set(updated); this.submitOpen.set(false); this.saving.set(false);
         this.message.success(`Đã gửi duyệt hồ sơ ${updated.id} vào quy trình ${process.code}.`);
@@ -130,20 +176,54 @@ export class HoSoDetailPage {
 
   applyAction(): void {
     const dossier = this.item();
-    const outcome = this.selectedOutcome();
+    const key = this.taskKey();
+    const action = this.selectedAction();
     const note = this.actionNote().trim();
-    if (!dossier || ((outcome === 'RETURN_STEP' || outcome === 'REJECT_STEP') && !note)) return;
+    if (!dossier || !key || !action || (action.requiresReason && !note)) return;
     this.saving.set(true);
-    this.service.applyAction(dossier.id, {
-      outcome,
-      actor: this.auth.user()?.hoTen ?? 'Người dùng hệ thống',
-      yKien: note || null,
+    this.taskActionService.applyAction(key, {
+      requestId: this.taskActionService.newRequestId(),
+      taskKey: key,
+      actionCode: action.actionCode,
+      comment: note || null,
+      formData: {},
+      expectedTaskState: 'ACTIVE',
     }).subscribe({
-      next: (updated) => {
-        this.item.set(updated); this.actionOpen.set(false); this.saving.set(false);
-        this.message.success('Đã cập nhật bước xử lý hồ sơ.');
+      next: () => {
+        this.actionOpen.set(false);
+        this.message.success('Đã gửi yêu cầu xử lý — đang chờ quy trình cập nhật.');
+        this.pollAfterAction(dossier.id, dossier.buocHienTai, dossier.trangThai);
       },
-      error: (error: HttpErrorResponse) => { this.saving.set(false); this.message.error(this.errorText(error, 'Xử lý hồ sơ thất bại')); },
+      error: (error: HttpErrorResponse) => {
+        this.saving.set(false);
+        this.message.error(this.errorText(error, 'Xử lý hồ sơ thất bại'));
+      },
+    });
+  }
+
+  /** Sau 202, POST không trả `HoSoResponse` (kết quả bất đồng bộ) — không cập nhật lạc quan, chờ
+   * projection qua GET thật. Task cũ hết hiệu lực sau khi bước chuyển, nên khoá lại thao tác và yêu
+   * cầu quay về "Việc của tôi" cho bước kế tiếp thay vì đoán taskKey mới. */
+  private pollAfterAction(id: string, previousStep: number, previousStatus: DossierStatus, attempt = 0): void {
+    const maxAttempts = 10;
+    this.service.get(id).subscribe({
+      next: (updated) => {
+        this.item.set(updated);
+        const changed = updated.buocHienTai !== previousStep || updated.trangThai !== previousStatus;
+        if (changed) {
+          this.saving.set(false);
+          this.taskKey.set(null);
+          this.availableActions.set([]);
+          return;
+        }
+        if (attempt + 1 >= maxAttempts) {
+          this.saving.set(false);
+          this.message.warning('Chưa thấy cập nhật từ quy trình — hãy tải lại trang sau ít phút.');
+          return;
+        }
+        setTimeout(() => this.pollAfterAction(id, previousStep, previousStatus, attempt + 1), 1500);
+      },
+      error: () => { this.saving.set(false); },
     });
   }
 

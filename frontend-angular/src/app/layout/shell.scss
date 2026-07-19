@@ -86,6 +86,13 @@
   flex: 0 0 auto;
 }
 
+.switch-app-btn { margin-left: auto; }
+
+@media (max-width: 820px) {
+  .switch-app-btn { font-size: 0; }
+  .switch-app-btn nz-icon { font-size: 16px; }
+}
+
 .user-name {
   font-size: 13px;
   font-weight: 600;

@@ -39,10 +39,11 @@ describe('NhiemVuService', () => {
 
   it('posts the backend create contract', () => {
     const payload: CreateNhiemVuRequest = { ten: item.ten, cap: item.cap, chuNhiemHoTen: 'Nguyễn Văn A', donViChuTri: item.donViChuTri };
-    service.create(payload).subscribe((result) => expect(result).toEqual(item));
+    service.create(payload, 'Nguyen Van A').subscribe((result) => expect(result).toEqual(item));
     const request = http.expectOne(`${API_BASE_URL}/api/nhiem-vu`);
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual(payload);
+    expect(request.request.headers.get('X-QTKHCN-Actor')).toBe("UTF-8''Nguyen%20Van%20A");
     request.flush(item);
   });
 });

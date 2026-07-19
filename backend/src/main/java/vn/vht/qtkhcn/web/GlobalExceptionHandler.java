@@ -19,9 +19,24 @@ import vn.vht.qtkhcn.service.ProcessImportException;
 import vn.vht.qtkhcn.camunda.DmnCamundaException;
 import vn.vht.qtkhcn.service.ActionStudioConflictException;
 import vn.vht.qtkhcn.service.EformConflictException;
+import vn.vht.qtkhcn.service.IntegrationConflictException;
+import vn.vht.qtkhcn.service.WorkflowStartException;
+import vn.vht.qtkhcn.service.TaskActionException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(TaskActionException.class)
+    public ResponseEntity<InternalErrorBody> taskAction(TaskActionException e) {
+        return ResponseEntity.status(e.getStatus())
+                .body(new InternalErrorBody(e.getCode(), e.getMessage(), null, List.of()));
+    }
+
+    @ExceptionHandler(WorkflowStartException.class)
+    public ResponseEntity<InternalErrorBody> workflowStart(WorkflowStartException e) {
+        return ResponseEntity.status(e.getStatus())
+                .body(new InternalErrorBody(e.getCode(), e.getMessage(), null, List.of()));
+    }
 
     @ExceptionHandler({NoSuchElementException.class, EntityNotFoundException.class})
     public ResponseEntity<ErrorBody> notFound(RuntimeException e) {
@@ -72,6 +87,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorBody(e.getMessage()));
     }
 
+    @ExceptionHandler(IntegrationConflictException.class)
+    public ResponseEntity<ErrorBody> integrationConflict(IntegrationConflictException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorBody(e.getMessage()));
+    }
+
     @ExceptionHandler(DmnValidationException.class)
     public ResponseEntity<ImportErrorBody> invalidDmn(DmnValidationException e) {
         return ResponseEntity.badRequest().body(new ImportErrorBody(e.getMessage(), e.getErrors()));
@@ -116,5 +136,8 @@ public class GlobalExceptionHandler {
     }
 
     public record RequestErrorBody(String message, List<String> errors) {
+    }
+
+    public record InternalErrorBody(String code, String message, String correlationId, List<String> details) {
     }
 }

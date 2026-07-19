@@ -12,7 +12,8 @@ import { NzDropDownModule } from 'ng-zorro-antd/dropdown';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 
 import { AuthService } from '../core/auth/auth.service';
-import { isNavGroup, NAV_ITEMS, NavGroup, SECTION_TITLE_BY_ROUTE } from './nav-items';
+import { findApp } from '../core/auth/app-registry';
+import { isNavGroup, NAV_ITEMS, navItemsForApp, NavGroup, SECTION_TITLE_BY_ROUTE } from './nav-items';
 
 const SIDER_WIDTH = 230;
 const SIDER_COLLAPSED_WIDTH = 80;
@@ -37,7 +38,7 @@ export class Shell {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
 
-  readonly navItems = NAV_ITEMS;
+  readonly navItems = computed(() => navItemsForApp(this.auth.activeApp()));
   readonly siderWidth = SIDER_WIDTH;
   readonly siderCollapsedWidth = SIDER_COLLAPSED_WIDTH;
 
@@ -47,6 +48,7 @@ export class Shell {
   private readonly manuallyClosed = signal<ReadonlySet<string>>(new Set());
 
   readonly user = this.auth.user;
+  readonly activeApp = computed(() => findApp(this.auth.activeApp()));
 
   readonly activeGroupKey = computed(() => this.findActiveGroup(this.currentUrl()));
   readonly sectionTitle = computed(() => this.findSectionTitle(this.currentUrl()));
@@ -93,7 +95,7 @@ export class Shell {
     this.manuallyClosed.set(closed);
   }
 
-  isGroup(item: (typeof NAV_ITEMS)[number]): item is NavGroup {
+  isGroup(item: (typeof NAV_ITEMS)[number]): item is NavGroup & { app: (typeof NAV_ITEMS)[number]['app'] } {
     return isNavGroup(item);
   }
 
@@ -102,8 +104,12 @@ export class Shell {
     this.router.navigate(['/dang-nhap']);
   }
 
+  switchApp(): void {
+    this.router.navigate(['/chon-ung-dung']);
+  }
+
   private findActiveGroup(url: string): string | null {
-    for (const item of NAV_ITEMS) {
+    for (const item of this.navItems()) {
       if (!isNavGroup(item)) continue;
       const hit = item.children.some((leaf) => url === leaf.route || url.startsWith(leaf.route + '/'));
       if (hit) return item.key;

@@ -13,13 +13,19 @@
         <div><code>{{ dossier.id }}</code> · {{ dossier.quyTrinh ? dossier.quyTrinh + ' · ' + dossier.quyTrinhTen : dossier.quyTrinhTen }} · cấp {{ capLabel[dossier.cap] }}</div>
       </div>
       <div class="hsd-actions">
-        @if (dossier.trangThai === 'DRAFT') {
-          <button nz-button nzType="primary" (click)="submitOpen.set(true)"><span nz-icon nzType="send"></span> Gửi duyệt</button>
+        @if (dossier.trangThai === 'DRAFT' || dossier.trangThai === 'START_FAILED') {
+          <button nz-button nzType="primary" (click)="submitOpen.set(true)"><span nz-icon nzType="send"></span>
+            {{ dossier.trangThai === 'START_FAILED' ? 'Thử gửi lại' : 'Gửi duyệt' }}
+          </button>
         }
         @if (dossier.trangThai === 'PROCESSING') {
-          <button nz-button nzDanger (click)="openAction('REJECT_STEP')">Từ chối</button>
-          <button nz-button (click)="openAction('RETURN_STEP')">Trả lại</button>
-          <button nz-button nzType="primary" (click)="openAction('APPROVE_STEP')">Phê duyệt</button>
+          @if (saving()) {
+            <nz-tag nzColor="processing">Đang cập nhật…</nz-tag>
+          } @else {
+            @if (hasAction('REJECT_STEP')) { <button nz-button nzDanger (click)="openAction('REJECT_STEP')">Từ chối</button> }
+            @if (hasAction('RETURN_STEP')) { <button nz-button (click)="openAction('RETURN_STEP')">Trả lại</button> }
+            @if (hasAction('APPROVE_STEP')) { <button nz-button nzType="primary" (click)="openAction('APPROVE_STEP')">Phê duyệt</button> }
+          }
         }
       </div>
     </header>
@@ -34,6 +40,14 @@
       <nz-alert nzType="error" nzShowIcon [nzMessage]="'Hồ sơ bị từ chối tại bước “' + rejected.ten + '”'" [nzDescription]="rejected.yKien || ''"></nz-alert>
     } @else if (currentStep(); as current) {
       <nz-alert nzType="info" nzShowIcon [nzMessage]="'Đang xử lý: ' + current.ten" [nzDescription]="'Vai trò phụ trách: ' + current.vaiTro + (current.hanXuLy ? ' · Hạn xử lý: ' + current.hanXuLy : '')"></nz-alert>
+      @if (!taskKey() && !actionsLoading()) {
+        <nz-alert nzType="warning" nzShowIcon nzMessage="Không có quyền thao tác task từ đây"
+          nzDescription="Mở hồ sơ trực tiếp không mang theo task đang xử lý — vào “Việc của tôi” để phê duyệt/trả lại/từ chối bước này."></nz-alert>
+      }
+    }
+    @if (dossier.trangThai === 'START_FAILED') {
+      <nz-alert nzType="error" nzShowIcon nzMessage="Không thể khởi tạo quy trình"
+        nzDescription="Lệnh gửi đã được giữ và thử lại có kiểm soát. Bạn có thể bấm “Thử gửi lại” để tạo một yêu cầu mới."></nz-alert>
     }
 
     <nz-card nzTitle="Quy trình xử lý" nzSize="small">
@@ -118,11 +132,11 @@
 
   <nz-modal [nzVisible]="actionOpen()" [nzTitle]="actionTitle()" nzOkText="Xác nhận" nzCancelText="Hủy"
     [nzOkLoading]="saving()" [nzOkDanger]="selectedOutcome() === 'REJECT_STEP'"
-    [nzOkDisabled]="(selectedOutcome() === 'RETURN_STEP' || selectedOutcome() === 'REJECT_STEP') && !actionNote().trim()"
+    [nzOkDisabled]="!!selectedAction()?.requiresReason && !actionNote().trim()"
     (nzOnCancel)="actionOpen.set(false)" (nzOnOk)="applyAction()">
     <ng-container *nzModalContent>
       @if (currentStep(); as current) { <p>Bước hiện tại: <strong>{{ current.ten }}</strong></p> }
-      <label for="action-note">Ý kiến {{ selectedOutcome() === 'APPROVE_STEP' ? '(không bắt buộc)' : '(bắt buộc)' }}</label>
+      <label for="action-note">Ý kiến {{ selectedAction()?.requiresReason ? '(bắt buộc)' : '(không bắt buộc)' }}</label>
       <textarea id="action-note" nz-input rows="4" [ngModel]="actionNote()" (ngModelChange)="actionNote.set($event)" placeholder="Nhập ý kiến xử lý..."></textarea>
     </ng-container>
   </nz-modal>

@@ -40,6 +40,17 @@ camunda:
 # và thay hẳn bằng OIDC/SAML thật khi OQ-021 chốt.
 qtkhcn:
   dev-api-key: dev-local-only
+  internal:
+    service-token: ${QTKHCN_WORKFLOW_SERVICE_TOKEN:}
+  ho-so:
+    base-url: ${QTKHCN_HO_SO_BASE_URL:http://127.0.0.1:8093}
+    service-token: ${QTKHCN_HO_SO_SERVICE_TOKEN:}
+    # Slice 3 cutover switch. Set false before routing business CRUD to ho-so-service.
+    # It does not block /submit or /actions; those move in Slices 4-5.
+    legacy-writes-enabled: ${QTKHCN_HO_SO_LEGACY_WRITES_ENABLED:true}
+  workflow-events:
+    collect-ms: ${QTKHCN_WORKFLOW_EVENT_COLLECT_MS:1000}
+    dispatch-ms: ${QTKHCN_WORKFLOW_EVENT_DISPATCH_MS:1000}
   cors:
     # Comma-separated exact origins. Demo sessions add their current HTTPS Runlocal origin through
     # QTKHCN_CORS_ALLOWED_ORIGINS; do not use a wildcard because these APIs can mutate demo data.

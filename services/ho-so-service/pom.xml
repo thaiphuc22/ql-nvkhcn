@@ -15,7 +15,7 @@
   <artifactId>qtkhcn-ho-so-service</artifactId>
   <version>0.1.0-SNAPSHOT</version>
   <name>qtkhcn-ho-so-service</name>
-  <description>Service NV KHCN &amp; Hồ sơ — read-only extraction scaffold</description>
+  <description>Service NV KHCN &amp; Ho So extracted bounded context</description>
 
   <properties>
     <java.version>21</java.version>

@@ -31,7 +31,7 @@ public class DevApiKeyFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         // CORS preflight contains no application credentials. Spring MVC still validates the
         // requested origin/method/headers against WebConfig before the actual request is allowed.
-        return CorsUtils.isPreFlightRequest(request);
+        return request.getRequestURI().startsWith("/internal/") || CorsUtils.isPreFlightRequest(request);
     }
 
     @Override

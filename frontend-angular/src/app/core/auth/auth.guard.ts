@@ -13,5 +13,5 @@ export const loginPageGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
   if (!auth.user()) return true;
-  return router.createUrlTree(['/tong-quan']);
+  return router.createUrlTree(['/chon-ung-dung']);
 };

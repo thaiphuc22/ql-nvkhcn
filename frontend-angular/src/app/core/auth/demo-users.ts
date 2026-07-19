@@ -5,22 +5,34 @@
  * liệu thật"). 5 tài khoản này đủ đại diện các nhóm vai trò chính (khởi tạo/quản trị/xét
  * duyệt cấp cơ sở/xét duyệt cấp tập đoàn) để demo đăng nhập + hiển thị đúng tên/chức danh.
  */
+import type { AppCode } from './app-registry';
+
 export interface DemoUser {
   hoTen: string;
   email: string;
   chucDanh: string;
   isAdmin: boolean;
+  /**
+   * candidateGroups (BPMN) mà user nắm — port tối thiểu của `ROLE_LABEL_TO_CODES` ở
+   * `webapp/src/data/users.ts`, chỉ cho đúng 5 tài khoản demo hiện có. Đây là lọc phía
+   * client cho UI (dùng ở `/viec-cua-toi`) — KHÔNG phải RBAC backend thật; enforce quyền
+   * ở server (Bước 4 trong active-task.md) vẫn cần làm riêng, đọc `HoSoResponse.
+   * steps[].vaiTroCodes` để so khớp.
+   */
+  roleCodes: string[];
+  /** Entitlement App demo phía client; không thay thế authorization ở backend. */
+  apps: AppCode[];
 }
 
 /** Mật khẩu chung cho mọi tài khoản demo — khớp DEMO_PASSWORD của webapp (mock, không xác thực thật). */
 export const DEMO_PASSWORD = '123456';
 
 export const DEMO_USERS: DemoUser[] = [
-  { hoTen: 'Lê Văn Cường', email: 'admin@example.com', chucDanh: 'Quản trị hệ thống', isAdmin: true },
-  { hoTen: 'Trần Văn Nam', email: 'pm@example.com', chucDanh: 'Chủ nhiệm đề tài (PM)', isAdmin: false },
-  { hoTen: 'Phạm Thu Hà', email: 'cqnv@example.com', chucDanh: 'Cơ quan nghiệp vụ VHT', isAdmin: false },
-  { hoTen: 'Phạm Quang Vinh', email: 'tgd@example.com', chucDanh: 'Tổng Giám đốc VHT', isAdmin: false },
-  { hoTen: 'Ngô Thị Thanh Hằng', email: 'hdkhcn@example.com', chucDanh: 'Thường trực HĐ KHCN VHT', isAdmin: false },
+  { hoTen: 'Lê Văn Cường', email: 'admin@example.com', chucDanh: 'Quản trị hệ thống', isAdmin: true, roleCodes: [], apps: ['qlnvkhcn', 'quytrinh', 'he-thong'] },
+  { hoTen: 'Trần Văn Nam', email: 'pm@example.com', chucDanh: 'Chủ nhiệm đề tài (PM)', isAdmin: false, roleCodes: ['PM', 'PA', 'NNC'], apps: ['qlnvkhcn'] },
+  { hoTen: 'Phạm Thu Hà', email: 'cqnv@example.com', chucDanh: 'Cơ quan nghiệp vụ VHT', isAdmin: false, roleCodes: ['CQ_KHCN', 'CQ_MS', 'CQ_NS', 'CQ_TCKT'], apps: ['qlnvkhcn', 'quytrinh'] },
+  { hoTen: 'Phạm Quang Vinh', email: 'tgd@example.com', chucDanh: 'Tổng Giám đốc VHT', isAdmin: false, roleCodes: ['TGD_VHT'], apps: ['qlnvkhcn'] },
+  { hoTen: 'Ngô Thị Thanh Hằng', email: 'hdkhcn@example.com', chucDanh: 'Thường trực HĐ KHCN VHT', isAdmin: false, roleCodes: ['HDKHCN', 'HDXD', 'HDXD_DC', 'HDNT', 'HD_DGHT'], apps: ['qlnvkhcn'] },
 ];
 
 export function findDemoUser(email: string): DemoUser | undefined {

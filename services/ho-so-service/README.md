@@ -1,8 +1,8 @@
 # qtkhcn-ho-so-service
 
-Read-only scaffold của **Service NV KHCN & Hồ sơ**. Lát 2B đã bổ sung snapshot/backfill một chiều,
-count/checksum reconciliation và contract comparison. Service chưa sở hữu write; read-route feature flag
-ở gateway mặc định OFF.
+Service tách riêng cho **NV KHCN & Hồ sơ**. Lát 4 bổ sung transactional outbox và lệnh start-process
+idempotent sang service Quy trình. Read/write route ở gateway vẫn mặc định vào monolith cho tới khi
+operator thực hiện cutover.
 
 ## Runtime
 
@@ -25,6 +25,10 @@ count/checksum reconciliation và contract comparison. Service chưa sở hữu 
 | `QTKHCN_HO_SO_DB_USERNAME` | `qtkhcn` cho dev local |
 | `QTKHCN_HO_SO_DB_PASSWORD` | `qtkhcn-dev-local` cho dev local |
 | `QTKHCN_HO_SO_PORT` | `8093` |
+| `QTKHCN_WORKFLOW_BASE_URL` | `http://127.0.0.1:8090` |
+| `QTKHCN_WORKFLOW_SERVICE_TOKEN` | Bearer token riêng để gọi internal API service Quy trình |
+| `QTKHCN_OUTBOX_DISPATCH_MS` | `1000` |
+| `QTKHCN_WORKFLOW_PROJECTION_RECONCILE_MS` | `5000` |
 
 Không commit token/credential thật. Gateway ở Lát 2B sẽ inject service credential; frontend không gọi trực
 tiếp port 8093.
@@ -44,8 +48,50 @@ $env:QTKHCN_HO_SO_SERVICE_TOKEN='<local-secret>'
 - `GET /api/nhiem-vu/{ma}`
 - `GET /api/ho-so`
 - `GET /api/ho-so/{id}`
+- `GET /api/my-tasks` (yêu cầu thêm `X-QTKHCN-User-Id`; backend tự ánh xạ role cho tài khoản demo và không tin role do client tự khai)
 
-Không có POST/PUT/PATCH/DELETE ở Lát 2A.
+Lát 3 bổ sung:
+
+- `POST /api/nhiem-vu`, `PUT /api/nhiem-vu/{ma}`.
+- `POST /api/ho-so`, `PUT /api/ho-so/{id}` (chỉ hồ sơ `DRAFT`).
+- `POST/PUT/DELETE /api/ho-so/{id}/documents/**`.
+- Item GET và mutation response trả `ETag`; update/delete bắt buộc `If-Match`.
+- Mutation bắt buộc `X-QTKHCN-Actor` và ghi `domain_mutation_audit`.
+
+Lát 4 bổ sung `POST /api/ho-so/{id}/submit`: đổi hồ sơ sang `START_PENDING` và ghi outbox trong cùng
+transaction; dispatcher retry vô hạn với network/5xx/timeout chưa rõ kết quả, rồi chuyển `PROCESSING`
+khi reconcile thành công. Chỉ lỗi 4xx không retry mới thành `START_FAILED`; trạng thái này có thể submit
+lại với request id mới. `/actions` vẫn ở service Quy
+trình tới Lát 5.
+
+Lát 5 bước 1–2 bổ sung `POST /internal/v1/workflow-events`, inbox idempotent và projection workflow.
+Mỗi event mới dựng lại task/process projection từ toàn bộ inbox theo `(occurredAt, eventId)`, nên delivery
+trùng không tạo task trùng và event đến sai thứ tự không làm trạng thái lùi. `dossier_step`,
+`ho_so.buoc_hien_tai` và `ho_so.trang_thai` được cập nhật trong cùng transaction. Reconciler mặc định mỗi
+5 giây dựng lại các inbox chưa xử lý (bao gồm row tồn tại trước migration V5) và lưu lỗi để vận hành theo dõi.
+
+Lát 5 bước 3–4 bổ sung `/api/my-tasks` và backend RBAC cho tài khoản demo. Bộ lọc chạy trong database và
+chỉ lấy task `ACTIVE` khi user hiện tại là assignee/candidate user hoặc có role khớp candidate group.
+`X-QTKHCN-User-Id` được chuẩn hóa rồi ánh xạ vào catalog 5 tài khoản demo phía server; identity lạ trả `403`,
+và `X-QTKHCN-Role-Codes` từ request bị bỏ qua. Admin demo được xem toàn bộ task `ACTIVE`. Gateway đã xác
+thực phải ghi đè identity header trước khi chuyển tiếp; catalog tạm này sẽ được thay bằng claims/groups từ
+OIDC/IAM khi giao thức IAM được chốt.
+
+## E2E smoke task action
+
+Khi Camunda/PostgreSQL, workflow backend `8090` và service này `8093` đã chạy với hai service token
+khớp nhau, chạy luồng nghiệm thu tự động:
+
+```powershell
+$env:QTKHCN_HO_SO_SERVICE_TOKEN = '<local-ho-so-token>'
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Invoke-E2ESmoke.ps1 `
+  -WorkflowDevApiKey 'dev-local-only'
+```
+
+Script tạo dữ liệu riêng theo timestamp và kiểm tra create → submit → Task 1–4 approve → Task 5 return
+→ Task 4 mở lại với task key mới → reject → Hồ sơ `REJECTED`, đồng thời admin không còn thấy active task.
+Mỗi action được lấy từ `available-actions` trước khi thực thi; script fail nếu policy hoặc candidate group
+không đúng contract runtime.
 
 ## Lát 2B: backfill và các cổng đối soát
 

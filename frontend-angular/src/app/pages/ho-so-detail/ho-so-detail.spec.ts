@@ -8,7 +8,9 @@ import { provideNzI18n, vi_VN } from 'ng-zorro-antd/i18n';
 import {
   APPROVAL_MATRIX_ICONS, EFORM_ICONS, NAV_ICONS, NHIEM_VU_ICONS, SERVICE_TASK_ICONS,
 } from '../../core/icons-provider';
+import { AuthService } from '../../core/auth/auth.service';
 import { HoSoResponse } from '../../core/models/ho-so';
+import { TaskAvailableActionsResponse } from '../../core/models/task-action';
 import { HoSoDetailPage } from './ho-so-detail';
 
 const dossier: HoSoResponse = {
@@ -26,25 +28,48 @@ const dossier: HoSoResponse = {
   duToan: '2.750.000.000 đ', cap: 'CS',
 };
 
+const processingDossier: HoSoResponse = {
+  ...dossier,
+  trangThai: 'PROCESSING', quyTrinh: 'RD01.01', quyTrinhTen: 'Xét duyệt Chủ trương cấp Cơ sở', buocHienTai: 1,
+  steps: [
+    dossier.steps[0],
+    {
+      buocIndex: 1, taskDefinitionKey: 't2', ten: 'Thẩm định hồ sơ', vaiTro: 'Phòng Thẩm định',
+      vaiTroCodes: ['TD'], nguoi: null, trangThai: 'CURRENT', thoiDiem: null,
+      yKien: null, hanXuLy: null, formKey: 'phieu-phe-duyet',
+    },
+  ],
+};
+
 describe('HoSoDetailPage', () => {
   let http: HttpTestingController;
 
-  beforeEach(() => {
+  afterEach(() => http.verify());
+
+  function setup(id: string, queryParams: Record<string, string> = {}) {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]), provideHttpClient(), provideHttpClientTesting(), provideNzI18n(vi_VN),
-        { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap({ id: dossier.id }) } } },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: convertToParamMap({ id }),
+              queryParamMap: convertToParamMap(queryParams),
+            },
+          },
+        },
       ],
     });
     TestBed.inject(NzIconService).addIcon(
       ...NAV_ICONS, ...APPROVAL_MATRIX_ICONS, ...SERVICE_TASK_ICONS, ...EFORM_ICONS, ...NHIEM_VU_ICONS,
     );
+    TestBed.inject(AuthService).login('pm@example.com', '123456');
     http = TestBed.inject(HttpTestingController);
-  });
-
-  afterEach(() => http.verify());
+  }
 
   function createPage() {
+    setup(dossier.id);
     const fixture = TestBed.createComponent(HoSoDetailPage);
     const get = http.expectOne(`http://localhost:8091/api/ho-so/${dossier.id}`);
     expect(get.request.method).toBe('GET');
@@ -68,5 +93,71 @@ describe('HoSoDetailPage', () => {
     expect(request.request.body).toEqual({ quyTrinh: 'RD01.01', quyTrinhTen: 'Xét duyệt Chủ trương cấp Cơ sở' });
     request.flush({ ...dossier, trangThai: 'PROCESSING', quyTrinh: 'RD01.01' });
     expect(fixture.componentInstance.item()?.trangThai).toBe('PROCESSING');
+  });
+
+  it('shows no action controls and does not call the task API when opened without a taskKey', () => {
+    setup(processingDossier.id);
+    const fixture = TestBed.createComponent(HoSoDetailPage);
+    const get = http.expectOne(`http://localhost:8091/api/ho-so/${processingDossier.id}`);
+    get.flush(processingDossier);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.taskKey()).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Không có quyền thao tác task từ đây');
+    expect(fixture.nativeElement.textContent).not.toContain('Phê duyệt');
+  });
+
+  it('wires task-centric actions when a taskKey is carried from Việc của tôi, never the legacy /actions endpoint', () => {
+    setup(processingDossier.id, { taskKey: 't2-key-1' });
+    const fixture = TestBed.createComponent(HoSoDetailPage);
+    const get = http.expectOne(`http://localhost:8091/api/ho-so/${processingDossier.id}`);
+    get.flush(processingDossier);
+
+    const availableActionsResponse: TaskAvailableActionsResponse = {
+      taskKey: 't2-key-1', processInstanceKey: '2251799813697704', taskDefinitionKey: 't2',
+      actions: [
+        {
+          actionCode: 'APPROVE_STEP', label: 'Đồng ý duyệt', tone: 'primary',
+          requiresReason: false, requiresEvidence: false, requiresConfirm: true, formKey: 'phieu-phe-duyet',
+        },
+        {
+          actionCode: 'RETURN_STEP', label: 'Trả lại', tone: 'default',
+          requiresReason: true, requiresEvidence: false, requiresConfirm: false, formKey: 'phieu-y-kien',
+        },
+      ],
+    };
+    const available = http.expectOne('http://localhost:8091/api/tasks/t2-key-1/available-actions');
+    expect(available.request.method).toBe('GET');
+    expect(available.request.headers.get('X-QTKHCN-User-Id')).toBe('pm@example.com');
+    available.flush(availableActionsResponse);
+    fixture.detectChanges();
+
+    const cmp = fixture.componentInstance;
+    expect(cmp.hasAction('APPROVE_STEP')).toBe(true);
+    expect(cmp.hasAction('REJECT_STEP')).toBe(false);
+    expect(fixture.nativeElement.textContent).not.toContain('Không có quyền thao tác task từ đây');
+
+    cmp.openAction('APPROVE_STEP');
+    cmp.applyAction();
+
+    const post = http.expectOne('http://localhost:8091/api/tasks/t2-key-1/actions');
+    expect(post.request.method).toBe('POST');
+    expect(post.request.headers.get('X-QTKHCN-User-Id')).toBe('pm@example.com');
+    expect(post.request.body).toEqual({
+      requestId: expect.any(String), taskKey: 't2-key-1', actionCode: 'APPROVE_STEP',
+      comment: null, formData: {}, expectedTaskState: 'ACTIVE',
+    });
+    post.flush({
+      requestId: post.request.body.requestId, taskKey: 't2-key-1',
+      processInstanceKey: '2251799813697704', status: 'ACCEPTED',
+    });
+    expect(cmp.actionOpen()).toBe(false);
+
+    const refetch = http.expectOne(`http://localhost:8091/api/ho-so/${processingDossier.id}`);
+    refetch.flush({ ...processingDossier, buocHienTai: 2 });
+
+    expect(cmp.saving()).toBe(false);
+    expect(cmp.taskKey()).toBeNull();
+    expect(cmp.availableActions()).toEqual([]);
   });
 });

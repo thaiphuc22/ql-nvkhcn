@@ -16,6 +16,7 @@ import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 
 import { CreateNhiemVuRequest, NhiemVuCap } from '../../core/models/nhiem-vu';
+import { AuthService } from '../../core/auth/auth.service';
 import { NhiemVuService } from '../../core/services/nhiem-vu.service';
 
 @Component({
@@ -27,6 +28,7 @@ import { NhiemVuService } from '../../core/services/nhiem-vu.service';
 export class NhiemVuCreatePage {
   private readonly fb = inject(FormBuilder);
   private readonly service = inject(NhiemVuService);
+  private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly message = inject(NzMessageService);
   readonly submitting = signal(false);
@@ -51,7 +53,7 @@ export class NhiemVuCreatePage {
       duToan: value.duToan == null ? undefined : `${value.duToan.toLocaleString('vi-VN')} đ`,
     };
     this.submitting.set(true); this.errorMessage.set(null);
-    this.service.create(payload).subscribe({
+    this.service.create(payload, this.auth.user()?.email ?? 'unknown-demo-user').subscribe({
       next: (created) => { this.message.success(`Đã tạo nhiệm vụ ${created.ma}.`); void this.router.navigate(['/nhiem-vu', created.ma]); },
       error: (error: HttpErrorResponse) => { this.errorMessage.set(error.error?.message || `Không thể tạo nhiệm vụ (HTTP ${error.status}).`); this.submitting.set(false); },
     });

@@ -1,5 +1,255 @@
 # Delivery State
 
+> **2026-07-19 — HIỂN THỊ TÍCH HỢP NỘI BỘ TRÊN `/tich-hop` + `/nhat-ky` DONE (owner Codex).**
+> `/tich-hop` có khối riêng “Quản lý NV KHCN ↔ Quản lý quy trình”, thể hiện hai chiều
+> command-outbox và workflow-event-inbox, health tổng hợp, số lệnh chờ/lỗi, sự kiện nhận gần nhất và
+> liên kết sang nhật ký; không trộn cặp service nội bộ vào registry hệ thống ngoài. `/nhat-ky` đổi tab
+> nội bộ thành “Quy trình ↔ NV KHCN”, bổ sung chú giải hai chiều và tên service rõ ràng, vẫn đọc API
+> `/api/internal-integration/status` thật. Targeted Angular tests **11/11 PASS**, production build GREEN
+> (chỉ còn các warning budget/CommonJS có sẵn, không liên quan). In-app browser không có phiên khả dụng
+> nên chưa click-through/chụp ảnh thật.
+
+> **2026-07-19 — D20 LÁT 8 E2E: RẢ THẬT, RERUN SMOKE PASS TOÀN BỘ + 6 TEST CASE BIÊN PASS (owner
+> Claude, tự chạy theo yêu cầu user "lên kế hoạch và tự chạy test").** Build+package cả 2 track cùng
+> working tree (không phải 2 branch tách): backend `mvn -o test` PASS, `ho-so-service` `mvn -o test`
+> PASS, Angular `ng build` production GREEN + `ng test` **174/174 PASS** (không còn 2 flaky trước đó).
+> Dựng thật backend cổng **8090** + `ho-so-service` cổng **8093** trên Docker Postgres/Camunda đã chạy
+> sẵn (không đụng cổng 8091 dev đang chạy, không đụng live demo — xác nhận cổng 8090 trống trước khi
+> dùng). Chạy `Invoke-E2ESmoke.ps1` thật: **SMOKE PASS FULL** — đây là lần đầu tiên script này PASS
+> hết; lần chạy trước (2026-07-18) FAIL ở `/api/my-tasks` rỗng do gap `TASK_CREATED`, nay xác nhận Lát 0
+> (element-instance fallback) đã đóng gap thật. Thêm 6 test case biên tự viết, tất cả PASS: sai
+> candidate group → `403 TASK_FORBIDDEN`; duplicate requestId+payload → cùng kết quả `202`; duplicate
+> requestId khác payload → `409 IDEMPOTENCY_CONFLICT`; legacy `/api/ho-so/{id}/actions` khi
+> `legacy-writes-enabled=true` (mặc định) vẫn thông (rollback bridge sống); khi `=false` bị chặn
+> `409` đúng message; `/api/tasks/**` không bị ảnh hưởng bởi cờ legacy. Đã dọn sạch: cancel process
+> instance test qua Camunda REST, xoá toàn bộ row test ở cả 2 DB (`ho_so`/`nhiem_vu`/projection/outbox/
+> inbox), dừng 2 tiến trình java tạm, không để lại state. **Chưa làm** (do không có browser tool trong
+> phiên): click-through UI thật qua `/viec-cua-toi` → mở task → bấm nút → xem trạng thái "Đang cập
+> nhật"; đã hướng dẫn user cài Playwright MCP nếu muốn agent tự lái browser. Với kết quả này, Lát 8 coi
+> như **PASS ở tầng API/service** — phần còn lại trước khi cutover live là click-through UI thật + flip
+> `legacy-writes-enabled=false` trên môi trường thật + xoá `HoSoService.applyAction()` (release kế
+> tiếp). Chi tiết đầy đủ ở đầu `active-task.md`.
+
+> **2026-07-19 — D20 TRACK CLAUDE LÁT 6 WIRING DONE: `ho-so-detail.ts` off the legacy endpoint (owner
+> Claude).** User flagged `ho-so-detail.ts:133` still calling `HoSoService.applyAction()` /
+> `POST /api/ho-so/{id}/actions`. Mid-investigation, caught Track Codex actively rewriting
+> `worklist.ts`/`task-action.service.ts`/`task-action.ts` in real time in the same working tree; paused
+> and confirmed with the user before touching anything Codex owned. `ho-so-detail.ts` now reads `taskKey`
+> from the query param `worklist.ts` already carries from `/viec-cua-toi`, calls
+> `TaskActionService.availableActions()`/`applyAction()` against the real 8090 contract, and never calls
+> the legacy endpoint. Deliberate, undecided gap (not fixed here): `HoSoResponse`/`DossierStepResponse`
+> carry no `taskKey`, so a dossier opened directly (not via worklist) shows a "no permission to act from
+> here" hint instead of action buttons — resolving that needs both tracks to agree on adding `taskKey` to
+> the read contract. `ng build` GREEN, full `ng test` **174/174 PASS** (172 Codex + 2 new). Not yet done:
+> browser click-through against live 8090/8093 (stopped after Codex's smoke run), flipping
+> `legacy-writes-enabled=false`, and deleting `HoSoService.applyAction()`/the old endpoint — joint
+> follow-up once both branches are merged. Details in `active-task.md`.
+
+> **2026-07-19 — D20 TRACK CODEX BACKEND LÁT 0–5 DONE + REAL CAMUNDA E2E VERIFIED (owner Codex).**
+> Closed the empty `TASK_CREATED` blocker with a user-task API → element-instance/job fallback plus
+> BPMN metadata catalog; added task-centric available/execute APIs, server-side candidate + Action
+> Studio enforcement, exact task-key execution, durable idempotency/UNKNOWN reconciliation and an
+> inflight unique guard. Added `TASK_ACTION_APPLIED`/`PROCESS_REJECTED` outbox facts and projection-only
+> dossier updates, including dynamic steps, correct `REJECTED != CANCELLED`, and clean metadata when
+> RETURN reopens a previously completed step. The legacy dossier-action path is blocked by the legacy
+> write kill switch at cutover and retained only as a rollback bridge until Angular swaps. Real flow
+> `HS-2026-004`: approve Task_1→2→3→4, RETURN Task_5→new Task_4, then REJECT→dossier `REJECTED`; Maven
+> suites for both backend modules pass and Flyway V16–V18 are applied. Track Claude still must align its
+> prepared client with the now-real response wrapper/body/status contract and wire Lát 6; details and
+> exact contract are at the top of `active-task.md`.
+
+> **2026-07-19 — TRACK CLAUDE: D20 LÁT 6/7 PREP DONE (owner Claude).** Added, additively, without
+> touching the still-live `HoSoService.applyAction()` flow: `core/models/task-action.ts` +
+> `core/services/task-action.service.ts` (Angular client for the not-yet-built
+> `GET/POST /api/tasks/{taskKey}/{available-actions,actions}`, reusing `HoSoActionOutcome` and
+> `SimulatedAction` instead of inventing new shapes) with a `task-action.service.spec.ts` locking the
+> contract (3/3 PASS); and a Caddy `@task_actions` matcher in `infra/demo-tunnel/Caddyfile` that strips
+> client-declared `X-QTKHCN-Role-Codes` for those paths. Found while reviewing the Caddyfile: `/api/
+> tasks/**` and `/api/action-studio/**` already reach 8090 via the existing catch-all — this isn't a
+> strangler seam (no old upstream to migrate from), so no new `Switch-*Route.ps1` was needed. `ng build`
+> GREEN, full `ng test` **168/170 PASS** (2 pre-existing flaky icon-fetch timeouts, unrelated). Not
+> validated: `caddy validate` (no `caddy` binary on this machine, same gap noted in earlier entries).
+> Not wired in yet: `ho-so-detail`/`/viec-cua-toi` still call the old endpoint — swapping over happens
+> together with gateway cutover once Track Codex's Lát 0-5 API is real, per plan. Details in
+> `active-task.md`.
+
+> **2026-07-19 — D20 PLAN SPLIT INTO PARALLEL TRACKS + TASK_CREATED GAP FOLDED IN AS LÁT 0 (owner
+> Claude, at user's direction).** Restructured the D20 refactor plan in `active-task.md` into two
+> non-colliding tracks so Codex and Claude can work in parallel: **Track Codex** owns
+> `backend/.../{camunda,workflow,service,web,domain,repository,security}` +
+> `services/ho-so-service/src/main/java/**` — Lát 0 (new: unblock the `TASK_CREATED` gap found below,
+> blocks Lát 5/8) run alongside Lát 1–4 (contract, task-centric API, idempotency inbox, Camunda
+> execution/authz), then Lát 5 (event/projection) once Lát 0 lands. **Track Claude** owns Angular (Lát
+> 6 — build `TaskAction` model/service against the already-locked contract, ask before wiring to any
+> stopgap endpoint) + gateway Caddy routes for `/api/tasks/**` and `/api/action-studio/**` (Lát 7) — does
+> not touch Codex's backend packages. Lát 8 (E2E) waits for both tracks; verify via an extended
+> `Invoke-E2ESmoke.ps1` covering approve/return/reject, not just manual click-through. Full ordering and
+> the Lát 0 investigation leads are in `active-task.md`.
+
+> **2026-07-19 — E2E SMOKE SCRIPT WRITTEN + RUN FOR REAL: FOUND A REAL BLOCKING GAP (owner Claude).**
+> Added `services/ho-so-service/scripts/Invoke-E2ESmoke.ps1` (create NhiemVu → create HoSo → submit
+> RD01.01 → poll `PROCESSING` → `GET /api/my-tasks` as `pm@example.com` → assert `Task_1` /
+> `processInstanceKey` match). Actually ran it — stood up temporary backend (8090) + `ho-so-service`
+> (8093) against the already-running Docker Postgres/Camunda (created the missing `qtkhcn_ho_so`
+> database first), executed the script, then tore everything down and cleaned up test rows. **Result:
+> SMOKE FAIL.** The dossier correctly reaches `PROCESSING` with a stable, valid
+> `zeebeProcessInstanceKey`, and Camunda's own `/v2/element-instances/search` confirms `Task_1` is
+> genuinely `ACTIVE` — but `/api/my-tasks` returns empty for every identity, including admin. Root
+> cause isolated precisely via direct Camunda REST calls (bypassing qtkhcn code entirely): Camunda
+> 8.9.13's `/v2/user-tasks/search` (the API `CamundaWorkflowRuntimeEventReader` uses to emit
+> `TASK_CREATED`) returns **0 items system-wide**, even unfiltered, while `/v2/element-instances/search`
+> and `/v2/process-instances/search` work correctly. Confirmed the rest of the pipeline is sound by
+> cancelling the two test instances via Camunda REST: the resulting `PROCESS_CANCELLED` event flowed
+> correctly through collector → outbox → dispatch → inbox → `workflow_process_projection`. So this is a
+> narrow Camunda secondary-storage/indexing gap for the user-task view in the current `orchestration`
+> container (`ORCHESTRATION_CONFIG_FILE=application-h2.yaml`), not a bug in `WorkflowEventCollector` or
+> `ho-so-service`. This does not contradict the "USER TỰ TEST THÀNH CÔNG" entry below — that test may
+> have run against a different container state — but it means the "Việc của tôi" step is **not
+> currently reproducible by automation** in this environment, so step 7 (smoke tự động) stays open until
+> someone confirms the Camunda container's user-task indexing is actually working. Full root-cause
+> writeup in `active-task.md`.
+
+> **2026-07-19 — D20 RUNTIME TASK ACTION OWNERSHIP + REFACTOR PLAN LOCKED (owner user/Codex):** User
+> chốt Action Studio và các lệnh `Phê duyệt`/`Trả lại`/`Từ chối` đều thuộc Service Quản trị quy trình;
+> Service NVKHCN chỉ sở hữu Hồ sơ và phản ánh workflow event. Gap `/actions` được sửa nghĩa: không chuyển
+> sang `ho-so-service`; cần thay endpoint monolith `POST /api/ho-so/{id}/actions` bằng task-centric API
+> trên 8090, authorization + Action Studio policy server-side, idempotency/uncertain-result reconcile,
+> event `TASK_ACTION_APPLIED`/`PROCESS_REJECTED`, projection-only update ở 8093, rồi Angular/gateway cutover
+> và xóa direct write vào legacy `HoSoRepository`. D20 đã LOCKED; kế hoạch 8 lát và E2E AC nằm ở đầu
+> `active-task.md`. Trạng thái: **PLAN APPROVED, IMPLEMENTATION NOT STARTED**.
+
+> **2026-07-19 — E2E TẠO HỒ SƠ → GỬI DUYỆT → CAMUNDA → VIỆC CỦA TÔI: USER TỰ TEST THÀNH CÔNG (owner
+> user).** User báo đã tự cutover local dev (backend Quy trình cổng 8090 + `ho-so-service` cổng 8093 +
+> Caddy) và tự test thành công full luồng qua UI/API: Tạo hồ sơ → Gửi duyệt → đẩy hồ sơ sang Service
+> Quản trị quy trình (Camunda) → phản ánh lại trạng thái hồ sơ → thấy việc ở `/viec-cua-toi` (Service
+> Quản lý NVKHCN). Đóng gap #7 và bước 6 trong entry E2E gap assessment 2026-07-18 (xem dưới) — agent
+> **chưa** trực tiếp quan sát log/output của lần test này, chỉ ghi nhận theo báo cáo trực tiếp của user.
+> Còn treo: (a) script smoke tự động hoá cho luồng này (bước 7, khác với test thủ công vừa xong), (b)
+> gap #6 `/actions` vẫn dùng implementation monolith trực tiếp sửa Hồ sơ; theo D20 phải giữ action ở
+> Service Quy trình nhưng refactor thành task-centric + event-driven, không chuyển sang Service Hồ sơ.
+> Chi tiết đầy đủ ở đầu `active-task.md`.
+
+> **2026-07-18 — D19 APP LIST + PHÂN QUYỀN THEO APP DONE + VERIFIED (owner Codex):** Angular giữ một
+> shell nhưng có ba App logic `qlnvkhcn`/`quytrinh`/`he-thong`; login luôn vào `/chon-ung-dung`, menu và
+> toàn bộ feature route fail-closed theo entitlement + App đang chọn. Demo entitlement nằm trên RBAC hiện
+> có và không được coi là backend authorization. `ho-so-service` có read endpoint trạng thái outbox/inbox
+> nội bộ + hồ sơ `START_FAILED`; `/nhat-ky` thêm tab "Đồng bộ nội bộ", tách khỏi sáu hệ thống ngoài.
+> Backend **35/35 PASS**; frontend targeted **16/16 + 4/4 PASS**, production build GREEN. Full frontend
+> **166/167**, chỉ còn một timeout `service-task-config` flaky có sẵn. Browser không có phiên khả dụng nên
+> chưa click-through thật; Caddy binary không được cài nên chưa validate config. Chi tiết ở đầu
+> `active-task.md`.
+
+> **2026-07-18 — PORT ANGULAR MÀN VIỆC CỦA TÔI (`/viec-cua-toi`) DONE + VERIFIED (owner Claude):**
+> route `/viec-cua-toi` (trước đó `PlaceholderPage`) nay là bản port của `webapp/src/pages/
+> Worklist.tsx` — Bước 5 của task E2E "Tạo hồ sơ → Gửi duyệt → Camunda → Việc của tôi" (xem entry
+> ngay dưới), làm song song và trước Bước 3/4 theo chỉ định của user. Nối thẳng `GET /api/ho-so` thật
+> (lọc PROCESSING + `steps[buocHienTai]`); vì Bước 3 (`/api/my-tasks`)/Bước 4 (role mapping đầy đủ)
+> chưa xong, đã bổ sung tối thiểu `roleCodes` CLIENT-SIDE vào `DemoUser`
+> (`core/auth/demo-users.ts`) + `core/auth/permissions.ts` (port `canProcessStep`/`hasAnyRole` từ
+> `webapp/src/data/permissions.ts`) chỉ để lọc UI — không phải RBAC backend thật, Bước 4 đầy đủ vẫn
+> là việc của Codex. `npx ng test` **155/157 PASS** (9 test mới), 2 fail còn lại pre-existing/flaky
+> (fetch icon mạng, không liên quan); `npx ng build` GREEN. Không đụng file nào của Codex
+> (`services/ho-so-service/**`, `backend/.../{camunda,workflow,service,web,domain,repository,
+> security}`). Chưa click-through trình duyệt thật; khi Bước 3/4 xong cần đổi nguồn dữ liệu sang
+> `/api/my-tasks` và bỏ `roleCodes` tạm. Chi tiết đầy đủ ở đầu `active-task.md`.
+
+> **2026-07-18 — E2E LÁT 5 BƯỚC 2 TASK/STATUS PROJECTION + RECONCILE DONE + VERIFIED (owner Codex):**
+> `ho-so-service` nay có Flyway V5 với task/process projection, cập nhật `dossier_step`,
+> `ho_so.buoc_hien_tai` và trạng thái hồ sơ trong cùng transaction nhận event. Projector khóa hồ sơ và
+> rebuild từ toàn inbox theo `(occurredAt,eventId)`, nên duplicate là no-op, completion giao trước creation
+> không mở task lại và process terminal không bị event cũ làm lùi. Reconciler mỗi 5 giây phục hồi row chưa
+> processed và lưu lỗi poison. Service **23/23 test PASS**. PostgreSQL 16 thật: Flyway V1–V5 + Hibernate
+> validate xanh; smoke HTTP out-of-order/duplicate trả `202 → 202 → 200`, task vẫn `COMPLETED`, bước
+> `Task_1` `DONE`, inbox 2/2 processed; process/DB/log tạm đã dọn. **Next:** API `GET /api/my-tasks`
+> lọc server-side + contract test. Chi tiết `docs/arch/nvkhcn-ho-so-slice-5-step-2-workflow-projection.md`.
+
+> **2026-07-18 — PORT ANGULAR MÀN NHẬT KÝ (`/nhat-ky`) DONE + VERIFIED (owner Claude):** route
+> `/nhat-ky` (trước đó `PlaceholderPage`) nay là bản port đầy đủ của `webapp/src/pages/
+> ProcessEventLog.tsx` — 2 tab: "Nhật ký luồng" (lịch sử sự kiện Zeebe per-hồ sơ, giữ mock vì chưa có
+> backend lưu history Camunda — `core/models/process-event.ts` mới) và "Nhật ký tích hợp" (bảng job
+> worker cross-hồ sơ, nối thẳng `GET /api/integration-systems/{key}/job-runs` thật đã có từ lát
+> `/tich-hop` thay vì lặp lại seed mock — qua `AskUserQuestion` user chọn phương án này để giữ một
+> nguồn sự thật). `npx ng build` GREEN (chunk `nhat-ky` 17.33 kB); `npx ng test` 4/4 test mới PASS,
+> full suite 145/148 (3 fail còn lại là timeout fetch icon qua mạng, pre-existing/flaky, đổi lượt mỗi
+> lần chạy — không liên quan). Không đụng file của phiên song song khác đang chạy trên backend/
+> `services/ho-so-service` (xem entry E2E gap assessment ngay dưới). Chưa click-through trình duyệt
+> thật. Chi tiết đầy đủ ở đầu `active-task.md`.
+
+> **2026-07-18 — E2E LÁT 5 BƯỚC 1 WORKFLOW EVENTS → INBOX/DEDUP DONE + VERIFIED (owner Codex):**
+> backend Quy trình nay quét lifecycle thật từ Camunda Search cho các process đã mapping, phát năm
+> event `TASK_CREATED`/`TASK_COMPLETED`/`PROCESS_COMPLETED`/`PROCESS_CANCELLED`/`INCIDENT_CREATED`
+> qua outbox V15 có source key/event ID ổn định, lease, retry/backoff và internal bearer HTTP.
+> `ho-so-service` nhận tại `POST /internal/v1/workflow-events`, lưu inbox V4 atomic bằng
+> `INSERT ... ON CONFLICT DO NOTHING`; duplicate cùng payload trả 200, same-id/different-payload 409,
+> thiếu token 401. Backend 165 test (1 skipped), service Hồ sơ 20/20 xanh. PostgreSQL 16 smoke thật:
+> Flyway/Hibernate validate và hai app khởi động; HTTP 202 → 200 → 409, inbox count=1; tài nguyên tạm
+> đã dọn. Bước này cố ý chưa projection. **Next:** task/status projection + reconcile với test
+> duplicate/out-of-order. Chi tiết `docs/arch/nvkhcn-ho-so-slice-5-step-1-workflow-events.md`.
+
+> **2026-07-18 — E2E GAP ASSESSMENT: TẠO HỒ SƠ → GỬI DUYỆT → CAMUNDA → VIỆC CỦA TÔI (owner Codex):**
+> Luồng đã có code thật tới bước khởi tạo đúng một process instance: Angular tạo/gửi hồ sơ,
+> `ho-so-service` submit bằng transactional outbox, backend Quy trình start idempotent và từng được
+> E2E với PostgreSQL + Camunda thật. Phần chặn nghiệm thu end-to-end hiện là đường quay về Service
+> Quản lý NV KHCN: chưa có workflow task/completion/incident events, inbox/dedup và task/status
+> projection trong `ho-so-service`; chưa có API `GET /api/my-tasks` lọc server-side theo assignee /
+> candidate groups; Angular `/viec-cua-toi` vẫn là `PlaceholderPage`; demo auth chưa có `userId` /
+> `roleCodes` để ánh xạ các nhóm BPMN (`PM`, `CQ_KHCN`, `HDKHCN`, ...). `/actions` vẫn ở monolith và
+> chỉ được chuyển sau khi duplicate/out-of-order event tests xanh. Runtime kiểm tra cùng ngày:
+> Angular 4200, PostgreSQL và Camunda 8080/26500 đang chạy; backend cũ 8091 chạy nhưng
+> `/api/tasks` trả 404 và `/api/ho-so` rỗng; workflow backend 8090 và `ho-so-service` 8093 chưa chạy,
+> nên chưa thể test luồng tích hợp trên topology hiện tại. **Next:** Lát 5 theo thứ tự events →
+> inbox/dedup → projection + reconcile → `/api/my-tasks` → role mapping → port Worklist Angular →
+> ghép/cutover runtime → smoke tự động tạo hồ sơ, submit, chờ `PROCESSING`, rồi xác nhận user nhóm
+> `PM` nhìn thấy đúng `maHoSo` và `Task_1`.
+
+> **2026-07-18 — D18 TÁCH SERVICE HỒ SƠ — LÁT 4 CODE DONE + REAL E2E VERIFIED (owner Codex):**
+> `ho-so-service` nay submit theo transaction `DRAFT/START_FAILED -> START_PENDING + outbox`, dispatcher
+> HTTP có retry/backoff + lease phục hồi crash và chuyển `PROCESSING`/`START_FAILED`. Backend Quy trình
+> có internal bearer auth, canonical payload hash, inbox idempotency, process mapping, allowlist variables
+> và reconcile Camunda bằng `qtkhcnStartRequestId`; duplicate cùng payload trả 200, payload khác trả 409.
+> Gateway seam chuyển `/submit` cùng business writes sang service Hồ sơ; `/actions` vẫn ở monolith tới
+> Lát 5. PostgreSQL/Camunda E2E thật: submit 202 -> outbox SENT -> đúng 1 instance, mô phỏng mất response
+> bằng inbox UNKNOWN rồi retry vẫn trả process key cũ và correlation count=1. Service 16/16, backend
+> 164 test (1 skipped), Angular build + targeted test xanh; smoke process đã cancel, DB/process/port tạm
+> đã dọn, chưa cutover live. Next: Lát 5 workflow events/inbox projection. Chi tiết
+> `docs/arch/nvkhcn-ho-so-slice-4-reliable-start.md`.
+
+> **2026-07-18 — D18 TÁCH SERVICE HỒ SƠ — LÁT 3 CODE DONE + LOCAL VERIFIED (owner Codex):**
+> user cho phép bỏ qua cửa sổ canary traffic thật 30 phút của Lát 2D (gate không có report và không
+> được coi PASS) để tiếp tục. `ho-so-service` nay có business CRUD Nhiệm vụ/Hồ sơ nháp/tài liệu,
+> optimistic `ETag`/`If-Match`, actor bắt buộc, Flyway V2 + audit và business sequence. Monolith có
+> legacy-write kill switch; gateway write seam chỉ route business CRUD, giữ `/submit`/`/actions` ở
+> service Quy trình tới Lát 4–5. PostgreSQL real smoke CRUD/version/audit + rollback/backfill parity
+> 5/5 xanh; service 13/13 test, backend 158 test (1 skipped), Angular targeted 5/5 + build, Caddy
+> validate và PowerShell parser đều xanh. Chưa cutover live vì môi trường hiện tại thiếu release
+> root/Caddy/monolith 8090; service smoke đã dừng và port 8093 đã giải phóng. Next: Lát 4 outbox +
+> start-process idempotent/inbox. Chi tiết `docs/arch/nvkhcn-ho-so-slice-3-write-ownership.md`.
+
+> **2026-07-18 — PORT ANGULAR + BE MÀN TÍCH HỢP (`/tich-hop`) DONE + VERIFIED (owner Claude):**
+> route `/tich-hop` (trước đó `PlaceholderPage`) nay là bản port đầy đủ của `webapp/src/pages/
+> IntegrationStatus.tsx` + `MappingStudio.tsx`/`MappingFieldEditor.tsx` — 2 tab thật (Tổng quan: card
+> hệ tích hợp + kết nối/ngắt kết nối/xem chi tiết; Mapping dữ liệu: CRUD field mapping + preview +
+> kích hoạt fail-closed) và 3 tab "sắp có" giữ nguyên như React. Backend mới hoàn toàn: 3 bảng
+> Flyway `V13__integration.sql` (`integration_system` seed 6 hệ QLNS/MS/SAP/QLTS/PLM/IAM,
+> `integration_job_run` đọc-chỉ seed 6 dòng, `integration_mapping` seed 3 mapping), API
+> `/api/integration-systems` (list/job-runs/connect/disconnect, `If-Match`+actor đúng pattern eForm)
+> và `/api/integration-mappings` (CRUD fields + status, port `validateMappingConfig` sang Java,
+> fail-closed giữ nguyên "luôn ghi lại trạng thái kể cả khi Active thất bại"). API key chỉ lưu
+> SHA-256 hash + 4 ký tự cuối, không có plaintext. Angular `core/services/integration-*.service.ts`
+> HTTP-backed ngay từ đầu (không qua giai đoạn mock). Preview payload lấy mẫu từ `NhiemVuService`/
+> `HoSoService` thật thay vì seed tĩnh React (NhanSu vẫn rỗng — trung thực về giới hạn contract hiện
+> có, giống cách TaiSan được xử lý ở bản gốc). Backend `mvn -o test` **158/158 PASS, 1 skipped**
+> (28 test mới); Angular `ng build` GREEN (chunk `integration-status` 50.15 kB), `ng test` giữ
+> 130+3 file mới PASS (chỉ `approval-matrix.spec.ts` timeout mạng — xác nhận pre-existing/flaky,
+> không liên quan). **Real Postgres smoke thật** trên DB tạm `qtkhcn_v13_verify` + backend tạm cổng
+> **8097** (không đụng 8090 live demo/8091 dev): connect/disconnect với optimistic lock (409 đúng khi
+> stale), tạo/sửa/activate mapping fail-closed đúng cả 2 nhánh (thiếu field → error; đủ field →
+> active), xoá sạch, dừng process + xoá DB tạm sau khi xong. Phát hiện phụ không phải do lát này:
+> phiên song song khác đang có bug thật ở `V14__workflow_start_inbox.sql` (cột `payload_hash` sai
+> kiểu, Hibernate validate fail khi boot full app) — không sửa, không phải phạm vi. **Chưa ghép vào
+> jar tổng hợp cổng dev 8091** (đang chạy jar khác + có phiên song song đang sửa dở) và chưa
+> click-through trình duyệt thật. Chi tiết đầy đủ ở đầu `active-task.md`.
+
 > **2026-07-16 — BACKEND DEV 8091 RESTART + FLYWAY V12 APPLIED (owner Codex):** migration
 > `V12__eform_rd0202.sql` đã được copy byte-identical vào worktree jar tổng hợp, `clean package`
 > **111/111 test PASS**, restart PID 26948 → PID **23944**. Flyway nâng PostgreSQL `qtkhcn.public`

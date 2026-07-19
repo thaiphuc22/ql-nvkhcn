@@ -3,6 +3,7 @@ import {
   ApartmentOutline,
   ApiOutline,
   AppstoreOutline,
+  BankOutline,
   BlockOutline,
   BookOutline,
   BranchesOutline,
@@ -58,10 +59,13 @@ import {
   RedoOutline,
   ReloadOutline,
   RetweetOutline,
+  SafetyCertificateOutline,
   SafetyOutline,
   SaveOutline,
   SearchOutline,
   SendOutline,
+  SettingOutline,
+  ShoppingCartOutline,
   SolutionOutline,
   SwapOutline,
   SyncOutline,
@@ -75,10 +79,12 @@ import {
   UserOutline,
   WarningOutline,
   ArrowLeftOutline,
+  ArrowRightOutline,
 } from '@ant-design/icons-angular/icons';
 
 /** Icon dùng trong shell (sider/header) + login — đăng ký tường minh, tránh bundle cả bộ icon. */
 export const NAV_ICONS = [
+  ArrowRightOutline,
   ApartmentOutline,
   ApiOutline,
   BookOutline,
@@ -175,3 +181,11 @@ export const EFORM_ICONS = [
 ];
 
 export const NHIEM_VU_ICONS = [ArrowLeftOutline, FileAddOutline, FileExcelOutline, FilePdfOutline, FileZipOutline, FolderOpenOutline];
+
+/**
+ * Icon dùng trong màn Trạng thái Tích hợp (`/tich-hop`, D17 Angular migration) —
+ * đăng ký tường minh cùng lý do với các mảng icon phía trên. `apartment`/`api`/
+ * `database`/`disconnect`/`link`/`team` đã có sẵn ở NAV_ICONS/khác, chỉ thêm phần
+ * chưa đăng ký (icon tile SystemCard + nút Cấu hình/Kết nối).
+ */
+export const INTEGRATION_ICONS = [BankOutline, SafetyCertificateOutline, SettingOutline, ShoppingCartOutline];

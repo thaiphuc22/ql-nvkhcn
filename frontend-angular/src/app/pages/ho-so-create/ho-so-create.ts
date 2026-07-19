@@ -38,6 +38,7 @@ import {
   NhiemVuResponse,
 } from '../../core/models/nhiem-vu';
 import { HoSoService } from '../../core/services/ho-so.service';
+import { AuthService } from '../../core/auth/auth.service';
 import { NhiemVuService } from '../../core/services/nhiem-vu.service';
 
 const LOAI_OPTIONS = Object.entries(HO_SO_LOAI_LABEL).map(([value, label]) => ({
@@ -77,6 +78,7 @@ export const DOCUMENTS_BY_LOAI: Record<HoSoLoai, string[]> = {
 export class HoSoCreatePage {
   private readonly formBuilder = inject(FormBuilder);
   private readonly hoSoService = inject(HoSoService);
+  private readonly auth = inject(AuthService);
   private readonly nhiemVuService = inject(NhiemVuService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -178,7 +180,7 @@ export class HoSoCreatePage {
     };
     this.submitting.set(true);
     this.errorMessage.set(null);
-    this.hoSoService.create(payload).subscribe({
+    this.hoSoService.create(payload, this.auth.user()?.email ?? 'unknown-demo-user').subscribe({
       next: (created) => {
         this.message.success(`Đã tạo hồ sơ ${created.id} ở trạng thái Khởi tạo.`);
         void this.router.navigate(['/ho-so'], { queryParams: { id: created.id } });

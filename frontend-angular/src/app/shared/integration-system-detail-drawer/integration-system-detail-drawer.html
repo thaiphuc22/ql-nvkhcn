@@ -1,0 +1,117 @@
+<nz-drawer
+  [nzVisible]="!!system()"
+  [nzWidth]="480"
+  (nzOnClose)="closed.emit()"
+>
+  <ng-container *nzDrawerContent>
+    @if (system(); as s) {
+      <div class="isdd-title">
+        <span class="isdd-icon-tile" [style.background]="visual().bg" [style.color]="visual().color">
+          <span nz-icon [nzType]="visual().icon"></span>
+        </span>
+        {{ s.key }} — {{ s.ten }}
+      </div>
+
+      <div class="isdd-section">
+        <nz-tag [nzColor]="statusMeta[s.trangThai].color === 'success' ? 'success' : statusMeta[s.trangThai].color === 'warning' ? 'warning' : 'error'">
+          {{ statusMeta[s.trangThai].label }}
+        </nz-tag>
+        <p nz-typography nzType="secondary" class="isdd-desc">{{ s.moTa }}</p>
+      </div>
+
+      <div class="isdd-note">
+        <span nz-icon nzType="apartment"></span>
+        Vai trò trong nền tảng (khái niệm — chờ đặc tả kỹ thuật): hệ này tham gia như
+        <strong>data/service endpoint</strong>, không sở hữu hay thay thế workflow nội bộ của hệ nguồn.
+      </div>
+
+      <div class="isdd-section">
+        <span nz-typography nzStrong class="isdd-section-title">Thông tin kết nối</span>
+        <div class="isdd-info-list">
+          <div class="isdd-info-row"><span class="isdd-info-label">Giao thức</span><span>{{ s.giaoThuc }}</span></div>
+          <div class="isdd-info-row"><span class="isdd-info-label">Endpoint</span><span class="isdd-mono">{{ s.endpoint }}</span></div>
+          <div class="isdd-info-row">
+            <span class="isdd-info-label">API Key</span>
+            <span class="isdd-mono">{{ s.apiKeyTail ? ('•••• ' + s.apiKeyTail) : 'Chưa thiết lập' }}</span>
+          </div>
+          <div class="isdd-info-row"><span class="isdd-info-label">Đồng bộ cuối</span><span>{{ s.lanDongBoCuoi }}</span></div>
+        </div>
+      </div>
+
+      <div class="isdd-section">
+        <span nz-typography nzStrong class="isdd-section-title">Chỉ số 24h</span>
+        <div nz-row [nzGutter]="10" class="isdd-metrics-row">
+          <div nz-col [nzSpan]="8">
+            <div class="isdd-metric-card">
+              <div class="isdd-metric-value">{{ s.doTreMs }} ms</div>
+              <span class="isdd-metric-label">Độ trễ TB</span>
+            </div>
+          </div>
+          <div nz-col [nzSpan]="8">
+            <div class="isdd-metric-card">
+              <div class="isdd-metric-value" [class.isdd-danger]="successRate() !== null && successRate()! < 100">
+                {{ successRate() === null ? '—' : successRate() + '%' }}
+              </div>
+              <span class="isdd-metric-label">Tỷ lệ thành công</span>
+            </div>
+          </div>
+          <div nz-col [nzSpan]="8">
+            <div class="isdd-metric-card">
+              <div class="isdd-metric-value">{{ s.hangDoi }}</div>
+              <span class="isdd-metric-label">Hàng đợi</span>
+            </div>
+          </div>
+        </div>
+        <p nz-typography nzType="secondary" class="isdd-small">
+          Lỗi gần nhất: {{ lastError() ?? 'Chưa ghi nhận lỗi' }}
+        </p>
+      </div>
+
+      <div class="isdd-section">
+        <span nz-typography nzStrong class="isdd-section-title">Job gần nhất</span>
+        @if (jobs().length === 0) {
+          <nz-empty nzNotFoundContent="Chưa có job nào ghi nhận cho hệ này."></nz-empty>
+        } @else {
+          <nz-table nzSize="small" [nzData]="jobs()" [nzShowPagination]="false" #jobTable>
+            <thead>
+              <tr>
+                <th>Job type</th>
+                <th>Mã hồ sơ</th>
+                <th>Thời điểm</th>
+                <th>Kết quả</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (job of jobTable.data; track job.id) {
+                <tr>
+                  <td><code class="isdd-mono">{{ job.jobType }}</code></td>
+                  <td>{{ job.maHoSo }}</td>
+                  <td>{{ job.thoiDiem }}</td>
+                  <td><nz-tag [nzColor]="jobOutcomeMeta[job.ketQua].color">{{ jobOutcomeMeta[job.ketQua].label }}</nz-tag></td>
+                </tr>
+              }
+            </tbody>
+          </nz-table>
+        }
+      </div>
+
+      <div class="isdd-section isdd-section-border">
+        <span nz-typography nzStrong class="isdd-section-title">Mapping dữ liệu</span>
+        @if (systemMappings().length === 0) {
+          <p nz-typography nzType="secondary" class="isdd-small">
+            Chưa có mapping nào cho hệ này. Xem tab "Mapping dữ liệu".
+          </p>
+        } @else {
+          <div class="isdd-mapping-list">
+            @for (m of systemMappings(); track m.id) {
+              <div class="isdd-mapping-row">
+                <span>{{ businessObjectLabel[m.doiTuong] }} · v{{ m.version }}</span>
+                <nz-tag [nzColor]="mappingStatusMeta[m.trangThai].color">{{ mappingStatusMeta[m.trangThai].label }}</nz-tag>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  </ng-container>
+</nz-drawer>

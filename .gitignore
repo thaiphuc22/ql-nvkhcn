@@ -36,3 +36,6 @@ infra/camunda-src/
 # OS / editor noise
 .DS_Store
 Thumbs.db
+
+# Playwright MCP session dumps (console logs, page snapshots)
+.playwright-mcp/

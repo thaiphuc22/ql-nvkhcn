@@ -7,6 +7,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -44,4 +45,8 @@ public class NhiemVu {
     @Enumerated(EnumType.STRING)
     @Column(name = "giai_doan", nullable = false, length = 16)
     private GiaiDoan giaiDoan;
+
+    @Version
+    @Column(name = "version", nullable = false)
+    private long version;
 }

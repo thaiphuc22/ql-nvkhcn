@@ -1,7 +1,9 @@
 import { Injectable, signal } from '@angular/core';
 import { DEMO_PASSWORD, DemoUser, findDemoUser } from './demo-users';
+import { ALL_APP_CODES, AppCode } from './app-registry';
 
 const STORAGE_KEY = 'qtkhcn.auth.email';
+const ACTIVE_APP_STORAGE_KEY = 'qtkhcn.auth.active-app';
 
 export interface LoginResult {
   ok: boolean;
@@ -21,6 +23,25 @@ export interface LoginResult {
 export class AuthService {
   private readonly userSignal = signal<DemoUser | null>(this.restore());
   readonly user = this.userSignal.asReadonly();
+  private readonly activeAppSignal = signal<AppCode | null>(this.restoreActiveApp());
+  readonly activeApp = this.activeAppSignal.asReadonly();
+
+  entitledApps(): AppCode[] {
+    const current = this.userSignal();
+    if (!current) return [];
+    return current.isAdmin ? [...ALL_APP_CODES] : [...current.apps];
+  }
+
+  selectApp(app: AppCode): boolean {
+    if (!this.entitledApps().includes(app)) return false;
+    this.activeAppSignal.set(app);
+    try {
+      sessionStorage.setItem(ACTIVE_APP_STORAGE_KEY, app);
+    } catch {
+      /* bỏ qua nếu sessionStorage không khả dụng */
+    }
+    return true;
+  }
 
   login(email: string, password: string): LoginResult {
     const found = findDemoUser(email);
@@ -32,6 +53,7 @@ export class AuthService {
       /* bỏ qua nếu localStorage không khả dụng */
     }
     this.userSignal.set(found);
+    this.clearActiveApp();
     return { ok: true };
   }
 
@@ -42,6 +64,7 @@ export class AuthService {
       /* bỏ qua */
     }
     this.userSignal.set(null);
+    this.clearActiveApp();
   }
 
   private restore(): DemoUser | null {
@@ -50,6 +73,24 @@ export class AuthService {
       return email ? (findDemoUser(email) ?? null) : null;
     } catch {
       return null;
+    }
+  }
+
+  private restoreActiveApp(): AppCode | null {
+    try {
+      const app = sessionStorage.getItem(ACTIVE_APP_STORAGE_KEY) as AppCode | null;
+      return app && ALL_APP_CODES.includes(app) ? app : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private clearActiveApp(): void {
+    this.activeAppSignal.set(null);
+    try {
+      sessionStorage.removeItem(ACTIVE_APP_STORAGE_KEY);
+    } catch {
+      /* bỏ qua */
     }
   }
 }

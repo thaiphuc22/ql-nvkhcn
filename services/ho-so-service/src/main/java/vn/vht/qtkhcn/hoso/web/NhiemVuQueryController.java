@@ -1,6 +1,7 @@
 package vn.vht.qtkhcn.hoso.web;
 
 import java.util.List;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,7 +25,8 @@ public class NhiemVuQueryController {
     }
 
     @GetMapping("/{ma}")
-    public NhiemVuResponse findById(@PathVariable String ma) {
-        return service.findById(ma);
+    public ResponseEntity<NhiemVuResponse> findById(@PathVariable String ma) {
+        var result = service.findById(ma);
+        return ResponseEntity.ok().eTag(HttpVersion.etag(result.version())).body(result.body());
     }
 }

@@ -26,7 +26,8 @@ public class InternalServiceTokenFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !request.getRequestURI().startsWith("/api/");
+        return !(request.getRequestURI().startsWith("/api/")
+                || request.getRequestURI().startsWith("/internal/"));
     }
 
     @Override

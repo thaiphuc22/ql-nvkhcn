@@ -35,13 +35,13 @@ public class HoSoQueryService {
                 .toList();
     }
 
-    public HoSoResponse findById(String id) {
+    public VersionedResponse<HoSoResponse> findById(String id) {
         HoSo hoSo = hoSoRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy HoSo " + id));
         NhiemVu nhiemVu = nhiemVuRepository.findById(hoSo.getMaNV())
                 .orElseThrow(() -> new IllegalStateException(
                         "Hồ sơ " + id + " tham chiếu NhiemVu không tồn tại " + hoSo.getMaNV()));
-        return HoSoResponse.from(hoSo, nhiemVu);
+        return new VersionedResponse<>(HoSoResponse.from(hoSo, nhiemVu), hoSo.getVersion());
     }
 
     private static NhiemVu requiredNhiemVu(HoSo hoSo, Map<String, NhiemVu> nhiemVuById) {

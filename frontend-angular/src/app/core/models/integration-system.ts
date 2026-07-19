@@ -1,6 +1,9 @@
-// Port của phần "Integration system registry" trong webapp/src/data/camundaOps.ts
-// (chỉ phần connector cần cho validate/chọn connector ở Service Task — không port
-// instances/job runs/events vì màn Giám sát tiến trình/Tích hợp chưa lên Angular).
+// Port của phần "Integration system registry" trong webapp/src/data/camundaOps.ts.
+// Ban đầu chỉ port phần connector cần cho validate/chọn connector ở Service Task;
+// nay mở rộng thêm cho màn Tích hợp thật (`/tich-hop`, xem
+// core/services/integration-system.service.ts) — GET /api/integration-systems là
+// nguồn dữ liệu thật, `seedIntegrations` bên dưới CHỈ còn dùng làm option tĩnh cho
+// dropdown connector của Service Task (không liên quan tới màn Tích hợp nữa).
 
 export type IntegStatus = 'healthy' | 'degraded' | 'down';
 export type IntegKind = 'connector' | 'job-worker' | 'idp';
@@ -10,6 +13,17 @@ export const INTEG_STATUS: Record<IntegStatus, { label: string; color: string }>
   healthy: { label: 'Đã tích hợp', color: 'success' },
   degraded: { label: 'Tạm dừng', color: 'warning' },
   down: { label: 'Chưa kết nối', color: 'error' },
+};
+
+export const INTEG_KIND_LABEL: Record<IntegKind, string> = {
+  connector: 'Connector (cấu hình)',
+  'job-worker': 'Job worker (code)',
+  idp: 'IdP (SSO/IAM)',
+};
+
+export const SYNC_MODE_LABEL: Record<SyncMode, string> = {
+  realtime: 'Thời gian thực',
+  batch: 'Theo lô',
 };
 
 export interface IntegrationSystem {
@@ -28,6 +42,60 @@ export interface IntegrationSystem {
   endpoint: string;
   apiKeyTail?: string;
   ref: string;
+  /** JPA @Version — dùng làm ETag cho If-Match khi connect/disconnect (GET /api/integration-systems). */
+  version: number;
+}
+
+export interface ConnectSystemRequest {
+  apiKey: string;
+  endpoint: string;
+}
+
+/** Lần chạy job worker gần đây, đọc từ `GET /api/integration-systems/{key}/job-runs`. */
+export type JobOutcome = 'success' | 'retry' | 'failed';
+
+export const JOB_OUTCOME: Record<JobOutcome, { label: string; color: string }> = {
+  success: { label: 'Thành công', color: 'success' },
+  retry: { label: 'Đang thử lại', color: 'warning' },
+  failed: { label: 'Thất bại', color: 'error' },
+};
+
+export interface JobRun {
+  id: string;
+  jobType: string;
+  he: string;
+  maHoSo: string;
+  thoiDiem: string;
+  ketQua: JobOutcome;
+  retries: number;
+  thongDiep: string;
+}
+
+/** Tỷ lệ thành công 24h (%) suy từ banGhi24h/loi24h — null nếu chưa có bản ghi nào. */
+export function integrationSuccessRate(s: IntegrationSystem): number | null {
+  if (s.banGhi24h <= 0) return null;
+  return Math.round(((s.banGhi24h - s.loi24h) / s.banGhi24h) * 1000) / 10;
+}
+
+/** Job của một hệ, mới nhất lên đầu (dùng cho card + drawer chi tiết). */
+export function jobRunsForSystem(runs: JobRun[], he: string): JobRun[] {
+  return runs
+    .filter((j) => j.he === he)
+    .slice()
+    .sort((a, b) => b.thoiDiem.localeCompare(a.thoiDiem));
+}
+
+/** Số job đang ở trạng thái lỗi (chưa retry thành công). */
+export function openIncidentCount(runs: JobRun[], he: string): number {
+  return runs.filter((j) => j.he === he && j.ketQua === 'failed').length;
+}
+
+/** Thời điểm lỗi/thử lại gần nhất của một hệ, undefined nếu chưa từng lỗi. */
+export function lastErrorAt(runs: JobRun[], he: string): string | undefined {
+  const failing = runs
+    .filter((j) => j.he === he && j.ketQua !== 'success')
+    .sort((a, b) => b.thoiDiem.localeCompare(a.thoiDiem));
+  return failing[0]?.thoiDiem;
 }
 
 export const seedIntegrations: IntegrationSystem[] = [
@@ -47,6 +115,7 @@ export const seedIntegrations: IntegrationSystem[] = [
     endpoint: 'https://qlns.vht.vn/api/v1',
     apiKeyTail: 'NS81',
     ref: 'RD03.01 · NFR-INT-001',
+    version: 0,
   },
   {
     key: 'MS',
@@ -64,6 +133,7 @@ export const seedIntegrations: IntegrationSystem[] = [
     endpoint: 'https://ms.vht.vn/api/v1',
     apiKeyTail: 'MS27',
     ref: 'RD03.02 · NFR-INT-001',
+    version: 0,
   },
   {
     key: 'SAP',
@@ -80,6 +150,7 @@ export const seedIntegrations: IntegrationSystem[] = [
     hangDoi: 7,
     endpoint: 'https://sap-gw.vht.vn/odata/v2',
     ref: 'RD03.03 · NFR-INT-001',
+    version: 0,
   },
   {
     key: 'QLTS',
@@ -97,6 +168,7 @@ export const seedIntegrations: IntegrationSystem[] = [
     endpoint: 'https://qlts.vht.vn/api/v1',
     apiKeyTail: 'TS40',
     ref: 'RD06 · NFR-INT-001',
+    version: 0,
   },
   {
     key: 'PLM',
@@ -114,6 +186,7 @@ export const seedIntegrations: IntegrationSystem[] = [
     endpoint: 'https://plm.vht.vn/api/v2',
     apiKeyTail: 'PL9C',
     ref: 'RD03 · NFR-INT-001',
+    version: 0,
   },
   {
     key: 'IAM',
@@ -131,5 +204,6 @@ export const seedIntegrations: IntegrationSystem[] = [
     endpoint: 'https://sso.vht.vn/oidc',
     apiKeyTail: 'IA55',
     ref: 'OQ-021 · REQ-ENG-004',
+    version: 0,
   },
 ];

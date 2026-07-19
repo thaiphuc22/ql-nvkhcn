@@ -1,6 +1,6 @@
 import { Component, inject, isDevMode, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
 
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
@@ -30,7 +30,6 @@ export class LoginPage {
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
 
   /** Card "Tài khoản demo" chỉ hiện ở dev — port đúng ý webapp/src/pages/Login.tsx (không lộ mật khẩu chung ra bản build production thật). */
   readonly showDemoAccounts = isDevMode();
@@ -56,8 +55,7 @@ export class LoginPage {
     const result = this.auth.login(email, password);
     this.submitting.set(false);
     if (result.ok) {
-      const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/tong-quan';
-      this.router.navigateByUrl(returnUrl);
+      this.router.navigateByUrl('/chon-ung-dung');
     } else {
       this.errorMessage.set(result.error ?? 'Đăng nhập thất bại');
     }

@@ -4,13 +4,17 @@
  * Java (Jackson serialize theo `name()`) để khớp payload thật.
  */
 
-export type DossierStatus = 'DRAFT' | 'PROCESSING' | 'APPROVED' | 'REJECTED';
+export type DossierStatus = 'DRAFT' | 'START_PENDING' | 'START_FAILED' | 'PROCESSING' |
+  'APPROVED' | 'REJECTED' | 'CANCELLED';
 
 export const DOSSIER_STATUS_LABEL: Record<DossierStatus, string> = {
   DRAFT: 'Khởi tạo',
+  START_PENDING: 'Đang khởi tạo quy trình',
+  START_FAILED: 'Khởi tạo quy trình thất bại',
   PROCESSING: 'Đang xử lý',
   APPROVED: 'Đã phê duyệt',
   REJECTED: 'Bị từ chối',
+  CANCELLED: 'Đã hủy',
 };
 
 export type HoSoLoai = 'CHU_TRUONG' | 'XET_DUYET' | 'BAO_CAO' | 'DIEU_CHINH' | 'NGHIEM_THU' | 'QUYET_TOAN';

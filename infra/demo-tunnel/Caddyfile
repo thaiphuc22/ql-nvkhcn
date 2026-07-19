@@ -10,17 +10,106 @@ http://127.0.0.1:8443 {
 		demo {$DEMO_BASIC_AUTH_HASH}
 	}
 
+	# Worklist cutover seam. The browser supplies only the selected demo identity; role headers are
+	# stripped and role resolution remains server-side in ho-so-service.
+	@my_tasks {
+		method GET
+		path /api/my-tasks /api/my-tasks/
+	}
+
+	# Read-only health view for the mandatory Ho So <-> Workflow integration channel.
+	@internal_integration_status {
+		method GET
+		path /api/internal-integration/status
+	}
+	handle @internal_integration_status {
+		reverse_proxy {$QTKHCN_HO_SO_READ_UPSTREAM} {
+			header_up X-QTKHCN-Dev-Key {$QTKHCN_DEV_API_KEY}
+			header_up Authorization "Bearer {$QTKHCN_HO_SO_SERVICE_TOKEN}"
+		}
+	}
+	handle @my_tasks {
+		reverse_proxy {$QTKHCN_MY_TASKS_UPSTREAM} {
+			header_up X-QTKHCN-Dev-Key {$QTKHCN_DEV_API_KEY}
+			header_up Authorization "Bearer {$QTKHCN_HO_SO_SERVICE_TOKEN}"
+			header_up -X-QTKHCN-Role-Codes
+		}
+	}
+
 	# Read-route strangler seam. Start-DemoProxy.ps1 pins this upstream to the monolith unless the
 	# explicit -EnableHoSoReadRoute switch is supplied after Slice 2B gates have passed.
 	@ho_so_reads {
 		method GET
 		path /api/ho-so /api/ho-so/* /api/nhiem-vu /api/nhiem-vu/*
 	}
+
+	# Slice 3 business writes plus Slice 4 start command. /actions remains on the process service
+	# until workflow-event projection is moved in Slice 5.
+	@ho_so_creates {
+		method POST
+		path /api/ho-so /api/nhiem-vu
+	}
+	handle @ho_so_creates {
+		reverse_proxy {$QTKHCN_HO_SO_WRITE_UPSTREAM} {
+			header_up X-QTKHCN-Dev-Key {$QTKHCN_DEV_API_KEY}
+			header_up Authorization "Bearer {$QTKHCN_HO_SO_SERVICE_TOKEN}"
+		}
+	}
+
+	@ho_so_submits {
+		method POST
+		path_regexp dossierSubmit ^/api/ho-so/[^/]+/submit$
+	}
+	handle @ho_so_submits {
+		reverse_proxy {$QTKHCN_HO_SO_WRITE_UPSTREAM} {
+			header_up X-QTKHCN-Dev-Key {$QTKHCN_DEV_API_KEY}
+			header_up Authorization "Bearer {$QTKHCN_HO_SO_SERVICE_TOKEN}"
+		}
+	}
+
+	@ho_so_document_creates {
+		method POST
+		path_regexp documentCreate ^/api/ho-so/[^/]+/documents$
+	}
+	handle @ho_so_document_creates {
+		reverse_proxy {$QTKHCN_HO_SO_WRITE_UPSTREAM} {
+			header_up X-QTKHCN-Dev-Key {$QTKHCN_DEV_API_KEY}
+			header_up Authorization "Bearer {$QTKHCN_HO_SO_SERVICE_TOKEN}"
+		}
+	}
+
+	@ho_so_updates {
+		method PUT PATCH DELETE
+		path /api/ho-so/* /api/nhiem-vu/*
+	}
+	handle @ho_so_updates {
+		reverse_proxy {$QTKHCN_HO_SO_WRITE_UPSTREAM} {
+			header_up X-QTKHCN-Dev-Key {$QTKHCN_DEV_API_KEY}
+			header_up Authorization "Bearer {$QTKHCN_HO_SO_SERVICE_TOKEN}"
+		}
+	}
 	handle @ho_so_reads {
 		reverse_proxy {$QTKHCN_HO_SO_READ_UPSTREAM} {
 			header_up X-QTKHCN-Dev-Key {$QTKHCN_DEV_API_KEY}
 			header_up Authorization "Bearer {$QTKHCN_HO_SO_SERVICE_TOKEN}"
 			header_up X-QTKHCN-Read-Canary true
+		}
+	}
+
+	# D20 task-centric runtime action API (active-task.md, "Refactor runtime task action về Service
+	# Quản trị quy trình"). Not a strangler seam: this endpoint is new and owned by 8090 from day one,
+	# so there is nothing to switch between (unlike @my_tasks/@ho_so_*, which migrate traffic away from
+	# the monolith). Falls through the same 8090 destination the catch-all below would already send it
+	# to; the only behavioral difference is stripping any client-declared role header, matching the
+	# "không tin role do client tự khai" requirement locked for this API.
+	@task_actions {
+		method GET POST
+		path_regexp taskAction ^/api/tasks/[^/]+/(available-actions|actions)$
+	}
+	handle @task_actions {
+		reverse_proxy 127.0.0.1:8090 {
+			header_up X-QTKHCN-Dev-Key {$QTKHCN_DEV_API_KEY}
+			header_up -X-QTKHCN-Role-Codes
 		}
 	}
 

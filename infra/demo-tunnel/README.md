@@ -90,6 +90,27 @@ $env:QTKHCN_HO_SO_SERVICE_TOKEN = '<service-token>'
 & .\infra\demo-tunnel\Start-DemoProxy.ps1 -EnableHoSoReadRoute
 ```
 
+Sau khi Service Quy trình (8090) và Service Hồ sơ (8093) dùng cùng các token liên lạc nội bộ, bật
+Worklist mới bằng cutover riêng. `GET /api/my-tasks` được route sang 8093; Caddy xóa mọi
+`X-QTKHCN-Role-Codes` do client tự khai và Service Hồ sơ tự ánh xạ role từ identity demo:
+
+```powershell
+$env:QTKHCN_WORKFLOW_SERVICE_TOKEN = '<workflow-service-token-dùng-chung-cho-8090-và-8093>'
+$env:QTKHCN_HO_SO_SERVICE_TOKEN = '<ho-so-service-token-dùng-chung-cho-8090-và-gateway>'
+& .\infra\demo-tunnel\Start-DemoProxy.ps1 -EnableMyTasksRoute
+
+# Reload không gián đoạn khi Caddy đang chạy:
+$env:QTKHCN_HO_SO_READ_UPSTREAM = '127.0.0.1:8093'  # hoặc 8090, đúng route đang sống
+$env:QTKHCN_HO_SO_WRITE_UPSTREAM = '127.0.0.1:8093' # hoặc 8090, đúng route đang sống
+& .\infra\demo-tunnel\Switch-MyTasksRoute.ps1 -Target Service
+& .\infra\demo-tunnel\Switch-MyTasksRoute.ps1 -Target Monolith
+```
+
+Rollback route về monolith trả lại hành vi trước cutover (monolith không có `/api/my-tasks`); vì vậy rollback
+runtime phải đi cùng rollback Angular về release Worklist cũ.
+Script fail-closed nếu không khai báo hai upstream read/write hiện hành, để reload My Tasks không
+vô tình chuyển các seam khác về monolith.
+
 Không truyền switch (hoặc restart proxy không có switch) là rollback read-route về monolith. Mutation
 routes luôn đi monolith trong lát này.
 

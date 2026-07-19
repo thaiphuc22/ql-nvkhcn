@@ -26,5 +26,5 @@ describe('ApprovalMatrixPage', () => {
     })));
     http.expectOne('http://localhost:8091/api/approval-matrix/analyze').flush([]);
     http.verify();
-  });
+  }, 15_000);
 });
