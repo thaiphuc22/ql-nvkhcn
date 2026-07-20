@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -143,6 +144,21 @@ class MutationApiContractTest {
                         .header(HttpHeaders.AUTHORIZATION, AUTH).header("X-QTKHCN-Actor", "alice")
                         .header(HttpHeaders.IF_MATCH, "0"))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void deletesNhiemVuAndHoSoWithoutStatusOrVersionPrecondition() throws Exception {
+        mvc.perform(delete("/api/nhiem-vu/RD.2026.006")
+                        .header(HttpHeaders.AUTHORIZATION, AUTH)
+                        .header("X-QTKHCN-Actor", "alice"))
+                .andExpect(status().isNoContent());
+        verify(nhiemVuService).delete("RD.2026.006", "alice");
+
+        mvc.perform(delete("/api/ho-so/HS-2026-006")
+                        .header(HttpHeaders.AUTHORIZATION, AUTH)
+                        .header("X-QTKHCN-Actor", "alice"))
+                .andExpect(status().isNoContent());
+        verify(hoSoService).delete("HS-2026-006", "alice");
     }
 
     @Test

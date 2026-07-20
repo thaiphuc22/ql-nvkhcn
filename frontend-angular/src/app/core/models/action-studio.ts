@@ -37,11 +37,24 @@ export interface ActionAvailabilityPolicy {
   dossierStatus: DossierStatus | null;
   allowedRoleCodes: string[];
   requiredPermissions: string[];
-  formKey: string | null;
+  formKey?: string | null;
   conditionExpression?: string;
   displayOrder: number;
   enabled: boolean;
   version?: number;
+}
+
+export interface ActionStudioCatalogOption {
+  value: string;
+  label: string;
+}
+
+export interface ActionStudioReferenceData {
+  surfaces: ActionStudioCatalogOption[];
+  statuses: ActionStudioCatalogOption[];
+  roles: ActionStudioCatalogOption[];
+  permissions: ActionStudioCatalogOption[];
+  forms: ActionStudioCatalogOption[];
 }
 
 export type ExceptionTargetType = 'STEP' | 'STATUS' | 'COMPLETE';
@@ -73,6 +86,7 @@ export interface ProcessStep {
   key: string;
   name: string;
   role: string;
+  formKey?: string | null;
   branches: RouteBranch[];
 }
 

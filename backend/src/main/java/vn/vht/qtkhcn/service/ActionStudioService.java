@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -19,15 +20,19 @@ import vn.vht.qtkhcn.repository.ActionAvailabilityPolicyRepository;
 import vn.vht.qtkhcn.repository.ActionExceptionPolicyRepository;
 import vn.vht.qtkhcn.repository.ActionStudioActionRepository;
 import vn.vht.qtkhcn.repository.ActionStudioAuditRepository;
+import vn.vht.qtkhcn.repository.EformRepository;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ActionResponse;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.AuditResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.AvailabilityRequest;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.AvailabilityResponse;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.CatalogOptionResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ConfigResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ExceptionRequest;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ExceptionResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.PresentationRequest;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.PresentationResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ReconcileResponse;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ReferenceDataResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ScaffoldResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.SimulatedActionResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.SimulationRequest;
@@ -47,17 +52,20 @@ public class ActionStudioService {
     private final ActionExceptionPolicyRepository exceptionRepository;
     private final ActionStudioAuditRepository auditRepository;
     private final ActionStudioRoutingCatalog routingCatalog;
+    private final EformRepository eformRepository;
 
     public ActionStudioService(ActionStudioActionRepository actionRepository,
             ActionAvailabilityPolicyRepository availabilityRepository,
             ActionExceptionPolicyRepository exceptionRepository,
             ActionStudioAuditRepository auditRepository,
-            ActionStudioRoutingCatalog routingCatalog) {
+            ActionStudioRoutingCatalog routingCatalog,
+            EformRepository eformRepository) {
         this.actionRepository = actionRepository;
         this.availabilityRepository = availabilityRepository;
         this.exceptionRepository = exceptionRepository;
         this.auditRepository = auditRepository;
         this.routingCatalog = routingCatalog;
+        this.eformRepository = eformRepository;
     }
 
     @Transactional(readOnly = true)
@@ -67,7 +75,49 @@ public class ActionStudioService {
                 actions.stream().map(ActionStudioService::toPresentation).toList(),
                 availabilityRepository.findAllByOrderByDisplayOrderAscIdAsc().stream().map(ActionStudioService::toAvailability).toList(),
                 exceptionRepository.findAllByOrderByIdAsc().stream().map(ActionStudioService::toException).toList(),
-                routingCatalog.processes());
+                routingCatalog.processes(), referenceData());
+    }
+
+    private ReferenceDataResponse referenceData() {
+        return new ReferenceDataResponse(
+                List.of(option("DOSSIER_DETAIL", "Chi tiết hồ sơ"), option("WORKLIST", "Việc của tôi"),
+                        option("MOBILE", "Ứng dụng di động"), option("ACTION_STUDIO", "Ma trận Hành động")),
+                List.of(option("draft", "Khởi tạo"), option("processing", "Đang xử lý"),
+                        option("approved", "Đã duyệt"), option("rejected", "Từ chối")),
+                roleOptions(),
+                List.of(option("SUBMIT_DOSSIER", "Gửi duyệt hồ sơ"),
+                        option("PROCESS_STEP", "Xử lý bước"),
+                        option("REQUEST_EXCEPTION", "Xin Chi tiết"),
+                        option("ADD_COMMENT", "Bổ sung ý kiến"),
+                        option("DOWNLOAD_DOCUMENT", "Tải tài liệu"),
+                        option("VIEW_AUDIT", "Xem lịch sử/audit")),
+                eformRepository.findAllByOrderByCreatedAtDesc().stream()
+                        .map(item -> option(item.getKey(), item.getTen()))
+                        .toList());
+    }
+
+    private static List<CatalogOptionResponse> roleOptions() {
+        return List.of(
+                option("PM", "Chủ nhiệm đề tài"), option("PA", "Trợ lý đề tài"),
+                option("NNC", "Người nghiên cứu"), option("TD", "Phòng Thẩm định"),
+                option("TCKT", "Phòng Tài chính - Kế toán"), option("LD", "Lãnh đạo"),
+                option("ADMIN", "Quản trị hệ thống"), option("CQ_KHCN", "Chuyên quản KHCN"),
+                option("CQ_MS", "Chuyên quản Mua sắm"), option("CQ_NS", "Chuyên quản Nhân sự"),
+                option("CQ_TCKT", "Chuyên quản TCKT"), option("TP_CLKHCN", "Trưởng phòng CLKHCN"),
+                option("TP_TCKT", "Trưởng phòng TCKT"), option("TP_NS", "Trưởng phòng Nhân sự"),
+                option("GD_TTMS", "Giám đốc TT Mua sắm"), option("BGD_TT", "BGĐ Trung tâm"),
+                option("BGD_KHOI", "BGĐ Khối"), option("CQ_QLKHCN", "Cơ quan QLKHCN"),
+                option("HDKHCN", "Hội đồng KHCN VHT"), option("HDXD", "Hội đồng Xét duyệt"),
+                option("HDXD_DC", "Hội đồng Xét duyệt điều chỉnh"), option("HDNT", "Hội đồng Nghiệm thu"),
+                option("HD_DGHT", "Hội đồng Đánh giá hoàn thành"), option("PTGD_CT", "Phó TGĐ Chuyên trách"),
+                option("TGD_VHT", "Tổng Giám đốc VHT"), option("CQ_KHCN_TD", "Cơ quan KHCN Tập đoàn"),
+                option("CQNV_TD", "Cơ quan nghiệp vụ Tập đoàn"), option("HDKHCN_TD", "Hội đồng KHCN Tập đoàn"),
+                option("HDXD_TD", "Hội đồng Xét duyệt Tập đoàn"), option("HDNT_TD", "Hội đồng Nghiệm thu Tập đoàn"),
+                option("BTGD_TD", "Ban TGĐ Tập đoàn"));
+    }
+
+    private static CatalogOptionResponse option(String value, String label) {
+        return new CatalogOptionResponse(value, label);
     }
 
     @Transactional
@@ -103,10 +153,12 @@ public class ActionStudioService {
 
     @Transactional
     public AvailabilityResponse createAvailability(AvailabilityRequest request, String actorHeader) {
-        if (availabilityRepository.existsById(request.id().trim())) {
-            throw new ActionStudioConflictException("Mã luật khả dụng đã tồn tại: " + request.id().trim());
+        String id = request.id().trim();
+        if (availabilityRepository.existsById(id)) {
+            throw new ActionStudioConflictException("Mã luật khả dụng đã tồn tại: " + id);
         }
         validateAvailability(request);
+        assertNoDuplicateAvailability(request, null);
         ActionAvailabilityPolicy entity = new ActionAvailabilityPolicy();
         apply(entity, request);
         entity.setVersion(0);
@@ -119,12 +171,13 @@ public class ActionStudioService {
     @Transactional
     public AvailabilityResponse updateAvailability(String id, AvailabilityRequest request, long expectedVersion,
             String actorHeader) {
-        if (!id.equals(request.id())) {
+        if (!id.equals(request.id().trim())) {
             throw new IllegalArgumentException("Không được đổi mã luật khả dụng.");
         }
-        validateAvailability(request);
         ActionAvailabilityPolicy entity = availability(id);
         assertVersion(id, expectedVersion, entity.getVersion());
+        validateAvailability(request);
+        assertNoDuplicateAvailability(request, id);
         apply(entity, request);
         touch(entity, actorHeader);
         entity = availabilityRepository.saveAndFlush(entity);
@@ -139,6 +192,16 @@ public class ActionStudioService {
         availabilityRepository.delete(entity);
         availabilityRepository.flush();
         audit("AVAILABILITY", id, "DELETE", actorHeader, "Xóa luật hiển thị nút.");
+    }
+
+    @Transactional(readOnly = true)
+    public List<AuditResponse> availabilityHistory(String id) {
+        List<ActionStudioAudit> history = auditRepository
+                .findByEntityTypeAndEntityIdOrderByEventAtDesc("AVAILABILITY", id);
+        if (history.isEmpty()) availability(id);
+        return history.stream()
+                .map(ActionStudioService::toAudit)
+                .toList();
     }
 
     @Transactional
@@ -208,9 +271,9 @@ public class ActionStudioService {
             AvailabilityRequest request = new AvailabilityRequest(id, row.actionCode(), "DOSSIER_DETAIL",
                     processCode, row.stepKey(), row.outcome().equals("SUBMIT") ? "draft" : "processing",
                     List.of(), List.of(row.outcome().equals("SUBMIT") ? "SUBMIT_DOSSIER" : "PROCESS_STEP"),
-                    row.outcome().equals("SUBMIT") ? "phieu-chu-truong"
-                            : Set.of("RETURN", "REJECT").contains(row.outcome()) ? "phieu-y-kien" : "phieu-phe-duyet",
-                    row.outcome().equals("SUBMIT") ? "dossier.docsComplete = true"
+                    routingCatalog.require(processCode).steps().stream().filter(step -> step.key().equals(row.stepKey()))
+                            .map(step -> step.formKey()).filter(Objects::nonNull).findFirst().orElse(null),
+                    row.actionCode().equals("SUBMIT") ? "dossier.docsComplete = true"
                             : "user in currentStep.candidateGroups",
                     10, true);
             created.add(createAvailability(request, actorHeader));
@@ -255,6 +318,10 @@ public class ActionStudioService {
         var process = routingCatalog.require(processCode);
         return process.steps().stream().flatMap(step -> step.branches().stream().map(branch -> {
             String actionCode = outcomeAction(branch.outcome());
+            if (actionCode == null) {
+                return new ReconcileResponse(processCode, step.key(), step.name(), branch.outcome(), null,
+                        "unmapped", null, "Outcome BPMN chưa được ánh xạ sang action code.");
+            }
             ActionAvailabilityPolicy exact = policies.stream().filter(ActionAvailabilityPolicy::isEnabled)
                     .filter(item -> processCode.equals(item.getProcessCode()))
                     .filter(item -> step.key().equals(item.getTaskDefinitionKey()))
@@ -282,6 +349,23 @@ public class ActionStudioService {
         if (request.dossierStatus() != null) requireOneOf("trạng thái hồ sơ", request.dossierStatus(), STATUSES);
         if (request.taskDefinitionKey() != null && request.processCode() == null) {
             throw new IllegalArgumentException("taskDefinitionKey yêu cầu processCode.");
+        }
+    }
+
+    private void assertNoDuplicateAvailability(AvailabilityRequest request, String currentId) {
+        if (!request.enabled()) return;
+        ActionAvailabilityPolicy duplicate = availabilityRepository.findAllByOrderByDisplayOrderAscIdAsc().stream()
+                .filter(ActionAvailabilityPolicy::isEnabled)
+                .filter(item -> !item.getId().equals(currentId))
+                .filter(item -> item.getActionCode().equals(request.actionCode().trim()))
+                .filter(item -> Objects.equals(item.getSurface(), blankToNull(request.surface())))
+                .filter(item -> Objects.equals(item.getProcessCode(), blankToNull(request.processCode())))
+                .filter(item -> Objects.equals(item.getTaskDefinitionKey(), blankToNull(request.taskDefinitionKey())))
+                .filter(item -> Objects.equals(item.getDossierStatus(), blankToNull(request.dossierStatus())))
+                .findFirst().orElse(null);
+        if (duplicate != null) {
+            throw new ActionStudioConflictException("Luật " + duplicate.getId()
+                    + " đang bật cho cùng hành động và ngữ cảnh. Hãy tắt hoặc cập nhật luật đó trước.");
         }
     }
 
@@ -326,13 +410,13 @@ public class ActionStudioService {
 
     private static void apply(ActionAvailabilityPolicy entity, AvailabilityRequest request) {
         entity.setId(request.id().trim());
-        entity.setActionCode(request.actionCode());
+        entity.setActionCode(request.actionCode().trim());
         entity.setSurface(blankToNull(request.surface()));
         entity.setProcessCode(blankToNull(request.processCode()));
         entity.setTaskDefinitionKey(blankToNull(request.taskDefinitionKey()));
         entity.setDossierStatus(blankToNull(request.dossierStatus()));
-        entity.setAllowedRoleCodes(new LinkedHashSet<>(request.allowedRoleCodes()));
-        entity.setRequiredPermissions(new LinkedHashSet<>(request.requiredPermissions()));
+        entity.setAllowedRoleCodes(normalizeCodes(request.allowedRoleCodes()));
+        entity.setRequiredPermissions(normalizeCodes(request.requiredPermissions()));
         entity.setFormKey(blankToNull(request.formKey()));
         entity.setConditionExpression(blankToNull(request.conditionExpression()));
         entity.setDisplayOrder(request.displayOrder());
@@ -396,18 +480,30 @@ public class ActionStudioService {
                 item.getVersion(), item.getUpdatedBy(), item.getUpdatedAt());
     }
 
+    private static AuditResponse toAudit(ActionStudioAudit item) {
+        return new AuditResponse(item.getEntityType(), item.getEntityId(), item.getAction(), item.getActor(),
+                item.getEventAt(), item.getDetail());
+    }
+
+    private static LinkedHashSet<String> normalizeCodes(List<String> values) {
+        return values.stream().map(String::trim)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+    }
+
     private static int specificity(ActionAvailabilityPolicy item) {
         return (item.getSurface() == null ? 0 : 1) + (item.getProcessCode() == null ? 0 : 1)
                 + (item.getTaskDefinitionKey() == null ? 0 : 1) + (item.getDossierStatus() == null ? 0 : 1);
     }
 
     private static String outcomeAction(String outcome) {
-        return switch (outcome) {
-            case "SUBMIT" -> "SUBMIT";
-            case "APPROVE" -> "APPROVE_STEP";
-            case "RETURN" -> "RETURN_STEP";
-            case "REJECT" -> "REJECT_STEP";
-            default -> throw new IllegalArgumentException("Outcome không hỗ trợ: " + outcome);
+        String normalized = outcome == null ? "" : outcome.trim().toLowerCase(java.util.Locale.ROOT);
+        return switch (normalized) {
+            case "submit", "gui", "gui_duyet", "tiep_tuc" -> "SUBMIT";
+            case "approve", "dong_y", "dat", "phe_duyet" -> "APPROVE_STEP";
+            case "dong_y_bo_sung" -> "APPROVE_WITH_SUPPLEMENT";
+            case "return", "hieu_chinh", "yeu_cau_hieu_chinh", "tra_lai" -> "RETURN_STEP";
+            case "reject", "khong_dong_y", "khong_dat", "tu_choi" -> "REJECT_STEP";
+            default -> null;
         };
     }
 

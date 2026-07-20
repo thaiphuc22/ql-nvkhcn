@@ -11,6 +11,7 @@ import {
 import { AuthService } from '../../core/auth/auth.service';
 import { HoSoResponse } from '../../core/models/ho-so';
 import { TaskAvailableActionsResponse } from '../../core/models/task-action';
+import { SimulatedAction } from '../../core/models/action-studio';
 import { HoSoDetailPage } from './ho-so-detail';
 
 const dossier: HoSoResponse = {
@@ -74,8 +75,15 @@ describe('HoSoDetailPage', () => {
     const get = http.expectOne(`/api/ho-so/${dossier.id}`);
     expect(get.request.method).toBe('GET');
     get.flush(dossier);
+    flushSimulation();
     fixture.detectChanges();
     return fixture;
+  }
+
+  function flushSimulation(actions: SimulatedAction[] = []) {
+    const request = http.expectOne('/api/action-studio/simulate');
+    expect(request.request.method).toBe('POST');
+    request.flush(actions);
   }
 
   it('renders live dossier fields and persisted documents', () => {
@@ -95,11 +103,49 @@ describe('HoSoDetailPage', () => {
     expect(fixture.componentInstance.item()?.trangThai).toBe('PROCESSING');
   });
 
+  it('submits an XET_DUYET cấp Tập đoàn dossier into RD02.02', () => {
+    const tapDoan: HoSoResponse = { ...dossier, loai: 'XET_DUYET', cap: 'TD' };
+    setup(tapDoan.id);
+    const fixture = TestBed.createComponent(HoSoDetailPage);
+    http.expectOne(`/api/ho-so/${tapDoan.id}`).flush(tapDoan);
+    flushSimulation();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.submitProcess()).toEqual(
+      { code: 'RD02.02', name: 'Xét duyệt NV KHCN cấp Tập đoàn', supported: true },
+    );
+    fixture.componentInstance.submit();
+    const request = http.expectOne(`/api/ho-so/${tapDoan.id}/submit`);
+    expect(request.request.body).toEqual(
+      { quyTrinh: 'RD02.02', quyTrinhTen: 'Xét duyệt NV KHCN cấp Tập đoàn' },
+    );
+    request.flush({ ...tapDoan, trangThai: 'PROCESSING', quyTrinh: 'RD02.02' });
+    expect(fixture.componentInstance.item()?.trangThai).toBe('PROCESSING');
+  });
+
+  // RD02.02 rẽ theo DMN `capNhiemVu` và loại hồ sơ cấp Cơ sở tại End_KhongThuocTD — gửi duyệt
+  // được sẽ tạo instance chết lặng, nên phải chặn ở đây cho tới khi có BPMN cấp Cơ sở.
+  it('does not offer a submittable process for an XET_DUYET cấp Cơ sở dossier', () => {
+    const coSo: HoSoResponse = { ...dossier, loai: 'XET_DUYET', cap: 'CS' };
+    setup(coSo.id);
+    const fixture = TestBed.createComponent(HoSoDetailPage);
+    http.expectOne(`/api/ho-so/${coSo.id}`).flush(coSo);
+    flushSimulation();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.submitProcess()).toEqual(
+      { code: 'RD02.01', name: 'Xét duyệt NV KHCN cấp Cơ sở', supported: false },
+    );
+    fixture.componentInstance.submit();
+    http.expectNone(`/api/ho-so/${coSo.id}/submit`);
+  });
+
   it('shows no action controls and does not call the task API when opened without a taskKey', () => {
     setup(processingDossier.id);
     const fixture = TestBed.createComponent(HoSoDetailPage);
     const get = http.expectOne(`/api/ho-so/${processingDossier.id}`);
     get.flush(processingDossier);
+    flushSimulation();
     fixture.detectChanges();
 
     expect(fixture.componentInstance.taskKey()).toBeNull();
@@ -107,11 +153,28 @@ describe('HoSoDetailPage', () => {
     expect(fixture.nativeElement.textContent).not.toContain('Phê duyệt');
   });
 
+  it('loads BPMN by deployed process id and keeps the current task as active node', () => {
+    setup(processingDossier.id);
+    const fixture = TestBed.createComponent(HoSoDetailPage);
+    http.expectOne(`/api/ho-so/${processingDossier.id}`).flush(processingDossier);
+    flushSimulation();
+
+    fixture.componentInstance.openBpmn();
+    const request = http.expectOne('/api/process-definitions/by-bpmn-process-id/RD01_01');
+    expect(request.request.method).toBe('GET');
+    request.flush({ latestVersion: { bpmnXml: '<definitions />' } });
+
+    expect(fixture.componentInstance.bpmnOpen()).toBe(true);
+    expect(fixture.componentInstance.bpmnXml()).toBe('<definitions />');
+    expect(fixture.componentInstance.currentStep()?.taskDefinitionKey).toBe('t2');
+  });
+
   it('wires task-centric actions when a taskKey is carried from Việc của tôi, never the legacy /actions endpoint', () => {
     setup(processingDossier.id, { taskKey: 't2-key-1' });
     const fixture = TestBed.createComponent(HoSoDetailPage);
     const get = http.expectOne(`/api/ho-so/${processingDossier.id}`);
     get.flush(processingDossier);
+    flushSimulation();
 
     const availableActionsResponse: TaskAvailableActionsResponse = {
       taskKey: 't2-key-1', processInstanceKey: '2251799813697704', taskDefinitionKey: 't2',
@@ -133,8 +196,8 @@ describe('HoSoDetailPage', () => {
     fixture.detectChanges();
 
     const cmp = fixture.componentInstance;
-    expect(cmp.hasAction('APPROVE_STEP')).toBe(true);
-    expect(cmp.hasAction('REJECT_STEP')).toBe(false);
+    expect(cmp.availableActions().some((action) => action.actionCode === 'APPROVE_STEP')).toBe(true);
+    expect(cmp.availableActions().some((action) => action.actionCode === 'REJECT_STEP')).toBe(false);
     expect(fixture.nativeElement.textContent).not.toContain('Không có quyền thao tác task từ đây');
 
     cmp.openAction('APPROVE_STEP');
@@ -159,5 +222,28 @@ describe('HoSoDetailPage', () => {
     expect(cmp.saving()).toBe(false);
     expect(cmp.taskKey()).toBeNull();
     expect(cmp.availableActions()).toEqual([]);
+  });
+
+  it('renders a draft support action from Action Studio and opens its configured form', () => {
+    setup(dossier.id);
+    const fixture = TestBed.createComponent(HoSoDetailPage);
+    http.expectOne(`/api/ho-so/${dossier.id}`).flush(dossier);
+    flushSimulation([{
+      actionCode: 'BM.02.01.DKI', actionName: 'Tạo BM.02.01.DKI', actionType: 'SUPPORT', active: true,
+      label: 'Tạo BM.02.01.DKI', icon: 'appstore', uiGroup: 'MORE', tone: 'default', order: 62,
+      helpText: 'Tạo biểu mẫu đăng ký', visible: true, enabled: true, policyId: 'AP-1784539922796',
+      reasons: ['Khớp luật'], formKey: 'bm-02-00-cv-dk-xd-nv',
+    }]);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Tạo BM.02.01.DKI');
+    fixture.componentInstance.runDossierAction(fixture.componentInstance.dossierActions()[0]);
+    const form = http.expectOne('/api/eform/bm-02-00-cv-dk-xd-nv');
+    form.flush({
+      key: 'bm-02-00-cv-dk-xd-nv', ten: 'BM.02.01.DKI', moTa: '', schema: { type: 'default', components: [] },
+      version: 1, updatedBy: 'admin', updatedAt: '2026-07-20T00:00:00Z', createdAt: '2026-07-20T00:00:00Z',
+    });
+    fixture.detectChanges();
+    expect(fixture.componentInstance.formAction()?.policyId).toBe('AP-1784539922796');
   });
 });

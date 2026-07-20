@@ -33,10 +33,15 @@ import vn.vht.qtkhcn.domain.ProcessDefinitionStatus;
 import vn.vht.qtkhcn.security.DevApiKeyFilter;
 import vn.vht.qtkhcn.service.ProcessDefinitionService;
 import vn.vht.qtkhcn.service.ProcessImportException;
+import vn.vht.qtkhcn.service.ProcessInstanceOverviewService;
 import vn.vht.qtkhcn.web.dto.ProcessDefinitionDetailResponse;
 import vn.vht.qtkhcn.web.dto.ProcessDefinitionImportResponse;
 import vn.vht.qtkhcn.web.dto.ProcessDefinitionSummaryResponse;
 import vn.vht.qtkhcn.web.dto.ProcessDefinitionVersionResponse;
+import vn.vht.qtkhcn.web.dto.ProcessInstanceOverviewDtos.CurrentStepResponse;
+import vn.vht.qtkhcn.web.dto.ProcessInstanceOverviewDtos.RunningInstanceCountsResponse;
+import vn.vht.qtkhcn.web.dto.ProcessInstanceOverviewDtos.RunningInstanceListResponse;
+import vn.vht.qtkhcn.web.dto.ProcessInstanceOverviewDtos.RunningInstanceResponse;
 
 class ProcessDefinitionHttpContractTest {
 
@@ -47,6 +52,7 @@ class ProcessDefinitionHttpContractTest {
 
     private AnnotationConfigWebApplicationContext context;
     private ProcessDefinitionService service;
+    private ProcessInstanceOverviewService instanceOverviewService;
     private MockMvc mvc;
 
     @BeforeEach
@@ -56,6 +62,7 @@ class ProcessDefinitionHttpContractTest {
         context.register(TestMvcConfig.class);
         context.refresh();
         service = context.getBean(ProcessDefinitionService.class);
+        instanceOverviewService = context.getBean(ProcessInstanceOverviewService.class);
         DevApiKeyFilter filter = context.getBean(DevApiKeyFilter.class);
         ReflectionTestUtils.setField(filter, "expectedKey", KEY);
         mvc = MockMvcBuilders.webAppContextSetup(context).addFilters(filter).build();
@@ -89,6 +96,8 @@ class ProcessDefinitionHttpContractTest {
                 4, "demo.bpmn", ProcessDefinitionStatus.DEPLOYED, NOW)));
         when(service.get(CATALOG_ID)).thenReturn(new ProcessDefinitionDetailResponse(CATALOG_ID, "demo", "Demo",
                 NOW, NOW, version));
+        when(service.getByBpmnProcessId("demo")).thenReturn(
+                new ProcessDefinitionDetailResponse(CATALOG_ID, "demo", "Demo", NOW, NOW, version));
         when(service.versions(CATALOG_ID)).thenReturn(List.of(version));
 
         mvc.perform(get("/api/process-definitions").header("X-QTKHCN-Dev-Key", KEY))
@@ -98,6 +107,45 @@ class ProcessDefinitionHttpContractTest {
         mvc.perform(get("/api/process-definitions/{id}/versions", CATALOG_ID)
                         .header("X-QTKHCN-Dev-Key", KEY))
                 .andExpect(status().isOk()).andExpect(jsonPath("$[0].bpmnXml").value("<xml/>"));
+        mvc.perform(get("/api/process-definitions/by-bpmn-process-id/{bpmnProcessId}", "demo")
+                        .header("X-QTKHCN-Dev-Key", KEY))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.bpmnProcessId").value("demo"))
+                .andExpect(jsonPath("$.latestVersion.bpmnXml").value("<xml/>"));
+    }
+
+    @Test
+    void runningInstanceCountsAndDetailExposeCurrentStep() throws Exception {
+        when(instanceOverviewService.runningCounts())
+                .thenReturn(RunningInstanceCountsResponse.of(java.util.Map.of("demo", 3)));
+        when(instanceOverviewService.runningInstances(CATALOG_ID)).thenReturn(
+                RunningInstanceListResponse.of("demo", List.of(new RunningInstanceResponse("2251799813685249",
+                        "HS-2026-004", 4, NOW, false,
+                        List.of(new CurrentStepResponse("Task_2", "Thẩm định hồ sơ", "USER_TASK", NOW, false))))));
+
+        mvc.perform(get("/api/process-definitions/running-instances").header("X-QTKHCN-Dev-Key", KEY))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.available").value(true))
+                .andExpect(jsonPath("$.countsByProcessId.demo").value(3));
+
+        mvc.perform(get("/api/process-definitions/{id}/running-instances", CATALOG_ID)
+                        .header("X-QTKHCN-Dev-Key", KEY))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.bpmnProcessId").value("demo"))
+                .andExpect(jsonPath("$.instances[0].processInstanceKey").value("2251799813685249"))
+                .andExpect(jsonPath("$.instances[0].currentSteps[0].name").value("Thẩm định hồ sơ"));
+    }
+
+    /** A Camunda outage must degrade the runtime column, not the catalog grid. */
+    @Test
+    void camundaOutageIsReportedAsUnavailableInsteadOfHttpError() throws Exception {
+        when(instanceOverviewService.runningCounts())
+                .thenReturn(RunningInstanceCountsResponse.unavailable("Không đọc được trạng thái runtime từ Camunda: refused"));
+
+        mvc.perform(get("/api/process-definitions/running-instances").header("X-QTKHCN-Dev-Key", KEY))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.available").value(false))
+                .andExpect(jsonPath("$.countsByProcessId").isEmpty());
     }
 
     @Test
@@ -153,8 +201,14 @@ class ProcessDefinitionHttpContractTest {
         }
 
         @Bean
-        ProcessDefinitionController processDefinitionController(ProcessDefinitionService service) {
-            return new ProcessDefinitionController(service);
+        ProcessInstanceOverviewService processInstanceOverviewService() {
+            return mock(ProcessInstanceOverviewService.class);
+        }
+
+        @Bean
+        ProcessDefinitionController processDefinitionController(ProcessDefinitionService service,
+                ProcessInstanceOverviewService instanceOverviewService) {
+            return new ProcessDefinitionController(service, instanceOverviewService);
         }
 
         @Bean

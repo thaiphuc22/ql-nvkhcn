@@ -17,6 +17,10 @@ import vn.vht.qtkhcn.hoso.domain.TaiLieu;
 import vn.vht.qtkhcn.hoso.repository.HoSoRepository;
 import vn.vht.qtkhcn.hoso.repository.NhiemVuRepository;
 import vn.vht.qtkhcn.hoso.repository.TaiLieuRepository;
+import vn.vht.qtkhcn.hoso.repository.OutboxEventRepository;
+import vn.vht.qtkhcn.hoso.repository.WorkflowProcessProjectionRepository;
+import vn.vht.qtkhcn.hoso.repository.WorkflowTaskProjectionRepository;
+import vn.vht.qtkhcn.hoso.repository.WorkflowEventInboxRepository;
 import vn.vht.qtkhcn.hoso.web.dto.CreateHoSoRequest;
 import vn.vht.qtkhcn.hoso.web.dto.CreateTaiLieuRequest;
 import vn.vht.qtkhcn.hoso.web.dto.UpdateHoSoRequest;
@@ -31,15 +35,26 @@ public class HoSoMutationService {
     private final TaiLieuRepository taiLieuRepository;
     private final BusinessIdGenerator idGenerator;
     private final MutationSupport mutations;
+    private final OutboxEventRepository outboxEventRepository;
+    private final WorkflowProcessProjectionRepository processProjectionRepository;
+    private final WorkflowTaskProjectionRepository taskProjectionRepository;
+    private final WorkflowEventInboxRepository workflowEventInboxRepository;
 
     public HoSoMutationService(HoSoRepository hoSoRepository, NhiemVuRepository nhiemVuRepository,
                                TaiLieuRepository taiLieuRepository, BusinessIdGenerator idGenerator,
-                               MutationSupport mutations) {
+                               MutationSupport mutations, OutboxEventRepository outboxEventRepository,
+                               WorkflowProcessProjectionRepository processProjectionRepository,
+                               WorkflowTaskProjectionRepository taskProjectionRepository,
+                               WorkflowEventInboxRepository workflowEventInboxRepository) {
         this.hoSoRepository = hoSoRepository;
         this.nhiemVuRepository = nhiemVuRepository;
         this.taiLieuRepository = taiLieuRepository;
         this.idGenerator = idGenerator;
         this.mutations = mutations;
+        this.outboxEventRepository = outboxEventRepository;
+        this.processProjectionRepository = processProjectionRepository;
+        this.taskProjectionRepository = taskProjectionRepository;
+        this.workflowEventInboxRepository = workflowEventInboxRepository;
     }
 
     @Transactional
@@ -129,6 +144,27 @@ public class HoSoMutationService {
         taiLieuRepository.flush();
         mutations.audit("TAI_LIEU", String.valueOf(documentId), expectedVersion, "DELETE", actor,
                 "hoSoId=" + hoSoId);
+    }
+
+    /** Xoa aggregate va cac ban ghi ky thuat phu thuoc, khong gioi han trang thai. */
+    @Transactional
+    public void delete(String id, String actorHeader) {
+        String actor = mutations.requireActor(actorHeader);
+        HoSo entity = hoSoRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Khong tim thay HoSo " + id));
+        deleteAggregate(entity);
+        mutations.audit("HO_SO", id, entity.getVersion(), "DELETE", actor,
+                "status=" + entity.getTrangThai());
+    }
+
+    void deleteAggregate(HoSo entity) {
+        String id = entity.getId();
+        taskProjectionRepository.deleteByHoSoId(id);
+        processProjectionRepository.deleteByHoSoId(id);
+        outboxEventRepository.deleteByAggregateId(id);
+        workflowEventInboxRepository.deleteByHoSoId(id);
+        hoSoRepository.delete(entity);
+        hoSoRepository.flush();
     }
 
     private HoSo requiredDraft(String id) {

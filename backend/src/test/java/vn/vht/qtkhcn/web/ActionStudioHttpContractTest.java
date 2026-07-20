@@ -7,10 +7,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,6 +29,7 @@ import vn.vht.qtkhcn.security.DevApiKeyFilter;
 import vn.vht.qtkhcn.service.ActionStudioConflictException;
 import vn.vht.qtkhcn.service.ActionStudioService;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ActionResponse;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.AuditResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.PresentationResponse;
 
 class ActionStudioHttpContractTest {
@@ -104,6 +107,20 @@ class ActionStudioHttpContractTest {
                         .content("{\"surface\":\"DOSSIER_DETAIL\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("JSON request không hợp lệ."));
+    }
+
+    @Test
+    void availabilityHistoryReturnsNewestAuditEntries() throws Exception {
+        when(service.availabilityHistory("AP-01")).thenReturn(List.of(
+                new AuditResponse("AVAILABILITY", "AP-01", "UPDATE", "alice",
+                        OffsetDateTime.parse("2026-07-20T03:00:00Z"), "Cập nhật luật hiển thị nút.")));
+
+        mvc.perform(get("/api/action-studio/availability-policies/AP-01/history")
+                        .header("X-QTKHCN-Dev-Key", "dev-local-only"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].entityId").value("AP-01"))
+                .andExpect(jsonPath("$[0].action").value("UPDATE"))
+                .andExpect(jsonPath("$[0].actor").value("alice"));
     }
 
     @Configuration

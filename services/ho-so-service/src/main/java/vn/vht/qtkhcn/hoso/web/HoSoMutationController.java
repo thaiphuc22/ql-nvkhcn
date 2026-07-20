@@ -96,4 +96,13 @@ public class HoSoMutationController {
         service.deleteDocument(id, documentId, HttpVersion.parse(ifMatch), actor);
         return ResponseEntity.noContent().build();
     }
+
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(
+            @PathVariable String id,
+            @RequestHeader(value = "X-QTKHCN-Actor", required = false) String actor) {
+        service.delete(id, actor);
+        return ResponseEntity.noContent().build();
+    }
 }

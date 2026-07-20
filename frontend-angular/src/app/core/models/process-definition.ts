@@ -55,6 +55,40 @@ export interface ProcessDefinitionImportResponse {
   warnings: string[];
 }
 
+/**
+ * Port từ `ProcessInstanceOverviewDtos.java` — trạng thái runtime đọc từ Camunda, tách khỏi catalog
+ * (PostgreSQL). `available=false` nghĩa là không gọi được Camunda: UI phải hiện "—", KHÔNG hiện 0.
+ */
+export interface RunningInstanceCountsResponse {
+  available: boolean;
+  message: string | null;
+  countsByProcessId: Record<string, number>;
+}
+
+export interface CurrentStepResponse {
+  elementId: string;
+  name: string;
+  type: string;
+  startedAt: string | null;
+  hasIncident: boolean;
+}
+
+export interface RunningInstanceResponse {
+  processInstanceKey: string;
+  businessId: string;
+  version: number;
+  startedAt: string | null;
+  hasIncident: boolean;
+  currentSteps: CurrentStepResponse[];
+}
+
+export interface RunningInstanceListResponse {
+  available: boolean;
+  message: string | null;
+  bpmnProcessId: string;
+  instances: RunningInstanceResponse[];
+}
+
 export type ProcessDefinitionDraftStatus = 'DRAFT' | 'VALID' | 'INVALID' | 'DEPLOYED';
 export type BpmnIssueSeverity = 'ERROR' | 'WARNING' | 'SUGGESTION';
 

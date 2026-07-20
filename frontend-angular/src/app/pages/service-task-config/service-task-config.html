@@ -10,6 +10,44 @@
     </button>
   </div>
 
+  @if (realConfigError()) {
+    <nz-alert nzType="warning" nzShowIcon class="stc-real-source" [nzMessage]="realConfigError()!"></nz-alert>
+  } @else if (!realConfigLoading()) {
+    <nz-alert nzType="info" nzShowIcon class="stc-real-source" [nzMessage]="realSourceTitle" [nzDescription]="realSourceBody"></nz-alert>
+    <ng-template #realSourceTitle>
+      Dữ liệu runtime thật: {{ realDefinitions().length }} cấu hình · {{ activeRealBindings().length }} binding active
+    </ng-template>
+    <ng-template #realSourceBody>
+      @if (activeRealBindings().length) {
+        <ul class="stc-real-source-list">
+          @for (binding of activeRealBindings(); track binding.id) {
+            <li>
+              <code>{{ binding.bpmnProcessId }}</code> ·
+              <code>{{ binding.elementId ?? '(mọi element cùng job type)' }}</code> →
+              <strong>{{ binding.definitionCode }}</strong>
+              <span class="stc-real-source-job">{{ binding.jobType }}</span>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p>Chưa có binding ACTIVE nào trong DB — mọi job worker đang chạy theo giá trị mặc định hard-code.</p>
+      }
+      @if (realDefinitions().length) {
+        <div class="stc-real-definitions">
+          @for (definition of realDefinitions(); track definition.id) {
+            <nz-tag [nzColor]="definition.status === 'ACTIVE' ? 'green' : 'default'">
+              {{ definition.code }} · v{{ definition.activeVersion ?? definition.latestVersion }} · {{ definition.status }}
+            </nz-tag>
+          }
+        </div>
+      }
+      <p class="stc-real-source-note">
+        Tab Cấu hình và các thao tác tạo, sửa, nhân bản, xóa đang dùng dữ liệu DB thật. Các tab kiểm thử,
+        log và audit vẫn dùng dữ liệu mô phỏng cho tới khi có API runtime tương ứng.
+      </p>
+    </ng-template>
+  }
+
   <div nz-row [nzGutter]="[12, 12]" class="stc-stats">
     <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6">
       <div class="stc-stat-card">
@@ -286,10 +324,8 @@
                       <li nz-menu-item (click)="openEdit(row)"><span nz-icon nzType="edit"></span> Sửa cấu hình</li>
                       <li nz-menu-divider></li>
                       <li nz-menu-item (click)="duplicate(row)"><span nz-icon nzType="copy"></span> Nhân bản</li>
-                      <li nz-menu-item (click)="validate(row)"><span nz-icon nzType="check-circle"></span> Validate</li>
-                      <li nz-menu-item [nzDisabled]="row.definition.status === 'ACTIVE'" (click)="activate(row)">
-                        <span nz-icon nzType="thunderbolt"></span> Active
-                      </li>
+                      <li nz-menu-divider></li>
+                      <li nz-menu-item nzDanger (click)="delete(row)"><span nz-icon nzType="delete"></span> Xóa</li>
                     </ul>
                   </nz-dropdown-menu>
                 </td>
@@ -485,7 +521,9 @@
 <app-service-task-form-drawer
   [open]="drawerOpen()"
   [definition]="editing()"
+  [apiDefinition]="editingApi()"
   (closed)="closeDrawer()"
+  (saved)="reloadRealConfig()"
 ></app-service-task-form-drawer>
 
 <app-service-task-execution-drawer

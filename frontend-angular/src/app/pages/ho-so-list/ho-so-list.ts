@@ -14,9 +14,12 @@ import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzTypographyModule } from 'ng-zorro-antd/typography';
+import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
+import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzStatusColor } from 'ng-zorro-antd/core/color';
 
 import { HoSoService } from '../../core/services/ho-so.service';
+import { AuthService } from '../../core/auth/auth.service';
 import { BACKEND_CONNECTION_LABEL } from '../../core/api-config';
 import {
   CAP_LABEL,
@@ -59,6 +62,7 @@ const STATUS_COLOR: Record<DossierStatus, NzStatusColor> = {
     NzTableModule,
     NzTagModule,
     NzTypographyModule,
+    NzPopconfirmModule,
   ],
   templateUrl: './ho-so-list.html',
   styleUrl: './ho-so-list.scss',
@@ -67,6 +71,8 @@ export class HoSoListPage {
   private readonly hoSoService = inject(HoSoService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
+  private readonly message = inject(NzMessageService);
 
   readonly statusLabel = DOSSIER_STATUS_LABEL;
   readonly loaiLabel = HO_SO_LOAI_LABEL;
@@ -76,6 +82,7 @@ export class HoSoListPage {
   readonly loading = signal(true);
   readonly errorMessage = signal<string | null>(null);
   readonly rawList = signal<HoSoResponse[]>([]);
+  readonly deletingId = signal<string | null>(null);
 
   readonly query = signal('');
   readonly statusFilter = signal<StatusFilter>('ALL');
@@ -151,5 +158,21 @@ export class HoSoListPage {
     if (d.trangThai === 'PROCESSING') return d.steps[d.buocHienTai]?.ten ?? '—';
     if (d.trangThai === 'DRAFT') return 'Chờ gửi duyệt';
     return '—';
+  }
+
+  delete(row: HoSoResponse): void {
+    this.deletingId.set(row.id);
+    const actor = this.auth.user()?.hoTen ?? 'unknown-demo-user';
+    this.hoSoService.delete(row.id, actor).subscribe({
+      next: () => {
+        this.rawList.update((items) => items.filter((item) => item.id !== row.id));
+        this.deletingId.set(null);
+        this.message.success(`Đã xóa hồ sơ ${row.id}.`);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.deletingId.set(null);
+        this.message.error(`Không xóa được hồ sơ (HTTP ${error.status}).`);
+      },
+    });
   }
 }

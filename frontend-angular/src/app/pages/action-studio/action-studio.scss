@@ -60,10 +60,16 @@ code { color: #b42318; background: #fff1f0; padding: 2px 5px; border-radius: 4px
 .as-flag.on { background: #ecfdf3; color: #067647; }
 .as-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .as-form-grid.one-column { grid-template-columns: 1fr; }
-.as-form-grid label { display: flex; flex-direction: column; gap: 6px; font-weight: 500; }
+.as-form-grid label, .as-form-grid .as-field { display: flex; flex-direction: column; gap: 6px; font-weight: 500; }
+.as-field-title { display: block; }
 .as-form-grid nz-select { width: 100%; }
 .as-form-grid .wide { grid-column: 1 / -1; }
 .as-drawer-actions { position: sticky; bottom: 0; margin-top: 24px; padding: 14px 0; background: #fff; border-top: 1px solid #eaecf0; display: flex; justify-content: flex-end; gap: 8px; }
+
+@media (max-width: 640px) {
+  .as-form-grid { grid-template-columns: 1fr; }
+  .as-form-grid .wide { grid-column: auto; }
+}
 ::ng-deep .as-page > nz-tabs > .ant-tabs-nav { margin-bottom: 16px; }
 
 @media (max-width: 1100px) {

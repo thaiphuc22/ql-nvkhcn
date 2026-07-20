@@ -4,7 +4,7 @@ import { Observable, tap } from 'rxjs';
 import { API_BASE_URL, encodeAuditActor } from '../api-config';
 import {
   ActionAvailabilityPolicy, ActionDefinition, ActionPresentation, ExceptionPolicy,
-  ProcessRouting, SimulatedAction, SimulationContext,
+  ActionStudioReferenceData, ProcessRouting, SimulatedAction, SimulationContext,
 } from '../models/action-studio';
 
 const BASE_URL = `${API_BASE_URL}/api/action-studio`;
@@ -15,7 +15,12 @@ interface ConfigResponse {
   availabilityPolicies: ActionAvailabilityPolicy[];
   exceptionPolicies: ExceptionPolicy[];
   processes: ProcessRouting[];
+  referenceData: ActionStudioReferenceData;
 }
+
+const EMPTY_REFERENCE_DATA: ActionStudioReferenceData = {
+  surfaces: [], statuses: [], roles: [], permissions: [], forms: [],
+};
 
 interface ScaffoldResponse {
   createdCount: number;
@@ -29,7 +34,7 @@ export interface ReconcileRow {
   stepName: string;
   outcome: string;
   actionCode: string;
-  status: 'ok' | 'generic' | 'unfilled' | 'missing';
+  status: 'ok' | 'generic' | 'unfilled' | 'missing' | 'unmapped';
   policyId: string | null;
   reason: string;
 }
@@ -46,12 +51,14 @@ export class ActionStudioService {
   private readonly availabilitySignal = signal<ActionAvailabilityPolicy[]>([]);
   private readonly exceptionSignal = signal<ExceptionPolicy[]>([]);
   private readonly processesSignal = signal<ProcessRouting[]>([]);
+  private readonly referenceDataSignal = signal<ActionStudioReferenceData>(EMPTY_REFERENCE_DATA);
 
   readonly definitions = this.definitionsSignal.asReadonly();
   readonly presentations = this.presentationsSignal.asReadonly();
   readonly availabilityPolicies = this.availabilitySignal.asReadonly();
   readonly exceptionPolicies = this.exceptionSignal.asReadonly();
   readonly processes = this.processesSignal.asReadonly();
+  readonly referenceData = this.referenceDataSignal.asReadonly();
 
   readonly stats = computed(() => ({
     actions: this.definitions().length,
@@ -68,6 +75,7 @@ export class ActionStudioService {
       this.availabilitySignal.set(config.availabilityPolicies);
       this.exceptionSignal.set(config.exceptionPolicies);
       this.processesSignal.set(config.processes);
+      this.referenceDataSignal.set(config.referenceData ?? EMPTY_REFERENCE_DATA);
     }));
   }
 

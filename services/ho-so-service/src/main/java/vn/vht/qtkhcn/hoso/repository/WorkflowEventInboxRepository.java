@@ -12,6 +12,7 @@ import java.time.OffsetDateTime;
 import vn.vht.qtkhcn.hoso.domain.WorkflowEventInbox;
 
 public interface WorkflowEventInboxRepository extends JpaRepository<WorkflowEventInbox, UUID> {
+    void deleteByHoSoId(String hoSoId);
     List<WorkflowEventInbox> findByHoSoIdOrderByOccurredAtAscEventIdAsc(String hoSoId);
 
     Optional<WorkflowEventInbox> findFirstByEventTypeOrderByOccurredAtDescEventIdDesc(String eventType);

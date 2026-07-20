@@ -7,6 +7,7 @@ import vn.vht.qtkhcn.hoso.domain.ChuNhiem;
 import vn.vht.qtkhcn.hoso.domain.GiaiDoan;
 import vn.vht.qtkhcn.hoso.domain.NhiemVu;
 import vn.vht.qtkhcn.hoso.repository.NhiemVuRepository;
+import vn.vht.qtkhcn.hoso.repository.HoSoRepository;
 import vn.vht.qtkhcn.hoso.web.dto.CreateNhiemVuRequest;
 import vn.vht.qtkhcn.hoso.web.dto.UpdateNhiemVuRequest;
 
@@ -16,12 +17,17 @@ public class NhiemVuMutationService {
     private final NhiemVuRepository repository;
     private final BusinessIdGenerator idGenerator;
     private final MutationSupport mutations;
+    private final HoSoRepository hoSoRepository;
+    private final HoSoMutationService hoSoMutationService;
 
     public NhiemVuMutationService(NhiemVuRepository repository, BusinessIdGenerator idGenerator,
-                                  MutationSupport mutations) {
+                                  MutationSupport mutations, HoSoRepository hoSoRepository,
+                                  HoSoMutationService hoSoMutationService) {
         this.repository = repository;
         this.idGenerator = idGenerator;
         this.mutations = mutations;
+        this.hoSoRepository = hoSoRepository;
+        this.hoSoMutationService = hoSoMutationService;
     }
 
     @Transactional
@@ -51,6 +57,20 @@ public class NhiemVuMutationService {
         entity = repository.saveAndFlush(entity);
         mutations.audit("NHIEM_VU", id, entity.getVersion(), "UPDATE", actor, null);
         return entity;
+    }
+
+    /** Xoa nhiem vu va toan bo ho so truc thuoc, khong gioi han giai doan/trang thai. */
+    @Transactional
+    public void delete(String id, String actorHeader) {
+        String actor = mutations.requireActor(actorHeader);
+        NhiemVu entity = repository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Khong tim thay NhiemVu " + id));
+        var dossiers = hoSoRepository.findByMaNV(id);
+        dossiers.forEach(hoSoMutationService::deleteAggregate);
+        repository.delete(entity);
+        repository.flush();
+        mutations.audit("NHIEM_VU", id, entity.getVersion(), "DELETE", actor,
+                "dossiers=" + dossiers.size() + ",stage=" + entity.getGiaiDoan());
     }
 
     private static void apply(NhiemVu entity, String ten, vn.vht.qtkhcn.hoso.domain.Cap cap,

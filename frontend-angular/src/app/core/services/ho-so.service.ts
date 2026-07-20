@@ -25,6 +25,12 @@ export class HoSoService {
     });
   }
 
+  delete(id: string, actor: string): Observable<void> {
+    return this.http.delete<void>(`${this.endpoint}/${encodeURIComponent(id)}`, {
+      headers: { 'X-QTKHCN-Actor': encodeAuditActor(actor) },
+    });
+  }
+
 
   submit(id: string, payload: SubmitHoSoRequest, actor: string): Observable<HoSoResponse> {
     return this.http.post<HoSoResponse>(`${this.endpoint}/${encodeURIComponent(id)}/submit`, payload, {

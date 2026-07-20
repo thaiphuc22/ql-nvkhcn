@@ -22,6 +22,8 @@ public interface HoSoRepository extends JpaRepository<HoSo, String> {
 
     List<HoSo> findByTrangThaiOrderById(DossierStatus trangThai);
 
+    List<HoSo> findByMaNV(String maNV);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @EntityGraph(attributePaths = {"steps", "steps.vaiTroCodes"})
     @Query("select h from HoSo h where h.id = :id")

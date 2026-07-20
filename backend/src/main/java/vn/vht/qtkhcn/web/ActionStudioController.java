@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import vn.vht.qtkhcn.service.ActionStudioService;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ActionResponse;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.AuditResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.AvailabilityRequest;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.AvailabilityResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ConfigResponse;
@@ -79,6 +80,11 @@ public class ActionStudioController {
             @RequestHeader(value = "X-QTKHCN-Actor", required = false) String actor) {
         service.deleteAvailability(id, version(ifMatch), actor);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/availability-policies/{id}/history")
+    public List<AuditResponse> availabilityHistory(@PathVariable String id) {
+        return service.availabilityHistory(id);
     }
 
     @PostMapping("/exception-policies")

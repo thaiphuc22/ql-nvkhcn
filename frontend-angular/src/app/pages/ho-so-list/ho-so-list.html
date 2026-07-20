@@ -78,6 +78,7 @@
         <th nzWidth="220px">Bước hiện tại</th>
         <th nzWidth="140px">Trạng thái</th>
         <th nzWidth="110px">Ngày tạo</th>
+        <th nzWidth="70px"></th>
       </tr>
     </thead>
     <tbody>
@@ -94,10 +95,13 @@
           <td>{{ currentStepLabel(row) }}</td>
           <td><nz-tag [nzColor]="statusColor[row.trangThai]">{{ statusLabel[row.trangThai] }}</nz-tag></td>
           <td>{{ row.ngayTao }}</td>
+          <td><button nz-button nzType="text" nzDanger nz-popconfirm nzPopconfirmTitle="Xóa hồ sơ này?"
+            (click)="$event.stopPropagation()" (nzOnConfirm)="delete(row)" [nzLoading]="deletingId() === row.id"
+            aria-label="Xóa hồ sơ"><span nz-icon nzType="delete"></span></button></td>
         </tr>
       } @empty {
         <tr>
-          <td colspan="8">
+          <td colspan="9">
             <nz-empty nzNotFoundContent="Không có hồ sơ khớp bộ lọc."></nz-empty>
           </td>
         </tr>

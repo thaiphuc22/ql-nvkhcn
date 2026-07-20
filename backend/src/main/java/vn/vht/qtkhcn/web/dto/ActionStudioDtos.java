@@ -4,6 +4,8 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -15,7 +17,18 @@ public final class ActionStudioDtos {
             List<PresentationResponse> presentations,
             List<AvailabilityResponse> availabilityPolicies,
             List<ExceptionResponse> exceptionPolicies,
-            List<ProcessRoutingResponse> processes) {
+            List<ProcessRoutingResponse> processes,
+            ReferenceDataResponse referenceData) {
+    }
+
+    public record ReferenceDataResponse(List<CatalogOptionResponse> surfaces,
+            List<CatalogOptionResponse> statuses,
+            List<CatalogOptionResponse> roles,
+            List<CatalogOptionResponse> permissions,
+            List<CatalogOptionResponse> forms) {
+    }
+
+    public record CatalogOptionResponse(String value, String label) {
     }
 
     public record ActionResponse(String actionCode, String actionName, String actionType, String outcome,
@@ -34,11 +47,18 @@ public final class ActionStudioDtos {
     public record StatusRequest(boolean enabled) {
     }
 
-    public record AvailabilityRequest(@NotBlank String id, @NotBlank String actionCode, String surface,
-            String processCode, String taskDefinitionKey, String dossierStatus,
-            @NotNull List<@NotBlank String> allowedRoleCodes,
-            @NotNull List<@NotBlank String> requiredPermissions,
-            String formKey, String conditionExpression, @Min(0) int displayOrder, boolean enabled) {
+    public record AvailabilityRequest(
+            @NotBlank @Size(max = 128) @Pattern(regexp = "[A-Za-z0-9._-]+") String id,
+            @NotBlank @Size(max = 64) String actionCode,
+            @Size(max = 32) String surface,
+            @Size(max = 64) String processCode,
+            @Size(max = 128) String taskDefinitionKey,
+            @Size(max = 32) String dossierStatus,
+            @NotNull List<@NotBlank @Size(max = 64) String> allowedRoleCodes,
+            @NotNull List<@NotBlank @Size(max = 64) String> requiredPermissions,
+            @Size(max = 128) String formKey,
+            @Size(max = 1000) String conditionExpression,
+            @Min(0) int displayOrder, boolean enabled) {
     }
 
     public record AvailabilityResponse(String id, String actionCode, String surface, String processCode,
@@ -64,7 +84,8 @@ public final class ActionStudioDtos {
     public record ProcessRoutingResponse(String code, String name, List<ProcessStepResponse> steps) {
     }
 
-    public record ProcessStepResponse(String key, String name, String role, List<RouteBranchResponse> branches) {
+    public record ProcessStepResponse(String key, String name, String role, String formKey,
+            List<RouteBranchResponse> branches) {
     }
 
     public record RouteBranchResponse(String outcome, String label, String target, String kind) {
@@ -89,5 +110,9 @@ public final class ActionStudioDtos {
 
     public record ScaffoldResponse(int createdCount, List<AvailabilityResponse> createdPolicies,
             List<ReconcileResponse> rows) {
+    }
+
+    public record AuditResponse(String entityType, String entityId, String action, String actor,
+            OffsetDateTime eventAt, String detail) {
     }
 }

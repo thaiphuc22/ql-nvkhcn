@@ -1,0 +1,30 @@
+<div class="pm-page">
+  <header class="pm-header"><div><h1>Giám sát tiến trình luồng</h1><p>Trạng thái instance thời gian thực từ Camunda Operate API</p></div><button nz-button (click)="reload()" [nzLoading]="loading()">Làm mới</button></header>
+  @if (errorMessage()) { <nz-alert [nzType]="available() ? 'warning' : 'error'" nzShowIcon [nzMessage]="errorMessage()!" /> }
+  <div nz-row [nzGutter]="[16, 16]" class="pm-stats">
+    <div nz-col [nzXs]="12" [nzLg]="6"><nz-card><span>Đang chạy</span><strong class="blue">{{ stats().active }}</strong></nz-card></div>
+    <div nz-col [nzXs]="12" [nzLg]="6"><nz-card><span>Có sự cố</span><strong class="red">{{ stats().incidents }}</strong></nz-card></div>
+    <div nz-col [nzXs]="12" [nzLg]="6"><nz-card><span>Đã hoàn tất</span><strong class="green">{{ stats().completed }}</strong></nz-card></div>
+    <div nz-col [nzXs]="12" [nzLg]="6"><nz-card><span>Đã hủy</span><strong>{{ stats().terminated }}</strong></nz-card></div>
+  </div>
+  <nz-tabs><nz-tab nzTitle="Instance (Operate)">
+    <div class="pm-filters"><input nz-input placeholder="Tìm mã hồ sơ / quy trình / instance key..." [ngModel]="query()" (ngModelChange)="query.set($event)" />
+      <nz-select nzAllowClear nzPlaceHolder="Tất cả quy trình" [ngModel]="processFilter()" (ngModelChange)="processFilter.set($event)">@for (process of processes(); track process) { <nz-option [nzValue]="process" [nzLabel]="process" /> }</nz-select>
+      <nz-select nzAllowClear nzPlaceHolder="Tất cả trạng thái" [ngModel]="stateFilter()" (ngModelChange)="stateFilter.set($event)"><nz-option nzValue="ACTIVE" nzLabel="Đang chạy" /><nz-option nzValue="COMPLETED" nzLabel="Hoàn tất" /><nz-option nzValue="TERMINATED" nzLabel="Đã hủy" /></nz-select>
+      <span>{{ rows().length }}/{{ allRows().length }} instance</span></div>
+    <nz-spin [nzSpinning]="loading()"><nz-table #table [nzData]="rows()" nzSize="small" [nzPageSize]="15" [nzScroll]="{ x: '980px' }">
+      <thead><tr><th>Instance key</th><th>Mã hồ sơ</th><th>Quy trình</th><th>Bước hiện tại</th><th>Bắt đầu</th><th>Trạng thái</th></tr></thead>
+      <tbody>@for (row of table.data; track row.processInstanceKey) { <tr (click)="detail.set(row)">
+        <td><code>{{ row.processInstanceKey }}</code></td><td><strong>{{ row.businessId || '—' }}</strong></td>
+        <td><code>{{ row.bpmnProcessId }}</code> <small>v{{ row.version }}<br />{{ row.processName }}</small></td>
+        <td>@for (step of row.currentSteps; track step.elementId) { <div>{{ step.name || step.elementId }} @if(step.hasIncident){<nz-tag nzColor="error">Sự cố</nz-tag>}</div> } @empty { — }</td>
+        <td>{{ row.startedAt | date:'dd/MM/yyyy HH:mm' }}</td><td><nz-tag [nzColor]="stateColor(row)">{{ row.hasIncident ? 'Có sự cố' : stateLabel(row.state) }}</nz-tag></td>
+      </tr> }</tbody></nz-table></nz-spin>
+  </nz-tab><nz-tab nzTitle="Báo cáo Optimize"><nz-alert nzType="info" nzShowIcon nzMessage="Chưa kết nối Camunda Optimize" nzDescription="Cycle time, SLA, bottleneck và DMN analytics sẽ hiển thị khi Optimize được bật và cấu hình API. Màn hình không sử dụng số liệu mô phỏng." /></nz-tab></nz-tabs>
+  <nz-drawer [nzVisible]="!!detail()" nzTitle="Chi tiết process instance" [nzWidth]="600" (nzOnClose)="detail.set(null)"><ng-container *nzDrawerContent>@if (detail(); as row) {
+    @if (row.hasIncident) { <nz-alert nzType="error" nzShowIcon nzMessage="Instance đang có sự cố" class="drawer-alert" /> }
+    <nz-descriptions nzBordered [nzColumn]="1" nzSize="small"><nz-descriptions-item nzTitle="Instance key"><code>{{ row.processInstanceKey }}</code></nz-descriptions-item><nz-descriptions-item nzTitle="Mã hồ sơ">{{ row.businessId || '—' }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Quy trình">{{ row.bpmnProcessId }} · v{{ row.version }} — {{ row.processName }}</nz-descriptions-item><nz-descriptions-item nzTitle="Trạng thái"><nz-tag [nzColor]="stateColor(row)">{{ row.hasIncident ? 'Có sự cố' : stateLabel(row.state) }}</nz-tag></nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Bước hiện tại">@for (step of row.currentSteps; track step.elementId) { <div>{{ step.name }} <small>({{ step.elementId }})</small></div> } @empty { — }</nz-descriptions-item><nz-descriptions-item nzTitle="Bắt đầu">{{ row.startedAt | date:'dd/MM/yyyy HH:mm:ss' }}</nz-descriptions-item><nz-descriptions-item nzTitle="Kết thúc">{{ row.endedAt ? (row.endedAt | date:'dd/MM/yyyy HH:mm:ss') : '—' }}</nz-descriptions-item>
+    </nz-descriptions> }</ng-container></nz-drawer>
+</div>

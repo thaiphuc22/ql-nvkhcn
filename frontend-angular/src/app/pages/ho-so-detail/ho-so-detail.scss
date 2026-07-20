@@ -8,6 +8,10 @@
 .hsd-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .hsd-column { display: grid; align-content: start; gap: 16px; }
 .hsd-process-strip { display: flex; align-items: flex-start; overflow-x: auto; padding: 12px 8px 4px; }
+.hsd-process-actions { display: flex; justify-content: flex-end; margin: -4px 0 4px; }
+.hsd-process-actions button { display: inline-flex; align-items: center; gap: 6px; }
+.hsd-bpmn-loading { min-height: 420px; display: grid; place-items: center; }
+.hsd-bpmn-viewer { margin-top: 12px; min-height: 60vh; }
 .hsd-process-node { width: 132px; flex: 0 0 132px; text-align: center; color: #8793a3; }
 .hsd-process-node > span { margin: auto; width: 30px; height: 30px; display: grid; place-items: center; border: 2px solid #cfd6df; border-radius: 50%; background: #fff; font-weight: 700; }
 .hsd-process-node small { display: block; margin-top: 7px; line-height: 1.3; }

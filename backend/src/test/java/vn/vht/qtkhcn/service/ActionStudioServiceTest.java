@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.OffsetDateTime;
@@ -14,24 +16,36 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import vn.vht.qtkhcn.domain.ActionAvailabilityPolicy;
 import vn.vht.qtkhcn.domain.ActionStudioAction;
+import vn.vht.qtkhcn.domain.ActionStudioAudit;
+import vn.vht.qtkhcn.domain.Eform;
 import vn.vht.qtkhcn.repository.ActionAvailabilityPolicyRepository;
 import vn.vht.qtkhcn.repository.ActionExceptionPolicyRepository;
 import vn.vht.qtkhcn.repository.ActionStudioActionRepository;
 import vn.vht.qtkhcn.repository.ActionStudioAuditRepository;
+import vn.vht.qtkhcn.repository.EformRepository;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.AvailabilityRequest;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.SimulationRequest;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ProcessRoutingResponse;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ProcessStepResponse;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.RouteBranchResponse;
 
 class ActionStudioServiceTest {
     private ActionStudioActionRepository actions;
     private ActionAvailabilityPolicyRepository policies;
+    private ActionStudioAuditRepository audits;
+    private EformRepository eforms;
+    private ActionStudioRoutingCatalog routing;
     private ActionStudioService service;
 
     @BeforeEach
     void setUp() {
         actions = mock(ActionStudioActionRepository.class);
         policies = mock(ActionAvailabilityPolicyRepository.class);
+        audits = mock(ActionStudioAuditRepository.class);
+        eforms = mock(EformRepository.class);
+        routing = mock(ActionStudioRoutingCatalog.class);
         service = new ActionStudioService(actions, policies, mock(ActionExceptionPolicyRepository.class),
-                mock(ActionStudioAuditRepository.class), new ActionStudioRoutingCatalog());
+                audits, routing, eforms);
     }
 
     @Test
@@ -65,15 +79,18 @@ class ActionStudioServiceTest {
 
     @Test
     void scaffoldCreatesOnlyTrulyMissingRows() {
+        when(routing.require("RD05_01")).thenReturn(new ProcessRoutingResponse("RD05_01", "Quy trình",
+                List.of(new ProcessStepResponse("Task_1", "Bước 1", "PM", "phieu-phe-duyet",
+                        List.of(new RouteBranchResponse("dong_y", "Đồng ý", "Hoàn tất", "complete"))))));
         when(policies.findAllByOrderByDisplayOrderAscIdAsc()).thenReturn(List.of());
         when(actions.findById(any())).thenAnswer(invocation -> Optional.of(action(invocation.getArgument(0), true, 1)));
         when(policies.existsById(any())).thenReturn(false);
         when(policies.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        var response = service.scaffold("RD05.01", "alice");
+        var response = service.scaffold("RD05_01", "alice");
 
-        assertThat(response.createdCount()).isEqualTo(4);
-        assertThat(response.createdPolicies()).allMatch(item -> item.processCode().equals("RD05.01"));
+        assertThat(response.createdCount()).isEqualTo(1);
+        assertThat(response.createdPolicies()).allMatch(item -> item.processCode().equals("RD05_01"));
     }
 
     @Test
@@ -85,6 +102,63 @@ class ActionStudioServiceTest {
         assertThatThrownBy(() -> service.createAvailability(request, "alice"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("taskDefinitionKey");
+    }
+
+    @Test
+    void availabilityRejectsAnotherEnabledRuleWithSameSelector() {
+        ActionAvailabilityPolicy existing = policy("AP-EXISTING", "RD01.01", "t2", 10);
+        when(actions.findById("APPROVE_STEP")).thenReturn(Optional.of(action("APPROVE_STEP", true, 1)));
+        when(policies.findAllByOrderByDisplayOrderAscIdAsc()).thenReturn(List.of(existing));
+        AvailabilityRequest request = new AvailabilityRequest("AP-NEW", "APPROVE_STEP", "DOSSIER_DETAIL",
+                "RD01.01", "t2", "processing", List.of(" TD "), List.of(" PROCESS_STEP "),
+                null, null, 20, true);
+
+        assertThatThrownBy(() -> service.createAvailability(request, "alice"))
+                .isInstanceOf(ActionStudioConflictException.class)
+                .hasMessageContaining("AP-EXISTING");
+        verify(policies, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void historyRemainsReadableAfterRuleWasDeleted() {
+        ActionStudioAudit deleted = new ActionStudioAudit();
+        deleted.setEntityType("AVAILABILITY");
+        deleted.setEntityId("AP-DELETED");
+        deleted.setAction("DELETE");
+        deleted.setActor("alice");
+        deleted.setEventAt(OffsetDateTime.parse("2026-07-20T03:00:00Z"));
+        deleted.setDetail("Xóa luật hiển thị nút.");
+        when(audits.findByEntityTypeAndEntityIdOrderByEventAtDesc("AVAILABILITY", "AP-DELETED"))
+                .thenReturn(List.of(deleted));
+
+        var history = service.availabilityHistory("AP-DELETED");
+
+        assertThat(history).singleElement().satisfies(item -> {
+            assertThat(item.action()).isEqualTo("DELETE");
+            assertThat(item.actor()).isEqualTo("alice");
+        });
+        verify(policies, never()).findById(any());
+    }
+
+    @Test
+    void loadProvidesReferenceCatalogsAndFormsFromDatabase() {
+        Eform form = new Eform();
+        form.setKey("bm-phe-duyet");
+        form.setTen("Biểu mẫu phê duyệt");
+        when(actions.findAllByOrderByDisplayOrderAsc()).thenReturn(List.of());
+        when(policies.findAllByOrderByDisplayOrderAscIdAsc()).thenReturn(List.of());
+        when(eforms.findAllByOrderByCreatedAtDesc()).thenReturn(List.of(form));
+
+        var referenceData = service.load().referenceData();
+
+        assertThat(referenceData.surfaces()).extracting(item -> item.value())
+                .contains("DOSSIER_DETAIL", "WORKLIST");
+        assertThat(referenceData.roles()).extracting(item -> item.value())
+                .contains("PM", "CQ_KHCN_TD", "BTGD_TD");
+        assertThat(referenceData.forms()).singleElement().satisfies(item -> {
+            assertThat(item.value()).isEqualTo("bm-phe-duyet");
+            assertThat(item.label()).isEqualTo("Biểu mẫu phê duyệt");
+        });
     }
 
     private static ActionStudioAction action(String code, boolean active, long version) {

@@ -125,6 +125,7 @@
             <th>Tên quy trình</th>
             <th nzWidth="110px" nzAlign="center">Phiên bản</th>
             <th nzWidth="140px" nzAlign="center">Trạng thái</th>
+            <th nzWidth="150px" nzAlign="center">Instance đang chạy</th>
             <th nzWidth="180px">Cập nhật lúc</th>
             <th nzWidth="110px" nzAlign="center">Thao tác</th>
           </tr>
@@ -136,19 +137,91 @@
               <td>{{ row.name }}</td>
               <td nzAlign="center"><strong>v{{ row.latestVersion }}</strong></td>
               <td nzAlign="center"><nz-tag nzColor="success">{{ row.status }}</nz-tag></td>
+              <td nzAlign="center">
+                @if (loadingInstanceCounts()) {
+                  <span class="pc-instance-muted">Đang tải…</span>
+                } @else if (!instanceCountsAvailable()) {
+                  <span class="pc-instance-muted" [attr.title]="instanceCountsMessage()">—</span>
+                } @else if (runningCount(row.bpmnProcessId) === 0) {
+                  <span class="pc-instance-muted">0</span>
+                } @else {
+                  <button nz-button nzType="link" nzSize="small" (click)="openInstances(row)">
+                    <nz-tag nzColor="processing">{{ runningCount(row.bpmnProcessId) }}</nz-tag>
+                  </button>
+                }
+              </td>
               <td>{{ row.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
               <td nzAlign="center">
                 <button nz-button nzType="link" nzSize="small" (click)="viewDetail(row)">Xem chi tiết</button>
               </td>
             </tr>
           } @empty {
-            <tr><td colspan="6"><nz-empty nzNotFoundContent="Chưa có quy trình nào được deploy."></nz-empty></td></tr>
+            <tr><td colspan="7"><nz-empty nzNotFoundContent="Chưa có quy trình nào được deploy."></nz-empty></td></tr>
           }
         </tbody>
       </nz-table>
     </nz-tab>
   </nz-tabs>
 </div>
+
+<nz-drawer
+  [nzVisible]="instanceDrawerOpen()"
+  [nzTitle]="'Instance đang chạy · ' + (instanceDrawerProcess()?.bpmnProcessId ?? '')"
+  [nzWidth]="760"
+  (nzOnClose)="closeInstanceDrawer()"
+>
+  <ng-container *nzDrawerContent>
+    @if (instanceDrawerProcess(); as process) {
+      <p class="pc-instance-subtitle">{{ process.name }}</p>
+    }
+    @if (instanceListMessage(); as message) {
+      <nz-alert nzType="warning" nzShowIcon [nzMessage]="message" class="pc-alert"></nz-alert>
+    }
+    <nz-table
+      #instanceTable
+      [nzData]="instanceRows()"
+      [nzLoading]="instanceDrawerLoading()"
+      [nzPageSize]="10"
+      nzSize="small"
+    >
+      <thead>
+        <tr>
+          <th nzWidth="190px">Process instance key</th>
+          <th nzWidth="140px">Mã hồ sơ</th>
+          <th>Bước hiện tại</th>
+          <th nzWidth="150px">Bắt đầu lúc</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (instance of instanceTable.data; track instance.processInstanceKey) {
+          <tr>
+            <td><code>{{ instance.processInstanceKey }}</code></td>
+            <td>{{ instance.businessId || '—' }}</td>
+            <td>
+              @for (step of instance.currentSteps; track step.elementId) {
+                <nz-tag [nzColor]="step.hasIncident ? 'error' : 'processing'">
+                  {{ step.name }}
+                </nz-tag>
+              } @empty {
+                <span class="pc-instance-muted">Không có bước nào đang chờ</span>
+              }
+              @if (instance.hasIncident) {
+                <nz-tag nzColor="error">Có sự cố</nz-tag>
+              }
+            </td>
+            <td>{{ instance.startedAt ? (instance.startedAt | date: 'dd/MM/yyyy HH:mm') : '—' }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="4">
+              <nz-empty nzNotFoundContent="Không còn instance nào đang chạy."></nz-empty>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+  </ng-container>
+</nz-drawer>
 
 <nz-drawer
   [nzVisible]="draftDrawerOpen()"

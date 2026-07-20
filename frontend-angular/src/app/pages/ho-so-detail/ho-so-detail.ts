@@ -31,6 +31,12 @@ import {
 import { HoSoService } from '../../core/services/ho-so.service';
 import { TaskAvailableAction } from '../../core/models/task-action';
 import { TaskActionService } from '../../core/services/task-action.service';
+import { SimulatedAction, type DossierStatus as PolicyDossierStatus } from '../../core/models/action-studio';
+import { ActionStudioService } from '../../core/services/action-studio.service';
+import { EformService } from '../../core/services/eform.service';
+import { ProcessDefinitionService } from '../../core/services/process-definition.service';
+import { BpmnViewerComponent } from '../../shared/bpmn-viewer/bpmn-viewer';
+import { FormRendererComponent } from '../../shared/form-renderer/form-renderer';
 
 const STATUS_COLOR: Record<DossierStatus, string> = {
   DRAFT: 'default', START_PENDING: 'processing', START_FAILED: 'error', PROCESSING: 'processing',
@@ -50,6 +56,7 @@ const STEP_COLOR: Record<StepStatus, string> = {
   imports: [
     FormsModule, NzAlertModule, NzButtonModule, NzCardModule, NzDescriptionsModule, NzEmptyModule,
     NzGridModule, NzIconModule, NzInputModule, NzModalModule, NzResultModule, NzSpinModule, NzTagModule,
+    FormRendererComponent, BpmnViewerComponent,
   ],
   templateUrl: './ho-so-detail.html',
   styleUrl: './ho-so-detail.scss',
@@ -57,6 +64,9 @@ const STEP_COLOR: Record<StepStatus, string> = {
 export class HoSoDetailPage {
   private readonly service = inject(HoSoService);
   private readonly taskActionService = inject(TaskActionService);
+  private readonly actionStudioService = inject(ActionStudioService);
+  private readonly eformService = inject(EformService);
+  private readonly processDefinitionService = inject(ProcessDefinitionService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
@@ -77,6 +87,14 @@ export class HoSoDetailPage {
   readonly actionOpen = signal(false);
   readonly selectedOutcome = signal<HoSoActionOutcome>('APPROVE_STEP');
   readonly actionNote = signal('');
+  readonly policyActions = signal<SimulatedAction[]>([]);
+  readonly formAction = signal<SimulatedAction | null>(null);
+  readonly actionForm = signal<ReturnType<EformService['getForm']>>(undefined);
+  readonly formLoading = signal(false);
+  readonly bpmnOpen = signal(false);
+  readonly bpmnLoading = signal(false);
+  readonly bpmnXml = signal<string | null>(null);
+  readonly bpmnError = signal<string | null>(null);
 
   /** Task key mang theo từ `/viec-cua-toi` qua query param — Hồ sơ/DossierStep KHÔNG mang taskKey
    * (D20 gap đã ghi trong active-task.md), nên chi tiết mở trực tiếp (không qua Việc của tôi) sẽ
@@ -90,16 +108,36 @@ export class HoSoDetailPage {
     return dossier?.steps.find((step) => step.buocIndex === dossier.buocHienTai) ?? null;
   });
   readonly rejectedStep = computed(() => this.item()?.steps.find((step) => step.trangThai === 'REJECTED') ?? null);
+  /** Quy trình gửi duyệt theo (loai, cap). `supported` = đã có BPMN active trên Zeebe.
+   *
+   * XET_DUYET+CS cố ý KHÔNG map sang RD02.02: quy trình đó tự tính lại `cap` bằng DMN
+   * `capNhiemVu` (`resultVariable="cap"`, ghi đè biến truyền vào) rồi rẽ `cap = "TD"`; hồ sơ
+   * cấp Cơ sở sẽ kết thúc ngay tại `End_KhongThuocTD` — start "thành công" nhưng không sinh
+   * task nào và hồ sơ treo. Chờ BPMN riêng cho cấp Cơ sở. */
   readonly submitProcess = computed(() => {
     const dossier = this.item();
-    if (!dossier || dossier.loai !== 'CHU_TRUONG') return null;
-    return dossier.cap === 'CS'
-      ? { code: 'RD01.01', name: 'Xét duyệt Chủ trương cấp Cơ sở', supported: true }
-      : { code: 'RD01.02', name: 'Xét duyệt Chủ trương cấp Tập đoàn', supported: false };
+    if (!dossier) return null;
+    if (dossier.loai === 'CHU_TRUONG') {
+      return dossier.cap === 'CS'
+        ? { code: 'RD01.01', name: 'Xét duyệt Chủ trương cấp Cơ sở', supported: true }
+        : { code: 'RD01.02', name: 'Xét duyệt Chủ trương cấp Tập đoàn', supported: false };
+    }
+    if (dossier.loai === 'XET_DUYET') {
+      return dossier.cap === 'TD'
+        ? { code: 'RD02.02', name: 'Xét duyệt NV KHCN cấp Tập đoàn', supported: true }
+        : { code: 'RD02.01', name: 'Xét duyệt NV KHCN cấp Cơ sở', supported: false };
+    }
+    return null;
   });
   readonly selectedAction = computed(
     () => this.availableActions().find((a) => a.actionCode === this.selectedOutcome()) ?? null,
   );
+  readonly dossierActions = computed(() => this.policyActions().filter((action) => {
+    if (!action.visible || !action.enabled) return false;
+    if (action.actionType === 'EXCEPTION') return false;
+    if (action.outcome && action.outcome !== 'SUBMIT') return false;
+    return true;
+  }));
 
   constructor() {
     const key = this.route.snapshot.queryParamMap.get('taskKey');
@@ -115,6 +153,7 @@ export class HoSoDetailPage {
       next: (item) => {
         this.item.set(item);
         this.loading.set(false);
+        this.loadDossierActions();
         this.loadAvailableActions();
       },
       error: (error: HttpErrorResponse) => {
@@ -146,17 +185,102 @@ export class HoSoDetailPage {
     });
   }
 
-  hasAction(code: HoSoActionOutcome): boolean {
-    return this.availableActions().some((a) => a.actionCode === code);
+  private loadDossierActions(): void {
+    const dossier = this.item();
+    const user = this.auth.user();
+    if (!dossier || !user) {
+      this.policyActions.set([]);
+      return;
+    }
+    this.actionsLoading.set(true);
+    this.actionStudioService.simulate({
+      surface: 'DOSSIER_DETAIL',
+      processCode: dossier.quyTrinh || '__UNASSIGNED__',
+      taskDefinitionKey: this.currentStep()?.taskDefinitionKey || '__NO_TASK__',
+      dossierStatus: this.policyStatus(dossier.trangThai),
+      roleCodes: user.roleCodes,
+      permissions: [],
+      isAdmin: user.isAdmin,
+    }).subscribe({
+      next: (actions) => {
+        this.policyActions.set(actions);
+        this.actionsLoading.set(false);
+      },
+      error: () => {
+        this.policyActions.set([]);
+        this.actionsLoading.set(false);
+      },
+    });
   }
 
   back(): void { void this.router.navigate(['/ho-so']); }
   openMission(): void { void this.router.navigate(['/nhiem-vu', this.item()?.maNV]); }
 
+  openBpmn(): void {
+    const processCode = this.item()?.quyTrinh;
+    if (!processCode) return;
+    this.bpmnOpen.set(true);
+    this.bpmnLoading.set(true);
+    this.bpmnError.set(null);
+    this.bpmnXml.set(null);
+    const bpmnProcessId = processCode.replaceAll('.', '_');
+    this.processDefinitionService.getByBpmnProcessId(bpmnProcessId).subscribe({
+      next: (definition) => {
+        this.bpmnXml.set(definition.latestVersion.bpmnXml);
+        this.bpmnLoading.set(false);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.bpmnError.set(this.errorText(error, 'Không thể tải sơ đồ BPMN'));
+        this.bpmnLoading.set(false);
+      },
+    });
+  }
+
+  closeBpmn(): void { this.bpmnOpen.set(false); }
+
   openAction(outcome: HoSoActionOutcome): void {
     this.selectedOutcome.set(outcome);
     this.actionNote.set('');
     this.actionOpen.set(true);
+  }
+
+  runDossierAction(action: SimulatedAction): void {
+    if (action.outcome === 'SUBMIT') {
+      this.submitOpen.set(true);
+      return;
+    }
+    if (!action.formKey) {
+      this.message.info(action.helpText || `Hành động “${action.label}” chưa được gắn biểu mẫu.`);
+      return;
+    }
+    this.formLoading.set(true);
+    this.eformService.loadOne(action.formKey).subscribe({
+      next: (form) => {
+        this.actionForm.set(form);
+        this.formAction.set(action);
+        this.formLoading.set(false);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.formLoading.set(false);
+        this.message.error(this.errorText(error, `Không thể tải biểu mẫu ${action.formKey}`));
+      },
+    });
+  }
+
+  closeActionForm(): void {
+    this.formAction.set(null);
+    this.actionForm.set(undefined);
+  }
+
+  actionButtonType(action: SimulatedAction): 'primary' | 'default' {
+    return action.tone === 'primary' ? 'primary' : 'default';
+  }
+
+  private policyStatus(status: DossierStatus): PolicyDossierStatus {
+    if (status === 'PROCESSING' || status === 'START_PENDING') return 'processing';
+    if (status === 'APPROVED') return 'approved';
+    if (status === 'REJECTED' || status === 'CANCELLED') return 'rejected';
+    return 'draft';
   }
 
   submit(): void {
@@ -228,8 +352,7 @@ export class HoSoDetailPage {
   }
 
   actionTitle(): string {
-    return this.selectedOutcome() === 'APPROVE_STEP' ? 'Phê duyệt bước' :
-      this.selectedOutcome() === 'RETURN_STEP' ? 'Trả lại bước trước' : 'Từ chối hồ sơ';
+    return this.selectedAction()?.label ?? 'Xử lý hồ sơ';
   }
 
   documentIcon(type: string): string {

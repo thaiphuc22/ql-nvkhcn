@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
+import vn.vht.qtkhcn.service.BundledProcessCatalogSyncService;
 
 /**
  * Deploy RD01.01 lên Zeebe khi backend khởi động (Mốc 3 — bằng chứng "tích hợp thật với Camunda 8").
@@ -32,15 +33,19 @@ public class ProcessDeploymentRunner implements ApplicationRunner {
     static final String RD0202_RESOURCE = "processes/rd0202.bpmn";
 
     private final StartupProcessDeploymentService startupDeploymentService;
+    private final BundledProcessCatalogSyncService catalogSyncService;
 
-    public ProcessDeploymentRunner(StartupProcessDeploymentService startupDeploymentService) {
+    public ProcessDeploymentRunner(StartupProcessDeploymentService startupDeploymentService,
+            BundledProcessCatalogSyncService catalogSyncService) {
         this.startupDeploymentService = startupDeploymentService;
+        this.catalogSyncService = catalogSyncService;
     }
 
     @Override
     public void run(ApplicationArguments args) {
         deployBundled(BUNDLED_PROCESS_ID, BUNDLED_RESOURCE);
         deployBundled(RD0202_PROCESS_ID, RD0202_RESOURCE);
+        syncCatalog(RD0202_PROCESS_ID, RD0202_RESOURCE);
     }
 
     private void deployBundled(String processId, String classpathResource) {
@@ -51,6 +56,17 @@ public class ProcessDeploymentRunner implements ApplicationRunner {
         } else {
             log.info("Bundled process already exists; startup deployment skipped: {} v{} (key={})",
                     result.bpmnProcessId(), result.version(), result.processDefinitionKey());
+        }
+    }
+
+    private void syncCatalog(String processId, String classpathResource) {
+        var result = catalogSyncService.sync(processId, classpathResource);
+        if (result.published()) {
+            log.info("Bundled process published to /quy-trinh catalog: {} v{}",
+                    result.bpmnProcessId(), result.version());
+        } else {
+            log.info("Bundled process catalog is current: {} v{}",
+                    result.bpmnProcessId(), result.version());
         }
     }
 }

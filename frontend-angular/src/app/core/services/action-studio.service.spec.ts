@@ -24,6 +24,13 @@ describe('ActionStudioService', () => {
     requiredPermissions: ['PROCESS_STEP'], formKey: 'phieu-phe-duyet', displayOrder: 11,
     enabled: true, version: 3,
   };
+  const referenceData = {
+    surfaces: [{ value: 'DOSSIER_DETAIL', label: 'Chi tiết hồ sơ' }],
+    statuses: [{ value: 'processing', label: 'Đang xử lý' }],
+    roles: [{ value: 'TD', label: 'Phòng Thẩm định' }],
+    permissions: [{ value: 'PROCESS_STEP', label: 'Xử lý bước' }],
+    forms: [{ value: 'phieu-phe-duyet', label: 'Phiếu phê duyệt' }],
+  };
 
   beforeEach(() => {
     TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
@@ -39,12 +46,13 @@ describe('ActionStudioService', () => {
     expect(request.request.method).toBe('GET');
     request.flush({
       definitions: [definition], presentations: [presentation], availabilityPolicies: [policy],
-      exceptionPolicies: [], processes: [{ code: 'RD01.01', name: 'RD01', steps: [] }],
+      exceptionPolicies: [], processes: [{ code: 'RD01.01', name: 'RD01', steps: [] }], referenceData,
     });
 
     expect(service.definitions()[0].version).toBe(2);
     expect(service.availabilityPolicies()[0].id).toBe('AP-01');
     expect(service.processes()[0].code).toBe('RD01.01');
+    expect(service.referenceData().forms[0].value).toBe('phieu-phe-duyet');
   });
 
   it('updates a policy with If-Match and actor then refreshes its cache', () => {
@@ -106,7 +114,7 @@ describe('ActionStudioService', () => {
     service.load().subscribe();
     http.expectOne(base).flush({
       definitions: [definition], presentations: [presentation], availabilityPolicies: [policy],
-      exceptionPolicies: [], processes: [],
+      exceptionPolicies: [], processes: [], referenceData,
     });
   }
 });

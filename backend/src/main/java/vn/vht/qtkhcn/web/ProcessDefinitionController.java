@@ -14,19 +14,25 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import vn.vht.qtkhcn.service.ProcessDefinitionService;
+import vn.vht.qtkhcn.service.ProcessInstanceOverviewService;
 import vn.vht.qtkhcn.web.dto.ProcessDefinitionDetailResponse;
 import vn.vht.qtkhcn.web.dto.ProcessDefinitionImportResponse;
 import vn.vht.qtkhcn.web.dto.ProcessDefinitionSummaryResponse;
 import vn.vht.qtkhcn.web.dto.ProcessDefinitionVersionResponse;
+import vn.vht.qtkhcn.web.dto.ProcessInstanceOverviewDtos.RunningInstanceCountsResponse;
+import vn.vht.qtkhcn.web.dto.ProcessInstanceOverviewDtos.RunningInstanceListResponse;
 
 @RestController
 @RequestMapping("/api/process-definitions")
 public class ProcessDefinitionController {
 
     private final ProcessDefinitionService service;
+    private final ProcessInstanceOverviewService instanceOverviewService;
 
-    public ProcessDefinitionController(ProcessDefinitionService service) {
+    public ProcessDefinitionController(ProcessDefinitionService service,
+            ProcessInstanceOverviewService instanceOverviewService) {
         this.service = service;
+        this.instanceOverviewService = instanceOverviewService;
     }
 
     @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -41,6 +47,25 @@ public class ProcessDefinitionController {
     @GetMapping
     public List<ProcessDefinitionSummaryResponse> list() {
         return service.list();
+    }
+
+    /**
+     * Separate from {@link #list()} on purpose: the catalog is a PostgreSQL read, this one talks to
+     * Camunda. Keeping them apart means an engine outage degrades one column instead of the whole grid.
+     */
+    @GetMapping("/running-instances")
+    public RunningInstanceCountsResponse runningInstanceCounts() {
+        return instanceOverviewService.runningCounts();
+    }
+
+    @GetMapping("/{id}/running-instances")
+    public RunningInstanceListResponse runningInstances(@PathVariable UUID id) {
+        return instanceOverviewService.runningInstances(id);
+    }
+
+    @GetMapping("/by-bpmn-process-id/{bpmnProcessId}")
+    public ProcessDefinitionDetailResponse getByBpmnProcessId(@PathVariable String bpmnProcessId) {
+        return service.getByBpmnProcessId(bpmnProcessId);
     }
 
     @GetMapping("/{id}")

@@ -23,4 +23,10 @@ export class NhiemVuService {
       headers: { 'X-QTKHCN-Actor': encodeAuditActor(actor) },
     });
   }
+
+  delete(ma: string, actor: string): Observable<void> {
+    return this.http.delete<void>(`${this.endpoint}/${encodeURIComponent(ma)}`, {
+      headers: { 'X-QTKHCN-Actor': encodeAuditActor(actor) },
+    });
+  }
 }

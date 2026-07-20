@@ -94,6 +94,7 @@
 
     <nz-tab nzTitle="Luồng xử lý">
       <nz-alert nzType="info" nzShowIcon nzMessage="Một nguồn định tuyến dùng chung: Action chỉ khai báo outcome; đích đến được đọc từ bảng luồng của từng bước."></nz-alert>
+      @if (!store.processes().length) { <nz-empty nzNotFoundContent="Chưa có quy trình nào được deploy — vào Quản trị quy trình để import BPMN."></nz-empty> }
       @for (process of store.processes(); track process.code) {
         <nz-card class="as-routing-card" [nzTitle]="process.code + ' · ' + process.name">
           <div class="as-routing">
@@ -109,12 +110,12 @@
     <nz-tab nzTitle="Mô phỏng">
       <div class="as-simulator">
         <nz-card nzTitle="Ngữ cảnh kiểm thử" class="as-context-card">
-          <label>Bề mặt<nz-select [ngModel]="simulation().surface" (ngModelChange)="setSimulation('surface', $event)">@for (key of surfaces; track key) {<nz-option [nzValue]="key" [nzLabel]="surfaceLabel[key]"></nz-option>}</nz-select></label>
+          <label>Bề mặt<nz-select [ngModel]="simulation().surface" (ngModelChange)="setSimulation('surface', $event)">@for (item of surfaces(); track item.value) {<nz-option [nzValue]="item.value" [nzLabel]="item.label"></nz-option>}</nz-select></label>
           <label>Quy trình<nz-select [ngModel]="simulation().processCode" (ngModelChange)="setSimulation('processCode', $event)">@for (process of store.processes(); track process.code) {<nz-option [nzValue]="process.code" [nzLabel]="process.code + ' · ' + process.name"></nz-option>}</nz-select></label>
           <label>Bước hiện tại<nz-select [ngModel]="simulation().taskDefinitionKey" (ngModelChange)="setSimulation('taskDefinitionKey', $event)">@for (step of simulationSteps(); track step.key) {<nz-option [nzValue]="step.key" [nzLabel]="step.key + ' · ' + step.name"></nz-option>}</nz-select></label>
-          <label>Trạng thái hồ sơ<nz-select [ngModel]="simulation().dossierStatus" (ngModelChange)="setSimulation('dossierStatus', $event)">@for (key of statuses; track key) {<nz-option [nzValue]="key" [nzLabel]="statusLabel[key]"></nz-option>}</nz-select></label>
-          <label>Vai trò<nz-select nzMode="multiple" [ngModel]="simulation().roleCodes" (ngModelChange)="setSimulation('roleCodes', $event)">@for (key of roles; track key) {<nz-option [nzValue]="key" [nzLabel]="key + ' · ' + roleLabel[key]"></nz-option>}</nz-select></label>
-          <label>Quyền<nz-select nzMode="multiple" [ngModel]="simulation().permissions" (ngModelChange)="setSimulation('permissions', $event)">@for (key of permissions; track key) {<nz-option [nzValue]="key" [nzLabel]="permissionLabel[key]"></nz-option>}</nz-select></label>
+          <label>Trạng thái hồ sơ<nz-select [ngModel]="simulation().dossierStatus" (ngModelChange)="setSimulation('dossierStatus', $event)">@for (item of statuses(); track item.value) {<nz-option [nzValue]="item.value" [nzLabel]="item.label"></nz-option>}</nz-select></label>
+          <label>Vai trò<nz-select nzMode="multiple" [ngModel]="simulation().roleCodes" (ngModelChange)="setSimulation('roleCodes', $event)">@for (item of roles(); track item.value) {<nz-option [nzValue]="item.value" [nzLabel]="item.value + ' · ' + item.label"></nz-option>}</nz-select></label>
+          <label>Quyền<nz-select nzMode="multiple" [ngModel]="simulation().permissions" (ngModelChange)="setSimulation('permissions', $event)">@for (item of permissions(); track item.value) {<nz-option [nzValue]="item.value" [nzLabel]="item.label"></nz-option>}</nz-select></label>
           <label class="as-switch-label"><span>Giả lập quản trị viên</span><nz-switch [ngModel]="simulation().isAdmin" (ngModelChange)="setSimulation('isAdmin', $event)"></nz-switch></label>
         </nz-card>
         <nz-card nzTitle="Bản xem trước — Chi tiết hồ sơ" class="as-preview-card">
@@ -141,19 +142,19 @@
   </nz-tabs>
 </div>
 
-<nz-drawer [nzVisible]="!!policyDraft()" nzTitle="Cấu hình luật hiển thị nút" [nzWidth]="620" (nzOnClose)="policyDraft.set(null)">
+<nz-drawer [nzVisible]="!!policyDraft()" nzTitle="Cấu hình luật hiển thị nút" nzWidth="min(860px, 100vw)" (nzOnClose)="policyDraft.set(null)">
   <ng-container *nzDrawerContent>
     @if (policyDraft(); as d) {
       <div class="as-form-grid">
         <label>Mã luật<input nz-input [ngModel]="d.id" (ngModelChange)="patchPolicy('id', $event)" /></label>
-        <label>Hành động<nz-select [ngModel]="d.actionCode" (ngModelChange)="patchPolicy('actionCode', $event)">@for (item of store.definitions(); track item.actionCode) {<nz-option [nzValue]="item.actionCode" [nzLabel]="item.actionName"></nz-option>}</nz-select></label>
-        <label>Bề mặt<nz-select nzAllowClear [ngModel]="d.surface" (ngModelChange)="patchPolicy('surface', $event)">@for (key of surfaces; track key) {<nz-option [nzValue]="key" [nzLabel]="surfaceLabel[key]"></nz-option>}</nz-select></label>
-        <label>Quy trình<nz-select nzAllowClear [ngModel]="d.processCode" (ngModelChange)="patchPolicy('processCode', $event)">@for (process of store.processes(); track process.code) {<nz-option [nzValue]="process.code" [nzLabel]="process.code + ' · ' + process.name"></nz-option>}</nz-select></label>
-        <label>Task definition key<input nz-input [ngModel]="d.taskDefinitionKey" (ngModelChange)="patchPolicy('taskDefinitionKey', $event || null)" placeholder="Để trống = mọi bước" /></label>
-        <label>Trạng thái<nz-select nzAllowClear [ngModel]="d.dossierStatus" (ngModelChange)="patchPolicy('dossierStatus', $event)">@for (key of statuses; track key) {<nz-option [nzValue]="key" [nzLabel]="statusLabel[key]"></nz-option>}</nz-select></label>
-        <label class="wide">Vai trò được phép<nz-select nzMode="multiple" [ngModel]="d.allowedRoleCodes" (ngModelChange)="patchPolicy('allowedRoleCodes', $event)">@for (key of roles; track key) {<nz-option [nzValue]="key" [nzLabel]="key + ' · ' + roleLabel[key]"></nz-option>}</nz-select></label>
-        <label class="wide">Quyền bắt buộc<nz-select nzMode="multiple" [ngModel]="d.requiredPermissions" (ngModelChange)="patchPolicy('requiredPermissions', $event)">@for (key of permissions; track key) {<nz-option [nzValue]="key" [nzLabel]="permissionLabel[key]"></nz-option>}</nz-select></label>
-        <label>Biểu mẫu<nz-select nzAllowClear [ngModel]="d.formKey" (ngModelChange)="patchPolicy('formKey', $event)">@for (item of forms; track item.value) {<nz-option [nzValue]="item.value" [nzLabel]="item.label"></nz-option>}</nz-select></label>
+        <div class="as-field"><span class="as-field-title">Hành động</span><nz-select [ngModel]="d.actionCode" (ngModelChange)="patchPolicy('actionCode', $event)">@for (item of store.definitions(); track item.actionCode) {<nz-option [nzValue]="item.actionCode" [nzLabel]="item.actionName"></nz-option>}</nz-select></div>
+        <div class="as-field"><span class="as-field-title">Bề mặt</span><nz-select nzAllowClear [ngModel]="d.surface" (ngModelChange)="patchPolicy('surface', $event)">@for (item of surfaces(); track item.value) {<nz-option [nzValue]="item.value" [nzLabel]="item.label"></nz-option>}</nz-select></div>
+        <div class="as-field"><span class="as-field-title">Quy trình</span><nz-select nzAllowClear [ngModel]="d.processCode" (ngModelChange)="patchPolicy('processCode', $event)">@for (process of store.processes(); track process.code) {<nz-option [nzValue]="process.code" [nzLabel]="process.code + ' · ' + process.name"></nz-option>}</nz-select></div>
+        <div class="as-field"><span class="as-field-title">Bước hiện tại</span><nz-select nzAllowClear [ngModel]="d.taskDefinitionKey" (ngModelChange)="patchPolicy('taskDefinitionKey', $event || null)" nzPlaceHolder="Để trống = mọi bước">@for (step of policySteps(d.processCode); track step.key) {<nz-option [nzValue]="step.key" [nzLabel]="step.key + ' · ' + step.name"></nz-option>}</nz-select></div>
+        <div class="as-field"><span class="as-field-title">Trạng thái</span><nz-select nzAllowClear [ngModel]="d.dossierStatus" (ngModelChange)="patchPolicy('dossierStatus', $event)">@for (item of statuses(); track item.value) {<nz-option [nzValue]="item.value" [nzLabel]="item.label"></nz-option>}</nz-select></div>
+        <div class="as-field wide"><span class="as-field-title">Vai trò được phép</span><nz-select nzMode="multiple" [ngModel]="d.allowedRoleCodes" (ngModelChange)="patchPolicy('allowedRoleCodes', $event)">@for (item of roles(); track item.value) {<nz-option [nzValue]="item.value" [nzLabel]="item.value + ' · ' + item.label"></nz-option>}</nz-select></div>
+        <div class="as-field wide"><span class="as-field-title">Quyền bắt buộc</span><nz-select nzMode="multiple" [ngModel]="d.requiredPermissions" (ngModelChange)="patchPolicy('requiredPermissions', $event)">@for (item of permissions(); track item.value) {<nz-option [nzValue]="item.value" [nzLabel]="item.label"></nz-option>}</nz-select></div>
+        <div class="as-field"><span class="as-field-title">Biểu mẫu</span><nz-select nzAllowClear [ngModel]="d.formKey" (ngModelChange)="patchPolicy('formKey', $event)">@for (item of forms(); track item.value) {<nz-option [nzValue]="item.value" [nzLabel]="item.label"></nz-option>}</nz-select></div>
         <label>Thứ tự<input nz-input type="number" [ngModel]="d.displayOrder" (ngModelChange)="patchPolicy('displayOrder', +$event)" /></label>
         <label class="wide">Biểu thức điều kiện<input nz-input [ngModel]="d.conditionExpression" (ngModelChange)="patchPolicy('conditionExpression', $event)" /></label>
         <label class="as-switch-label wide"><span>Kích hoạt luật</span><nz-switch [ngModel]="d.enabled" (ngModelChange)="patchPolicy('enabled', $event)"></nz-switch></label>
@@ -163,7 +164,7 @@
   </ng-container>
 </nz-drawer>
 
-<nz-drawer [nzVisible]="!!exceptionDraft()" nzTitle="Chính sách luồng Chi tiết" [nzWidth]="620" (nzOnClose)="exceptionDraft.set(null)">
+<nz-drawer [nzVisible]="!!exceptionDraft()" nzTitle="Chính sách luồng Chi tiết" nzWidth="min(860px, 100vw)" (nzOnClose)="exceptionDraft.set(null)">
   <ng-container *nzDrawerContent>@if (exceptionDraft(); as d) {<div class="as-form-grid">
     <label>Mã chính sách<input nz-input [ngModel]="d.id" (ngModelChange)="patchException('id', $event)" /></label>
     <label>Hành động<nz-select [ngModel]="d.actionCode" (ngModelChange)="patchException('actionCode', $event)">@for (item of store.definitions(); track item.actionCode) {@if (item.actionType === 'EXCEPTION') {<nz-option [nzValue]="item.actionCode" [nzLabel]="item.actionName"></nz-option>}}</nz-select></label>
@@ -171,7 +172,7 @@
     <label>Bước xuất phát<input nz-input [ngModel]="d.fromStepKey" (ngModelChange)="patchException('fromStepKey', $event || null)" /></label>
     <label>Loại đích<nz-select [ngModel]="d.targetType" (ngModelChange)="patchException('targetType', $event)"><nz-option nzValue="STEP" nzLabel="Chuyển đến bước"></nz-option><nz-option nzValue="STATUS" nzLabel="Đổi trạng thái"></nz-option><nz-option nzValue="COMPLETE" nzLabel="Hoàn tất"></nz-option></nz-select></label>
     <label>Đích đến<input nz-input [ngModel]="d.targetStepKey" (ngModelChange)="patchException('targetStepKey', $event || null)" /></label>
-    <label class="wide">Vai trò được phép<nz-select nzMode="multiple" [ngModel]="d.allowedRoleCodes" (ngModelChange)="patchException('allowedRoleCodes', $event)">@for (key of roles; track key) {<nz-option [nzValue]="key" [nzLabel]="key + ' · ' + roleLabel[key]"></nz-option>}</nz-select></label>
+    <label class="wide">Vai trò được phép<nz-select nzMode="multiple" [ngModel]="d.allowedRoleCodes" (ngModelChange)="patchException('allowedRoleCodes', $event)">@for (item of roles(); track item.value) {<nz-option [nzValue]="item.value" [nzLabel]="item.value + ' · ' + item.label"></nz-option>}</nz-select></label>
     <label class="as-switch-label"><span>Cần phê duyệt</span><nz-switch [ngModel]="d.requiresApproval" (ngModelChange)="patchException('requiresApproval', $event)"></nz-switch></label>
     <label class="as-switch-label"><span>Bắt buộc lý do</span><nz-switch [ngModel]="d.requiresReason" (ngModelChange)="patchException('requiresReason', $event)"></nz-switch></label>
     <label class="as-switch-label"><span>Bắt buộc căn cứ</span><nz-switch [ngModel]="d.requiresEvidence" (ngModelChange)="patchException('requiresEvidence', $event)"></nz-switch></label>

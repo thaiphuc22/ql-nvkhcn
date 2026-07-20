@@ -24,8 +24,8 @@ import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { NzTypographyModule } from 'ng-zorro-antd/typography';
 import {
   ACTION_GROUP_LABEL, ACTION_TONE_LABEL, ACTION_TYPE_LABEL, ActionAvailabilityPolicy,
-  ActionDefinition, ActionPresentation, ActionSurface, ActionTone, ActionUiGroup, DossierStatus, ExceptionPolicy,
-  FORM_OPTIONS, PERMISSION_LABEL, ROLE_LABEL, STATUS_LABEL, SURFACE_LABEL, SimulationContext,
+  ActionDefinition, ActionPresentation, ActionTone, ActionUiGroup, ExceptionPolicy,
+  STATUS_LABEL, SURFACE_LABEL, SimulationContext,
   SimulatedAction,
 } from '../../core/models/action-studio';
 import { ActionStudioService, ReconcileRow } from '../../core/services/action-studio.service';
@@ -53,13 +53,11 @@ export class ActionStudioPage implements OnInit {
   readonly toneLabel = ACTION_TONE_LABEL;
   readonly surfaceLabel = SURFACE_LABEL;
   readonly statusLabel = STATUS_LABEL;
-  readonly roleLabel = ROLE_LABEL;
-  readonly permissionLabel = PERMISSION_LABEL;
-  readonly forms = FORM_OPTIONS;
-  readonly surfaces = Object.keys(SURFACE_LABEL) as ActionSurface[];
-  readonly statuses = Object.keys(STATUS_LABEL) as DossierStatus[];
-  readonly roles = Object.keys(ROLE_LABEL);
-  readonly permissions = Object.keys(PERMISSION_LABEL);
+  readonly forms = computed(() => this.store.referenceData().forms);
+  readonly surfaces = computed(() => this.store.referenceData().surfaces);
+  readonly statuses = computed(() => this.store.referenceData().statuses);
+  readonly roles = computed(() => this.store.referenceData().roles);
+  readonly permissions = computed(() => this.store.referenceData().permissions);
   readonly groups = Object.keys(ACTION_GROUP_LABEL) as ActionUiGroup[];
   readonly tones = Object.keys(ACTION_TONE_LABEL) as ActionTone[];
 
@@ -70,11 +68,11 @@ export class ActionStudioPage implements OnInit {
   readonly policyDraft = signal<ActionAvailabilityPolicy | null>(null);
   readonly exceptionDraft = signal<ExceptionPolicy | null>(null);
   readonly presentationDraft = signal<ActionPresentation | null>(null);
-  readonly reconcileProcess = signal('RD01.01');
+  readonly reconcileProcess = signal('');
   readonly reconcileRows = signal<ReconcileRow[]>([]);
   readonly simulatedActions = signal<SimulatedAction[]>([]);
   readonly simulation = signal<SimulationContext>({
-    surface: 'DOSSIER_DETAIL', processCode: 'RD01.01', taskDefinitionKey: 't2',
+    surface: 'DOSSIER_DETAIL', processCode: '', taskDefinitionKey: '',
     dossierStatus: 'processing', roleCodes: ['TD'], permissions: ['PROCESS_STEP', 'ADD_COMMENT', 'DOWNLOAD_DOCUMENT'], isAdmin: false,
   });
 
@@ -104,12 +102,12 @@ export class ActionStudioPage implements OnInit {
     this.store.load().subscribe({
       next: () => {
         const process = this.store.processes()[0];
-        if (process && !this.store.processes().some((item) => item.code === this.simulation().processCode)) {
+        if (process) {
           this.reconcileProcess.set(process.code);
           this.simulation.update((item) => ({ ...item, processCode: process.code, taskDefinitionKey: process.steps[0]?.key ?? '' }));
+          this.refreshReconcile();
+          this.refreshSimulation();
         }
-        this.refreshReconcile();
-        this.refreshSimulation();
       },
       error: (error) => this.showError('Không tải được cấu hình Ma trận Hành động.', error),
     });
@@ -121,6 +119,10 @@ export class ActionStudioPage implements OnInit {
 
   processName(code: string | null): string {
     return !code ? 'Mọi quy trình' : this.store.processes().find((item) => item.code === code)?.name ?? code;
+  }
+
+  policySteps(processCode: string | null) {
+    return this.store.processes().find((process) => process.code === processCode)?.steps ?? [];
   }
 
   openNewPolicy(): void {
@@ -246,11 +248,11 @@ export class ActionStudioPage implements OnInit {
   }
 
   statusColor(status: ReconcileRow['status']): string {
-    return ({ ok: 'success', generic: 'processing', unfilled: 'warning', missing: 'error' })[status];
+    return ({ ok: 'success', generic: 'processing', unfilled: 'warning', missing: 'error', unmapped: 'default' })[status];
   }
 
   statusText(status: ReconcileRow['status']): string {
-    return ({ ok: 'Đã khớp', generic: 'Luật chung', unfilled: 'Thiếu biểu mẫu', missing: 'Thiếu luật' })[status];
+    return ({ ok: 'Đã khớp', generic: 'Luật chung', unfilled: 'Thiếu biểu mẫu', missing: 'Thiếu luật', unmapped: 'Chưa ánh xạ' })[status];
   }
 
   private refreshDerived(): void {
@@ -259,6 +261,7 @@ export class ActionStudioPage implements OnInit {
   }
 
   private refreshReconcile(): void {
+    if (!this.reconcileProcess()) { this.reconcileRows.set([]); return; }
     this.store.reconcile(this.reconcileProcess()).subscribe({
       next: (rows) => this.reconcileRows.set(rows),
       error: (error) => this.showError('Không tải được kết quả đối soát BPMN.', error),
@@ -266,6 +269,10 @@ export class ActionStudioPage implements OnInit {
   }
 
   private refreshSimulation(): void {
+    if (!this.simulation().processCode || !this.simulation().taskDefinitionKey) {
+      this.simulatedActions.set([]);
+      return;
+    }
     const requestId = ++this.simulationRequestId;
     this.store.simulate(this.simulation()).subscribe({
       next: (items) => { if (requestId === this.simulationRequestId) this.simulatedActions.set(items); },

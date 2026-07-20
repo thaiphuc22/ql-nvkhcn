@@ -1,5 +1,147 @@
 # Active Task
 
+## ★ DONE — Xem BPMN và current step tại Chi tiết hồ sơ — 2026-07-20 (owner Codex)
+
+Backend Quy trình có `GET /api/process-definitions/by-bpmn-process-id/{bpmnProcessId}` trả BPMN version mới
+nhất từ catalog PostgreSQL. Angular `/ho-so/:id` hiển thị nút “Xem BPMN”, đổi mã nghiệp vụ `RD01.01` thành
+BPMN id `RD01_01`, mở viewer chỉ-đọc và tô nổi node bằng `DossierStep.taskDefinitionKey` của bước `CURRENT`.
+Verify: `ProcessDefinitionHttpContractTest` 6/6 PASS; `ho-so-detail.spec.ts` 8/8 PASS; `ng build` PASS.
+**Runtime 18:17:** đã package và restart backend 8090 bằng JAR mới, PID `25188`; endpoint trực tiếp 8090
+và qua proxy 4200 cùng trả HTTP 200 cho `RD01_01` version 6, BPMN XML dài 27.721 ký tự.
+
+## ★ DONE — Xóa Nhiệm vụ KHCN và Hồ sơ — 2026-07-20 (owner Codex)
+
+Đã bổ sung `DELETE /api/nhiem-vu/{ma}` và `DELETE /api/ho-so/{id}` tại service owner 8093, tạm thời
+không giới hạn giai đoạn/trạng thái. Xóa Nhiệm vụ cascade toàn bộ Hồ sơ trực thuộc; xóa Hồ sơ dọn tài liệu,
+step, outbox, inbox và workflow projection liên quan trước khi xóa aggregate, đồng thời ghi mutation audit.
+Angular có nút xóa tại hai màn danh sách, popconfirm (cảnh báo cascade khi Nhiệm vụ có Hồ sơ), loading,
+toast kết quả và cập nhật danh sách/thống kê tại chỗ. Verify: ho-so-service 39/39 PASS, Angular service test
+4/4 PASS, production build xanh (chỉ warning budget/CommonJS có sẵn). `mvn clean` không chạy được do tiến
+trình 8093 đang khóa JAR; đã dùng `mvn -o compile test` để buộc compile sạch source thay đổi mà không đụng JAR.
+**Runtime 16:28:** đã dừng PID 21088, package JAR mới và restart 8093 thành PID 15304 với đủ token nội bộ;
+health `UP`. Hai DELETE route được probe bằng ID không tồn tại và cùng trả 404 từ đúng controller (không phải
+405/route cũ), không làm thay đổi dữ liệu thật.
+
+## ★ DONE — Seam "cấu hình tác vụ hệ thống chi phối job worker" — 2026-07-20 (owner Claude)
+
+Trước đây module "Cấu hình tác vụ hệ thống" **chỉ là mock frontend** (seed in-memory trong
+`core/models/service-task.ts`), không chi phối runtime — worker hard-code hành vi trong Java. Lát này
+dựng contract thật ở backend và cho worker RD02.02 tra cấu hình lúc chạy.
+
+**Files mới**: `db/migration/V21__service_task_config.sql`; `domain/ServiceTask{Definition,ConfigVersion,
+Binding}.java` + 4 enum; `repository/ServiceTask{Definition,ConfigVersion,Binding}Repository.java`;
+`service/{ServiceTaskConfigResolver,ResolvedServiceTaskConfig}.java`. **Sửa**:
+`camunda/SystemCheckJobWorker.java`. **Test mới**: `ServiceTaskConfigResolverTest` (9),
+`SystemCheckJobWorkerTest` (6).
+
+**Quyết định thiết kế**:
+- **Binding resolve theo `bpmnProcessId` + `elementId`, KHÔNG theo `processCode` + `processVersion`.**
+  Frontend mock ghim theo processCode/processVersion ('RD02.02','1.0') — đó là khái niệm của registry
+  mock, runtime không có. Thứ `ActivatedJob` thật đưa cho worker là bpmnProcessId + elementId + jobType.
+  `process_code` giữ lại chỉ để hiển thị/đối soát.
+- `element_id IS NULL` = binding rộng theo job type. Resolve ưu tiên binding ghim element trước.
+- 2 partial unique index bảo đảm tối đa 1 binding ACTIVE cho mỗi (process, element) và mỗi job type
+  rộng ⇒ resolver không bao giờ phải "chọn đại" giữa 2 binding cùng khớp.
+- Resolver trả `Optional` chứ không ném exception; **không resolve được thì worker giữ hành vi cũ**
+  (trả `true`) + log WARN. Thiếu dữ liệu quản trị không được phép làm hỏng process đang chạy — E2E
+  4 cấp RD02.02 vì vậy không bị ảnh hưởng.
+- `stubResult` trong config_json là **escape hatch có chủ ý**: giá trị `true` vốn hard-code trong Java
+  nay nằm ở cấu hình, sửa được không cần build lại. PHẢI bỏ khi `decisionCode` trỏ được DMN thật.
+- Worker RD01.01 **chưa** nối resolver — V21 chưa seed binding cho nó, nối vào chỉ thêm log WARN.
+
+**Verify**: backend `mvn -o test` **172/172 PASS** (trước 157, +15). V21 áp thử trên DB tạm
+`v21_probe` (toàn bộ V1→V21 tuần tự, sạch); seed resolve đúng qua truy vấn mô phỏng resolver
+(`CHECK_CHU_TRUONG_TD` v1 ACTIVE → `dieuKienMacDinhDat`/`stubResult=true`); 3 ràng buộc chặn đúng
+(binding ACTIVE trùng element, `active_version > latest_version`, `type_code` lạ) và binding INACTIVE
+trùng element vẫn cho phép. DB tạm đã DROP, `qtkhcn`/`qtkhcn_ho_so` nguyên vẹn.
+
+**✅ ĐÃ LÊN STACK THẬT 2026-07-20 16:05** (user uỷ quyền "chủ động làm luôn"). V21 applied trên DB dev
+(`flyway_schema_history` → v21 success), 8090 rebuild + restart với `QTKHCN_WORKFLOW_SERVICE_TOKEN=
+dev-workflow-local-only` + `QTKHCN_HO_SO_SERVICE_TOKEN=dev-ho-so-local-only`. Chứng minh runtime: start
+2 instance RD02_02 qua `POST /internal/v1/process-instances`; đổi `stubResult` true→false thẳng trong DB
+thì log worker đổi theo (`dieuKienMacDinhDat=true` → `=false`) **cùng một JVM, không build lại** — đúng
+mục đích seam. Đã revert seed về `true`. `mvn -o test` lại: 172/172 PASS.
+
+⚠️ **Hai cái bẫy đã vấp, ghi lại để khỏi lặp:**
+1. **Flyway placeholder** — V21 chứa `$` liền `{` (trong `input_mapping.expression`) làm Flyway fail
+   parse "No value provided for placeholder", **app không khởi động được**. Verify vòng trước bằng
+   `psql` KHÔNG thể bắt lỗi này vì psql không có cơ chế placeholder — muốn kiểm tra migration thì phải
+   để chính Flyway chạy. Đã sửa bằng nối chuỗi `chr(36)`. Flyway thay placeholder **cả trong comment**,
+   nên lần sửa đầu vẫn fail vì comment cảnh báo có chứa đúng cặp ký tự đó.
+2. **Restart thiếu env token** — lần start đầu không set `QTKHCN_WORKFLOW_SERVICE_TOKEN`, filter
+   fail-closed ⇒ mọi `/internal/**` trả 401 (đúng triệu chứng đã ghi ở mục 8093 phía dưới). Restart
+   8090 bằng tay thì LUÔN phải kèm cặp token.
+
+**Còn nợ**: (1) 2 process instance probe `SEAM-V21-PROBE`/`-2` còn nằm trong Camunda dev, chưa dọn;
+(2) chưa có REST CRUD cho 3 bảng này; (3) Angular
+`service-task.service.ts` vẫn đọc seed in-memory, **chưa** nối HTTP — nên màn `/cau-hinh-tac-vu` vẫn
+là mock và **lệch** với dữ liệu backend; (4) chưa có audit trail (`service_task_audit`).
+
+## ★ DONE — Action Studio routing đọc BPMN đã deploy — 2026-07-20 (owner Codex)
+
+Đã thay `ActionStudioRoutingCatalog` hardcode bằng `DeployedBpmnRoutingReader`: đọc version mới nhất từ
+`process_definition_catalog`/`process_definition_version.bpmn_xml`, parse DOM chống XXE và cache theo
+`camundaProcessDefinitionKey`. Catalog dùng `bpmnProcessId` thật (`RD01_01`, `RD02_02`), user task/role/
+formKey/nhánh gateway lấy trực tiếp từ BPMN; không gọi Camunda trên đường đọc. Outcome FEEL được ánh xạ
+an toàn, bổ sung `APPROVE_WITH_SUPPLEMENT` cho `dong_y_bo_sung`; outcome lạ trả `unmapped` thay vì 500.
+Flyway V20 chỉ xóa/remap row `system-seed`, giữ nguyên policy người dùng. Angular dùng dropdown task thật,
+có empty state khi chưa deploy. Verify: backend **157/157 PASS**, test parser trên `rd0101.bpmn` xanh;
+Angular production build xanh (chỉ warning budget/CommonJS có sẵn). **Runtime verified 15:38:** đã xác
+nhận không có policy quy trình do người dùng tạo, package + restart 8090 PID `1668`; Flyway V20 áp thành
+công. API trực tiếp và proxy 4200 đều trả `RD01_01` (13 task), `RD02_02` (7 task) cùng process smoke đã
+deploy; `Task_6` có role `HDKHCN`, form `phieu-nhan-xet`, outcomes `dong_y_bo_sung`/`hieu_chinh`/
+`khong_dong_y`. Reconcile RD01_01 trả 17 generic, 2 ok, 1 unfilled, không lỗi/unmapped.
+
+## ★ DONE — Port Angular + backend thật cho `/giam-sat` — 2026-07-20 (owner Codex)
+
+Màn React `ProcessMonitor` dùng `seedInstances` đã được thay bằng màn Angular standalone tại
+`pages/process-monitor`, route lazy-load `/giam-sat`. Backend workflow service có endpoint read-only
+`GET /api/process-monitor`, lấy process instance và active element từ Camunda, ghép tên process từ catalog
+PostgreSQL, trả stats ACTIVE/incident/COMPLETED/TERMINATED và degraded response `available=false` khi engine
+không khả dụng. UI có thống kê, tìm kiếm, lọc quy trình/trạng thái, bảng phân trang và drawer chi tiết.
+Tab Optimize giữ vị trí nhưng hiển thị rõ chưa kết nối, không mang số liệu mock sang Angular.
+
+Verify: backend `mvn -o test` **156/156 PASS**; Angular production build xanh. Full Angular test build/template
+xanh nhưng run toàn suite bị 9 Vitest worker OOM của máy sau khi 146 test đã pass (không phải assertion fail).
+Đã package và restart server 8090 từ JAR mới lúc 15:20, PID `8376`. HTTP thật:
+`GET 127.0.0.1:8090/api/process-monitor` và tuyến proxy `localhost:4200/api/process-monitor` đều **200**
+(proxy được gọi với cùng dev-key Angular interceptor tự gắn), `available=true`, snapshot có 12 instance:
+7 ACTIVE, 0 incident, 2 COMPLETED, 3 TERMINATED. Gọi proxy không dev-key trả 401 đúng security contract.
+
+## ★ DONE — Cột "Instance đang chạy" trên `/quy-trinh` tab Đã deploy — 2026-07-20 (owner Claude)
+
+Tab "Đã deploy" có cột số instance đang chạy theo từng quy trình; bấm vào số mở drawer liệt kê từng
+process instance kèm **Bước hiện tại**, mã hồ sơ, thời điểm bắt đầu, cờ sự cố.
+
+**Files**: `camunda/CamundaProcessInstanceQuery.java`, `service/ProcessInstanceOverviewService.java`,
+`web/dto/ProcessInstanceOverviewDtos.java`, `web/ProcessDefinitionController.java` (+2 endpoint),
+`core/models/process-definition.ts`, `core/services/process-definition.service.ts`,
+`pages/process-catalog/{process-catalog.ts,.html,.scss}` + 2 file test mới.
+
+**Quyết định thiết kế**:
+- Endpoint runtime **tách khỏi** `GET /api/process-definitions`: catalog là read PostgreSQL, cột này
+  đọc Camunda. Camunda sập → `available=false` kèm HTTP 200 → UI hiện "—" (không phải 0 sai), grid vẫn
+  dùng được. Nếu gộp chung, một sự cố engine sẽ chặn cả màn danh mục.
+- Chi tiết instance: **1 lượt** element-instance search theo `processDefinitionId` rồi group theo
+  `processInstanceKey` — không N+1 theo từng instance.
+- Tên bước lấy từ `BpmnUserTaskMetadataCatalog`, **không** dùng `ElementInstance.getElementName()`.
+
+**Bug thật, chỉ lộ ra khi gọi engine thật:** Camunda trả `application/json` **không kèm charset** ⇒
+Camunda Java client decode tiếng Việt bằng charset mặc định Windows (cp1252) ⇒ mojibake
+(`Khởi tạo` → `Kháť¸i táşˇo`). Unit test không bắt được vì client bị mock. Đã né bằng cách đọc tên từ BPMN
+đã deploy (UTF-8, PostgreSQL) — cũng là nguồn tên mà projection worklist dùng nên tên bước nhất quán
+giữa các màn. **Lỗi gốc của client vẫn còn**: bất kỳ chỗ nào khác đọc text tiếng Việt trực tiếp từ
+response Camunda đều sẽ dính; nên sửa ở tầng cấu hình client (việc riêng, chưa làm).
+
+**Verify**: backend 156/156, Angular 180/180, `ng build` xanh. HTTP thật trên server tạm 8095
+(`spring-boot:run` — KHÔNG `mvn package` vì 8090 đang giữ khoá jar): counts `{"RD01_01":6}` khớp đúng 6
+instance ACTIVE trong Camunda; drawer trả 6 instance mới-nhất-trước, `Task_1`/`Task_3` khớp
+element-instance search, tên tiếng Việt đúng; quy trình chưa có instance trả mảng rỗng. Server tạm đã
+dừng, 8095 giải phóng, 8090/8093/4200 nguyên vẹn. Chỉ gọi GET nên không tạo dữ liệu test cần dọn.
+
+**Chưa làm**: click-through trình duyệt thật; `businessId` rỗng vì luồng start chưa set business key ⇒
+cột "Mã hồ sơ" hiện "—".
+
 ## ★ DONE — Nâng cấp backend “Cấu hình luật hiển thị nút” — 2026-07-20 (owner Codex)
 
 Đã gia cố backend Action Studio: validation độ dài/định dạng theo schema, chuẩn hóa role/permission, chặn
@@ -4090,3 +4232,6 @@ shipped), not new EPIC/backend work.
 architect/client to decide backend language/framework, domain DB engine, and Camunda 8
 deployment model, then lock them (D12/D13/D14 earmarked) in `decisions.md` and scaffold the
 backend per `.harness/workflows/foundations.md`.
+> **2026-07-20 — Dynamic dossier actions DONE (Codex).** `ho-so-detail` nay render action theo Action Studio
+> policy/presentation; bỏ các nhánh button hard-code. Runtime task outcomes tiếp tục dùng API task-centric;
+> support/form action dùng simulation + eForm `formKey`. Hồi quy AP-1784539922796 xanh 7/7, production build xanh.

@@ -103,7 +103,12 @@ export const routes: Routes = [
           import('./pages/service-task-config/service-task-config').then((module) => module.ServiceTaskConfigPage),
         data: { title: 'Tác vụ hệ thống', app: 'quytrinh' },
       },
-      { path: 'giam-sat', component: PlaceholderPage, data: { title: 'Giám sát tiến trình', app: 'quytrinh' } },
+      {
+        path: 'giam-sat',
+        loadComponent: () =>
+          import('./pages/process-monitor/process-monitor').then((module) => module.ProcessMonitorPage),
+        data: { title: 'Giám sát tiến trình', app: 'quytrinh' },
+      },
       {
         path: 'tich-hop',
         loadComponent: () =>

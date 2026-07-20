@@ -125,6 +125,17 @@ public class ProcessDefinitionService {
                 catalog.getCreatedAt(), catalog.getUpdatedAt(), ProcessDefinitionVersionResponse.from(latest(id)));
     }
 
+    /** Read model used by dossier detail, where the workflow reference is the BPMN process id. */
+    @Transactional(readOnly = true)
+    public ProcessDefinitionDetailResponse getByBpmnProcessId(String bpmnProcessId) {
+        ProcessDefinitionCatalog catalog = catalogRepository.findByBpmnProcessId(bpmnProcessId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Không tìm thấy process definition " + bpmnProcessId));
+        return new ProcessDefinitionDetailResponse(catalog.getId(), catalog.getBpmnProcessId(), catalog.getName(),
+                catalog.getCreatedAt(), catalog.getUpdatedAt(),
+                ProcessDefinitionVersionResponse.from(latest(catalog.getId())));
+    }
+
     @Transactional(readOnly = true)
     public List<ProcessDefinitionVersionResponse> versions(UUID id) {
         catalog(id);

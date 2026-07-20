@@ -55,6 +55,8 @@ Lát 3 bổ sung:
 
 - `POST /api/nhiem-vu`, `PUT /api/nhiem-vu/{ma}`.
 - `POST /api/ho-so`, `PUT /api/ho-so/{id}` (chỉ hồ sơ `DRAFT`).
+- `DELETE /api/nhiem-vu/{ma}` (xóa kèm toàn bộ hồ sơ trực thuộc), `DELETE /api/ho-so/{id}`;
+  tạm thời không giới hạn theo giai đoạn/trạng thái.
 - `POST/PUT/DELETE /api/ho-so/{id}/documents/**`.
 - Item GET và mutation response trả `ETag`; update/delete bắt buộc `If-Match`.
 - Mutation bắt buộc `X-QTKHCN-Actor` và ghi `domain_mutation_audit`.

@@ -775,6 +775,20 @@ export const seedProcessServiceTasks: ProcessServiceTaskRef[] = [
     critical: true,
   },
   {
+    // Bám đúng service task thật trong backend/src/main/resources/processes/rd0202.bpmn:57 —
+    // taskDefinitionKey/jobType copy nguyên văn từ BPMN, KHÔNG đặt lại tên.
+    // Lưu ý: processVersion ở đây là version của registry mock (RD02.02 mới có 1.0), không phải
+    // version của process definition thật trên backend (0f92a992-… đang ở ver 2).
+    processCode: 'RD02.02',
+    processVersion: '1.0',
+    bpmnProcessId: 'RD02_02',
+    taskDefinitionKey: 'Check_ChuTruongTD',
+    taskName: 'Hệ thống — Kiểm tra QĐ phê duyệt chủ trương cấp TĐ',
+    jobType: 'khcn.rd0202.check-chu-truong-td',
+    implementationHint: 'precondition-check',
+    critical: true,
+  },
+  {
     processCode: 'RD03.03',
     processVersion: '0.1',
     bpmnProcessId: 'Process_RD0303',
@@ -865,6 +879,23 @@ export const seedServiceTaskDefinitions: ServiceTaskDefinition[] = [
     updatedBy: 'admin',
     createdAt: '2026-07-09 09:15',
     updatedAt: '2026-07-09 09:25',
+  },
+  {
+    id: 'std-check-chu-truong-td',
+    code: 'CHECK_CHU_TRUONG_TD',
+    name: 'Kiểm tra QĐ phê duyệt chủ trương cấp TĐ',
+    description:
+      'Kiểm tra tiền điều kiện BR-RD0202-001 (đã có QĐ phê duyệt chủ trương cấp Tập đoàn từ RD01.02) ' +
+      'rồi trả biến điều khiển dieuKienMacDinhDat cho gateway Gateway_BR.',
+    typeCode: 'EVALUATE_DECISION',
+    status: 'ACTIVE',
+    ownerModule: 'RD02',
+    tags: ['rd02', 'precondition', 'br-rd0202-001'],
+    activeVersionNo: 1,
+    createdBy: 'admin',
+    updatedBy: 'admin',
+    createdAt: '2026-07-20 10:00',
+    updatedAt: '2026-07-20 10:05',
   },
   {
     id: 'std-evaluate-rd02-routing',
@@ -1014,6 +1045,41 @@ export const seedServiceTaskConfigVersions: ServiceTaskConfigVersion[] = [
     createdAt: '2026-07-09 09:25',
   },
   {
+    id: 'stv-check-chu-truong-td-v1',
+    serviceTaskDefinitionId: 'std-check-chu-truong-td',
+    versionNo: 1,
+    configJson: {
+      typeCode: 'EVALUATE_DECISION',
+      // CHƯA CÓ DMN thật cho tiền điều kiện này — worker Java hiện trả true vô điều kiện
+      // (SystemCheckJobWorker.checkChuTruongTapDoan), vì nguồn dữ liệu là RD01.02 mà RD01.02
+      // chưa có BPMN. decisionCode dưới đây là chỗ đặt sẵn, phải trỏ DMN thật khi nối dữ liệu.
+      decisionCode: 'rd0202-check-chu-truong-td',
+      resultVariable: 'dieuKienMacDinhDat',
+    },
+    inputMapping: [
+      { id: 'in-ctrtd-1', target: 'maHoSo', expression: '${variables.maHoSo}', source: 'variables', required: true },
+      { id: 'in-ctrtd-2', target: 'maNhiemVu', expression: '${dossier.maNV}', source: 'dossier', required: true },
+    ],
+    outputMapping: [
+      // Đích là đúng biến điều khiển trong ProcessVariableContract mà Gateway_BR đọc (D3: chỉ
+      // biến điều khiển, không nhét dữ liệu nghiệp vụ vào process).
+      { id: 'out-ctrtd-1', sourcePath: '$.decision', target: 'variables', targetPath: 'dieuKienMacDinhDat' },
+      { id: 'out-ctrtd-2', sourcePath: '$.reason', target: 'executionMetadata', targetPath: 'lyDoThieuChuTruong' },
+    ],
+    // maxRetry 3 khớp retries="3" khai báo trên serviceTask trong rd0202.bpmn; hết retry thì
+    // Zeebe tạo incident nên onFailure để CREATE_INCIDENT.
+    errorPolicy: {
+      ...DEFAULT_ERROR_POLICY,
+      maxRetry: 3,
+      onFailure: 'CREATE_INCIDENT',
+      notifyRoles: ['ADMIN', 'CQ_KHCN_TD'],
+    },
+    status: 'ACTIVE',
+    changeNote: 'Cấu hình cho service task Check_ChuTruongTD của RD02.02.',
+    createdBy: 'admin',
+    createdAt: '2026-07-20 10:05',
+  },
+  {
     id: 'stv-evaluate-rd02-v1',
     serviceTaskDefinitionId: 'std-evaluate-rd02-routing',
     versionNo: 1,
@@ -1067,6 +1133,20 @@ export const seedServiceTaskBindings: ServiceTaskBinding[] = [
     effectiveFrom: '2026-07-09',
     createdBy: 'admin',
     updatedAt: '2026-07-09 09:08',
+  },
+  {
+    id: 'stb-rd0202-check-chu-truong',
+    processCode: 'RD02.02',
+    processVersion: '1.0',
+    bpmnProcessId: 'RD02_02',
+    taskDefinitionKey: 'Check_ChuTruongTD',
+    taskName: 'Hệ thống — Kiểm tra QĐ phê duyệt chủ trương cấp TĐ',
+    jobType: 'khcn.rd0202.check-chu-truong-td',
+    serviceTaskDefinitionId: 'std-check-chu-truong-td',
+    bindingStatus: 'ACTIVE',
+    effectiveFrom: '2026-07-20',
+    createdBy: 'admin',
+    updatedAt: '2026-07-20 10:10',
   },
   {
     id: 'stb-rd0501-doc',

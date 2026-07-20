@@ -99,7 +99,7 @@
             </nz-select>
           </div>
           @if (selectedVersion(); as v) {
-            <app-bpmn-viewer [xml]="v.bpmnXml"></app-bpmn-viewer>
+            <app-bpmn-viewer [xml]="v.bpmnXml" [showProperties]="true"></app-bpmn-viewer>
           }
         } @else {
           <span class="pd-no-versions">Chưa tải được sơ đồ BPMN.</span>

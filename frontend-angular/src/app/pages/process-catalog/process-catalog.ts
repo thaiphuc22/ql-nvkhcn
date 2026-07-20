@@ -30,6 +30,7 @@ import {
   ProcessDefinitionDraftResponse,
   ProcessDefinitionDraftSummaryResponse,
   ProcessImportErrorBody,
+  RunningInstanceResponse,
 } from '../../core/models/process-definition';
 
 /** Trang quản lý quy trình: nhập file tạo draft trong App; deploy chỉ là thao tác phát hành riêng. */
@@ -72,6 +73,22 @@ export class ProcessCatalogPage {
   readonly activeTabIndex = signal(0);
 
   readonly query = signal('');
+
+  // --- Runtime instance state (Camunda, tách khỏi catalog PostgreSQL) ---
+  readonly instanceCounts = signal<Record<string, number>>({});
+  readonly instanceCountsAvailable = signal(true);
+  readonly instanceCountsMessage = signal<string | null>(null);
+  readonly loadingInstanceCounts = signal(true);
+
+  readonly instanceDrawerOpen = signal(false);
+  readonly instanceDrawerLoading = signal(false);
+  readonly instanceDrawerProcess = signal<ProcessDefinitionSummaryResponse | null>(null);
+  readonly instanceRows = signal<RunningInstanceResponse[]>([]);
+  readonly instanceListMessage = signal<string | null>(null);
+
+  runningCount(bpmnProcessId: string): number {
+    return this.instanceCounts()[bpmnProcessId] ?? 0;
+  }
 
   readonly stats = computed(() => {
     const list = this.rawList();
@@ -144,6 +161,49 @@ export class ProcessCatalogPage {
       },
     });
     this.reloadDrafts();
+    this.reloadInstanceCounts();
+  }
+
+  private reloadInstanceCounts(): void {
+    this.loadingInstanceCounts.set(true);
+    this.processDefinitionService.runningInstanceCounts().subscribe({
+      next: (res) => {
+        this.instanceCounts.set(res.countsByProcessId ?? {});
+        this.instanceCountsAvailable.set(res.available);
+        this.instanceCountsMessage.set(res.message);
+        this.loadingInstanceCounts.set(false);
+      },
+      error: (err: HttpErrorResponse) => {
+        // Cột runtime hỏng thì chỉ tắt cột đó — danh mục quy trình vẫn phải đọc được.
+        this.instanceCounts.set({});
+        this.instanceCountsAvailable.set(false);
+        this.instanceCountsMessage.set(`Không đọc được số instance đang chạy (HTTP ${err.status}).`);
+        this.loadingInstanceCounts.set(false);
+      },
+    });
+  }
+
+  openInstances(process: ProcessDefinitionSummaryResponse): void {
+    this.instanceDrawerOpen.set(true);
+    this.instanceDrawerLoading.set(true);
+    this.instanceDrawerProcess.set(process);
+    this.instanceRows.set([]);
+    this.instanceListMessage.set(null);
+    this.processDefinitionService.runningInstances(process.id).subscribe({
+      next: (res) => {
+        this.instanceRows.set(res.instances);
+        this.instanceListMessage.set(res.available ? null : res.message);
+        this.instanceDrawerLoading.set(false);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.instanceListMessage.set(`Không tải được danh sách instance (HTTP ${err.status}).`);
+        this.instanceDrawerLoading.set(false);
+      },
+    });
+  }
+
+  closeInstanceDrawer(): void {
+    this.instanceDrawerOpen.set(false);
   }
 
   private reloadDrafts(onLoaded?: () => void): void {

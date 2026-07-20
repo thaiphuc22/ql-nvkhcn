@@ -8,6 +8,8 @@ import {
   ProcessDefinitionImportResponse,
   ProcessDefinitionSummaryResponse,
   ProcessDefinitionVersionResponse,
+  RunningInstanceCountsResponse,
+  RunningInstanceListResponse,
 } from '../models/process-definition';
 
 /** Gọi thật `/api/process-definitions/*` (backend Spring Boot, BPMN import/deploy workstream) — không phải mock. */
@@ -23,9 +25,28 @@ export class ProcessDefinitionService {
     return this.http.get<ProcessDefinitionDetailResponse>(`${API_BASE_URL}/api/process-definitions/${id}`);
   }
 
+  getByBpmnProcessId(bpmnProcessId: string): Observable<ProcessDefinitionDetailResponse> {
+    return this.http.get<ProcessDefinitionDetailResponse>(
+      `${API_BASE_URL}/api/process-definitions/by-bpmn-process-id/${encodeURIComponent(bpmnProcessId)}`,
+    );
+  }
+
   versions(id: string): Observable<ProcessDefinitionVersionResponse[]> {
     return this.http.get<ProcessDefinitionVersionResponse[]>(
       `${API_BASE_URL}/api/process-definitions/${id}/versions`,
+    );
+  }
+
+  /** Số instance đang chạy theo từng `bpmnProcessId`. Gọi riêng `list()` để Camunda sập không chặn grid. */
+  runningInstanceCounts(): Observable<RunningInstanceCountsResponse> {
+    return this.http.get<RunningInstanceCountsResponse>(
+      `${API_BASE_URL}/api/process-definitions/running-instances`,
+    );
+  }
+
+  runningInstances(id: string): Observable<RunningInstanceListResponse> {
+    return this.http.get<RunningInstanceListResponse>(
+      `${API_BASE_URL}/api/process-definitions/${id}/running-instances`,
     );
   }
 

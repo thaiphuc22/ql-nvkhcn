@@ -10,6 +10,18 @@ import org.springframework.mock.web.MockMultipartFile;
 
 class ProcessDefinitionImportValidatorTest {
 
+    @Test
+    void bundledRd0202IsDeployableAndKeepsItsProcessIdentity() throws Exception {
+        String xml = java.nio.file.Files.readString(
+                java.nio.file.Path.of("src/main/resources/processes/rd0202.bpmn"));
+
+        ValidatedBpmn result = new ProcessDefinitionImportValidator(5_242_880)
+                .validate(xml, "rd0202.bpmn");
+
+        assertEquals("RD02_02", result.bpmnProcessId());
+        assertTrue(!result.hasErrors(), () -> "RD02.02 lint errors: " + result.issues());
+    }
+
     private final ProcessDefinitionImportValidator validator = new ProcessDefinitionImportValidator(1024);
 
     @Test

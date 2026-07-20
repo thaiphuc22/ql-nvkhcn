@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -43,5 +44,13 @@ public class NhiemVuMutationController {
         NhiemVu entity = service.update(ma, HttpVersion.parse(ifMatch), request, actor);
         return ResponseEntity.ok().eTag(HttpVersion.etag(entity.getVersion()))
                 .body(NhiemVuResponse.from(entity));
+    }
+
+    @DeleteMapping("/{ma}")
+    public ResponseEntity<Void> delete(
+            @PathVariable String ma,
+            @RequestHeader(value = "X-QTKHCN-Actor", required = false) String actor) {
+        service.delete(ma, actor);
+        return ResponseEntity.noContent().build();
     }
 }

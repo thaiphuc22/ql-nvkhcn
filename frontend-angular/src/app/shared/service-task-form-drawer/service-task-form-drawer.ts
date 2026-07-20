@@ -29,6 +29,7 @@ import {
   type ServiceTaskTypeCode,
 } from '../../core/models/service-task';
 import { ServiceTaskService } from '../../core/services/service-task.service';
+import { ServiceTaskConfigApiService, type ServiceTaskApiDefinitionDetail, type ServiceTaskApiWriteRequest } from '../../core/services/service-task-config-api.service';
 import { ServiceTaskMappingEditor } from '../service-task-mapping-editor/service-task-mapping-editor';
 
 // Port của webapp/src/components/ServiceTaskFormDrawer.tsx — drawer Tạo/Sửa cấu
@@ -63,11 +64,15 @@ function latestVersion(versions: ServiceTaskConfigVersion[]): ServiceTaskConfigV
 export class ServiceTaskFormDrawer {
   private readonly auth = inject(AuthService);
   private readonly serviceTasks = inject(ServiceTaskService);
+  private readonly configApi = inject(ServiceTaskConfigApiService);
   private readonly message = inject(NzMessageService);
 
   readonly open = input(false);
   readonly definition = input<ServiceTaskDefinition | undefined>(undefined);
+  readonly apiDefinition = input<ServiceTaskApiDefinitionDetail | undefined>(undefined);
   readonly closed = output<void>();
+  readonly saved = output<void>();
+  readonly saving = signal(false);
 
   readonly types = this.serviceTasks.types;
   readonly connectorOptions = seedIntegrations.map((item) => ({ label: `${item.key} - ${item.ten}`, value: item.key }));
@@ -144,8 +149,15 @@ export class ServiceTaskFormDrawer {
   constructor() {
     effect(() => {
       if (!this.open()) return;
-      const definition = this.definition();
-      const version = definition ? latestVersion(this.serviceTasks.getVersions(definition.id)) : undefined;
+      const apiDefinition = this.apiDefinition();
+      const definition = apiDefinition ?? this.definition();
+      const apiVersion = apiDefinition?.versions[0];
+      const version = apiVersion ? {
+        configJson: apiVersion.config as unknown as ServiceTaskExecutionConfig,
+        inputMapping: (apiVersion.inputMapping ?? []) as unknown as ServiceTaskInputMapping[],
+        outputMapping: (apiVersion.outputMapping ?? []) as unknown as ServiceTaskOutputMapping[],
+        errorPolicy: (apiVersion.errorPolicy ?? DEFAULT_ERROR_POLICY) as unknown as typeof DEFAULT_ERROR_POLICY,
+      } : definition ? latestVersion(this.serviceTasks.getVersions(definition.id)) : undefined;
       const policy = version?.errorPolicy ?? DEFAULT_ERROR_POLICY;
 
       this.code.set(definition?.code ?? '');
@@ -252,36 +264,26 @@ export class ServiceTaskFormDrawer {
         notifyRoles: this.notifyRoles(),
       },
     };
-    const definition = this.definition();
-
-    if (definition) {
-      this.serviceTasks.updateDefinition(
-        definition.id,
-        {
-          code: this.code().trim(),
-          name: this.name().trim(),
-          description: this.description().trim(),
-          typeCode: this.typeCode(),
-          ownerModule: this.ownerModule().trim(),
-          tags: this.tags(),
-        },
-        actor,
-      );
-      this.serviceTasks.saveDraftVersion(definition.id, patch, this.changeNote() || 'Cập nhật cấu hình.', actor);
-      this.message.success('Đã lưu bản nháp cấu hình.');
-    } else {
-      const id = this.serviceTasks.createDefinition({
-        code: this.code().trim(),
-        name: this.name().trim(),
-        description: this.description().trim(),
-        typeCode: this.typeCode(),
-        ownerModule: this.ownerModule().trim(),
-        tags: this.tags(),
-        actor,
-      });
-      this.serviceTasks.saveDraftVersion(id, patch, this.changeNote() || 'Tạo cấu hình.', actor);
-      this.message.success('Đã tạo cấu hình Service Task.');
-    }
-    this.close();
+    const request: ServiceTaskApiWriteRequest = {
+      code: this.code().trim(), name: this.name().trim(), description: this.description().trim(),
+      typeCode: this.typeCode(), ownerModule: this.ownerModule().trim(), tags: this.tags(),
+      config: patch.configJson as unknown as Record<string, unknown>,
+      inputMapping: patch.inputMapping as unknown as Record<string, unknown>[],
+      outputMapping: patch.outputMapping as unknown as Record<string, unknown>[],
+      errorPolicy: patch.errorPolicy as unknown as Record<string, unknown>,
+      changeNote: this.changeNote() || (this.apiDefinition() ? 'Cập nhật cấu hình.' : 'Tạo cấu hình.'), actor,
+    };
+    const detail = this.apiDefinition();
+    const operation = detail ? this.configApi.update(detail.id, request) : this.configApi.create(request);
+    this.saving.set(true);
+    operation.subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.message.success(detail ? 'Đã lưu bản nháp cấu hình.' : 'Đã tạo cấu hình Service Task.');
+        this.saved.emit();
+        this.close();
+      },
+      error: () => { this.saving.set(false); this.message.error('Không thể lưu cấu hình Service Task.'); },
+    });
   }
 }

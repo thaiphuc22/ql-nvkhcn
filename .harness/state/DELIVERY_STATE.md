@@ -1,5 +1,76 @@
 # Delivery State
 
+> **2026-07-20 — XEM BPMN TẠI CHI TIẾT HỒ SƠ DONE (owner Codex).** Backend Quy trình bổ sung API
+> đọc process definition theo `bpmnProcessId`; Angular Chi tiết hồ sơ tải BPMN thật khi người dùng bấm
+> “Xem BPMN” và tô nổi `taskDefinitionKey` của bước `CURRENT`. Có loading/error/empty guard. Verify contract
+> backend 6/6 PASS, Angular targeted 8/8 PASS, production build xanh (chỉ warning có sẵn).
+
+> **2026-07-20 — HỒ SƠ DETAIL ÁP DỤNG ACTION AVAILABILITY ĐỘNG (owner Codex).** Header thao tác
+> không còn hard-code các nút gửi duyệt/phê duyệt/trả lại/từ chối: action cấp hồ sơ lấy từ
+> `/api/action-studio/simulate`, action task vẫn lấy từ API task-centric theo D20, và toàn bộ label/tone/order
+> render từ metadata. Support action có `formKey` tải eForm thật và mở bằng Angular FormRenderer. Đã thêm
+> hồi quy cho `AP-1784539922796`/`BM.02.01.DKI`: nút hiện ở hồ sơ draft và tải đúng
+> `bm-02-00-cv-dk-xd-nv`. Verify targeted **7/7 PASS**, production build xanh (chỉ warning có sẵn).
+
+> **2026-07-20 — XÓA NHIỆM VỤ KHCN/HỒ SƠ FE+BE DONE (owner Codex).** Service 8093 có hai API DELETE,
+> tạm cho phép ở mọi trạng thái; xóa Nhiệm vụ cascade Hồ sơ, xóa Hồ sơ dọn toàn bộ quan hệ kỹ thuật và có
+> audit. Hai danh sách Angular có xác nhận, loading/toast và cập nhật dữ liệu tại chỗ. Verify ho-so-service
+> **39/39 PASS**, Angular targeted **4/4 PASS**, production build xanh. **Runtime 16:28:** JAR mới đã chạy
+> trên 8093 PID `15304`, health `UP`; cả hai DELETE route probe đúng controller và trả 404 cho ID giả.
+
+> **2026-07-20 — ACTION STUDIO ROUTING TỪ BPMN ĐÃ DEPLOY DONE (owner Codex).** Catalog hardcode
+> `RD01.01`/`t1..t4` đã được thay bằng reader đọc `bpmnXml` version mới nhất trong PostgreSQL, cache theo
+> process-definition key, trả `bpmnProcessId`, userTask, candidateGroups, formKey và nhánh FEEL thật.
+> Outcome `dong_y_bo_sung` có action riêng; outcome chưa biết degrade thành `unmapped`, không còn 500.
+> V20 chỉ thay seed demo, không xóa policy người dùng; Angular dropdown process/task và empty state đã cập
+> nhật. Verify backend 157/157 PASS, Angular production build xanh. **Runtime 15:38:** V20 đã áp thành công,
+> backend 8090 restart PID `1668`; API trực tiếp + proxy 4200 trả đúng RD01_01/13 task và RD02_02/7 task,
+> metadata/outcome thật của Task_6 đúng BPMN. Catalog còn process `slice_c_lifecycle_smoke` vì đó là row đã
+> deploy thật trong DB — đúng nguyên tắc hiển thị toàn bộ quy trình đã deploy.
+
+> **2026-07-20 — `/giam-sat` ĐÃ PORT ANGULAR + GHÉP BACKEND THẬT (owner Codex).** Route placeholder được thay
+> bằng màn standalone ng-zorro: stats, search/filter, bảng instance và drawer chi tiết. Endpoint mới
+> `GET /api/process-monitor` đọc Camunda process/element instance, ghép process catalog PostgreSQL, trả
+> ACTIVE/incident/COMPLETED/TERMINATED và degrade `available=false` nếu engine lỗi. Không port dữ liệu mock
+> Optimize; tab này báo chưa kết nối. Verify backend **156/156 PASS**, Angular production build xanh; full
+> Angular test compile xanh nhưng suite bị worker OOM sau 146 test pass. **Live verified 15:21:** package +
+> restart 8090 PID `8376`; direct API và proxy 4200 (với header của Angular interceptor) cùng trả **200**,
+> `available=true`, 12 instance = 7 ACTIVE + 2 COMPLETED + 3 TERMINATED, 0 incident.
+
+> **2026-07-20 — CỘT "INSTANCE ĐANG CHẠY" TRÊN `/quy-trinh` TAB ĐÃ DEPLOY DONE + VERIFIED TRÊN CAMUNDA
+> THẬT (owner Claude).** Tab "Đã deploy" có thêm cột số instance đang chạy theo từng quy trình; bấm số
+> để mở drawer liệt kê từng process instance kèm **Bước hiện tại**, mã hồ sơ, thời điểm bắt đầu và cờ sự
+> cố. Backend mới: `CamundaProcessInstanceQuery` (camunda) + `ProcessInstanceOverviewService` (service) +
+> 2 endpoint `GET /api/process-definitions/running-instances` (đếm theo `bpmnProcessId`) và
+> `GET /api/process-definitions/{id}/running-instances` (chi tiết). **Tách khỏi `list()` có chủ đích**:
+> catalog là read PostgreSQL, cột này đọc Camunda — Camunda sập thì trả `available=false` (HTTP 200) để
+> UI hiện "—" thay vì 0 sai, grid vẫn dùng được. Chi tiết dùng 1 lượt search element-instance rồi group
+> theo `processInstanceKey`, không N+1 theo từng instance.
+>
+> **Bug thật phát hiện khi verify trên engine thật (không lộ ra ở unit test):** Camunda trả
+> `application/json` **không kèm charset**, nên Camunda Java client decode tên phần tử tiếng Việt bằng
+> charset mặc định của Windows (cp1252) → mojibake (`Khởi tạo` → `Kháť¸i táşˇo`). Đã sửa bằng cách lấy tên
+> bước từ `BpmnUserTaskMetadataCatalog` (đọc BPMN đã deploy từ PostgreSQL, UTF-8) thay vì
+> `ElementInstance.getElementName()` — cũng chính là nguồn tên mà projection worklist đang dùng, nên tên
+> bước nhất quán giữa các màn. **Còn treo (chưa sửa, ngoài phạm vi):** lỗi charset gốc của client vẫn còn,
+> mọi chỗ khác đọc text tiếng Việt trực tiếp từ response Camunda đều sẽ dính; nên xử lý riêng ở tầng cấu
+> hình client.
+>
+> Verify: backend **156/156 PASS** (5 test mới), Angular **180/180 PASS**, production build xanh. Gọi
+> HTTP thật trên server tạm cổng 8095 (`spring-boot:run`, KHÔNG đụng 8090 đang chạy jar cũ, đúng bẫy jar
+> lock trong memory): counts trả `{"RD01_01":6}` khớp đúng 6 instance ACTIVE trong Camunda; drawer trả
+> đủ 6 instance sắp xếp mới nhất trước, `Task_1`/`Task_3` khớp element-instance search; quy trình không có
+> instance trả mảng rỗng. Server tạm đã dừng, cổng 8095 đã giải phóng. **Chưa làm:** click-through trình
+> duyệt thật; `businessId` hiện rỗng vì luồng start chưa set — cột "Mã hồ sơ" hiện "—" (trung thực, không
+> bịa dữ liệu).
+
+> **2026-07-20 — BACKEND CẤU HÌNH LUẬT HIỂN THỊ NÚT ĐÃ NÂNG CẤP (owner Codex).** Action Studio
+> availability policy nay validate đúng giới hạn schema, chuẩn hóa code, không cho bật hai luật trùng
+> action/ngữ cảnh, vẫn giữ optimistic locking, và có API đọc audit history cho từng luật (kể cả luật đã
+> xóa). Payload cấu hình trả catalog Bề mặt/Trạng thái/Vai trò/Quyền và Biểu mẫu thật từ bảng `eform`;
+> modal Angular đã bỏ danh sách mock cứng. Verify: backend **151/151 PASS**, Angular **175/175 PASS**,
+> production build xanh. Không có migration; contract chỉ mở rộng thêm field `referenceData`.
+
 > **2026-07-20 — D18/D20 FINAL CUTOVER, MONOLITH HỒ SƠ ĐÃ XÓA (owner Codex).** Theo chỉ đạo trực tiếp
 > của user, Service Quản lý NV KHCN (8093) nay là owner duy nhất của Nhiệm vụ/Hồ sơ/tài liệu/projection;
 > Service Quản trị quy trình (8090) chỉ sở hữu workflow/task và giao tiếp qua internal API +

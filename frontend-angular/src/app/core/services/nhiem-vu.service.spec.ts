@@ -21,6 +21,14 @@ describe('NhiemVuService', () => {
     http = TestBed.inject(HttpTestingController);
   });
 
+  it('deletes a mission with audit actor', () => {
+    service.delete('RD/2026', 'Nguyen Van A').subscribe();
+    const request = http.expectOne('/api/nhiem-vu/RD%2F2026');
+    expect(request.request.method).toBe('DELETE');
+    expect(request.request.headers.get('X-QTKHCN-Actor')).toBe("UTF-8''Nguyen%20Van%20A");
+    request.flush(null);
+  });
+
   afterEach(() => http.verify());
 
   it('loads the mission list', () => {

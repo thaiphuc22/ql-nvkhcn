@@ -2,13 +2,92 @@
   position: relative;
   height: 64vh;
   background: #fff;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--vht-border, #e6e9ee);
+  border-radius: var(--vht-radius, 6px);
+  overflow: hidden;
+}
+
+.bpmn-viewer-workspace {
+  display: flex;
+  flex: 1;
+  min-height: 0;
 }
 
 .bpmn-viewer-canvas {
-  height: 100%;
+  flex: 1;
+  min-width: 0;
 
   &.hidden {
     visibility: hidden;
+  }
+}
+
+.bpmn-viewer-toolbar {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--vht-border, #e6e9ee);
+  background: var(--vht-surface-2, #fafafa);
+  font-weight: 600;
+
+  small {
+    color: var(--vht-ink-2, #64748b);
+    font-weight: 400;
+  }
+
+  button {
+    height: 30px;
+    padding: 0 10px;
+    border: 1px solid #d9d9d9;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+  }
+}
+
+.bpmn-viewer-properties {
+  flex: 0 0 380px;
+  width: 380px;
+  min-width: 0;
+  overflow: hidden;
+  border-left: 1px solid var(--vht-border, #e6e9ee);
+  background: #fff;
+  transition: flex-basis 0.15s ease, width 0.15s ease;
+}
+
+.bpmn-viewer-properties-hidden {
+  flex-basis: 0;
+  width: 0;
+  border-left: 0;
+}
+
+:host ::ng-deep .bpmn-viewer-properties {
+  .bio-properties-panel-input,
+  .bio-properties-panel-textarea,
+  .bio-properties-panel-select {
+    cursor: not-allowed;
+  }
+
+  .bio-properties-panel-add-entry,
+  .bio-properties-panel-remove-entry {
+    display: none !important;
+  }
+}
+
+/* Modeler is used only so the official properties providers can resolve every BPMN/Zeebe field.
+   Remove all authoring affordances; element selection and canvas navigation remain available. */
+:host ::ng-deep .bpmn-viewer-canvas {
+  .djs-palette,
+  .djs-context-pad,
+  .djs-bendpoint,
+  .djs-segment-dragger,
+  .djs-resizer,
+  .djs-direct-editing-parent {
+    display: none !important;
   }
 }
 
@@ -21,6 +100,18 @@
   color: var(--vht-danger, #cf1322);
   text-align: center;
   padding: 24px;
+}
+
+@media (max-width: 980px) {
+  .bpmn-viewer-properties {
+    flex-basis: 330px;
+    width: 330px;
+  }
+
+  .bpmn-viewer-properties-hidden {
+    flex-basis: 0;
+    width: 0;
+  }
 }
 
 /* SVG do bpmn-js vẽ imperatively, không qua Angular template compiler nên cần ::ng-deep để xuyên

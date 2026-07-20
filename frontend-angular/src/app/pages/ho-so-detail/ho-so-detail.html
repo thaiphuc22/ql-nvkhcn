@@ -13,18 +13,25 @@
         <div><code>{{ dossier.id }}</code> · {{ dossier.quyTrinh ? dossier.quyTrinh + ' · ' + dossier.quyTrinhTen : dossier.quyTrinhTen }} · cấp {{ capLabel[dossier.cap] }}</div>
       </div>
       <div class="hsd-actions">
-        @if (dossier.trangThai === 'DRAFT' || dossier.trangThai === 'START_FAILED') {
-          <button nz-button nzType="primary" (click)="submitOpen.set(true)"><span nz-icon nzType="send"></span>
-            {{ dossier.trangThai === 'START_FAILED' ? 'Thử gửi lại' : 'Gửi duyệt' }}
+        @if (actionsLoading()) {
+          <nz-spin nzSimple></nz-spin>
+        }
+        @for (action of dossierActions(); track action.actionCode) {
+          <button nz-button [nzType]="actionButtonType(action)" [nzDanger]="action.tone === 'danger'"
+            [title]="action.helpText || ''" (click)="runDossierAction(action)">
+            {{ action.label }}
           </button>
         }
         @if (dossier.trangThai === 'PROCESSING') {
           @if (saving()) {
             <nz-tag nzColor="processing">Đang cập nhật…</nz-tag>
           } @else {
-            @if (hasAction('REJECT_STEP')) { <button nz-button nzDanger (click)="openAction('REJECT_STEP')">Từ chối</button> }
-            @if (hasAction('RETURN_STEP')) { <button nz-button (click)="openAction('RETURN_STEP')">Trả lại</button> }
-            @if (hasAction('APPROVE_STEP')) { <button nz-button nzType="primary" (click)="openAction('APPROVE_STEP')">Phê duyệt</button> }
+            @for (action of availableActions(); track action.actionCode) {
+              <button nz-button [nzType]="action.tone === 'primary' ? 'primary' : 'default'"
+                [nzDanger]="action.tone === 'danger'" (click)="openAction(action.actionCode)">
+                {{ action.label }}
+              </button>
+            }
           }
         }
       </div>
@@ -51,6 +58,13 @@
     }
 
     <nz-card nzTitle="Quy trình xử lý" nzSize="small">
+      @if (dossier.quyTrinh) {
+        <div class="hsd-process-actions">
+          <button nz-button nzSize="small" (click)="openBpmn()">
+            <span nz-icon nzType="apartment"></span>Xem BPMN
+          </button>
+        </div>
+      }
       @if (dossier.steps.length > 1) {
         <div class="hsd-process-strip">
           @for (step of dossier.steps; track step.buocIndex; let last = $last) {
@@ -138,6 +152,38 @@
       @if (currentStep(); as current) { <p>Bước hiện tại: <strong>{{ current.ten }}</strong></p> }
       <label for="action-note">Ý kiến {{ selectedAction()?.requiresReason ? '(bắt buộc)' : '(không bắt buộc)' }}</label>
       <textarea id="action-note" nz-input rows="4" [ngModel]="actionNote()" (ngModelChange)="actionNote.set($event)" placeholder="Nhập ý kiến xử lý..."></textarea>
+    </ng-container>
+  </nz-modal>
+
+  <nz-modal [nzVisible]="bpmnOpen()" nzTitle="Sơ đồ BPMN và bước hiện tại" nzWidth="92vw"
+    [nzFooter]="null" (nzOnCancel)="closeBpmn()">
+    <ng-container *nzModalContent>
+      @if (bpmnLoading()) {
+        <div class="hsd-bpmn-loading"><nz-spin nzSimple></nz-spin></div>
+      } @else if (bpmnError()) {
+        <nz-alert nzType="error" nzShowIcon [nzMessage]="bpmnError()!"></nz-alert>
+      } @else if (bpmnXml(); as xml) {
+        @if (currentStep(); as current) {
+          <nz-alert nzType="info" nzShowIcon
+            [nzMessage]="'Bước hiện tại: ' + current.ten"
+            [nzDescription]="'Node ' + (current.taskDefinitionKey || 'chưa xác định') + ' được tô nổi trên sơ đồ.'"></nz-alert>
+        }
+        <div class="hsd-bpmn-viewer">
+          <app-bpmn-viewer [xml]="xml"
+            [activeElementIds]="currentStep()?.taskDefinitionKey ? [currentStep()!.taskDefinitionKey!] : []"></app-bpmn-viewer>
+        </div>
+      }
+    </ng-container>
+  </nz-modal>
+
+  <nz-modal [nzVisible]="!!formAction()" [nzTitle]="formAction()?.label || 'Biểu mẫu'" nzWidth="860px"
+    [nzFooter]="null" (nzOnCancel)="closeActionForm()">
+    <ng-container *nzModalContent>
+      @if (formLoading()) {
+        <div class="hsd-loading"><nz-spin nzSimple></nz-spin></div>
+      } @else if (actionForm(); as form) {
+        <app-form-renderer [schema]="form.schema"></app-form-renderer>
+      }
     </ng-container>
   </nz-modal>
 } @else if (errorMessage()) {

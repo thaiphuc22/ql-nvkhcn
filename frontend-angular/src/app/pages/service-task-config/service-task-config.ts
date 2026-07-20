@@ -1,7 +1,9 @@
 import { KeyValuePipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 
+import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzDropDownModule } from 'ng-zorro-antd/dropdown';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
@@ -33,6 +35,12 @@ import {
   type ServiceTaskTypeCode,
 } from '../../core/models/service-task';
 import { ServiceTaskService } from '../../core/services/service-task.service';
+import {
+  ServiceTaskConfigApiService,
+  type ServiceTaskApiBinding,
+  type ServiceTaskApiDefinitionSummary,
+  type ServiceTaskApiDefinitionDetail,
+} from '../../core/services/service-task-config-api.service';
 import { ServiceTaskBindingTable } from '../../shared/service-task-binding-table/service-task-binding-table';
 import { ServiceTaskExecutionDrawer } from '../../shared/service-task-execution-drawer/service-task-execution-drawer';
 import { ServiceTaskFormDrawer } from '../../shared/service-task-form-drawer/service-task-form-drawer';
@@ -75,6 +83,7 @@ function connectorOf(config?: ServiceTaskConfigVersion['configJson']): string | 
   imports: [
     KeyValuePipe,
     FormsModule,
+    NzAlertModule,
     NzButtonModule,
     NzDropDownModule,
     NzEmptyModule,
@@ -101,6 +110,40 @@ export class ServiceTaskConfigPage {
   private readonly message = inject(NzMessageService);
   private readonly modal = inject(NzModalService);
   readonly serviceTasks = inject(ServiceTaskService);
+  private readonly configApi = inject(ServiceTaskConfigApiService);
+
+  // Mọi thứ còn lại trên trang này đọc từ ServiceTaskService (seed in-memory, KHÔNG chi phối runtime).
+  // Ba signal dưới đây là nguồn thật từ `/api/service-tasks` — dùng để banner đầu trang nói rõ cấu
+  // hình nào đang thực sự điều khiển job worker, thay vì để người dùng tưởng bảng mock là thật.
+  readonly realDefinitions = signal<ServiceTaskApiDefinitionSummary[]>([]);
+  readonly realBindings = signal<ServiceTaskApiBinding[]>([]);
+  readonly realConfigLoading = signal(true);
+  readonly realConfigError = signal<string | undefined>(undefined);
+  readonly editingApi = signal<ServiceTaskApiDefinitionDetail | undefined>(undefined);
+
+  constructor() {
+    this.reloadRealConfig();
+  }
+
+  reloadRealConfig(): void {
+    this.realConfigLoading.set(true);
+    this.realConfigError.set(undefined);
+    forkJoin({ definitions: this.configApi.list(), bindings: this.configApi.listBindings() }).subscribe({
+      next: ({ definitions, bindings }) => {
+        this.realDefinitions.set(definitions);
+        this.realBindings.set(bindings);
+        this.realConfigLoading.set(false);
+      },
+      error: () => {
+        this.realConfigError.set('Không đọc được /api/service-tasks — backend 8090 có chạy không?');
+        this.realConfigLoading.set(false);
+      },
+    });
+  }
+
+  readonly activeRealBindings = computed(() =>
+    this.realBindings().filter((binding) => binding.bindingStatus === 'ACTIVE'),
+  );
 
   readonly statusMeta = SERVICE_TASK_STATUS_META;
   readonly executionStatusMeta = SERVICE_TASK_EXECUTION_STATUS_META;
@@ -127,17 +170,21 @@ export class ServiceTaskConfigPage {
   private readonly reconcileProcesses = reconcilableServiceTaskProcesses();
 
   readonly rows = computed<DefinitionRow[]>(() => {
-    const definitions = this.serviceTasks.definitions();
+    const definitions = this.realDefinitions().map((item): ServiceTaskDefinition => ({
+      id: item.id, code: item.code, name: item.name, description: item.description,
+      typeCode: item.typeCode, status: item.status, ownerModule: item.ownerModule, tags: item.tags,
+      activeVersionNo: item.activeVersion ?? undefined, createdBy: '', updatedBy: '', createdAt: '', updatedAt: item.updatedAt,
+    }));
     const types = this.serviceTasks.types();
     const bindings = this.serviceTasks.bindings();
     const executionLogs = this.serviceTasks.executionLogs();
 
     return definitions.map((definition) => {
       const type = types.find((item) => item.code === definition.typeCode);
-      const versions = this.serviceTasks.getVersions(definition.id);
-      const latest = latestVersion(versions);
-      const activeBindings = bindings.filter(
-        (binding) => binding.serviceTaskDefinitionId === definition.id && binding.bindingStatus === 'ACTIVE',
+      const summary = this.realDefinitions().find((item) => item.id === definition.id)!;
+      const latest = summary.latestVersion ? ({ versionNo: summary.latestVersion } as ServiceTaskConfigVersion) : undefined;
+      const activeBindings = this.realBindings().filter(
+        (binding) => binding.definitionId === definition.id && binding.bindingStatus === 'ACTIVE',
       );
       const logs = executionLogs.filter((log) => log.serviceTaskDefinitionId === definition.id);
       const successCount = logs.filter((log) => log.status === 'SUCCESS').length;
@@ -273,22 +320,55 @@ export class ServiceTaskConfigPage {
 
   openCreate(): void {
     this.editing.set(undefined);
+    this.editingApi.set(undefined);
     this.drawerOpen.set(true);
   }
 
   openEdit(row: DefinitionRow): void {
-    this.editing.set(row.definition);
-    this.drawerOpen.set(true);
+    this.configApi.get(row.definition.id).subscribe({
+      next: (detail) => { this.editing.set(row.definition); this.editingApi.set(detail); this.drawerOpen.set(true); },
+      error: () => this.message.error('Không đọc được chi tiết cấu hình.'),
+    });
   }
 
   closeDrawer(): void {
     this.drawerOpen.set(false);
     this.editing.set(undefined);
+    this.editingApi.set(undefined);
+  }
+
+  delete(row: DefinitionRow): void {
+    this.modal.confirm({
+      nzTitle: `Xóa cấu hình ${row.definition.code}?`,
+      nzContent: 'Chỉ có thể xóa cấu hình chưa được gắn binding.', nzOkDanger: true,
+      nzOnOk: () => new Promise<void>((resolve, reject) => this.configApi.delete(row.definition.id).subscribe({
+        next: () => { this.message.success('Đã xóa cấu hình.'); this.reloadRealConfig(); resolve(); },
+        error: () => { this.message.error('Không thể xóa cấu hình đang có binding.'); reject(); },
+      })),
+    });
   }
 
   duplicate(row: DefinitionRow): void {
-    const id = this.serviceTasks.duplicateDefinition(row.definition.id, this.actor());
-    if (id) this.message.success('Đã tạo bản sao cấu hình.');
+    this.configApi.get(row.definition.id).subscribe({
+      next: (detail) => {
+        const version = detail.versions[0];
+        if (!version?.config || !version.errorPolicy) {
+          this.message.error('Không thể nhân bản cấu hình bị lỗi JSON.');
+          return;
+        }
+        this.configApi.create({
+          code: `${detail.code}_COPY_${Date.now().toString().slice(-6)}`,
+          name: `${detail.name} (Bản sao)`, description: detail.description, typeCode: detail.typeCode,
+          ownerModule: detail.ownerModule, tags: detail.tags, config: version.config,
+          inputMapping: version.inputMapping ?? [], outputMapping: version.outputMapping ?? [],
+          errorPolicy: version.errorPolicy, changeNote: `Nhân bản từ ${detail.code}.`, actor: this.actor(),
+        }).subscribe({
+          next: () => { this.message.success('Đã tạo bản sao cấu hình.'); this.reloadRealConfig(); },
+          error: () => this.message.error('Không thể tạo bản sao cấu hình.'),
+        });
+      },
+      error: () => this.message.error('Không đọc được cấu hình cần nhân bản.'),
+    });
   }
 
   validate(row: DefinitionRow): void {
