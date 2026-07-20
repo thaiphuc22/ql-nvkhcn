@@ -3061,6 +3061,24 @@ sửa component/service/route Angular hoặc React mock.
 
 ---
 
+## Lịch sử — Dashboard Optimize lãnh đạo (frontend mock, branch `trangdt`) — DONE 2026-07-17
+
+**Bối cảnh**: User (branch `trangdt`) yêu cầu màn dashboard tổng hợp kiểu Camunda Optimize
+cho lãnh đạo: KPI kỳ tháng/quý, cycle time, SLA/incident, phân bố cấp×ngân sách, cột tải bước,
+top cycle chậm, line backlog, SLA theo cấp, outcome DMN (Đồng ý/Điều chỉnh/Từ chối) theo RD/
+ngân sách/cấp, vòng lặp rework, rule DMN hit nhiều nhất, năng lực đơn vị + top 10 handler,
+heatmap Unit×SLA, heatmap màu trên BPMN RD01.01. Tuân harness: frontend-mock, không đụng F1.
+
+**Đã làm**:
+- `webapp/src/data/optimizeAnalytics.ts` — seed Optimize snapshot (tháng/quý).
+- `webapp/src/pages/Dashboard.tsx` — rewrite `/tong-quan` (recharts + bảng + heatmap CSS).
+- `BpmnViewer` + `bpmnio-skin.css` — marker `vht-heat-1…5` cho heatmap BPMN.
+- Dependency: `recharts@2.15.0`. Dev server preview: `/#/tong-quan`.
+
+**Chưa**: nối Optimize API thật (chờ F1); click-through Playwright.
+
+---
+
 ## Lịch sử — PH2/PH3/PH4 mockup upgrade + domainCode scaffold + Phase 2 Connector framing — DONE 2026-07-10
 
 **Bối cảnh**: User yêu cầu đọc

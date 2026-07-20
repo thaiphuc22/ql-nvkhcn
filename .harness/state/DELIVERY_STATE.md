@@ -512,7 +512,12 @@
 > Duplicate/delete được bỏ khỏi UI vì REST Lát A chưa cung cấp contract; execution/deploy DMN vẫn là lát sau.
 
 **Owner**: Delivery Manager
-**Last updated**: 2026-07-16 (**CURRENT — Angular UI cho Test BPMN (`/api/bpmn-tests`), DONE +
+**Last updated**: 2026-07-17 (**Dashboard Optimize lãnh đạo DONE** trên branch `trangdt` —
+rewrite `/tong-quan`: KPI tháng/quý, cycle/SLA/incident, charts tải bước + backlog + outcome DMN,
+năng lực đơn vị, heatmap Unit×SLA + heatmap BPMN RD01.01 via `BpmnViewer` heat markers;
+seed `data/optimizeAnalytics.ts`; thêm `recharts`. Frontend-mock, không đụng F1. Chi tiết
+`active-task.md`.
+Trước đó 2026-07-16 (**CURRENT — Angular UI cho Test BPMN (`/api/bpmn-tests`), DONE +
 VERIFIED, owner Claude**. User hỏi Test BPMN có cần deploy Camunda thật không → trả lời không cần
 (session chạy trên test engine cô lập, đọc thẳng draft/revision trong DB App) → user yêu cầu triển
 khai FE+BE luôn. Backend Test BPMN đã DONE từ Lát A+B+C trước đó (xác nhận lại `mvn -o test` 44/44
@@ -646,6 +651,10 @@ screen (`/tich-hop`) upgrade Đợt 1+2 (Slice A-G) DONE** + **EPIC06 Approval M
 > prototypes in the frontend mock that still need to be formalized server-side. F4 not started.
 > **Do not start EPIC work (Configuration Service EPICs or further RD flows) until F1–F5
 > are COMPLETE.** See `active-task.md` for the concrete next step.
+>
+> **★ ACTIVE TASK (2026-07-17, branch `trangdt`): Dashboard Optimize lãnh đạo — DONE
+> (frontend mock).** Màn `/tong-quan` hiển thị KPI + charts + heatmap BPMN theo mô tả Optimize;
+> seed mock, chưa nối API. Chờ feedback UI từ user.
 >
 > **★ CURRENT PLAN READY (2026-07-15): “Nhập BPMN” chỉ Lưu nháp, không deploy trực tiếp.** Thực hiện
 > theo 4 lát ở đầu `active-task.md`: (1) BE `POST /api/process-definition-drafts/import` multipart +

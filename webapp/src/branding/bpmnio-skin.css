@@ -157,6 +157,68 @@
   stroke-dasharray: 6 3 !important;
   fill: rgba(212, 56, 13, 0.06) !important;
 }
+/*
+ * Optimize-style BPMN heatmap (aura/glow) — thang màu nhận diện VHT Military Red
+ * (tokens --vht-red-050 → --vht-red → --vht-red-chrome), KHÔNG dùng phổ cầu vồng.
+ * Glow = drop-shadow trên element (mờ lan quanh node như Camunda Optimize).
+ */
+.vht-diagram .djs-element.vht-heat-1 {
+  filter:
+    drop-shadow(0 0 8px rgba(255, 218, 216, 0.95))
+    drop-shadow(0 0 20px rgba(255, 241, 243, 0.7));
+}
+.vht-diagram .djs-element.vht-heat-1 .djs-visual > :nth-child(1) {
+  fill: rgba(255, 241, 243, 0.92) !important;
+  stroke: #ffdad8 !important;
+  stroke-width: 1.5px !important;
+}
+.vht-diagram .djs-element.vht-heat-2 {
+  filter:
+    drop-shadow(0 0 10px rgba(255, 154, 168, 0.85))
+    drop-shadow(0 0 26px rgba(255, 218, 216, 0.55));
+}
+.vht-diagram .djs-element.vht-heat-2 .djs-visual > :nth-child(1) {
+  fill: rgba(255, 180, 188, 0.55) !important;
+  stroke: #ff9aa8 !important;
+  stroke-width: 1.5px !important;
+}
+.vht-diagram .djs-element.vht-heat-3 {
+  filter:
+    drop-shadow(0 0 12px rgba(238, 0, 51, 0.55))
+    drop-shadow(0 0 32px rgba(238, 0, 51, 0.28));
+}
+.vht-diagram .djs-element.vht-heat-3 .djs-visual > :nth-child(1) {
+  fill: rgba(238, 0, 51, 0.32) !important;
+  stroke: #ee0033 !important;
+  stroke-width: 2px !important;
+}
+.vht-diagram .djs-element.vht-heat-4 {
+  filter:
+    drop-shadow(0 0 14px rgba(238, 0, 51, 0.75))
+    drop-shadow(0 0 36px rgba(191, 0, 39, 0.4))
+    drop-shadow(0 0 52px rgba(191, 0, 39, 0.2));
+}
+.vht-diagram .djs-element.vht-heat-4 .djs-visual > :nth-child(1) {
+  fill: rgba(238, 0, 51, 0.48) !important;
+  stroke: #bf0027 !important;
+  stroke-width: 2px !important;
+}
+.vht-diagram .djs-element.vht-heat-5 {
+  filter:
+    drop-shadow(0 0 16px rgba(238, 0, 51, 0.95))
+    drop-shadow(0 0 40px rgba(191, 0, 39, 0.55))
+    drop-shadow(0 0 64px rgba(168, 0, 34, 0.35));
+}
+.vht-diagram .djs-element.vht-heat-5 .djs-visual > :nth-child(1) {
+  fill: rgba(191, 0, 39, 0.58) !important;
+  stroke: #a80022 !important;
+  stroke-width: 2.5px !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vht-diagram .djs-element[class*='vht-heat-'] {
+    filter: none;
+  }
+}
 /* Dấu nối trực tiếp (direct editing) & resize handles theo brand */
 .vht-diagram .djs-bendpoint,
 .vht-diagram .djs-segment-dragger .djs-visual > * {

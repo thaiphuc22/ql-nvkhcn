@@ -18,6 +18,11 @@ interface Props {
   activeIds?: string[];
   /** Node ĐÍCH của Chi tiết đang chờ/áp dụng — viền volcano nét đứt (`vht-step-exception`). */
   exceptionIds?: string[];
+  /**
+   * Optimize-style heatmap: map elementId → CSS marker class
+   * (vd. `vht-heat-1` … `vht-heat-5`). Không chồng lên active/exception.
+   */
+  heatMarkers?: Record<string, string>;
 }
 
 /** Cast tối thiểu cho canvas bpmn-js (add/remove marker + zoom). */
@@ -39,6 +44,7 @@ export default function BpmnViewer({
   height = "64vh",
   activeIds = [],
   exceptionIds = [],
+  heatMarkers = {},
 }: Props) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -95,8 +101,14 @@ export default function BpmnViewer({
       });
     mark(activeIds, "vht-step-active");
     mark(exceptionIds, "vht-step-exception");
+    Object.entries(heatMarkers).forEach(([id, cls]) => {
+      if (registry.get(id) && cls) {
+        canvas.addMarker(id, cls);
+        applied.push({ id, cls });
+      }
+    });
     return () => applied.forEach(({ id, cls }) => canvas.removeMarker(id, cls));
-  }, [ready, activeIds, exceptionIds]);
+  }, [ready, activeIds, exceptionIds, heatMarkers]);
 
   useEffect(() => {
     const onFs = () => {
