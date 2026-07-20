@@ -238,8 +238,27 @@ kết quả không chắc chắn.
 
 **Status**: LOCKED. Không diễn giải gap `/actions` thành việc chuyển runtime action sang Service Hồ sơ.
 Backend implementation Lát 0–5 hoàn tất và E2E thật ngày 2026-07-19; Angular/gateway cutover cuối
-Lát 6–8 còn lại. Endpoint cũ chỉ được tồn tại tạm sau kill switch như rollback bridge, không phải
-đường sở hữu chính.
+Lát 6–8 đã hoàn tất; endpoint/aggregate/bảng cũ bị xóa dứt điểm ngày 2026-07-20 theo D21.
+
+---
+
+## D21 — Final cutover không rollback về monolith Hồ sơ
+
+**Date**: 2026-07-20
+
+**Decision**: Service Quản lý NV KHCN là owner duy nhất của `NhiemVu`, `HoSo`, tài liệu và projection trên
+database `qtkhcn_ho_so`. Service Quản trị quy trình không còn entity/repository/controller/API hoặc bảng
+business tương ứng; không duy trì kill switch, canary hay fallback về monolith. Hai service chỉ giao tiếp
+qua authenticated internal API và transactional outbox/inbox/idempotency. Task action tiếp tục thuộc
+Service Quy trình theo D20 và cập nhật Hồ sơ chỉ qua workflow event projection.
+
+**Rationale**: Rollback bridge cho phép read/write split-brain và tạo hai nguồn sự thật. Sau khi dữ liệu
+đã parity và E2E integration đã được xác minh, giữ bridge gây rủi ro lớn hơn việc fail-closed tại owner.
+
+**Source**: Chỉ đạo trực tiếp của user ngày 2026-07-20.
+
+**Status**: LOCKED, IMPLEMENTED. Flyway V19 đã áp; kiến trúc hiện hành tại
+`docs/arch/nvkhcn-workflow-final-service-boundary.md`.
 
 ---
 

@@ -56,9 +56,9 @@ describe('NhatKyPage', () => {
   function create() {
     const fixture = TestBed.createComponent(NhatKyPage);
     fixture.detectChanges();
-    http.expectOne('http://localhost:8091/api/integration-systems').flush([system()]);
-    http.expectOne('http://localhost:8091/api/integration-systems/SAP/job-runs').flush([jobRun()]);
-    http.expectOne('http://localhost:8091/api/internal-integration/status').flush({
+    http.expectOne('/api/integration-systems').flush([system()]);
+    http.expectOne('/api/integration-systems/SAP/job-runs').flush([jobRun()]);
+    http.expectOne('/api/internal-integration/status').flush({
       outboxPending: 2,
       outboxFailed: 1,
       latestSent: {

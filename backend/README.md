@@ -22,32 +22,21 @@ trên Camunda: engine trống thì deploy `processes/rd0101.bpmn` đúng một l
 skip và log version/key. Runner fail-closed nếu không truy vấn được Camunda, không đoán rồi tạo version
 mới. Muốn cập nhật BPMN đóng gói phải gọi import API có chủ đích.
 
-## Gọi thử API (mọi request cần header `X-QTKHCN-Dev-Key: dev-local-only`, xem
-`security/DevApiKeyFilter.java`)
+## Ranh giới API
+
+Backend 8090 không cung cấp `/api/ho-so/**` hoặc `/api/nhiem-vu/**` và không chứa bảng/aggregate tương
+ứng. Những API đó thuộc Service Quản lý NV KHCN ở 8093.
+
+8090 chỉ nhận lệnh tích hợp start-process tại `POST /internal/v1/process-instances`, phát workflow event
+qua outbox sang 8093, và cung cấp task-centric API:
 
 ```bash
-# Tạo Nhiệm vụ mới
-curl -X POST http://localhost:8090/api/nhiem-vu \
-  -H "X-QTKHCN-Dev-Key: dev-local-only" -H "Content-Type: application/json" \
-  -d '{"ten":"Thử nghiệm tích hợp Mốc 2","cap":"CS","chuNhiemHoTen":"Nguyễn Văn A","donViChuTri":"TT Thử nghiệm"}'
-
-# Tạo hồ sơ draft cho Nhiệm vụ vừa tạo (thay <ma> bằng mã trả về ở trên, vd RD.2026.032)
-curl -X POST http://localhost:8090/api/ho-so \
-  -H "X-QTKHCN-Dev-Key: dev-local-only" -H "Content-Type: application/json" \
-  -d '{"maNV":"<ma>","nguoiKhoiTao":"Nguyễn Văn A"}'
-
-# Gửi duyệt (thay <id> bằng mã hồ sơ trả về, vd HS-2026-001) — nếu Camunda (Mốc 1) đang chạy,
-# đây là bước thật sự khởi tạo process instance RD01.01 trên Zeebe (Mốc 3).
-curl -X POST http://localhost:8090/api/ho-so/<id>/submit \
-  -H "X-QTKHCN-Dev-Key: dev-local-only" -H "Content-Type: application/json" \
-  -d '{"quyTrinh":"RD01.01","quyTrinhTen":"Xét duyệt Chủ trương cấp Cơ sở"}'
-
-# Xử lý bước hiện tại (đồng ý). Contract API không đổi; bên trong backend sẽ hoàn tất
-# io.camunda.zeebe:userTask tương ứng trước khi cập nhật PostgreSQL.
-curl -X POST http://localhost:8090/api/ho-so/<id>/actions \
-  -H "X-QTKHCN-Dev-Key: dev-local-only" -H "Content-Type: application/json" \
-  -d '{"outcome":"APPROVE_STEP","actor":"Đ/c Lê Minh Quang","yKien":"Đồng ý trình xét duyệt."}'
+curl -H "X-QTKHCN-Dev-Key: dev-local-only" \
+  -H "X-QTKHCN-User-Id: pm@example.com" \
+  http://localhost:8090/api/tasks/<task-key>/available-actions
 ```
+
+Không được thêm lại repository Hồ sơ/Nhiệm vụ hoặc đường gọi in-process từ aggregate sang Camunda.
 
 ## Import và deploy `.bpmn`
 
@@ -330,15 +319,12 @@ Service Task `B04` "Kiểm tra điều kiện & thành phần Bộ HSXD dự th�
 mở drawer nhập biến output (dùng chung `BpmnVariableFormComponent`, `focusElementId` = `elementId` của
 job) rồi gọi API trên; snapshot làm mới ngay sau khi bypass thành công.
 
-## GAP nghiệp vụ có chủ đích (không phải bug — port có kiểm soát từ mock)
+## GAP nghiệp vụ có chủ đích
 
-- `HoSoService.submit()` chỉ hỗ trợ quy trình `RD01.01` — quy trình khác ném lỗi 501 rõ ràng.
-- `HoSoService.applyAction()` dùng mô hình "lùi 1 bước" tuyến tính cho RETURN_STEP thay vì port
-  đầy đủ `webapp/src/data/stepRouting.ts::ROUTING_TABLES` (chọn nhánh đích theo nghiệp vụ).
-- `/api/ho-so/{id}/actions` giữ nguyên path/body/response. `APPROVE_STEP` hoàn tất user-task job
-  thật; `REJECT_STEP` huỷ process instance vì `REJECTED` là trạng thái terminal của domain rút gọn;
-  `RETURN_STEP` chỉ được chấp nhận tại user task có nhánh rework rõ ràng trong BPMN. Nếu Camunda
-  không sẵn sàng/không xác định được task, request trả 409 và transaction PostgreSQL không tiến bước.
+- Service Quy trình chỉ chấp nhận correlation/control variables theo allowlist; không nhận payload business
+  Hồ sơ.
+- Workflow action luôn đi qua `/api/tasks/{taskKey}/actions`; kết quả được phản ánh về 8093 bằng event,
+  không cập nhật trực tiếp database NV KHCN.
 - `SystemCheckJobWorker` luôn trả `dieuKienMacDinhDat=true` — kiểm tra thật (đối chiếu kế hoạch
   năm/ngân sách) chưa có, chờ F2 hoàn thiện dữ liệu PL1–PL6 thật.
 - RBAC/permission check chưa có ở tầng API (F3 — chờ OQ-021, OQ-006) — mọi request qua được

@@ -4,7 +4,8 @@ param(
     [string]$ReleaseId,
     [string]$DemoRoot = 'C:\Users\phuctd7\qtkhcn-demo',
     [string]$JavaHome = 'C:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot',
-    [int]$LivePort = 8090
+    [int]$LivePort = 8090,
+    [int]$HoSoPort = 8093
 )
 
 # Cuts live traffic over to a release already built and health-checked by New-DemoRelease.ps1.
@@ -27,6 +28,10 @@ $jar = Join-Path $releasePath 'backend\target\qtkhcn-backend.jar'
 if (-not (Test-Path -LiteralPath $jar)) {
     throw "Release backend jar missing at $jar. Re-run New-DemoRelease.ps1."
 }
+$hoSoJar = Join-Path $releasePath 'services\ho-so-service\target\qtkhcn-ho-so-service.jar'
+if (-not (Test-Path -LiteralPath $hoSoJar)) {
+    throw "Release NV KHCN service jar missing at $hoSoJar. Re-run New-DemoRelease.ps1."
+}
 $distIndex = Join-Path $releasePath 'frontend-angular\dist\frontend-angular\browser\index.html'
 if (-not (Test-Path -LiteralPath $distIndex)) {
     throw "Release frontend build missing at $distIndex. Re-run New-DemoRelease.ps1."
@@ -40,6 +45,11 @@ $currentCorsOrigins = [Environment]::GetEnvironmentVariable('QTKHCN_CORS_ALLOWED
 if ([string]::IsNullOrWhiteSpace($currentCorsOrigins)) {
     throw 'QTKHCN_CORS_ALLOWED_ORIGINS is not set. Include http://localhost:4200 and the current HTTPS Runlocal origin.'
 }
+foreach ($name in @('QTKHCN_WORKFLOW_SERVICE_TOKEN', 'QTKHCN_HO_SO_SERVICE_TOKEN')) {
+    if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name, 'Process'))) {
+        throw "$name is required so the two services can authenticate their integration channel."
+    }
+}
 $publicOrigins = @($currentCorsOrigins.Split(',') | ForEach-Object { $_.Trim() } |
     Where-Object { $_ -match '^https://[^/]+\.runlocal\.eu$' })
 if ($publicOrigins.Count -ne 1) {
@@ -49,20 +59,20 @@ $publicOrigin = $publicOrigins[0]
 
 Write-Host "Switching live demo to release '$ReleaseId'..." -ForegroundColor Cyan
 
-$oldListener = Get-NetTCPConnection -LocalPort $LivePort -State Listen -ErrorAction SilentlyContinue
-if ($oldListener) {
-    $oldPid = $oldListener[0].OwningProcess
-    Write-Host "Stopping current live backend (PID $oldPid, port $LivePort)..." -ForegroundColor Yellow
-    Stop-Process -Id $oldPid -Force
-    for ($i = 0; $i -lt 15; $i++) {
-        Start-Sleep -Milliseconds 500
-        if (-not (Get-NetTCPConnection -LocalPort $LivePort -State Listen -ErrorAction SilentlyContinue)) { break }
+foreach ($port in @($LivePort, $HoSoPort)) {
+    $oldListener = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
+    if ($oldListener) {
+        $oldPid = $oldListener[0].OwningProcess
+        Write-Host "Stopping current service (PID $oldPid, port $port)..." -ForegroundColor Yellow
+        Stop-Process -Id $oldPid -Force
+        for ($i = 0; $i -lt 15; $i++) {
+            Start-Sleep -Milliseconds 500
+            if (-not (Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue)) { break }
+        }
+        if (Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue) {
+            throw "Old service on port $port did not release the port in time."
+        }
     }
-    if (Get-NetTCPConnection -LocalPort $LivePort -State Listen -ErrorAction SilentlyContinue) {
-        throw "Old backend on port $LivePort did not release the port in time. Aborting before starting the new one."
-    }
-} else {
-    Write-Host "No process currently listening on $LivePort (first cutover?)." -ForegroundColor Yellow
 }
 
 Write-Host "Starting release backend on port $LivePort..." -ForegroundColor Cyan
@@ -77,14 +87,24 @@ Start-Process -FilePath "$JavaHome\bin\java.exe" `
     -WorkingDirectory (Join-Path $releasePath 'backend') `
     -WindowStyle Hidden
 
+Write-Host "Starting release NV KHCN service on port $HoSoPort..." -ForegroundColor Cyan
+Start-Process -FilePath "$JavaHome\bin\java.exe" `
+    -ArgumentList @(
+        '-jar', 'target\qtkhcn-ho-so-service.jar',
+        "--server.port=$HoSoPort",
+        '--server.address=127.0.0.1'
+    ) `
+    -WorkingDirectory (Join-Path $releasePath 'services\ho-so-service') `
+    -WindowStyle Hidden
+
 $started = $false
 for ($i = 0; $i -lt 30; $i++) {
     Start-Sleep -Seconds 2
     try {
-        $r = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:$LivePort/api/ho-so" `
+        $r = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:$LivePort/api/process-definitions" `
             -Headers @{ 'X-QTKHCN-Dev-Key' = $currentApiKey; Origin = $publicOrigin } -TimeoutSec 5
         $preflight = Invoke-WebRequest -UseBasicParsing -Method Options `
-            -Uri "http://127.0.0.1:$LivePort/api/ho-so" -Headers @{
+            -Uri "http://127.0.0.1:$LivePort/api/process-definitions" -Headers @{
                 Origin = $publicOrigin
                 'Access-Control-Request-Method' = 'GET'
                 'Access-Control-Request-Headers' = 'x-qtkhcn-dev-key'
@@ -102,6 +122,21 @@ if (-not $started) {
 }
 Write-Host "New backend on port $LivePort is healthy." -ForegroundColor Green
 
+$hoSoStarted = $false
+for ($i = 0; $i -lt 30; $i++) {
+    Start-Sleep -Seconds 2
+    try {
+        $health = Invoke-RestMethod -Uri "http://127.0.0.1:$HoSoPort/actuator/health/readiness" -TimeoutSec 5
+        $api = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:$HoSoPort/api/ho-so" `
+            -Headers @{ Authorization = "Bearer $env:QTKHCN_HO_SO_SERVICE_TOKEN" } -TimeoutSec 5
+        if ($health.status -eq 'UP' -and $api.StatusCode -eq 200) { $hoSoStarted = $true; break }
+    } catch { }
+}
+if (-not $hoSoStarted) {
+    throw "NV KHCN service did not become healthy on port $HoSoPort."
+}
+Write-Host "NV KHCN service on port $HoSoPort is healthy." -ForegroundColor Green
+
 $currentLink = Join-Path $DemoRoot 'current'
 if (Test-Path -LiteralPath $currentLink) {
     $currentItem = Get-Item -LiteralPath $currentLink -Force
@@ -116,5 +151,5 @@ New-Item -ItemType Junction -Path $currentLink -Target $releasePath | Out-Null
 Write-Host "'current' now points to $releasePath" -ForegroundColor Green
 
 Write-Host ''
-Write-Host "Cutover complete: $ReleaseId is now live on port $LivePort." -ForegroundColor Green
+Write-Host "Cutover complete: $ReleaseId is live on workflow port $LivePort and NV KHCN port $HoSoPort." -ForegroundColor Green
 Write-Host 'Run Test-DemoReadiness.ps1 and check https://<runlocal-subdomain>.runlocal.eu from an outside network before considering this done.'

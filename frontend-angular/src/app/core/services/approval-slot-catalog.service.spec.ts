@@ -27,13 +27,13 @@ describe('ApprovalSlotCatalogService HTTP integration', () => {
 
   it('loads the catalog into its signal cache', () => {
     service.load().subscribe();
-    http.expectOne('http://localhost:8091/api/approval-matrix/slots').flush([slot]);
+    http.expectOne('/api/approval-matrix/slots').flush([slot]);
     expect(service.findByCode('THAM_DINH')?.ten).toBe('Thẩm định');
   });
 
   it('normalizes a new code before POST', () => {
     service.create({ code: 'ra soat rui ro', ten: 'Rà soát rủi ro' }, 'tester').subscribe();
-    const request = http.expectOne('http://localhost:8091/api/approval-matrix/slots');
+    const request = http.expectOne('/api/approval-matrix/slots');
     expect(request.request.body.code).toBe('RA_SOAT_RUI_RO');
     request.flush({ ...slot, code: 'RA_SOAT_RUI_RO', ten: 'Rà soát rủi ro', usageCount: 0 });
     expect(service.findByCode('RA_SOAT_RUI_RO')).toBeTruthy();
@@ -41,11 +41,11 @@ describe('ApprovalSlotCatalogService HTTP integration', () => {
 
   it('updates and changes status through backend endpoints', () => {
     service.load().subscribe();
-    http.expectOne('http://localhost:8091/api/approval-matrix/slots').flush([slot]);
+    http.expectOne('/api/approval-matrix/slots').flush([slot]);
     service.update('THAM_DINH', { ten: 'Tên mới' }).subscribe();
-    http.expectOne('http://localhost:8091/api/approval-matrix/slots/THAM_DINH').flush({ ...slot, ten: 'Tên mới' });
+    http.expectOne('/api/approval-matrix/slots/THAM_DINH').flush({ ...slot, ten: 'Tên mới' });
     service.setStatus('THAM_DINH', 'inactive', true).subscribe();
-    const status = http.expectOne('http://localhost:8091/api/approval-matrix/slots/THAM_DINH/status?force=true');
+    const status = http.expectOne('/api/approval-matrix/slots/THAM_DINH/status?force=true');
     status.flush({ ...slot, ten: 'Tên mới', trangThai: 'inactive' });
     expect(service.findByCode('THAM_DINH')?.trangThai).toBe('inactive');
   });

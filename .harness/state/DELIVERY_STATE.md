@@ -1,5 +1,20 @@
 # Delivery State
 
+> **2026-07-20 — D18/D20 FINAL CUTOVER, MONOLITH HỒ SƠ ĐÃ XÓA (owner Codex).** Theo chỉ đạo trực tiếp
+> của user, Service Quản lý NV KHCN (8093) nay là owner duy nhất của Nhiệm vụ/Hồ sơ/tài liệu/projection;
+> Service Quản trị quy trình (8090) chỉ sở hữu workflow/task và giao tiếp qua internal API +
+> transactional outbox/inbox. Đã đồng bộ bản ghi lệch `HS-2026-006`, parity 5/5 bảng xanh, rồi áp Flyway
+> V19 xóa `nhiem_vu`, `ho_so`, `dossier_step`, `dossier_step_code`, `ho_so_tai_lieu` khỏi `qtkhcn`.
+> Đã xóa toàn bộ entity/repository/service/controller/DTO/test legacy cùng seam in-process
+> `WorkflowClient`/`InProcessWorkflowClient`/`Rd0101ProcessService`; direct 8090 `/api/ho-so` và
+> `/api/nhiem-vu` trả 404. Gateway không còn canary/rollback/feature flag: mọi API NV KHCN bắt buộc sang
+> 8093, task action bắt buộc sang 8090. Verify: backend 147/147, ho-so-service 38/38, Angular 175/175,
+> production build xanh, Caddy validate xanh; localhost:4200 đọc đủ 6 hồ sơ từ 8093 và integration token
+> 8093→8090 được xác thực. Full smoke thật sau cutover PASS: create Nhiệm vụ/Hồ sơ → submit → Camunda →
+> Task 1–4 approve → Task 5 return → Task 4 mở lại key mới → reject, projection cuối `REJECTED`, không còn
+> active task; dữ liệu/process audit test đã dọn sạch. Kiến trúc chuẩn:
+> `docs/arch/nvkhcn-workflow-final-service-boundary.md`.
+
 > **2026-07-20 — APPROVAL MATRIX VERIFIED TRÊN HTTP THẬT (owner Claude).** Nối tiếp entry ngay dưới,
 > nâng mức xác minh từ build/test lên server thật. **Flyway V9 ĐÃ ÁP** lên DB dev từ 2026-07-16 14:43
 > (`success=t`), và Flyway báo `Successfully validated 18 migrations` lúc khởi động ⇒ checksum V9 ở

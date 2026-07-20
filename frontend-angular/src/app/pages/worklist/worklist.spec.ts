@@ -57,7 +57,7 @@ describe('WorklistPage', () => {
   function create(list: MyTaskResponse[]) {
     const fixture = TestBed.createComponent(WorklistPage);
     fixture.detectChanges();
-    const request = http.expectOne('http://localhost:8091/api/my-tasks');
+    const request = http.expectOne('/api/my-tasks');
     expect(request.request.headers.get('X-QTKHCN-User-Id')).toBe('pm@example.com');
     request.flush(list);
     fixture.detectChanges();

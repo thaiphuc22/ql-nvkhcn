@@ -1,5 +1,9 @@
 # Kế hoạch tách Service Quản lý NV KHCN & Hồ sơ
 
+> **HOÀN TẤT 2026-07-20.** Final boundary và guardrail hiện hành nằm tại
+> `docs/arch/nvkhcn-workflow-final-service-boundary.md`. Các lát/canary/rollback bên dưới là lịch sử triển
+> khai, không phải hướng dẫn vận hành hiện tại.
+
 > Trạng thái: Đã thống nhất hướng kiến trúc, sẵn sàng triển khai theo lát  
 > Ngày: 2026-07-16  
 > Phạm vi: Tách dữ liệu và nghiệp vụ `NhiemVu`/`HoSo` khỏi service Quản trị quy trình; tích hợp khởi tạo và theo dõi quy trình qua contract ổn định.
@@ -312,4 +316,3 @@ Frontend không gọi endpoint `/internal/**` và không biết host nội bộ 
 ## 14. Việc bắt đầu tiếp theo
 
 Thực hiện **Lát 0** trước: inventory dependency và database, đề xuất contract code-level, thêm characterization tests, rồi trình duyệt kết quả trước khi tạo service hoặc migration dữ liệu.
-

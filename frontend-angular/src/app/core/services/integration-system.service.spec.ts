@@ -29,14 +29,14 @@ describe('IntegrationSystemService HTTP integration', () => {
 
   it('loads systems from backend into the signal cache', () => {
     service.load().subscribe();
-    http.expectOne('http://localhost:8091/api/integration-systems').flush([system()]);
+    http.expectOne('/api/integration-systems').flush([system()]);
 
     expect(service.systems().map((s) => s.key)).toEqual(['SAP']);
   });
 
   it('loads job runs for a system into the cache, keyed by system', () => {
     service.loadJobRuns('SAP').subscribe();
-    const request = http.expectOne('http://localhost:8091/api/integration-systems/SAP/job-runs');
+    const request = http.expectOne('/api/integration-systems/SAP/job-runs');
     request.flush([{ id: 'j-1', jobType: 'sap:sync-budget', he: 'SAP', maHoSo: 'HS-2026-033', thoiDiem: '02/07/2026 14:06', ketQua: 'failed', retries: 0, thongDiep: 'HTTP 504' }]);
 
     expect(service.jobRunsFor('SAP')).toHaveLength(1);
@@ -45,10 +45,10 @@ describe('IntegrationSystemService HTTP integration', () => {
 
   it('connects with If-Match from the current cached version and actor header', () => {
     service.load().subscribe();
-    http.expectOne('http://localhost:8091/api/integration-systems').flush([system({ version: 3 })]);
+    http.expectOne('/api/integration-systems').flush([system({ version: 3 })]);
 
     service.connect(service.systems()[0], { apiKey: 'vht_live_xxxxxxxx', endpoint: 'https://x' }, 'alice').subscribe();
-    const request = http.expectOne('http://localhost:8091/api/integration-systems/SAP/connect');
+    const request = http.expectOne('/api/integration-systems/SAP/connect');
     expect(request.request.method).toBe('POST');
     expect(request.request.headers.get('If-Match')).toBe('3');
     expect(request.request.headers.get('X-QTKHCN-Actor')).toContain('alice');
@@ -60,10 +60,10 @@ describe('IntegrationSystemService HTTP integration', () => {
 
   it('disconnects with If-Match and updates the cache', () => {
     service.load().subscribe();
-    http.expectOne('http://localhost:8091/api/integration-systems').flush([system({ trangThai: 'healthy', version: 1 })]);
+    http.expectOne('/api/integration-systems').flush([system({ trangThai: 'healthy', version: 1 })]);
 
     service.disconnect(service.systems()[0], 'alice').subscribe();
-    const request = http.expectOne('http://localhost:8091/api/integration-systems/SAP/disconnect');
+    const request = http.expectOne('/api/integration-systems/SAP/disconnect');
     expect(request.request.headers.get('If-Match')).toBe('1');
     request.flush(system({ trangThai: 'down', version: 2 }));
 

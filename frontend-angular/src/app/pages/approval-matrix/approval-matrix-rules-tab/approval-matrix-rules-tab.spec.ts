@@ -16,11 +16,11 @@ describe('ApprovalMatrixRulesTabPage', () => {
     TestBed.inject(NzIconService).addIcon(...NAV_ICONS, ...APPROVAL_MATRIX_ICONS);
     const http = TestBed.inject(HttpTestingController);
     TestBed.inject(ApprovalMatrixService).load().subscribe();
-    http.expectOne('http://localhost:8091/api/approval-matrix/rules').flush(APPROVAL_MATRIX.map((rule) => ({
+    http.expectOne('/api/approval-matrix/rules').flush(APPROVAL_MATRIX.map((rule) => ({
       ...rule, domainCode: 'KHCN', version: rule.version ?? 1, updatedAt: '2026-07-16T00:00:00Z', updatedBy: 'system',
     })));
     TestBed.inject(ApprovalSlotCatalogService).load().subscribe();
-    http.expectOne('http://localhost:8091/api/approval-matrix/slots').flush(APPROVAL_SLOTS.map((slot) => ({
+    http.expectOne('/api/approval-matrix/slots').flush(APPROVAL_SLOTS.map((slot) => ({
       ...slot, usageCount: 0, updatedAt: '2026-07-16T00:00:00Z', updatedBy: 'system',
     })));
   });
@@ -80,9 +80,9 @@ describe('ApprovalMatrixRulesTabPage', () => {
 
     fixture.componentInstance.saveRule();
     const http = TestBed.inject(HttpTestingController);
-    const createRequest = http.expectOne('http://localhost:8091/api/approval-matrix/rules');
+    const createRequest = http.expectOne('/api/approval-matrix/rules');
     createRequest.flush({ ...createRequest.request.body, version: 1, updatedAt: '2026-07-16T00:00:00Z', updatedBy: 'tester' });
-    http.expectOne('http://localhost:8091/api/approval-matrix/analyze').flush([]);
+    http.expectOne('/api/approval-matrix/analyze').flush([]);
 
     expect(fixture.componentInstance.modalOpen()).toBe(false);
     expect(fixture.componentInstance.rules().length).toBe(before + 1);
@@ -106,9 +106,9 @@ describe('ApprovalMatrixRulesTabPage', () => {
 
     fixture.componentInstance.toggle(rule.id, !rule.enabled);
     const http = TestBed.inject(HttpTestingController);
-    const toggle = http.expectOne(`http://localhost:8091/api/approval-matrix/rules/${rule.id}/status`);
+    const toggle = http.expectOne(`/api/approval-matrix/rules/${rule.id}/status`);
     toggle.flush({ ...rule, enabled: !rule.enabled, version: (rule.version ?? 1) + 1, domainCode: 'KHCN', updatedAt: '2026-07-16T00:00:00Z', updatedBy: 'tester' });
-    http.expectOne('http://localhost:8091/api/approval-matrix/analyze').flush([]);
+    http.expectOne('/api/approval-matrix/analyze').flush([]);
 
     expect(fixture.componentInstance.rules().find((r) => r.id === rule.id)?.enabled).toBe(!rule.enabled);
   });

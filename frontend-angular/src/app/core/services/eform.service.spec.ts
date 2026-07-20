@@ -28,17 +28,17 @@ describe('EformService HTTP integration', () => {
 
   it('loads forms from backend into the signal cache', () => {
     service.load().subscribe();
-    http.expectOne('http://localhost:8091/api/eform').flush([response()]);
+    http.expectOne('/api/eform').flush([response()]);
     expect(service.list().map((f) => f.key)).toEqual(['phieu-nhan-xet']);
     expect(service.getForm('phieu-nhan-xet')?.ten).toBe('Phiếu nhận xét');
   });
 
   it('loads a single form and upserts it into the cache without wiping other entries', () => {
     service.load().subscribe();
-    http.expectOne('http://localhost:8091/api/eform').flush([response()]);
+    http.expectOne('/api/eform').flush([response()]);
 
     service.loadOne('phieu-y-kien').subscribe();
-    http.expectOne('http://localhost:8091/api/eform/phieu-y-kien')
+    http.expectOne('/api/eform/phieu-y-kien')
       .flush(response({ key: 'phieu-y-kien', ten: 'Phiếu góp ý' }));
 
     expect(service.list().map((f) => f.key).sort()).toEqual(['phieu-nhan-xet', 'phieu-y-kien']);
@@ -46,7 +46,7 @@ describe('EformService HTTP integration', () => {
 
   it('creates a form with an empty schema and actor header', () => {
     service.addForm({ key: 'phieu-moi', ten: 'Phiếu mới', loai: 'Góp ý' }, 'Người kiểm thử').subscribe();
-    const request = http.expectOne('http://localhost:8091/api/eform');
+    const request = http.expectOne('/api/eform');
     expect(request.request.method).toBe('POST');
     expect(request.request.body.key).toBe('phieu-moi');
     expect(request.request.body.schema.id).toBe('phieu-moi');
@@ -58,13 +58,13 @@ describe('EformService HTTP integration', () => {
 
   it('updates schema with optimistic If-Match and refreshes the cached version', () => {
     service.load().subscribe();
-    http.expectOne('http://localhost:8091/api/eform').flush([response()]);
+    http.expectOne('/api/eform').flush([response()]);
 
     const meta = service.getForm('phieu-nhan-xet')!;
     const schema = { type: 'default', id: 'phieu-nhan-xet', components: [{ type: 'textfield', id: 'a', key: 'a' }] };
     service.updateSchema(meta, schema, 'tester').subscribe();
 
-    const request = http.expectOne('http://localhost:8091/api/eform/phieu-nhan-xet/schema');
+    const request = http.expectOne('/api/eform/phieu-nhan-xet/schema');
     expect(request.request.method).toBe('PUT');
     expect(request.request.headers.get('If-Match')).toBe('1');
     request.flush(response({ schema, version: 2 }));
@@ -74,12 +74,12 @@ describe('EformService HTTP integration', () => {
 
   it('updates meta with optimistic If-Match', () => {
     service.load().subscribe();
-    http.expectOne('http://localhost:8091/api/eform').flush([response()]);
+    http.expectOne('/api/eform').flush([response()]);
 
     const meta = service.getForm('phieu-nhan-xet')!;
     service.updateMeta(meta, { moTa: 'Cập nhật mô tả' }, 'tester').subscribe();
 
-    const request = http.expectOne('http://localhost:8091/api/eform/phieu-nhan-xet/meta');
+    const request = http.expectOne('/api/eform/phieu-nhan-xet/meta');
     expect(request.request.body.moTa).toBe('Cập nhật mô tả');
     request.flush(response({ moTa: 'Cập nhật mô tả', version: 2 }));
 
@@ -88,12 +88,12 @@ describe('EformService HTTP integration', () => {
 
   it('deletes with If-Match and removes the cached row', () => {
     service.load().subscribe();
-    http.expectOne('http://localhost:8091/api/eform').flush([response()]);
+    http.expectOne('/api/eform').flush([response()]);
 
     const meta = service.getForm('phieu-nhan-xet')!;
     service.removeForm(meta).subscribe();
 
-    const request = http.expectOne('http://localhost:8091/api/eform/phieu-nhan-xet');
+    const request = http.expectOne('/api/eform/phieu-nhan-xet');
     expect(request.request.method).toBe('DELETE');
     expect(request.request.headers.get('If-Match')).toBe('1');
     request.flush(null);

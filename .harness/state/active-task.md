@@ -1,5 +1,133 @@
 # Active Task
 
+## ★ DONE — D18/D20 final service separation — 2026-07-20 (owner Codex)
+
+User chốt bỏ hoàn toàn cấu trúc monolith Hồ sơ/Nhiệm vụ. Đã hoàn tất code, DB và runtime cutover:
+
+- 8093 sở hữu duy nhất CRUD Nhiệm vụ/Hồ sơ/tài liệu và workflow projection trên `qtkhcn_ho_so`.
+- 8090 sở hữu BPMN/DMN/eForm/Action Studio/process/task; không còn aggregate/API/repository Hồ sơ.
+- Giao tiếp hai chiều chỉ qua authenticated internal API + transactional outbox/inbox/idempotency.
+- Flyway V19 đã áp thật và xóa năm bảng legacy sau khi parity dữ liệu đạt 5/5.
+- Gateway route theo owner cố định; toàn bộ script switch/canary/backfill legacy đã xóa.
+- Test: backend 147/147; ho-so-service 38/38; Angular 175/175; build/Caddy validate xanh.
+- Full smoke runtime sau cutover PASS toàn luồng create → submit → Camunda → approve/return/reject; task mở
+  lại có key mới, projection cuối `REJECTED`, active task bằng 0; toàn bộ row test đã dọn sạch ở hai DB.
+
+Tài liệu chuẩn: `docs/arch/nvkhcn-workflow-final-service-boundary.md`. Task RD02.02 bên dưới tiếp tục là
+planned work sau thay đổi kiến trúc này; khi triển khai phải mở khóa multi-process tại 8093, không được
+thêm lại `HoSoService` vào 8090.
+
+## ☐ PLANNED — Readiness E2E RD02.02 (Xét duyệt NV KHCN cấp Tập đoàn) — lập 2026-07-20 (owner Claude)
+
+**Nguồn**: user báo cáo không test được E2E "Khởi tạo hồ sơ → gửi duyệt → phê duyệt RD02.02" và liệt kê
+5 điểm chặn. Đã kiểm chứng lại từng điểm bằng mã nguồn. Kết luận "chưa đạt" là **đúng**, nhưng bản đồ
+nguyên nhân thì lệch ở 3 chỗ — plan dưới đây dựng theo bản đã đính chính, không theo bản gốc.
+
+### Đính chính so với báo cáo gốc
+
+| Báo cáo gốc | Sự thật đã kiểm chứng |
+|---|---|
+| "Service hồ sơ nhận mã quy trình bất kỳ, ghi outbox → backend không tìm được process active ⇒ START_FAILED" | ~~SAI~~ → **USER ĐÚNG, agent sai. Đã rút lại.** Xem "Đính chính của đính chính" ngay dưới. |
+| "Cần cấu hình eForm cấp Tập đoàn" | **Phần lớn ĐÃ CÓ**. `V12__eform_rd0202.sql` đã seed sẵn bộ BM.02.01.DKI.NV, BM.02.02.DTO.NV… theo Bảng A tài liệu nguồn RD02.02. Việc còn lại chỉ là **binding formKey vào Action Studio theo D10** — chính file seed đã ghi rõ đó là "việc của lát sau". |
+| "6 test Angular lỗi vì URL 8091" | Có thể **lạc quan**. Chuỗi `8091` xuất hiện ở **10+ spec file** (approval-matrix, eform, integration-mapping, form-library, approval-slot-catalog…). Phải grep hết trước khi coi là fix nhỏ. |
+
+Xác nhận **đúng** 2 điểm: chỉ có `rd0101.bpmn` trong `backend/src/main/resources/processes/`; và
+`ho-so-detail.ts:93` trả `null` khi `loai !== 'CHU_TRUONG'`.
+
+### ⛔ ĐÍNH CHÍNH CỦA ĐÍNH CHÍNH — agent sai, user đúng (2026-07-20)
+
+Đính chính #1 ở bảng trên **dựa trên một file đang bị xoá**. `backend/.../service/HoSoService.java`
+(có guard cứng `RD01.01` ở dòng 106) nằm trong **45 file đang ở trạng thái `D` chưa commit** — một
+**phiên song song đang chạy D18 final cutover**, kèm migration untracked
+`V19__remove_legacy_ho_so_domain.sql` (`DROP TABLE ho_so, nhiem_vu, dossier_step…`). Agent grep trúng
+bản legacy sắp biến mất rồi tưởng đó là đường chạy thật.
+
+**Đường chạy thật (sau cutover)** đúng như user mô tả ngay từ đầu:
+
++ `services/ho-so-service/.../service/WorkflowSubmissionService.java:56` — nhận `request.quyTrinh()`
+  **bất kỳ**, không guard, ghi `StartProcessCommand` vào outbox.
++ `.../integration/OutboxDispatcher.java:110` — khi start hỏng thì set `DossierStatus.START_FAILED`.
++ `backend/.../camunda/CamundaReliableWorkflowEngine.java:23` — đổi `RD02.02` → `RD02_02`, tìm process
+  active; không thấy đúng 1 bản thì ném `ProcessNotActiveException`.
+
+⇒ **Không có khoá nào để mở.** Tầng submit **đã** process-agnostic. Bước 1 như hình dung ban đầu
+(“mở khoá `HoSoService` cho multi-process”) là **việc không tồn tại** — đã xoá khỏi plan.
+
+**Bài học (lặp lại đúng bài học vụ Ma trận phê duyệt, ở dạng khác)**: lần trước là grep một worktree rồi
+kết luận "chưa code"; lần này là grep một file legacy **đang bị xoá dở** rồi kết luận "user mô tả sai".
+Cùng một gốc: đọc một lát cắt của cây thư mục rồi tưởng đó là toàn bộ sự thật. Phải `git status` trước
+khi lấy nội dung file làm căn cứ đính chính người khác.
+
+**Tài sản tái dùng được** (đừng mô hình hoá từ số 0): branch `0bbac99` có `webapp/src/dmn/rd02Routing.dmn.ts`
++ `webapp/src/data/rd0201Bpmn.ts` từ thời mock React. Là RD02.**01** chứ không phải 02.02 nên không dùng
+trực tiếp, nhưng là khung routing tham chiếu.
+
+### ⚠️ CỔNG PHẠM VI — phải chốt trước khi code bước 1
+
+Toàn bộ việc RD02.02 là **Mốc 6+** trong plan migration của D17
+(`C:\Users\phuctd7\.claude\plans\generic-pondering-parnas.md:148`). Hai ràng buộc từ chính plan đó:
+
+1. Plan ghi rõ Mốc 6 "lên kế hoạch chi tiết **sau khi Mốc 5 xong**", và "luồng RD nào tiếp theo…
+   **không chốt cứng ở đây**" (dòng 148–155). Chọn RD02.02 làm luồng kế tiếp là lấp vào một ô **cố ý
+   để mở** — không phá quyết định đã khoá, nhưng là quyết định của user, không phải của agent.
+2. **Mốc 5 CHƯA đóng.** `DELIVERY_STATE.md:862` — nhánh (a) backend DONE 2026-07-15, còn **nhánh (b)
+   Angular + full browser click-through RD01.01 vẫn treo**. Mở Mốc 6 khi Mốc 5 còn dở là đúng cái
+   big-bang mà chiến lược strangler-fig (dòng 47) muốn tránh.
+
+**✅ ĐÃ CHỐT 2026-07-20 — user chọn (B): mở RD02.02 song song**, chấp nhận chạy Mốc 6 khi Mốc 5 nhánh (b)
+còn dở, vì ràng buộc demo/tiến độ. Agent đã khuyến nghị (A) và user bác — quyết định thuộc về user, ghi
+lại đây để phiên sau không mở lại tranh luận này.
+
+**Rủi ro đã biết mà (B) gánh** (không phải lý do để dừng, mà là thứ phải canh): tầng dùng chung
+(task/action runtime, eForm binding D10, proxy `/api`, auth cấp TĐ) **chưa từng được click-through
+xác nhận** ở RD01.01. Nếu tầng đó có lỗi, làm RD02.02 song song sẽ **nhân bản lỗi sang luồng thứ hai
+trước khi phát hiện**. ⇒ Giảm thiểu: khi bước 3–4 chạm vào code dùng chung, ưu tiên kiểm chứng trên
+RD01.01 trước (luồng đã có backend verified), rồi mới suy rộng sang RD02.02 — như vậy vẫn thu được
+phần lớn giá trị của (A) mà không phải chờ nhánh (b) Angular đóng.
+
+### Các bước, xếp theo quan hệ chặn (không theo thứ tự báo cáo gốc)
+
+- **Bước 0 — Dọn test Angular `8091` → proxy `/api`. ✅ DONE 2026-07-20.**
+  **Quy mô thật lớn hơn báo cáo gốc gần 12 lần**: chạy `ng test` trước khi sửa cho ra **70 test lỗi /
+  15 file**, không phải 6 — nghi ngờ "con số 6 lạc quan" ở trên là đúng. Nguyên nhân đồng nhất ở cả 15
+  file: `environment.apiBaseUrl` đã đổi thành `''` (proxy `/api`), nên `API_BASE_URL` rỗng và app gọi
+  `/api/...`, trong khi spec vẫn `expectOne('http://localhost:8091/api/...')`. Sửa bằng cách bỏ host
+  khỏi mọi `expectOne` trong spec (`sed` trên 15 file), giữ nguyên đường dẫn tương đối — **không** đụng
+  code sản phẩm. Kết quả: **175/175 test PASS, 42/42 file**, `8091` còn 0 lần trong `src/`.
+  Bài học: đừng lấy số test lỗi từ báo cáo, chạy suite lấy ground truth trước khi ước lượng.
+- **Bước 1 — ~~Mở khoá `HoSoService` cho multi-process~~. ❌ HUỶ — việc không tồn tại.** Xem đính chính
+  ở trên: tầng submit sau cutover D18 đã process-agnostic sẵn.
+- **✅ Bước 1' — GỠ CHẶN 2026-07-20.** User xác nhận phiên kia đã hoàn tất D18 final cutover dứt điểm.
+  Ranh giới khoá tại `docs/arch/nvkhcn-workflow-final-service-boundary.md`: **8093** sở hữu Nhiệm vụ/Hồ
+  sơ/tài liệu/projection trên `qtkhcn_ho_so`; **8090** chỉ còn BPMN/DMN/eForm, Action Studio,
+  Camunda process/task, inbox/outbox trên `qtkhcn`. Đã xoá seam in-process `WorkflowClient`,
+  `InProcessWorkflowClient`, `Rd0101ProcessService`. V19 đã áp thật (5 bảng legacy bị drop), có parity
+  5/5 + sync `HS-2026-006` trước khi xoá. Verify: Quy trình 147/147, NV KHCN 38/38, Angular 175/175
+  (gồm cả fix Bước 0 của phiên này), Caddy validate pass, `8090 /api/ho-so` → 404, full smoke thật
+  chạy hết vòng approve/return/reject.
+  **⚠️ Còn treo: 83 file thay đổi CHƯA COMMIT** (48 `D`, 32 `M`, 3 `??`) — đúng hình thái đã suýt mất
+  91 test hôm 16/07. Nên commit trước khi Bước 2 thêm file mới, để cutover và việc RD02.02 không trộn
+  vào một khối không thể tách/rollback.
+  **Ràng buộc mới cho Bước 2**: BPMN/DMN thuộc **8090** ⇒ `rd0202.bpmn` đặt ở
+  `backend/src/main/resources/processes/`, KHÔNG đặt ở `services/ho-so-service`. Không được thêm
+  `/api/ho-so/**` vào 8090 (guardrail của doc ranh giới).
+- **Bước 2 — BPMN RD02_02 + DMN routing**, deploy lên Zeebe. Mượn khung `rd02Routing.dmn.ts` ở `0bbac99`.
+  Sau đính chính, đây là **bước đầu tiên có việc thật** — và nhiều khả năng là **bước duy nhất** chặn
+  runtime, vì `CamundaReliableWorkflowEngine` chỉ cần tìm thấy đúng 1 process active `RD02_02`.
+- **Bước 3 — Mapping UI.** `ho-so-detail.ts:93`: xử lý `XET_DUYET`, và lưu ý nhánh Tập đoàn của
+  `CHU_TRUONG` (RD01.02) hiện cũng đang `supported: false` — hai chỗ nên làm cùng lượt.
+- **Bước 4 — Task/action + candidate groups cấp TĐ** (`HDXD_TD`, `HDKHCN_TD`, `BTGD_TD`), binding formKey
+  vào bộ eForm V12 đã seed. Tài khoản test theo từng vai trò.
+- **Bước 5 — Kịch bản E2E RD02.02** + click-through trình duyệt thật.
+
+**Định nghĩa xong**: một process instance RD02.02 chạy hết vòng đời trên Zeebe thật, quan sát được trên
+Operate, và click-through trình duyệt (không chỉ build/test xanh) — cùng chuẩn bằng chứng như Mốc 5.
+
+**Trạng thái nền khi lập plan**: backend 180/180 test PASS (1 skipped); Angular production build OK;
+stack chạy 4200/8090/8093/26500.
+
+---
+
 ## ★ DONE — Xác minh Approval Matrix trên HTTP thật — 2026-07-20 (owner Claude)
 
 Nối tiếp mục dưới. Trước đó mới verify tới tầng build/test; nay đã chạy server thật và gọi HTTP live.

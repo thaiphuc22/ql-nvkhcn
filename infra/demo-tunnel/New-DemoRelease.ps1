@@ -52,6 +52,18 @@ try {
     $jar = Join-Path $releasePath 'backend\target\qtkhcn-backend.jar'
     if (-not (Test-Path -LiteralPath $jar)) { throw "Backend jar not found at $jar after build." }
 
+    Write-Host 'Building NV KHCN service (mvn -o package)...' -ForegroundColor Cyan
+    Push-Location (Join-Path $releasePath 'services\ho-so-service')
+    try {
+        & .\mvnw.cmd -o -q package
+        if ($LASTEXITCODE -ne 0) { throw 'NV KHCN service build failed.' }
+    } finally { Pop-Location }
+
+    $hoSoJar = Join-Path $releasePath 'services\ho-so-service\target\qtkhcn-ho-so-service.jar'
+    if (-not (Test-Path -LiteralPath $hoSoJar)) {
+        throw "NV KHCN service jar not found at $hoSoJar after build."
+    }
+
     Write-Host 'Building frontend (npm ci + ng build production,demo)...' -ForegroundColor Cyan
     Push-Location (Join-Path $releasePath 'frontend-angular')
     try {
@@ -100,10 +112,10 @@ try {
         for ($i = 0; $i -lt 30; $i++) {
             Start-Sleep -Seconds 2
             try {
-                $r = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:$HealthCheckPort/api/ho-so" `
+                $r = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:$HealthCheckPort/api/process-definitions" `
                     -Headers @{ 'X-QTKHCN-Dev-Key' = $tempKey; Origin = $healthOrigin } -TimeoutSec 5
                 $preflight = Invoke-WebRequest -UseBasicParsing -Method Options `
-                    -Uri "http://127.0.0.1:$HealthCheckPort/api/ho-so" -Headers @{
+                    -Uri "http://127.0.0.1:$HealthCheckPort/api/process-definitions" -Headers @{
                         Origin = $healthOrigin
                         'Access-Control-Request-Method' = 'GET'
                         'Access-Control-Request-Headers' = 'x-qtkhcn-dev-key'

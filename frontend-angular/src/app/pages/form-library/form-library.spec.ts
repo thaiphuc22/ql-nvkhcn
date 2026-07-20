@@ -34,7 +34,7 @@ describe('FormLibraryPage', () => {
   function create() {
     const fixture = TestBed.createComponent(FormLibraryPage);
     fixture.detectChanges();
-    http.expectOne('http://localhost:8091/api/eform').flush([response()]);
+    http.expectOne('/api/eform').flush([response()]);
     fixture.detectChanges();
     return fixture;
   }
@@ -48,7 +48,7 @@ describe('FormLibraryPage', () => {
   it('shows an error message when the library fails to load', () => {
     const fixture = TestBed.createComponent(FormLibraryPage);
     fixture.detectChanges();
-    http.expectOne('http://localhost:8091/api/eform')
+    http.expectOne('/api/eform')
       .flush({ message: 'Lỗi backend' }, { status: 500, statusText: 'Server Error' });
     fixture.detectChanges();
 
@@ -65,7 +65,7 @@ describe('FormLibraryPage', () => {
     cmp.formKey.set('');
     cmp.submitCreate();
 
-    const request = http.expectOne('http://localhost:8091/api/eform');
+    const request = http.expectOne('/api/eform');
     expect(request.request.body.key).toBe('phieu-kiem-thu');
     request.flush(response({ key: 'phieu-kiem-thu', ten: 'Phiếu kiểm thử' }));
 
@@ -83,7 +83,7 @@ describe('FormLibraryPage', () => {
     cmp.formKey.set('phieu-nhan-xet');
     cmp.submitCreate();
 
-    http.expectOne('http://localhost:8091/api/eform')
+    http.expectOne('/api/eform')
       .flush({ message: 'Mã biểu mẫu đã tồn tại: phieu-nhan-xet' }, { status: 409, statusText: 'Conflict' });
 
     expect(navigateSpy).not.toHaveBeenCalled();
@@ -95,7 +95,7 @@ describe('FormLibraryPage', () => {
     const meta = cmp.list().find((f) => f.key === 'phieu-nhan-xet')!;
 
     cmp.removeForm(meta);
-    http.expectOne('http://localhost:8091/api/eform/phieu-nhan-xet').flush(null);
+    http.expectOne('/api/eform/phieu-nhan-xet').flush(null);
 
     expect(cmp.list().some((f) => f.key === 'phieu-nhan-xet')).toBe(false);
   });

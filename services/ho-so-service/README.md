@@ -1,8 +1,9 @@
 # qtkhcn-ho-so-service
 
-Service tách riêng cho **NV KHCN & Hồ sơ**. Lát 4 bổ sung transactional outbox và lệnh start-process
-idempotent sang service Quy trình. Read/write route ở gateway vẫn mặc định vào monolith cho tới khi
-operator thực hiện cutover.
+Service độc lập sở hữu toàn bộ **NV KHCN & Hồ sơ**. Mọi read/write Hồ sơ, Nhiệm vụ, tài liệu và projection
+đều vào service này; không còn route fallback về backend Quy trình. Service gửi lệnh start-process bằng
+transactional outbox và nhận workflow event bằng inbox/idempotency. Backend Quy trình không truy cập DB
+`qtkhcn_ho_so` và không chứa aggregate Hồ sơ/Nhiệm vụ.
 
 ## Runtime
 
@@ -93,25 +94,7 @@ Script tạo dữ liệu riêng theo timestamp và kiểm tra create → submit 
 Mỗi action được lấy từ `available-actions` trước khi thực thi; script fail nếu policy hoặc candidate group
 không đúng contract runtime.
 
-## Lát 2B: backfill và các cổng đối soát
+## Ownership
 
-Các lệnh dùng PostgreSQL tools bên trong container `qtkhcn-postgres`; không cần cài `psql` trên host.
-
-```powershell
-# Xem trước thao tác thay thế dữ liệu phía đích
-& .\scripts\Invoke-HoSoBackfill.ps1 -WhatIf
-
-# Snapshot nhất quán từ qtkhcn, restore atomic vào qtkhcn_ho_so
-& .\scripts\Invoke-HoSoBackfill.ps1
-
-# Fail nếu count hoặc checksum của bất kỳ bảng nào lệch
-& .\scripts\Test-HoSoDataParity.ps1
-
-# Chạy khi monolith và service mới cùng hoạt động trên cùng snapshot
-$env:QTKHCN_HO_SO_SERVICE_TOKEN = '<local-secret>'
-& .\scripts\Compare-HoSoReadContracts.ps1 `
-  -LegacyApiKey '<legacy-dev-key>'
-```
-
-Backfill chỉ đọc source, `TRUNCATE + COPY + sequence reset` phía target trong một transaction và có thể
-chạy lặp. Script không dual-write và không ghi ngược về monolith.
+`qtkhcn_ho_so` là nguồn dữ liệu duy nhất. Các script backfill/contract comparison từ monolith đã được gỡ
+sau final cutover; không được tạo lại dual-write hoặc cơ chế đồng bộ ngược về database workflow.

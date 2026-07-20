@@ -18,13 +18,13 @@ describe('ApprovalMatrixPage', () => {
     const fixture = TestBed.createComponent(ApprovalMatrixPage);
     expect(() => fixture.detectChanges()).not.toThrow();
     const http = TestBed.inject(HttpTestingController);
-    http.expectOne('http://localhost:8091/api/approval-matrix/rules').flush(APPROVAL_MATRIX.map((rule) => ({
+    http.expectOne('/api/approval-matrix/rules').flush(APPROVAL_MATRIX.map((rule) => ({
       ...rule, domainCode: 'KHCN', version: rule.version ?? 1, updatedAt: '2026-07-16T00:00:00Z', updatedBy: 'system',
     })));
-    http.expectOne('http://localhost:8091/api/approval-matrix/slots').flush(APPROVAL_SLOTS.map((slot) => ({
+    http.expectOne('/api/approval-matrix/slots').flush(APPROVAL_SLOTS.map((slot) => ({
       ...slot, usageCount: 0, updatedAt: '2026-07-16T00:00:00Z', updatedBy: 'system',
     })));
-    http.expectOne('http://localhost:8091/api/approval-matrix/analyze').flush([]);
+    http.expectOne('/api/approval-matrix/analyze').flush([]);
     http.verify();
   }, 15_000);
 });

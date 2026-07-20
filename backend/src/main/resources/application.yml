@@ -45,9 +45,7 @@ qtkhcn:
   ho-so:
     base-url: ${QTKHCN_HO_SO_BASE_URL:http://127.0.0.1:8093}
     service-token: ${QTKHCN_HO_SO_SERVICE_TOKEN:}
-    # Slice 3 cutover switch. Set false before routing business CRUD to ho-so-service.
-    # It does not block /submit or /actions; those move in Slices 4-5.
-    legacy-writes-enabled: ${QTKHCN_HO_SO_LEGACY_WRITES_ENABLED:true}
+    # Integration destination for workflow events. Business CRUD is never served by this service.
   workflow-events:
     collect-ms: ${QTKHCN_WORKFLOW_EVENT_COLLECT_MS:1000}
     dispatch-ms: ${QTKHCN_WORKFLOW_EVENT_DISPATCH_MS:1000}

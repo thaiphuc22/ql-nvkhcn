@@ -71,7 +71,7 @@ describe('HoSoDetailPage', () => {
   function createPage() {
     setup(dossier.id);
     const fixture = TestBed.createComponent(HoSoDetailPage);
-    const get = http.expectOne(`http://localhost:8091/api/ho-so/${dossier.id}`);
+    const get = http.expectOne(`/api/ho-so/${dossier.id}`);
     expect(get.request.method).toBe('GET');
     get.flush(dossier);
     fixture.detectChanges();
@@ -88,7 +88,7 @@ describe('HoSoDetailPage', () => {
   it('submits the supported RD01.01 process and refreshes the page state from the response', () => {
     const fixture = createPage();
     fixture.componentInstance.submit();
-    const request = http.expectOne(`http://localhost:8091/api/ho-so/${dossier.id}/submit`);
+    const request = http.expectOne(`/api/ho-so/${dossier.id}/submit`);
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual({ quyTrinh: 'RD01.01', quyTrinhTen: 'Xét duyệt Chủ trương cấp Cơ sở' });
     request.flush({ ...dossier, trangThai: 'PROCESSING', quyTrinh: 'RD01.01' });
@@ -98,7 +98,7 @@ describe('HoSoDetailPage', () => {
   it('shows no action controls and does not call the task API when opened without a taskKey', () => {
     setup(processingDossier.id);
     const fixture = TestBed.createComponent(HoSoDetailPage);
-    const get = http.expectOne(`http://localhost:8091/api/ho-so/${processingDossier.id}`);
+    const get = http.expectOne(`/api/ho-so/${processingDossier.id}`);
     get.flush(processingDossier);
     fixture.detectChanges();
 
@@ -110,7 +110,7 @@ describe('HoSoDetailPage', () => {
   it('wires task-centric actions when a taskKey is carried from Việc của tôi, never the legacy /actions endpoint', () => {
     setup(processingDossier.id, { taskKey: 't2-key-1' });
     const fixture = TestBed.createComponent(HoSoDetailPage);
-    const get = http.expectOne(`http://localhost:8091/api/ho-so/${processingDossier.id}`);
+    const get = http.expectOne(`/api/ho-so/${processingDossier.id}`);
     get.flush(processingDossier);
 
     const availableActionsResponse: TaskAvailableActionsResponse = {
@@ -126,7 +126,7 @@ describe('HoSoDetailPage', () => {
         },
       ],
     };
-    const available = http.expectOne('http://localhost:8091/api/tasks/t2-key-1/available-actions');
+    const available = http.expectOne('/api/tasks/t2-key-1/available-actions');
     expect(available.request.method).toBe('GET');
     expect(available.request.headers.get('X-QTKHCN-User-Id')).toBe('pm@example.com');
     available.flush(availableActionsResponse);
@@ -140,7 +140,7 @@ describe('HoSoDetailPage', () => {
     cmp.openAction('APPROVE_STEP');
     cmp.applyAction();
 
-    const post = http.expectOne('http://localhost:8091/api/tasks/t2-key-1/actions');
+    const post = http.expectOne('/api/tasks/t2-key-1/actions');
     expect(post.request.method).toBe('POST');
     expect(post.request.headers.get('X-QTKHCN-User-Id')).toBe('pm@example.com');
     expect(post.request.body).toEqual({
@@ -153,7 +153,7 @@ describe('HoSoDetailPage', () => {
     });
     expect(cmp.actionOpen()).toBe(false);
 
-    const refetch = http.expectOne(`http://localhost:8091/api/ho-so/${processingDossier.id}`);
+    const refetch = http.expectOne(`/api/ho-so/${processingDossier.id}`);
     refetch.flush({ ...processingDossier, buocHienTai: 2 });
 
     expect(cmp.saving()).toBe(false);

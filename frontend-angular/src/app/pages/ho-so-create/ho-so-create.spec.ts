@@ -56,8 +56,8 @@ describe('HoSoCreatePage', () => {
 
   function createPage() {
     const fixture = TestBed.createComponent(HoSoCreatePage);
-    http.expectOne('http://localhost:8091/api/nhiem-vu').flush([mission]);
-    http.expectOne('http://localhost:8091/api/ho-so').flush([]);
+    http.expectOne('/api/nhiem-vu').flush([mission]);
+    http.expectOne('/api/ho-so').flush([]);
     fixture.detectChanges();
     return fixture;
   }
@@ -79,7 +79,7 @@ describe('HoSoCreatePage', () => {
 
     component.submit();
 
-    const request = http.expectOne('http://localhost:8091/api/ho-so');
+    const request = http.expectOne('/api/ho-so');
     expect(request.request.method).toBe('POST');
     expect(request.request.headers.get('X-QTKHCN-Actor')).toBe("UTF-8''unknown-demo-user");
     expect(request.request.body).toEqual({

@@ -27,7 +27,7 @@ describe('IntegrationMappingService HTTP integration', () => {
 
   it('loads mappings into the signal cache', () => {
     service.load().subscribe();
-    http.expectOne('http://localhost:8091/api/integration-mappings').flush([mapping()]);
+    http.expectOne('/api/integration-mappings').flush([mapping()]);
 
     expect(service.list().map((m) => m.id)).toEqual(['map-sap-dutoan']);
     expect(service.listForSystem('SAP')).toHaveLength(1);
@@ -36,7 +36,7 @@ describe('IntegrationMappingService HTTP integration', () => {
 
   it('creates a mapping with actor header and prepends it to the cache', () => {
     service.create({ he: 'SAP', doiTuong: 'DuToan', chieu: 'out' }, 'alice').subscribe();
-    const request = http.expectOne('http://localhost:8091/api/integration-mappings');
+    const request = http.expectOne('/api/integration-mappings');
     expect(request.request.method).toBe('POST');
     expect(request.request.headers.get('X-QTKHCN-Actor')).toContain('alice');
     request.flush(mapping({ id: 'map-sap-new', trangThai: 'draft' }));
@@ -46,11 +46,11 @@ describe('IntegrationMappingService HTTP integration', () => {
 
   it('saves fields with If-Match from the config version', () => {
     service.load().subscribe();
-    http.expectOne('http://localhost:8091/api/integration-mappings').flush([mapping({ version: 2 })]);
+    http.expectOne('/api/integration-mappings').flush([mapping({ version: 2 })]);
 
     const config = service.get('map-sap-dutoan')!;
     service.saveFields(config, [], 'alice').subscribe();
-    const request = http.expectOne('http://localhost:8091/api/integration-mappings/map-sap-dutoan/fields');
+    const request = http.expectOne('/api/integration-mappings/map-sap-dutoan/fields');
     expect(request.request.headers.get('If-Match')).toBe('2');
     request.flush(mapping({ trangThai: 'draft', version: 3 }));
 
@@ -59,12 +59,12 @@ describe('IntegrationMappingService HTTP integration', () => {
 
   it('setStatus returns ok:false with errors and still caches the persisted mapping', () => {
     service.load().subscribe();
-    http.expectOne('http://localhost:8091/api/integration-mappings').flush([mapping({ trangThai: 'draft', version: 1 })]);
+    http.expectOne('/api/integration-mappings').flush([mapping({ trangThai: 'draft', version: 1 })]);
 
     const config = service.get('map-sap-dutoan')!;
     let result: { ok: boolean; errors: string[] } | undefined;
     service.setStatus(config, 'active', 'alice').subscribe((r) => (result = r));
-    const request = http.expectOne('http://localhost:8091/api/integration-mappings/map-sap-dutoan/status');
+    const request = http.expectOne('/api/integration-mappings/map-sap-dutoan/status');
     expect(request.request.body).toEqual({ status: 'active' });
     request.flush({ ok: false, errors: ['Chưa có field mapping nào.'], mapping: mapping({ trangThai: 'error', version: 2 }) });
 
@@ -74,11 +74,11 @@ describe('IntegrationMappingService HTTP integration', () => {
 
   it('removes with If-Match and drops the cached row', () => {
     service.load().subscribe();
-    http.expectOne('http://localhost:8091/api/integration-mappings').flush([mapping({ version: 1 })]);
+    http.expectOne('/api/integration-mappings').flush([mapping({ version: 1 })]);
 
     const config = service.get('map-sap-dutoan')!;
     service.remove(config).subscribe();
-    const request = http.expectOne('http://localhost:8091/api/integration-mappings/map-sap-dutoan');
+    const request = http.expectOne('/api/integration-mappings/map-sap-dutoan');
     expect(request.request.method).toBe('DELETE');
     expect(request.request.headers.get('If-Match')).toBe('1');
     request.flush(null);

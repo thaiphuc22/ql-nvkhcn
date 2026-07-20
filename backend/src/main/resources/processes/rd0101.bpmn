@@ -3,8 +3,8 @@
   RD01.01 — Xét duyệt Chủ trương cấp Cơ sở.
   Port 1:1 từ webapp/src/data/rd0101Bpmn.ts (nguồn chuẩn duy nhất — sửa ở đó trước nếu quy trình
   đổi, rồi đồng bộ lại file này; xem active-task.md Mốc 3). File .bpmn thật để deploy lên Zeebe,
-  khác với chuỗi bản rút gọn 6-bước dùng ở HoSoService (t1..t6, xem TaskStepDef) — độ lệch giữa
-  2 mô hình này là GAP đã biết từ mock, hoà giải đầy đủ thuộc Mốc 6+.
+  Metadata task/runtime được Service Quy trình đọc trực tiếp từ BPMN catalog; không còn bản sao bước
+  rút gọn trong aggregate Hồ sơ ở service này.
 -->
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
   xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"

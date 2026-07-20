@@ -22,13 +22,13 @@ describe('ApprovalSimulationPanelComponent', () => {
     localStorage.removeItem('approval-matrix-simulation-scenarios');
     TestBed.inject(NzIconService).addIcon(...NAV_ICONS, ...APPROVAL_MATRIX_ICONS);
     TestBed.inject(ApprovalMatrixService).load().subscribe();
-    TestBed.inject(HttpTestingController).expectOne('http://localhost:8091/api/approval-matrix/rules').flush(
+    TestBed.inject(HttpTestingController).expectOne('/api/approval-matrix/rules').flush(
       APPROVAL_MATRIX.map((rule) => ({ ...rule, domainCode: 'KHCN', version: rule.version ?? 1, updatedAt: '2026-07-16T00:00:00Z', updatedBy: 'system' })),
     );
   });
 
   function flushResolve(): void {
-    TestBed.inject(HttpTestingController).expectOne('http://localhost:8091/api/approval-matrix/resolve').flush({
+    TestBed.inject(HttpTestingController).expectOne('/api/approval-matrix/resolve').flush({
       matchedRuleId: 'AM-05', mode: 'ANY_ONE', approvers: [{ userId: 'U-013', viaRoleCode: 'BTGD_TD', viaTargetType: 'GROUP', placeholder: false }],
       reason: 'Khớp luật AM-05', warnings: [], audit: { context: {}, slot: 'PHE_DUYET', matchedRuleId: 'AM-05', matchedRuleVersion: 1,
         mode: 'ANY_ONE', targetsBeforeOrg: [], finalUserIds: ['U-013'], delegationsApplied: [], skipped: [], at: '2026-07-16' },

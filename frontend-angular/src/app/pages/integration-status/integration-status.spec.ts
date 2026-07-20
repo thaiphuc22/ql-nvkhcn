@@ -47,7 +47,7 @@ describe('IntegrationStatusPage', () => {
   function create() {
     const fixture = TestBed.createComponent(IntegrationStatusPage);
     fixture.detectChanges();
-    http.expectOne('http://localhost:8091/api/internal-integration/status').flush({
+    http.expectOne('/api/internal-integration/status').flush({
       outboxPending: 2,
       outboxFailed: 0,
       latestSent: null,
@@ -57,9 +57,9 @@ describe('IntegrationStatusPage', () => {
       }],
       startFailedDossiers: [],
     });
-    http.expectOne('http://localhost:8091/api/integration-systems').flush([system()]);
-    http.expectOne('http://localhost:8091/api/integration-mappings').flush([]);
-    http.expectOne('http://localhost:8091/api/integration-systems/SAP/job-runs').flush([]);
+    http.expectOne('/api/integration-systems').flush([system()]);
+    http.expectOne('/api/integration-mappings').flush([]);
+    http.expectOne('/api/integration-systems/SAP/job-runs').flush([]);
     fixture.detectChanges();
     return fixture;
   }
@@ -95,7 +95,7 @@ describe('IntegrationStatusPage', () => {
 
     cmp.submitConnect();
 
-    http.expectNone('http://localhost:8091/api/integration-systems/SAP/connect');
+    http.expectNone('/api/integration-systems/SAP/connect');
   });
 
   it('submits connect with a valid key and closes the modal on success', () => {
@@ -107,7 +107,7 @@ describe('IntegrationStatusPage', () => {
 
     cmp.submitConnect();
 
-    const request = http.expectOne('http://localhost:8091/api/integration-systems/SAP/connect');
+    const request = http.expectOne('/api/integration-systems/SAP/connect');
     request.flush(system({ trangThai: 'healthy', apiKeyTail: 'XXXX', version: 1 }));
 
     expect(cmp.target()).toBeUndefined();

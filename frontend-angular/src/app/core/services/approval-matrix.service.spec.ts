@@ -31,13 +31,13 @@ describe('ApprovalMatrixService HTTP integration', () => {
 
   it('loads rules from backend into the signal cache', () => {
     service.load().subscribe();
-    http.expectOne('http://localhost:8091/api/approval-matrix/rules').flush([response(makeRule())]);
+    http.expectOne('/api/approval-matrix/rules').flush([response(makeRule())]);
     expect(service.rules().map((rule) => rule.id)).toEqual(['AM-TEST']);
   });
 
   it('creates a rule with actor header and updates cache', () => {
     service.createRule(makeRule(), 'Người kiểm thử').subscribe();
-    const request = http.expectOne('http://localhost:8091/api/approval-matrix/rules');
+    const request = http.expectOne('/api/approval-matrix/rules');
     expect(request.request.method).toBe('POST');
     expect(request.request.headers.get('X-QTKHCN-Actor')).toContain('Ng%C6%B0%E1%BB%9Di');
     request.flush(response(makeRule()));
@@ -46,7 +46,7 @@ describe('ApprovalMatrixService HTTP integration', () => {
 
   it('updates with optimistic If-Match and accepts the new server version', () => {
     service.updateRule(makeRule({ version: 3 }), 'tester').subscribe();
-    const request = http.expectOne('http://localhost:8091/api/approval-matrix/rules/AM-TEST');
+    const request = http.expectOne('/api/approval-matrix/rules/AM-TEST');
     expect(request.request.method).toBe('PUT');
     expect(request.request.headers.get('If-Match')).toBe('3');
     request.flush(response(makeRule({ version: 4, ten: 'Luật đã sửa' })));
@@ -55,9 +55,9 @@ describe('ApprovalMatrixService HTTP integration', () => {
 
   it('deletes with If-Match and removes the cached row', () => {
     service.createRule(makeRule()).subscribe();
-    http.expectOne('http://localhost:8091/api/approval-matrix/rules').flush(response(makeRule()));
+    http.expectOne('/api/approval-matrix/rules').flush(response(makeRule()));
     service.removeRule(makeRule(), 'tester').subscribe();
-    const request = http.expectOne('http://localhost:8091/api/approval-matrix/rules/AM-TEST');
+    const request = http.expectOne('/api/approval-matrix/rules/AM-TEST');
     expect(request.request.headers.get('If-Match')).toBe('1');
     request.flush(null);
     expect(service.rules()).toEqual([]);
@@ -65,10 +65,10 @@ describe('ApprovalMatrixService HTTP integration', () => {
 
   it('calls backend resolve and maps user IDs to the organization directory', () => {
     service.load().subscribe();
-    http.expectOne('http://localhost:8091/api/approval-matrix/rules').flush([response(makeRule())]);
+    http.expectOne('/api/approval-matrix/rules').flush([response(makeRule())]);
     let matched: string | undefined;
     service.resolve({ slot: 'THAM_DINH', cap: 'CS' }).subscribe((result) => matched = result.matchedRule?.id);
-    const request = http.expectOne('http://localhost:8091/api/approval-matrix/resolve');
+    const request = http.expectOne('/api/approval-matrix/resolve');
     expect(request.request.body.context.capNhiemVu).toBe('CS');
     request.flush({
       matchedRuleId: 'AM-TEST', mode: 'ANY_ONE',
