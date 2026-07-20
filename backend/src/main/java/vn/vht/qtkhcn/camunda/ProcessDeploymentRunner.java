@@ -25,6 +25,12 @@ public class ProcessDeploymentRunner implements ApplicationRunner {
     static final String BUNDLED_PROCESS_ID = "RD01_01";
     static final String BUNDLED_RESOURCE = "processes/rd0101.bpmn";
 
+    // RD02.02 — bản dựng TẠM, chưa chốt nghiệp vụ (xem đầu file rd0202.bpmn). Deploy kèm để luồng
+    // cấp Tập đoàn có process active, nếu không CamundaReliableWorkflowEngine sẽ ném
+    // ProcessNotActiveException và hồ sơ rơi vào START_FAILED.
+    static final String RD0202_PROCESS_ID = "RD02_02";
+    static final String RD0202_RESOURCE = "processes/rd0202.bpmn";
+
     private final StartupProcessDeploymentService startupDeploymentService;
 
     public ProcessDeploymentRunner(StartupProcessDeploymentService startupDeploymentService) {
@@ -33,7 +39,12 @@ public class ProcessDeploymentRunner implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        var result = startupDeploymentService.deployIfAbsent(BUNDLED_PROCESS_ID, BUNDLED_RESOURCE);
+        deployBundled(BUNDLED_PROCESS_ID, BUNDLED_RESOURCE);
+        deployBundled(RD0202_PROCESS_ID, RD0202_RESOURCE);
+    }
+
+    private void deployBundled(String processId, String classpathResource) {
+        var result = startupDeploymentService.deployIfAbsent(processId, classpathResource);
         if (result.deployed()) {
             log.info("Bundled process deployed: {} v{} (key={})", result.bpmnProcessId(), result.version(),
                     result.processDefinitionKey());

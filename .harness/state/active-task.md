@@ -1,5 +1,16 @@
 # Active Task
 
+## ★ DONE — Nâng cấp backend “Cấu hình luật hiển thị nút” — 2026-07-20 (owner Codex)
+
+Đã gia cố backend Action Studio: validation độ dài/định dạng theo schema, chuẩn hóa role/permission, chặn
+hai luật enabled có cùng action + selector ngữ cảnh, bảo vệ id/version khi cập nhật, và bổ sung
+`GET /api/action-studio/availability-policies/{id}/history` để đọc audit kể cả sau khi luật đã bị xóa.
+`GET /api/action-studio` nay trả thêm `referenceData` cho Bề mặt, Trạng thái, Vai trò, Quyền và danh sách
+Biểu mẫu đọc trực tiếp từ bảng `eform`; modal Angular dùng các catalog backend này thay cho mock cứng.
+Verify: backend **151/151 PASS**, Angular **175/175 PASS**, production build xanh (cảnh báo budget/CommonJS
+có sẵn). Không chạm các thay đổi song song ở `ProcessDeploymentRunner`, `SystemCheckJobWorker`, BPMN
+RD02.02, VS Code hay React build info.
+
 ## ★ DONE — D18/D20 final service separation — 2026-07-20 (owner Codex)
 
 User chốt bỏ hoàn toàn cấu trúc monolith Hồ sơ/Nhiệm vụ. Đã hoàn tất code, DB và runtime cutover:
@@ -114,6 +125,156 @@ phần lớn giá trị của (A) mà không phải chờ nhánh (b) Angular đ�
 - **Bước 2 — BPMN RD02_02 + DMN routing**, deploy lên Zeebe. Mượn khung `rd02Routing.dmn.ts` ở `0bbac99`.
   Sau đính chính, đây là **bước đầu tiên có việc thật** — và nhiều khả năng là **bước duy nhất** chặn
   runtime, vì `CamundaReliableWorkflowEngine` chỉ cần tìm thấy đúng 1 process active `RD02_02`.
+
+  **⚠️ CHẶN NGHIỆP VỤ (phát hiện 2026-07-20, chưa giải quyết)** — không phải chặn kỹ thuật:
+  + `docs/req/RD01-RD02-requirements.md:63` chỉ có **4 requirement SF + 1 BR** cho RD02.02, confidence
+    0.80–0.85. Không đủ để mô hình hoá chuỗi task chi tiết như RD01.01 (13 user task).
+  + **OQ-002 (đích quay lại khi từ chối/rework) vẫn MỞ** và `docs/arch/camunda-design.md:85` ghi thẳng:
+    rework "**chưa mô hình hoá được** cho tới khi khách trả lời". `EPIC-QLNVKHCN-AC.md:155` đếm được
+    **12 chỗ AC negative** đang treo vì OQ-002.
+  + **OQ-001 (tiêu chí phân cấp Cơ sở vs Tập đoàn) vẫn MỞ**, và chính doc requirement đánh dấu nó
+    **chặn RD02.02**. Đây là đầu vào của DMN routing — không có tiêu chí thì DMN không có luật để viết.
+  + **BR-RD0202-001 dây chuyền**: chỉ được khởi tạo xét duyệt cấp TĐ khi **đã có QĐ phê duyệt chủ
+    trương cấp Tập đoàn** — tức phụ thuộc **RD01.02**, mà RD01.02 cũng **chưa có BPMN** (chỉ có
+    `rd0101.bpmn`). E2E RD02.02 "đúng nghiệp vụ" vì vậy kéo theo cả RD01.02.
+
+  **Tiền lệ có sẵn**: `rd0101.bpmn` **đã** được mô hình hoá với rework (`Flow_6_Rework`,
+  `Flow_9_Rework`, `Flow_11HD_Rework`) *bất chấp* OQ-002 còn mở ⇒ dự án đã từng chấp nhận mô hình hoá
+  tạm và đánh dấu là giả định. Có thể làm lại đúng cách đó cho RD02.02.
+
+  **User chọn (i) 2026-07-20**: dựng tạm với các node tiêu biểu (gateway/user task/service task).
+
+  **✅ ĐÃ LÀM — RD02_02 LIVE TRÊN ZEEBE THẬT:**
+  + Tạo `backend/src/main/resources/processes/rd0202.bpmn` — 5 lane (CQ KHCN TĐ, CQNV VHT, BTGĐ TĐ,
+    HĐXD TĐ, HĐ KHCN TĐ), 7 user task, 1 service task, 5 exclusive gateway, 3 end event, 21 flow.
+    Header file ghi rõ đây là bản TẠM kèm 4 giả định (OQ-001, OQ-002, BR chưa nối RD01.02, ASSUMP-001).
+  + **Không bịa biến mới** — dùng nguyên contract `ProcessVariableContract` (`dieuKienMacDinhDat`,
+    `ketQuaKyDuyet`, `ketQuaThamDinh`, `ketQuaHDKHCN`, `ketQuaPheDuyet`), đúng ràng buộc D3 ghi ở
+    đầu file contract. Role code lấy từ `roles.ts` (`CQ_KHCN_TD`/`HDXD_TD`/`HDKHCN_TD`/`BTGD_TD`),
+    formKey lấy từ eForm V12 đã seed — không tham chiếu form ma.
+  + Thêm worker `khcn.rd0202.check-chu-truong-td` vào `SystemCheckJobWorker`; mở rộng
+    `ProcessDeploymentRunner` deploy cả 2 process (tách hàm `deployBundled`, giữ thứ tự tất định).
+  + Verify: XML well-formed + 0 tham chiếu flow treo (script kiểm 2 chiều); `mvn -o test`
+    **150/150 PASS, BUILD SUCCESS**.
+  + **Deploy runtime không cần restart**: dùng `/api/process-definition-drafts` `import → validate →
+    deploy` trên 8090. `validate` trả `valid:true`, 0 error/0 warning; `deploy` trả **DEPLOYED**,
+    `camundaProcessDefinitionKey=2251799813729609`. `GET /api/process-definitions` nay liệt kê
+    **RD02_02** cạnh RD01_01 ⇒ **điểm chặn gốc "API live không có process RD02_02" đã hết.**
+
+  **✅ E2E một phần — đường submit ĐÃ THÔNG:** tạo `HS-2026-008` (loại `XET_DUYET`, từ `RD.2026.001`)
+  → `POST /api/ho-so/HS-2026-008/submit` với `quyTrinh=RD02.02` → `START_PENDING` → **`PROCESSING`**
+  với `zeebeProcessInstanceKey=2251799813729692`. Tức giả thuyết "submit RD02.02 sẽ START_FAILED"
+  **không còn đúng** sau khi có process active.
+
+  **✅ E2E ĐÃ THÔNG QUA SERVICE TASK — xác minh trên Camunda thật 2026-07-20 11:30** (sau khi user
+  restart 8090 từ build mới, jar 85.1 MB). Truy vấn `/v2/element-instances/search` và `/v2/jobs/search`
+  của Camunda cho instance `2251799813729692`:
+
+  | Node | Loại | Trạng thái |
+  |---|---|---|
+  | `Start_RD02_02` | START_EVENT | COMPLETED |
+  | `Check_ChuTruongTD` | SERVICE_TASK, job `khcn.rd0202.check-chu-truong-td` | **COMPLETED** — worker mới chạy thật |
+  | `Gateway_BR` | EXCLUSIVE_GATEWAY | COMPLETED — rẽ đúng nhánh `dieuKienMacDinhDat = true` |
+  | `Task_1` | USER_TASK, job `io.camunda.zeebe:userTask` | **CREATED / ACTIVE** — chờ `CQ_KHCN_TD` |
+
+  Ghi chú mô hình: cả `rd0101.bpmn` lẫn `rd0202.bpmn` đều **không** dùng `<zeebe:userTask/>` ⇒ user
+  task kiểu job-based (`io.camunda.zeebe:userTask`), nên `/v2/user-tasks/search` trả 0 là ĐÚNG, không
+  phải lỗi. Danh sách việc hiển thị qua projection của 8093, không qua Camunda user-task API.
+
+  **✅ HOÀN TẤT VẬN HÀNH 2026-07-20 11:36 — agent tự restart cả 2 service** (user uỷ quyền). Dừng
+  8090 cũ, khởi động lại 8090 + 8093 bằng `Start-Process` với cặp token khớp
+  (`QTKHCN_WORKFLOW_SERVICE_TOKEN=dev-workflow-local-only`,
+  `QTKHCN_HO_SO_SERVICE_TOKEN=dev-ho-so-local-only` — giá trị sau bắt buộc vì `proxy.conf.json`
+  hardcode cho trình duyệt). Log ra scratchpad `8090.log`/`8093.log`.
+
+  | Kiểm chứng | Kết quả |
+  |---|---|
+  | Log startup 8090 | `startup deployment skipped: RD01_01 v6` **và `RD02_02 v1 (key=2251799813729609)`** ⇒ runner mới nhận cả 2 process |
+  | Token nội bộ | `POST /internal/v1/process-instances` + `Bearer dev-workflow-local-only` → **400** (không còn 401) ⇒ auth qua, 400 chỉ vì body rỗng cố ý |
+  | Projection phục hồi | `HS-2026-008` tự nhảy `buocHienTai 0 → 1`, `steps 1 → 2` nhờ `WorkflowProjectionReconciler` — **tự khôi phục sự kiện bị lỡ trong lúc 8093 tắt**, không cần can thiệp tay |
+  | Step projection | `buoc 1 \| "1. Lập CV đề nghị xét duyệt & HS đề nghị xét duyệt" \| CURRENT \| ['CQ_KHCN_TD'] \| form bm-02-01-dki-nv \| taskKey Task_1` — khớp **từng chi tiết** đã viết trong BPMN |
+  | `/api/my-tasks` | `admin@example.com` → **1 task** (HS-2026-008) ⇒ đường truy vấn task chạy |
+
+  **⇒ Toàn tuyến RD02.02 đã chứng minh trên runtime thật**: tạo hồ sơ XET_DUYET → submit → outbox →
+  Camunda → service task (worker mới) → gateway → user task → event → projection → my-tasks.
+
+  **⛔ Điểm chặn CUỐI, đã định vị chính xác — trùng đúng điểm 5 trong báo cáo gốc của user**:
+  `services/.../security/DemoIdentityProvider.java:15` chỉ có **5 tài khoản demo** và **KHÔNG tài
+  khoản nào giữ vai trò cấp Tập đoàn** (`CQ_KHCN_TD`, `HDXD_TD`, `HDKHCN_TD`, `BTGD_TD`) — toàn bộ là
+  vai trò cấp Cơ sở. Vì vậy `cqnv@example.com` thấy 0 task còn `admin` (bypass) thấy 1. Task được
+  giao ĐÚNG; chỉ là **chưa có người nào đóng được vai đó**. `frontend-angular/src/app/core/auth/
+  demo-users.ts:31-35` có đúng 5 tài khoản tương ứng ⇒ sửa phải đồng bộ **cả 2 file**, nếu không màn
+  đăng nhập demo và backend sẽ lệch nhau.
+
+  **✅ BƯỚC 4 (phần tài khoản) DONE 2026-07-20 11:42 — user chọn "4 tài khoản riêng theo từng vai".**
+  Thêm `cqkhcn-td@`, `hdxd-td@`, `hdkhcn-td@`, `btgd-td@` (mỗi tài khoản đúng 1 role code) vào **cả
+  hai** nơi: `DemoIdentityProvider.java` (đổi `Map.of` → `Map.ofEntries` vì `Map.of` chỉ nhận tối đa
+  10 cặp) và `demo-users.ts`. Cố ý KHÔNG gộp 4 vai vào 1 tài khoản: RD02.02 đi qua 4 cấp thẩm quyền,
+  gộp lại thì không demo được phân tách quyền.
+
+  **Bằng chứng phân tách quyền chạy thật** (`/api/my-tasks` sau khi rebuild + restart 8093):
+
+  | Tài khoản | Role | Kết quả |
+  |---|---|---|
+  | `cqkhcn-td@example.com` | `CQ_KHCN_TD` | **1 task — HS-2026-008** ✓ đúng vai được giao Task_1 |
+  | `hdxd-td@example.com` | `HDXD_TD` | 0 task ✓ việc ở bước sau |
+  | `btgd-td@example.com` | `BTGD_TD` | 0 task ✓ việc ở bước sau |
+  | `cqnv@example.com` | cấp Cơ sở | 0 task ✓ không rò rỉ sang luồng Tập đoàn |
+
+  Test sau thay đổi: ho-so-service **38/38 PASS**, Angular **175/175 PASS**.
+
+  **🎯 E2E RD02.02 ĐÓNG TRỌN VẸN 2026-07-20 — có DMN, chạy hết 4 cấp phê duyệt.**
+
+  *DMN thật (user yêu cầu "giả lập luôn DMN routing")*: thêm
+  `backend/src/main/resources/processes/rd0202-routing.dmn` — DRD `drd_rd0202_routing`, decision
+  `capNhiemVu` (2 input `tongDuToan`+`loaiNhiemVu`, 3 rule, hitPolicy FIRST) trả biến `cap`. Deploy
+  qua API danh mục có sẵn `/api/dmn-rules` (create → saveVersion → activate) — **không** phải hack:
+  `POST /v2/decision-definitions/search` của Camunda xác nhận `capNhiemVu v1` tồn tại.
+  BPMN thêm `Rule_PhanCap` (`zeebe:calledDecision decisionId="capNhiemVu" resultVariable="cap"`) +
+  `Gateway_Cap` + end event `End_KhongThuocTD` cho nhánh CS. Deploy **RD02_02 v2**
+  (key=2251799813737211), validate 0 lỗi/0 cảnh báo.
+
+  *Bug tự gây, đã bắt trước khi chạy*: `WorkflowTaskActionRouting` map biến điều khiển **chỉ theo
+  element id**, mà RD01_01 và RD02_02 đều có `Task_6` ⇒ action ở RD02.02 sẽ set biến của RD01.01 và
+  gateway rẽ sai **mà không báo lỗi**. Đã sửa thành phân nhánh theo `processDefinitionId` trước
+  (`rd0101()` / `rd0202()`). Ghi chú thêm: `Gateway_3`/`Gateway_7` có nhánh mặc định là *từ chối*,
+  nên `RETURN_STEP` ở Task_3/Task_7 **bắt buộc** set `"hieu_chinh"` tường minh — để rỗng là hồ sơ bị
+  đóng thay vì trả lại.
+
+  *Bản sao thứ BA của danh mục tài khoản*: `backend/.../security/WorkflowDemoIdentityProvider.java`
+  (8090 — phân quyền thao tác task) cũng thiếu vai trò TĐ. Triệu chứng nếu bỏ sót: user **thấy** việc
+  nhưng bấm nút bị **403**. Đã bổ sung + ghi chú cảnh báo 3 nơi phải đồng bộ tay.
+
+  *Chứng cứ chạy thật* — hồ sơ `HS-2026-009`, instance `2251799813737235` trên **v2**:
+
+  + DMN quyết định đúng: `tongDuToan=12000000000` → `cap="TD"` → `Gateway_Cap` rẽ nhánh TĐ.
+  + 7 user task hoàn thành qua **4 cấp thẩm quyền khác nhau**, mỗi bước do đúng tài khoản giữ vai:
+    `cqkhcn-td` → `cqkhcn-td` → `btgd-td` → `hdxd-td` → `hdkhcn-td` → `cqkhcn-td` → `btgd-td`.
+  + `available-actions` trả `RETURN_STEP` **chỉ** ở Task_2/3/4/7, vắng ở Task_1/QDTL/Task_6 — khớp
+    đúng bảng `RD02_02_RETURNABLE`, xác nhận bản sửa routing hoạt động.
+  + Camunda: 17/17 node COMPLETED tới `End_PheDuyet`, process instance **state=COMPLETED**.
+  + Projection 8093: hồ sơ **`trangThai=APPROVED`**, `buocHienTai=7`, cả 7 bước DONE với đúng
+    `vaiTroCodes`.
+
+  Test: backend **151/151 PASS**, ho-so-service 38/38, Angular 175/175.
+
+  ~~**⏸️ Hai việc còn treo (đều thuộc vận hành, không phải code):**~~ (đã xử lý xong, giữ lại để đối chiếu)
+  1. **8093 chưa được khởi động lại** — không có tiến trình nghe cổng 8093. Vì vậy projection không
+     cập nhật và `/api/my-tasks` không gọi được; `HS-2026-008` vẫn đứng ở `PROCESSING`.
+  2. **Token 8090 không khớp** — `POST /internal/v1/process-instances` với
+     `Bearer dev-workflow-local-only` trả **401** ⇒ 8090 khởi động mà biến
+     `QTKHCN_WORKFLOW_SERVICE_TOKEN` chưa được set (filter fail-closed khi token rỗng). Chừng nào
+     chưa sửa, mọi **submit mới** từ 8093 sẽ 401. Instance đang chạy KHÔNG bị ảnh hưởng (worker dùng
+     gRPC Zeebe, không qua token này).
+
+  ~~**⏸️ Chặn còn lại (1 việc, đã biết chính xác nguyên nhân)**~~: `GET /api/my-tasks` trả **0 task** —
+  process đứng ở service task `Check_ChuTruongTD` vì **8090 đang chạy JAR build trước khi thêm
+  worker**. Cần **restart 8090 từ build mới** thì worker mới nhận job, gateway BR mới rẽ và Task_1
+  mới xuất hiện. Nhắc lại bẫy trong memory `qtkhcn-local-stack-run`: **phải tắt 8090 TRƯỚC khi
+  `mvn package`**, nếu không repackage fail do khoá `target/qtkhcn-backend.jar` và để lại jar thin.
+
+  **Dữ liệu test cần dọn sau**: `HS-2026-008` + process instance `2251799813729692` (giữ lại để chạy
+  tiếp sau restart; dọn khi kết thúc như phiên cutover đã làm).
 - **Bước 3 — Mapping UI.** `ho-so-detail.ts:93`: xử lý `XET_DUYET`, và lưu ý nhánh Tập đoàn của
   `CHU_TRUONG` (RD01.02) hiện cũng đang `supported: false` — hai chỗ nên làm cùng lượt.
 - **Bước 4 — Task/action + candidate groups cấp TĐ** (`HDXD_TD`, `HDKHCN_TD`, `BTGD_TD`), binding formKey

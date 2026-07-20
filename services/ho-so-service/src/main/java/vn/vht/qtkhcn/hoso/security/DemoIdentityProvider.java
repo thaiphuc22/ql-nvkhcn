@@ -12,15 +12,22 @@ import org.springframework.stereotype.Component;
 @Component
 public class DemoIdentityProvider {
 
-    private static final Map<String, DemoIdentity> IDENTITIES = Map.of(
-            "admin@example.com", identity("admin@example.com", true),
-            "pm@example.com", identity("pm@example.com", false, "PM", "PA", "NNC"),
-            "cqnv@example.com", identity("cqnv@example.com", false,
-                    "CQ_KHCN", "CQ_MS", "CQ_NS", "CQ_TCKT", "CQ_QLKHCN", "TP_CLKHCN"),
-            "tgd@example.com", identity("tgd@example.com", false,
-                    "TGD_VHT", "BGD_TT", "BGD_KHOI"),
-            "hdkhcn@example.com", identity("hdkhcn@example.com", false,
-                    "HDKHCN", "HDXD", "HDXD_DC", "HDNT", "HD_DGHT"));
+    private static final Map<String, DemoIdentity> IDENTITIES = Map.ofEntries(
+            Map.entry("admin@example.com", identity("admin@example.com", true)),
+            Map.entry("pm@example.com", identity("pm@example.com", false, "PM", "PA", "NNC")),
+            Map.entry("cqnv@example.com", identity("cqnv@example.com", false,
+                    "CQ_KHCN", "CQ_MS", "CQ_NS", "CQ_TCKT", "CQ_QLKHCN", "TP_CLKHCN")),
+            Map.entry("tgd@example.com", identity("tgd@example.com", false,
+                    "TGD_VHT", "BGD_TT", "BGD_KHOI")),
+            Map.entry("hdkhcn@example.com", identity("hdkhcn@example.com", false,
+                    "HDKHCN", "HDXD", "HDXD_DC", "HDNT", "HD_DGHT")),
+            // Bốn vai trò cấp Tập đoàn cho RD02.02 — MỖI VAI MỘT TÀI KHOẢN, cố ý không gộp: luồng
+            // xét duyệt cấp TĐ đi qua 4 cấp thẩm quyền khác nhau, gộp lại thì không chứng minh được
+            // phân tách quyền. Phải giữ đồng bộ với frontend-angular/src/app/core/auth/demo-users.ts.
+            Map.entry("cqkhcn-td@example.com", identity("cqkhcn-td@example.com", false, "CQ_KHCN_TD")),
+            Map.entry("hdxd-td@example.com", identity("hdxd-td@example.com", false, "HDXD_TD")),
+            Map.entry("hdkhcn-td@example.com", identity("hdkhcn-td@example.com", false, "HDKHCN_TD")),
+            Map.entry("btgd-td@example.com", identity("btgd-td@example.com", false, "BTGD_TD")));
 
     public DemoIdentity resolve(String userIdHeader) {
         if (userIdHeader == null || userIdHeader.isBlank()) {

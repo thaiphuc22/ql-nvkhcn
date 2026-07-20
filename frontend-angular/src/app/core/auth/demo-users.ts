@@ -33,6 +33,13 @@ export const DEMO_USERS: DemoUser[] = [
   { hoTen: 'Phạm Thu Hà', email: 'cqnv@example.com', chucDanh: 'Cơ quan nghiệp vụ VHT', isAdmin: false, roleCodes: ['CQ_KHCN', 'CQ_MS', 'CQ_NS', 'CQ_TCKT'], apps: ['qlnvkhcn', 'quytrinh'] },
   { hoTen: 'Phạm Quang Vinh', email: 'tgd@example.com', chucDanh: 'Tổng Giám đốc VHT', isAdmin: false, roleCodes: ['TGD_VHT'], apps: ['qlnvkhcn'] },
   { hoTen: 'Ngô Thị Thanh Hằng', email: 'hdkhcn@example.com', chucDanh: 'Thường trực HĐ KHCN VHT', isAdmin: false, roleCodes: ['HDKHCN', 'HDXD', 'HDXD_DC', 'HDNT', 'HD_DGHT'], apps: ['qlnvkhcn'] },
+  // Cấp Tập đoàn (RD02.02) — mỗi vai một tài khoản, cố ý không gộp để demo được phân tách thẩm
+  // quyền qua 4 cấp. Phải giữ đồng bộ với DemoIdentityProvider.java ở ho-so-service, lệch là
+  // đăng nhập được nhưng `/viec-cua-toi` trống.
+  { hoTen: 'Vũ Đình Khoa', email: 'cqkhcn-td@example.com', chucDanh: 'Cơ quan KHCN Tập đoàn (Ban CNCNC)', isAdmin: false, roleCodes: ['CQ_KHCN_TD'], apps: ['qlnvkhcn'] },
+  { hoTen: 'Đặng Minh Tuấn', email: 'hdxd-td@example.com', chucDanh: 'Hội đồng Xét duyệt Tập đoàn', isAdmin: false, roleCodes: ['HDXD_TD'], apps: ['qlnvkhcn'] },
+  { hoTen: 'Bùi Thị Lan Anh', email: 'hdkhcn-td@example.com', chucDanh: 'Hội đồng KHCN Tập đoàn', isAdmin: false, roleCodes: ['HDKHCN_TD'], apps: ['qlnvkhcn'] },
+  { hoTen: 'Hoàng Trọng Nghĩa', email: 'btgd-td@example.com', chucDanh: 'Ban Tổng Giám đốc Tập đoàn', isAdmin: false, roleCodes: ['BTGD_TD'], apps: ['qlnvkhcn'] },
 ];
 
 export function findDemoUser(email: string): DemoUser | undefined {

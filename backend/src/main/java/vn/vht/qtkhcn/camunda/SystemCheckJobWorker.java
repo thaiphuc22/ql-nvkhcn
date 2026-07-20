@@ -31,4 +31,26 @@ public class SystemCheckJobWorker {
         log.info("Xử lý job {} (processInstanceKey={})", job.getType(), job.getProcessInstanceKey());
         return Map.of(ProcessVariableContract.DIEU_KIEN_MAC_DINH_DAT, true);
     }
+
+    /**
+     * Job worker cho service task "Check_ChuTruongTD" trong RD02.02 — kiểm tra BR-RD0202-001 (chỉ
+     * được xét duyệt cấp Tập đoàn khi đã có QĐ phê duyệt chủ trương cấp TĐ).
+     *
+     * Stub như worker RD01.01 ở trên, và ở đây còn CHƯA THỂ làm thật vì nguồn dữ liệu là kết quả
+     * RD01.02 — quy trình đó chưa có BPMN (chỉ có rd0101/rd0202). Trả true vô điều kiện để nhánh
+     * chính chạy được E2E; đừng nhầm là đã có kiểm tra tiền điều kiện thật.
+     */
+    @JobWorker(type = "khcn.rd0202.check-chu-truong-td")
+    public Map<String, Object> checkChuTruongTapDoan(ActivatedJob job) {
+        log.info("Xử lý job {} (processInstanceKey={})", job.getType(), job.getProcessInstanceKey());
+        Map<String, Object> variables = new java.util.LinkedHashMap<>(job.getVariablesAsMap());
+        variables.put(ProcessVariableContract.DIEU_KIEN_MAC_DINH_DAT, true);
+        // Đầu vào cho business rule task `Rule_PhanCap` (decision `capNhiemVu`). Đây là **business
+        // data**, không phải biến điều khiển — theo D3 nó KHÔNG được sống lâu dài trong process.
+        // Ở lát stub này worker tự cấp giá trị mặc định để DMN có cái mà đánh giá; khi nối dữ liệu
+        // thật thì đọc từ aggregate Hồ sơ ở 8093 và truyền vào đúng thời điểm evaluate.
+        variables.putIfAbsent("tongDuToan", 12_000_000_000L);
+        variables.putIfAbsent("loaiNhiemVu", "de_tai");
+        return variables;
+    }
 }

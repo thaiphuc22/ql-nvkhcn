@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  RD02.02 — Xét duyệt NV KHCN cấp Tập đoàn.
+
+  ⚠️ BẢN DỰNG TẠM (2026-07-20) — CHƯA CHỐT NGHIỆP VỤ.
+  Mục đích: có một process RD02_02 active trên Zeebe để chạy E2E "Khởi tạo hồ sơ → gửi duyệt →
+  phê duyệt" cho luồng cấp Tập đoàn. Chuỗi bước dựng từ 4 requirement hiện có
+  (REQ-RD0202-SF-001..004 + BR-RD0202-001 trong docs/req/RD01-RD02-requirements.md §5) và suy luận
+  theo khuôn RD01.01; KHÔNG phải đặc tả nghiệp vụ đã duyệt.
+
+  Giả định cần khách xác nhận trước khi dùng thật:
+  - OQ-002 (đích quay lại khi từ chối/hiệu chỉnh) còn MỞ. Ở đây mọi nhánh "hiệu chỉnh" đều quay về
+    Task_1 (lập lại CV/HS đề nghị). docs/arch/camunda-design.md §85 ghi rõ rework "chưa mô hình hoá
+    được" cho tới khi khách trả lời — chỗ này gần như chắc chắn phải sửa.
+  - OQ-001 (tiêu chí phân cấp Cơ sở vs Tập đoàn) còn MỞ. Đã có DMN routing (`Rule_PhanCap` gọi
+    decision `capNhiemVu` trong `rd0202-routing.dmn`), nhưng NGƯỠNG trong bảng quyết định là
+    placeholder 10 tỷ kế thừa bản nháp EPIC09 — chờ khách chốt. Khi chốt thì sửa BẢNG DMN, không
+    sửa BPMN; đó là lý do tách ra DMN.
+  - BR-RD0202-001 (phải có QĐ phê duyệt chủ trương cấp TĐ) được kiểm tra bằng service task
+    `khcn.rd0202.check-chu-truong-td`. Worker hiện trả true vô điều kiện — chưa nối vào dữ liệu
+    RD01.02 thật, vì RD01.02 chưa có BPMN.
+  - ASSUMP-001: tác nhân cấp Tập đoàn không trực tiếp thao tác trên phần mềm; Chuyên quản CLKHCN
+    (CQ_KHCN_TD) nhập liệu hộ. Vì vậy Task_1/Task_6 thuộc lane Cơ quan QL KHCN.
+
+  Biến điều khiển: dùng nguyên contract sẵn có trong ProcessVariableContract / variableContract.ts —
+  KHÔNG thêm biến mới (D3).
+-->
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+  id="Definitions_RD02_02" targetNamespace="http://vht.vn/qtkhcn/bpmn">
+  <bpmn:collaboration id="Collaboration_RD02_02">
+    <bpmn:participant id="Participant_RD02_02" name="RD02.02 — Xét duyệt NV KHCN cấp Tập đoàn" processRef="RD02_02" />
+  </bpmn:collaboration>
+  <bpmn:process id="RD02_02" name="Xét duyệt NV KHCN cấp Tập đoàn" isExecutable="true">
+    <bpmn:laneSet id="LaneSet_RD02_02">
+      <bpmn:lane id="Lane_CQ_KHCN_TD" name="Cơ quan KHCN Tập đoàn (vai trò thay thế — nhập liệu hộ)">
+        <bpmn:flowNodeRef>Start_RD02_02</bpmn:flowNodeRef><bpmn:flowNodeRef>Check_ChuTruongTD</bpmn:flowNodeRef><bpmn:flowNodeRef>Gateway_BR</bpmn:flowNodeRef><bpmn:flowNodeRef>Rule_PhanCap</bpmn:flowNodeRef><bpmn:flowNodeRef>Gateway_Cap</bpmn:flowNodeRef><bpmn:flowNodeRef>End_KhongThuocTD</bpmn:flowNodeRef><bpmn:flowNodeRef>End_ThieuDieuKien</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_1</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_6</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_CQNV_VHT" name="Cơ quan nghiệp vụ VHT (TP CLKHCN/TCLK/NS, GĐ TTMS)">
+        <bpmn:flowNodeRef>Task_2</bpmn:flowNodeRef><bpmn:flowNodeRef>Gateway_2</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_BTGD_TD" name="Ban Tổng Giám đốc Tập đoàn">
+        <bpmn:flowNodeRef>Task_QDTL</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_7</bpmn:flowNodeRef><bpmn:flowNodeRef>Gateway_7</bpmn:flowNodeRef><bpmn:flowNodeRef>End_PheDuyet</bpmn:flowNodeRef><bpmn:flowNodeRef>End_LuuHS</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_HDXD_TD" name="Hội đồng Xét duyệt Tập đoàn">
+        <bpmn:flowNodeRef>Task_3</bpmn:flowNodeRef><bpmn:flowNodeRef>Gateway_3</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_HDKHCN_TD" name="Hội đồng KHCN Tập đoàn">
+        <bpmn:flowNodeRef>Task_4</bpmn:flowNodeRef><bpmn:flowNodeRef>Gateway_4</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="Start_RD02_02" name="Bắt đầu"><bpmn:outgoing>Flow_01</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:serviceTask id="Check_ChuTruongTD" name="Hệ thống — Kiểm tra QĐ phê duyệt chủ trương cấp TĐ">
+      <bpmn:extensionElements><zeebe:taskDefinition type="khcn.rd0202.check-chu-truong-td" retries="3" /></bpmn:extensionElements>
+      <bpmn:incoming>Flow_01</bpmn:incoming><bpmn:outgoing>Flow_02</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_BR" name="Đã có QĐ chủ trương cấp TĐ?" default="Flow_BR_Fail">
+      <bpmn:incoming>Flow_02</bpmn:incoming><bpmn:outgoing>Flow_BR_OK</bpmn:outgoing><bpmn:outgoing>Flow_BR_Fail</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:businessRuleTask id="Rule_PhanCap" name="DMN — Phân cấp thẩm quyền nhiệm vụ">
+      <bpmn:extensionElements><zeebe:calledDecision decisionId="capNhiemVu" resultVariable="cap" /></bpmn:extensionElements>
+      <bpmn:incoming>Flow_BR_OK</bpmn:incoming><bpmn:outgoing>Flow_Cap</bpmn:outgoing>
+    </bpmn:businessRuleTask>
+    <bpmn:exclusiveGateway id="Gateway_Cap" name="Thuộc cấp Tập đoàn?" default="Flow_Cap_CS">
+      <bpmn:incoming>Flow_Cap</bpmn:incoming><bpmn:outgoing>Flow_Cap_TD</bpmn:outgoing><bpmn:outgoing>Flow_Cap_CS</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_1" name="1. Lập CV đề nghị xét duyệt &amp; HS đề nghị xét duyệt">
+      <bpmn:extensionElements><zeebe:assignmentDefinition candidateGroups="CQ_KHCN_TD" /><zeebe:formDefinition formKey="bm-02-01-dki-nv" /></bpmn:extensionElements>
+      <bpmn:incoming>Flow_Cap_TD</bpmn:incoming><bpmn:incoming>Flow_2_HieuChinh</bpmn:incoming><bpmn:incoming>Flow_3_HieuChinh</bpmn:incoming><bpmn:incoming>Flow_4_HieuChinh</bpmn:incoming><bpmn:incoming>Flow_7_HieuChinh</bpmn:incoming><bpmn:outgoing>Flow_03</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_2" name="2. Ký duyệt CV &amp; HS đề nghị xét duyệt">
+      <bpmn:extensionElements><zeebe:assignmentDefinition candidateGroups="TP_CLKHCN,CQ_KHCN_TD" /><zeebe:formDefinition formKey="cv-de-nghi-tham-dinh-hs" /></bpmn:extensionElements>
+      <bpmn:incoming>Flow_03</bpmn:incoming><bpmn:outgoing>Flow_04</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_2" name="Kết quả ký duyệt CQNV?" default="Flow_2_HieuChinh">
+      <bpmn:incoming>Flow_04</bpmn:incoming><bpmn:outgoing>Flow_2_DongY</bpmn:outgoing><bpmn:outgoing>Flow_2_HieuChinh</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_QDTL" name="3. Phê duyệt QĐ thành lập HĐXD Tập đoàn">
+      <bpmn:extensionElements><zeebe:assignmentDefinition candidateGroups="BTGD_TD" /><zeebe:formDefinition formKey="bm-02-08-qdh-nv" /></bpmn:extensionElements>
+      <bpmn:incoming>Flow_2_DongY</bpmn:incoming><bpmn:outgoing>Flow_05</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_3" name="4. HĐXD TĐ thẩm định — cập nhật PNX/PĐG/BB họp">
+      <bpmn:extensionElements><zeebe:assignmentDefinition candidateGroups="HDXD_TD" /><zeebe:formDefinition formKey="bm-02-09-pnx-dt" /></bpmn:extensionElements>
+      <bpmn:incoming>Flow_05</bpmn:incoming><bpmn:outgoing>Flow_06</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_3" name="Kết luận HĐXD TĐ?" default="Flow_3_KhongDat">
+      <bpmn:incoming>Flow_06</bpmn:incoming><bpmn:outgoing>Flow_3_Dat</bpmn:outgoing><bpmn:outgoing>Flow_3_HieuChinh</bpmn:outgoing><bpmn:outgoing>Flow_3_KhongDat</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_4" name="5. HĐ KHCN TĐ nhận xét &amp; phê duyệt HS xét duyệt">
+      <bpmn:extensionElements><zeebe:assignmentDefinition candidateGroups="HDKHCN_TD" /><zeebe:formDefinition formKey="bm-02-12-pdg-dt" /></bpmn:extensionElements>
+      <bpmn:incoming>Flow_3_Dat</bpmn:incoming><bpmn:outgoing>Flow_07</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_4" name="HĐ KHCN TĐ thông qua?" default="Flow_4_HieuChinh">
+      <bpmn:incoming>Flow_07</bpmn:incoming><bpmn:outgoing>Flow_4_DongY</bpmn:outgoing><bpmn:outgoing>Flow_4_HieuChinh</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_6" name="6. Lập, trình ký QĐ mở mới đề tài cấp Tập đoàn">
+      <bpmn:extensionElements><zeebe:assignmentDefinition candidateGroups="CQ_KHCN_TD" /><zeebe:formDefinition formKey="bm-02-19-qdi-nv" /></bpmn:extensionElements>
+      <bpmn:incoming>Flow_4_DongY</bpmn:incoming><bpmn:outgoing>Flow_08</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_7" name="7. BTGĐ TĐ phê duyệt QĐ mở mới đề tài">
+      <bpmn:extensionElements><zeebe:assignmentDefinition candidateGroups="BTGD_TD" /><zeebe:formDefinition formKey="phieu-phe-duyet" /></bpmn:extensionElements>
+      <bpmn:incoming>Flow_08</bpmn:incoming><bpmn:outgoing>Flow_09</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_7" name="BTGĐ TĐ phê duyệt?" default="Flow_7_KhongDongY">
+      <bpmn:incoming>Flow_09</bpmn:incoming><bpmn:outgoing>Flow_7_DongY</bpmn:outgoing><bpmn:outgoing>Flow_7_HieuChinh</bpmn:outgoing><bpmn:outgoing>Flow_7_KhongDongY</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="End_PheDuyet" name="Hoàn tất — QĐ phê duyệt NV KHCN cấp TĐ"><bpmn:incoming>Flow_7_DongY</bpmn:incoming></bpmn:endEvent>
+    <bpmn:endEvent id="End_LuuHS" name="Không phê duyệt — Lưu HS"><bpmn:incoming>Flow_3_KhongDat</bpmn:incoming><bpmn:incoming>Flow_7_KhongDongY</bpmn:incoming></bpmn:endEvent>
+    <bpmn:endEvent id="End_ThieuDieuKien" name="Thiếu QĐ chủ trương cấp TĐ — dừng"><bpmn:incoming>Flow_BR_Fail</bpmn:incoming></bpmn:endEvent>
+    <bpmn:endEvent id="End_KhongThuocTD" name="DMN kết luận cấp Cơ sở — không thuộc RD02.02"><bpmn:incoming>Flow_Cap_CS</bpmn:incoming></bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_01" sourceRef="Start_RD02_02" targetRef="Check_ChuTruongTD" />
+    <bpmn:sequenceFlow id="Flow_02" sourceRef="Check_ChuTruongTD" targetRef="Gateway_BR" />
+    <bpmn:sequenceFlow id="Flow_BR_OK" name="Đã có QĐ chủ trương" sourceRef="Gateway_BR" targetRef="Rule_PhanCap"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=dieuKienMacDinhDat = true</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Cap" sourceRef="Rule_PhanCap" targetRef="Gateway_Cap" />
+    <bpmn:sequenceFlow id="Flow_Cap_TD" name="cap = TD" sourceRef="Gateway_Cap" targetRef="Task_1"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=cap = "TD"</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Cap_CS" name="cap = CS" sourceRef="Gateway_Cap" targetRef="End_KhongThuocTD" />
+    <bpmn:sequenceFlow id="Flow_BR_Fail" name="Chưa có QĐ chủ trương" sourceRef="Gateway_BR" targetRef="End_ThieuDieuKien" />
+    <bpmn:sequenceFlow id="Flow_03" sourceRef="Task_1" targetRef="Task_2" />
+    <bpmn:sequenceFlow id="Flow_04" sourceRef="Task_2" targetRef="Gateway_2" />
+    <bpmn:sequenceFlow id="Flow_2_DongY" name="Đồng ý" sourceRef="Gateway_2" targetRef="Task_QDTL"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=ketQuaKyDuyet = "dong_y"</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_2_HieuChinh" name="Yêu cầu hiệu chỉnh" sourceRef="Gateway_2" targetRef="Task_1" />
+    <bpmn:sequenceFlow id="Flow_05" sourceRef="Task_QDTL" targetRef="Task_3" />
+    <bpmn:sequenceFlow id="Flow_06" sourceRef="Task_3" targetRef="Gateway_3" />
+    <bpmn:sequenceFlow id="Flow_3_Dat" name="Đạt" sourceRef="Gateway_3" targetRef="Task_4"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=ketQuaThamDinh = "dong_y"</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_3_HieuChinh" name="Yêu cầu hiệu chỉnh" sourceRef="Gateway_3" targetRef="Task_1"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=ketQuaThamDinh = "hieu_chinh"</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_3_KhongDat" name="Không đạt" sourceRef="Gateway_3" targetRef="End_LuuHS" />
+    <bpmn:sequenceFlow id="Flow_07" sourceRef="Task_4" targetRef="Gateway_4" />
+    <bpmn:sequenceFlow id="Flow_4_DongY" name="Đồng ý" sourceRef="Gateway_4" targetRef="Task_6"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=ketQuaHDKHCN = "dong_y"</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_4_HieuChinh" name="Yêu cầu hiệu chỉnh" sourceRef="Gateway_4" targetRef="Task_1" />
+    <bpmn:sequenceFlow id="Flow_08" sourceRef="Task_6" targetRef="Task_7" />
+    <bpmn:sequenceFlow id="Flow_09" sourceRef="Task_7" targetRef="Gateway_7" />
+    <bpmn:sequenceFlow id="Flow_7_DongY" name="Đồng ý" sourceRef="Gateway_7" targetRef="End_PheDuyet"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=ketQuaPheDuyet = "dong_y"</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_7_HieuChinh" name="Yêu cầu hiệu chỉnh" sourceRef="Gateway_7" targetRef="Task_1"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=ketQuaPheDuyet = "hieu_chinh"</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_7_KhongDongY" name="Không đồng ý" sourceRef="Gateway_7" targetRef="End_LuuHS" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_RD02_02"><bpmndi:BPMNPlane id="Plane_RD02_02" bpmnElement="Collaboration_RD02_02">
+    <bpmndi:BPMNShape id="Shape_Participant" bpmnElement="Participant_RD02_02" isHorizontal="true"><dc:Bounds x="130" y="80" width="2210" height="1000" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_Lane_CQ_KHCN_TD" bpmnElement="Lane_CQ_KHCN_TD" isHorizontal="true"><dc:Bounds x="160" y="80" width="2180" height="200" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_Lane_CQNV_VHT" bpmnElement="Lane_CQNV_VHT" isHorizontal="true"><dc:Bounds x="160" y="280" width="2180" height="200" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_Lane_BTGD_TD" bpmnElement="Lane_BTGD_TD" isHorizontal="true"><dc:Bounds x="160" y="480" width="2180" height="200" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_Lane_HDXD_TD" bpmnElement="Lane_HDXD_TD" isHorizontal="true"><dc:Bounds x="160" y="680" width="2180" height="200" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_Lane_HDKHCN_TD" bpmnElement="Lane_HDKHCN_TD" isHorizontal="true"><dc:Bounds x="160" y="880" width="2180" height="200" /></bpmndi:BPMNShape>
+
+    <bpmndi:BPMNShape id="Shape_Start" bpmnElement="Start_RD02_02"><dc:Bounds x="180" y="142" width="36" height="36" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_Check" bpmnElement="Check_ChuTruongTD"><dc:Bounds x="250" y="120" width="100" height="80" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_Gateway_BR" bpmnElement="Gateway_BR" isMarkerVisible="true"><dc:Bounds x="400" y="135" width="50" height="50" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_End_Thieu" bpmnElement="End_ThieuDieuKien"><dc:Bounds x="407" y="222" width="36" height="36" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_Rule_PhanCap" bpmnElement="Rule_PhanCap"><dc:Bounds x="470" y="120" width="100" height="80" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_Gateway_Cap" bpmnElement="Gateway_Cap" isMarkerVisible="true"><dc:Bounds x="610" y="135" width="50" height="50" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_End_KhongThuocTD" bpmnElement="End_KhongThuocTD"><dc:Bounds x="617" y="222" width="36" height="36" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_Task_1" bpmnElement="Task_1"><dc:Bounds x="760" y="120" width="100" height="80" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_Task_6" bpmnElement="Task_6"><dc:Bounds x="1780" y="120" width="100" height="80" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_Task_2" bpmnElement="Task_2"><dc:Bounds x="910" y="320" width="100" height="80" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_Gateway_2" bpmnElement="Gateway_2" isMarkerVisible="true"><dc:Bounds x="1060" y="335" width="50" height="50" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_Task_QDTL" bpmnElement="Task_QDTL"><dc:Bounds x="1150" y="520" width="100" height="80" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_Task_7" bpmnElement="Task_7"><dc:Bounds x="1930" y="520" width="100" height="80" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_Gateway_7" bpmnElement="Gateway_7" isMarkerVisible="true"><dc:Bounds x="2080" y="535" width="50" height="50" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_End_PheDuyet" bpmnElement="End_PheDuyet"><dc:Bounds x="2180" y="542" width="36" height="36" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_End_LuuHS" bpmnElement="End_LuuHS"><dc:Bounds x="2180" y="630" width="36" height="36" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_Task_3" bpmnElement="Task_3"><dc:Bounds x="1300" y="720" width="100" height="80" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_Gateway_3" bpmnElement="Gateway_3" isMarkerVisible="true"><dc:Bounds x="1450" y="735" width="50" height="50" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_Task_4" bpmnElement="Task_4"><dc:Bounds x="1540" y="920" width="100" height="80" /></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Shape_Gateway_4" bpmnElement="Gateway_4" isMarkerVisible="true"><dc:Bounds x="1690" y="935" width="50" height="50" /></bpmndi:BPMNShape>
+
+    <bpmndi:BPMNEdge id="Edge_Flow_01" bpmnElement="Flow_01"><di:waypoint x="216" y="160" /><di:waypoint x="250" y="160" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_Flow_02" bpmnElement="Flow_02"><di:waypoint x="350" y="160" /><di:waypoint x="400" y="160" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_Flow_BR_OK" bpmnElement="Flow_BR_OK"><di:waypoint x="450" y="160" /><di:waypoint x="470" y="160" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_Flow_BR_Fail" bpmnElement="Flow_BR_Fail"><di:waypoint x="425" y="185" /><di:waypoint x="425" y="222" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_Flow_Cap" bpmnElement="Flow_Cap"><di:waypoint x="570" y="160" /><di:waypoint x="610" y="160" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_Flow_Cap_TD" bpmnElement="Flow_Cap_TD"><di:waypoint x="660" y="160" /><di:waypoint x="760" y="160" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_Flow_Cap_CS" bpmnElement="Flow_Cap_CS"><di:waypoint x="635" y="185" /><di:waypoint x="635" y="222" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_Flow_03" bpmnElement="Flow_03"><di:waypoint x="860" y="160" /><di:waypoint x="885" y="160" /><di:waypoint x="885" y="360" /><di:waypoint x="910" y="360" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_Flow_04" bpmnElement="Flow_04"><di:waypoint x="1010" y="360" /><di:waypoint x="1060" y="360" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_Flow_2_DongY" bpmnElement="Flow_2_DongY"><di:waypoint x="1110" y="360" /><di:waypoint x="1200" y="360" /><di:waypoint x="1200" y="520" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_Flow_2_HieuChinh" bpmnElement="Flow_2_HieuChinh"><di:waypoint x="1085" y="335" /><di:waypoint x="1085" y="250" /><di:waypoint x="810" y="250" /><di:waypoint x="810" y="200" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_Flow_05" bpmnElement="Flow_05"><di:waypoint x="1200" y="600" /><di:waypoint x="1200" y="760" /><di:waypoint x="1300" y="760" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_Flow_06" bpmnElement="Flow_06"><di:waypoint x="1400" y="760" /><di:waypoint x="1450" y="760" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_Flow_3_Dat" bpmnElement="Flow_3_Dat"><di:waypoint x="1475" y="785" /><di:waypoint x="1475" y="960" /><di:waypoint x="1540" y="960" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_Flow_3_HieuChinh" bpmnElement="Flow_3_HieuChinh"><di:waypoint x="1475" y="735" /><di:waypoint x="1475" y="250" /><di:waypoint x="810" y="250" /><di:waypoint x="810" y="200" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_Flow_3_KhongDat" bpmnElement="Flow_3_KhongDat"><di:waypoint x="1500" y="760" /><di:waypoint x="2198" y="760" /><di:waypoint x="2198" y="666" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_Flow_07" bpmnElement="Flow_07"><di:waypoint x="1640" y="960" /><di:waypoint x="1690" y="960" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_Flow_4_DongY" bpmnElement="Flow_4_DongY"><di:waypoint x="1715" y="935" /><di:waypoint x="1715" y="160" /><di:waypoint x="1780" y="160" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_Flow_4_HieuChinh" bpmnElement="Flow_4_HieuChinh"><di:waypoint x="1715" y="985" /><di:waypoint x="1715" y="1040" /><di:waypoint x="810" y="1040" /><di:waypoint x="810" y="200" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_Flow_08" bpmnElement="Flow_08"><di:waypoint x="1880" y="160" /><di:waypoint x="1905" y="160" /><di:waypoint x="1905" y="560" /><di:waypoint x="1930" y="560" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_Flow_09" bpmnElement="Flow_09"><di:waypoint x="2030" y="560" /><di:waypoint x="2080" y="560" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_Flow_7_DongY" bpmnElement="Flow_7_DongY"><di:waypoint x="2130" y="560" /><di:waypoint x="2180" y="560" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_Flow_7_HieuChinh" bpmnElement="Flow_7_HieuChinh"><di:waypoint x="2105" y="535" /><di:waypoint x="2105" y="250" /><di:waypoint x="810" y="250" /><di:waypoint x="810" y="200" /></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Edge_Flow_7_KhongDongY" bpmnElement="Flow_7_KhongDongY"><di:waypoint x="2105" y="585" /><di:waypoint x="2105" y="648" /><di:waypoint x="2180" y="648" /></bpmndi:BPMNEdge>
+  </bpmndi:BPMNPlane></bpmndi:BPMNDiagram>
+</bpmn:definitions>
