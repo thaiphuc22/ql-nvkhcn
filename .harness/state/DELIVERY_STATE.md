@@ -1,5 +1,49 @@
 # Delivery State
 
+> **2026-07-20 — APPROVAL MATRIX VERIFIED TRÊN HTTP THẬT (owner Claude).** Nối tiếp entry ngay dưới,
+> nâng mức xác minh từ build/test lên server thật. **Flyway V9 ĐÃ ÁP** lên DB dev từ 2026-07-16 14:43
+> (`success=t`), và Flyway báo `Successfully validated 18 migrations` lúc khởi động ⇒ checksum V9 ở
+> workspace khớp bản đã áp. 4 bảng `approval_*` có thật, 6 slot + 8 luật. Gọi live: `GET /rules` **200**
+> (8 luật đầy đủ), `GET /slots` **200** (`usageCount` tính đúng), `POST /resolve` **200** phân nhánh
+> đúng theo context (CS→AM-01/U-003, TD→AM-02/U-010) kèm audit ghi lý do skip từng luật, `POST /analyze`
+> **200** phát hiện trùng priority + thiếu fallback. Luật `AM-26809` do **Lê Văn Cường** tạo (không phải
+> `system-seed`) chứng tỏ đường ghi từng chạy thật ở phiên 16/07. Chạy bằng
+> `mvn -o spring-boot:run -Dspring-boot.run.arguments=--server.port=8095` vì `mvn package` **fail**:
+> tiến trình 8090 đang giữ khoá `target/qtkhcn-backend.jar` (đúng bẫy trong memory
+> `qtkhcn-local-stack-run`). Header auth đúng là `X-QTKHCN-Dev-Key` — sai header trả 401, đừng nhầm với
+> 404. **✅ TOÀN TUYẾN ĐÃ THÔNG:** ban đầu 8090 chạy JAR cũ (build trước khi port) nên
+> `/ma-tran-phe-duyet` vẫn 404; **10:33 một phiên song song đã build lại + restart 8090** (PID 28044,
+> jar 89MB / 443 entry `BOOT-INF`). Gọi lại trên 8090 và qua proxy 4200 đều **200 `application/json`**;
+> thiếu header trả **401 JSON** (không phải HTML) ⇒ proxy định tuyến đúng, không rơi SPA fallback. Đã
+> tắt server tạm 8095. **Sự cố tự gây, đã khỏi:** `mvn package` lúc 10:28 fail repackage do 8090 giữ
+> khoá jar, để lại jar **thin 487KB / 0 entry `BOOT-INF`** (`java -jar` sẽ chết); bản build 10:33 đã
+> khắc phục. Đừng `mvn package` khi backend đang chạy — dùng `spring-boot:run` cổng khác để test.
+> Còn treo: chưa click-through browser, chưa commit workspace chính.
+>
+> **2026-07-20 — APPROVAL MATRIX BACKEND CỨU KHỎI WORKTREE + PORT VÀO WORKSPACE CHÍNH DONE (owner
+> Claude).** User báo "nhớ là đã code backend rồi"; agent grep workspace chính rồi kết luận nhầm là
+> "chưa từng viết" — kết luận đó **SAI**, đã đính chính. Sự thật đúng như entry 2026-07-16 bên dưới
+> ghi: BE nằm ở worktree `ql-nvkhcn-be-approval-matrix` (branch `fix/approval-matrix-backend`),
+> **34 file, toàn bộ ở trạng thái untracked suốt 4 ngày** — chỉ cần một `git clean` là mất trắng
+> 91 test đã PASS. **Bước 1 (chốt an toàn):** commit `f366885` trong worktree đó, 65 file / 4380 dòng
+> (Approval 34 + Action Studio + eForm — cả jar tổng hợp 3-trong-1), `backend/target/` đã được
+> gitignore nên không lẫn build artifact. **Bước 2 (port có chọn lọc, KHÔNG merge branch):** branch đó
+> ở baseline 16/07 (`3d3ed24`), workspace chính đã ở `33db320` với D18/D19/D20 + `ho-so-service` +
+> Camunda workflow + integration — merge thẳng sẽ kéo ngược baseline cũ. Nên chỉ copy 33 file Approval
+> (V9 SQL bỏ qua vì đã identical từ 16/07) và **merge tay `GlobalExceptionHandler.java`**, vốn đã phân
+> kỳ cả hai chiều: worktree có `ApprovalMatrixConflictException`, workspace chính có
+> `IntegrationConflictException`/`WorkflowStartException`/`TaskActionException` + record
+> `InternalErrorBody` — giữ đủ cả 4, không bên nào bị mất. **Bước 3 (verify thật):** `mvn -o compile`
+> sạch, `mvn -o test` **180/180 PASS, 1 skipped** (skip `HoSoServiceTest` là pre-existing), BUILD
+> SUCCESS; 9 test Approval xanh (`ApprovalConditionEngineTest` 2, `ApprovalMatrixAnalyzerTest` 1,
+> `ApprovalMatrixServiceTest` 3, `ApprovalMatrixHttpContractTest` 3). Contract FE↔BE đối chiếu khớp
+> 100%: `/api/approval-matrix` rules CRUD/status/versions/audit + `/resolve` + `/analyze`, và
+> `/api/approval-matrix/slots` GET/POST/PUT/`{code}/status` — FE cũng không gọi DELETE slot (chỉ retire
+> qua status), không có gap. **CHƯA làm:** chưa chạy server thật để gọi HTTP live (chưa xác nhận Flyway
+> V9 đã áp lên DB dev đang dùng), chưa click-through `/ma-tran-phe-duyet` trên trình duyệt, chưa commit
+> ở workspace chính (giữ nguyên tắc chỉ commit khi user yêu cầu). **Bài học vận hành:** không được kết
+> luận "chưa code" chỉ từ grep một worktree — repo này có 6 worktree, phải `git worktree list` trước.
+
 > **2026-07-19 — HIỂN THỊ TÍCH HỢP NỘI BỘ TRÊN `/tich-hop` + `/nhat-ky` DONE (owner Codex).**
 > `/tich-hop` có khối riêng “Quản lý NV KHCN ↔ Quản lý quy trình”, thể hiện hai chiều
 > command-outbox và workflow-event-inbox, health tổng hợp, số lệnh chờ/lỗi, sự kiện nhận gần nhất và

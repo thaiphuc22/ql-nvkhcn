@@ -1,5 +1,81 @@
 # Active Task
 
+## ★ DONE — Xác minh Approval Matrix trên HTTP thật — 2026-07-20 (owner Claude)
+
+Nối tiếp mục dưới. Trước đó mới verify tới tầng build/test; nay đã chạy server thật và gọi HTTP live.
+
+| Kiểm chứng | Kết quả |
+|---|---|
+| Flyway V9 trên DB dev | **ĐÃ ÁP** — `flyway_schema_history` v9 `success=t`, cài 2026-07-16 14:43. Đủ 18 migration, Flyway `Successfully validated 18 migrations` khi khởi động ⇒ checksum V9 ở workspace **khớp** bản đã áp trong DB |
+| Bảng + seed | 4 bảng `approval_*` tồn tại; `approval_slot` 6 dòng, `approval_rule` 8 dòng |
+| `GET /api/approval-matrix/rules` | **200** + 8 luật JSON đầy đủ (conditions/assignment/priority/version) |
+| `GET /api/approval-matrix/slots` | **200** + 6 slot, có `usageCount` tính đúng (THAM_DINH=3, HOI_DONG=2) |
+| `POST /resolve` capNhiemVu=CS | **200** → khớp `AM-01`, approver `U-003` via `CQ_KHCN`, audit ghi rõ lý do skip từng luật |
+| `POST /resolve` capNhiemVu=TD | **200** → khớp `AM-02`, approver `U-010` via `CQ_KHCN_TD` ⇒ condition engine phân nhánh đúng theo context, không phải chỉ đọc JPA |
+| `POST /analyze` | **200** → cảnh báo trùng priority (THAM_DINH 2 luật cùng ưu tiên 10, HOI_DONG cùng 20) + thiếu luật fallback |
+
+**Bằng chứng phụ**: `AM-26809` trong DB do **Lê Văn Cường** tạo (không phải `system-seed`) — chứng tỏ
+đường ghi đã từng được dùng thật ở phiên 16/07, không chỉ đọc.
+
+**Cách chạy**: KHÔNG dùng `mvn package` được — tiến trình 8090 (PID 13036, start 10:12) đang **giữ khoá
+`target/qtkhcn-backend.jar`**, `repackage` fail ở bước rename (đúng bẫy đã ghi trong memory
+`qtkhcn-local-stack-run`). Đi đường vòng: `mvn -o spring-boot:run -Dspring-boot.run.arguments=--server.port=8095`
+— chạy từ `target/classes`, không đụng jar đang bị khoá. Header auth là `X-QTKHCN-Dev-Key: dev-local-only`
+(KHÔNG phải `X-API-Key`; sai header ⇒ 401 chứ không phải 404).
+
+**✅ ĐÃ THÔNG TOÀN TUYẾN 4200 → proxy → 8090 → DB.** Ban đầu 8090 chạy JAR cũ (build trước khi port)
+nên vẫn 404; **10:33 một phiên song song đã `clean package` + restart 8090** (PID 28044, jar 89MB,
+443 entry `BOOT-INF`). Gọi lại trên 8090: `/rules`, `/slots`, `/analyze` **200**; `/resolve` phân nhánh
+đúng CS→AM-01/U-003, TD→AM-02/U-010. Qua proxy 4200: **200 `application/json`**; khi thiếu header thì
+trả **401 JSON** chứ không phải HTML ⇒ proxy định tuyến đúng, không rơi vào SPA fallback (bẫy `(HTTP 200)`
+trong memory `qtkhcn-local-stack-run`). Server tạm 8095 đã tắt.
+
+**Sự cố tự gây, đã khỏi**: `mvn package` lúc 10:28 fail ở repackage do 8090 (PID 13036 cũ) giữ khoá jar,
+làm jar còn **thin 487KB / 0 entry BOOT-INF** — `java -jar` sẽ chết. Phiên 10:33 build lại đã khắc phục.
+Bài học: đừng `mvn package` khi backend đang chạy; muốn test thì dùng `spring-boot:run` cổng khác.
+
+**Còn treo**: chưa click-through trình duyệt (mới verify tới tầng HTTP/proxy); chưa commit ở workspace
+chính (giữ nguyên tắc chỉ commit khi user yêu cầu).
+
+---
+
+## ★ DONE — Cứu Approval Matrix backend khỏi worktree + port vào workspace chính — 2026-07-20 (owner Claude)
+
+**Bối cảnh**: user hỏi kiểm tra lại `/ma-tran-phe-duyet` vì "nhớ là đã code backend rồi". Agent grep
+workspace chính, không thấy entity/repository/controller nào, và **kết luận nhầm là "backend chưa từng
+được viết"**. Sai. Grep một cây thư mục chỉ chứng minh "không có ở đây", không chứng minh "chưa tồn
+tại" — repo này có **6 worktree**, lẽ ra phải `git worktree list` trước. User đúng.
+
+**Sự thật**: BE đã DONE + VERIFIED từ 2026-07-16 (91/91 test PASS), nằm ở worktree
+`C:\Users\phuctd7\ql-nvkhcn-be-approval-matrix`, branch `fix/approval-matrix-backend` — đúng như
+DELIVERY_STATE entry hôm đó đã ghi. Nhưng **toàn bộ 34 file ở trạng thái untracked suốt 4 ngày**.
+
+**Quyết định (qua `AskUserQuestion`, user chọn phương án khuyến nghị)**: commit worktree trước rồi port
+có chọn lọc — KHÔNG `git merge` branch đó. Lý do bác merge: branch ở baseline 16/07 (`3d3ed24`) trong
+khi workspace chính đã ở `33db320` với D18/D19/D20, `ho-so-service`, Camunda workflow, integration;
+merge sẽ kéo ngược baseline cũ đè lên 3 ngày công việc mới hơn.
+
+| Bước | Việc | Kết quả |
+|---|---|---|
+| 1 | Commit bảo toàn trong worktree | `f366885` — 65 file / 4380 dòng (Approval 34 + Action Studio + eForm, tức cả jar tổng hợp 3-trong-1). `backend/target/` đã gitignore nên không lẫn artifact. |
+| 2 | Copy 33 file Approval sang workspace chính | V9 SQL bỏ qua — đã identical từ 16/07. Không file nào bị ghi đè (script kiểm tra tồn tại trước khi copy). |
+| 3 | Merge tay `GlobalExceptionHandler.java` | File phân kỳ **cả hai chiều**: worktree có handler `ApprovalMatrixConflictException`; workspace chính có `IntegrationConflictException` + `WorkflowStartException` + `TaskActionException` + record `InternalErrorBody`. Giữ đủ cả 4, không bên nào mất. |
+| 4 | Verify | `mvn -o compile` sạch; `mvn -o test` **180/180 PASS, 1 skipped**, BUILD SUCCESS. |
+
+**9 test Approval xanh**: `ApprovalConditionEngineTest` 2, `ApprovalMatrixAnalyzerTest` 1,
+`ApprovalMatrixServiceTest` 3, `ApprovalMatrixHttpContractTest` 3.
+
+**Đối chiếu contract FE↔BE — khớp 100%**: `ApprovalMatrixController` `/api/approval-matrix` phủ
+`/rules` (GET/POST/PUT/DELETE + `{id}/status`/`{id}/versions`/`{id}/audit`), `/resolve`, `/analyze`;
+`ApprovalSlotController` `/api/approval-matrix/slots` phủ GET/POST/PUT `{code}`/`{code}/status`. FE
+(`approval-matrix.service.ts`, `approval-slot-catalog.service.ts`) gọi đúng bấy nhiêu và **không** gọi
+DELETE slot (slot chỉ retire qua status) — không có endpoint thiếu.
+
+**CHƯA làm (không được ghi nhận là xong)**: chưa dựng server thật để gọi HTTP live, nên **chưa xác nhận
+Flyway V9 đã áp lên DB dev đang dùng** — đây chính là điều kiện để `/ma-tran-phe-duyet` hết 404, cần
+kiểm tra trước khi kết luận màn hình đã chạy. Chưa click-through trình duyệt. Chưa commit ở workspace
+chính (giữ nguyên tắc chỉ commit khi user yêu cầu).
+
 ## ★ DONE — Hiển thị tích hợp Service Quy trình ↔ Service NV KHCN trên UI — 2026-07-19 (owner Codex)
 
 Theo yêu cầu user, `/tich-hop` nay có overview riêng cho kênh nội bộ với topology hai service, hai

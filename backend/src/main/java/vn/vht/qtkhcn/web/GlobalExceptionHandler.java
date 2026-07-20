@@ -18,6 +18,7 @@ import vn.vht.qtkhcn.service.DraftRevisionConflictException;
 import vn.vht.qtkhcn.service.ProcessImportException;
 import vn.vht.qtkhcn.camunda.DmnCamundaException;
 import vn.vht.qtkhcn.service.ActionStudioConflictException;
+import vn.vht.qtkhcn.service.ApprovalMatrixConflictException;
 import vn.vht.qtkhcn.service.EformConflictException;
 import vn.vht.qtkhcn.service.IntegrationConflictException;
 import vn.vht.qtkhcn.service.WorkflowStartException;
@@ -79,6 +80,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ActionStudioConflictException.class)
     public ResponseEntity<ErrorBody> actionStudioConflict(ActionStudioConflictException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorBody(e.getMessage()));
+    }
+
+    @ExceptionHandler(ApprovalMatrixConflictException.class)
+    public ResponseEntity<ErrorBody> approvalMatrixConflict(ApprovalMatrixConflictException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorBody(e.getMessage()));
     }
 
