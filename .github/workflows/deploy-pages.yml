@@ -26,29 +26,16 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 22
+          # Node 24 ships npm 11, which fixes the npm 10.x "Exit handler never
+          # called" hang that made `npm ci` time out after the recharts dep was
+          # added. Verified locally: install + build are clean on npm 11.
+          node-version: 24
           cache: npm
           cache-dependency-path: webapp/package-lock.json
 
       - name: Install dependencies
         working-directory: webapp
-        env:
-          NODE_OPTIONS: --dns-result-order=ipv4first
-        run: |
-          set +e
-          for attempt in 1 2 3 4; do
-            echo "npm ci attempt $attempt"
-            rm -rf node_modules
-            timeout 240 npm ci --no-audit --no-fund
-            status=$?
-            if [ $status -eq 0 ] && npm ls --depth=0 >/dev/null 2>&1; then
-              echo "npm ci succeeded and verified complete on attempt $attempt"
-              exit 0
-            fi
-            echo "::warning::npm ci attempt $attempt failed or left node_modules incomplete (exit $status), retrying"
-          done
-          echo "::error::npm ci did not produce a complete node_modules after 4 attempts"
-          exit 1
+        run: npm ci --no-audit --no-fund
 
       - name: Build application
         working-directory: webapp
