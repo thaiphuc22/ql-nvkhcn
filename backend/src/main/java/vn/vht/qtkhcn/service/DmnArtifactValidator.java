@@ -40,7 +40,7 @@ public class DmnArtifactValidator {
         }
     }
 
-    private static DocumentBuilderFactory secureFactory() throws ParserConfigurationException {
+    static DocumentBuilderFactory secureFactory() throws ParserConfigurationException {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setNamespaceAware(true);
         factory.setXIncludeAware(false);

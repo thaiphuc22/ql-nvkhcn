@@ -35,4 +35,25 @@ class DeployedBpmnRoutingReaderTest {
         assertThat(task6.branches()).extracting(branch -> branch.outcome())
                 .contains("dong_y_bo_sung", "hieu_chinh", "khong_dong_y");
     }
+
+    @Test
+    void rd0202V3ExposesApproveAndRejectActionsFromTheBundledContract() throws Exception {
+        ProcessDefinitionCatalog catalog = new ProcessDefinitionCatalog();
+        catalog.setId(UUID.randomUUID());
+        catalog.setBpmnProcessId("RD02_02");
+        catalog.setName("Xét duyệt nhiệm vụ KHCN cấp Tập đoàn");
+        ProcessDefinitionVersion version = new ProcessDefinitionVersion();
+        version.setBpmnXml(Files.readString(Path.of("src/main/resources/processes/rd0202.bpmn"),
+                StandardCharsets.UTF_8));
+
+        DeployedBpmnRoutingReader reader = new DeployedBpmnRoutingReader(
+                mock(ProcessDefinitionCatalogRepository.class), mock(ProcessDefinitionVersionRepository.class));
+        var routing = reader.parse(catalog, version);
+
+        assertThat(routing.steps()).isNotEmpty().allSatisfy(step ->
+                assertThat(step.branches()).extracting(branch -> branch.outcome())
+                        .containsExactly("APPROVE", "REJECT"));
+        assertThat(routing.steps().stream().filter(step -> step.key().equals("T14_GD_TTMS")).findFirst())
+                .isPresent().get().extracting(step -> step.role()).isEqualTo("GD_TTMS");
+    }
 }

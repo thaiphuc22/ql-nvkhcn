@@ -51,6 +51,27 @@ export interface DossierStepResponse {
   formKey: string | null;
 }
 
+export type HoiDongCap = 'CO_SO' | 'TAP_DOAN';
+
+export const HOI_DONG_CAP_LABEL: Record<HoiDongCap, string> = {
+  CO_SO: 'Cơ sở',
+  TAP_DOAN: 'Tập đoàn',
+};
+
+export interface ThanhVienHoiDongResponse {
+  hoTen: string;
+  vaiTroTrongHoiDong: string | null;
+}
+
+export interface HoiDongXetDuyetResponse {
+  id: number;
+  cap: HoiDongCap;
+  sourceTaskDefinitionKey: string;
+  canCuPhapLy: string | null;
+  createdAt: string;
+  thanhVien: ThanhVienHoiDongResponse[];
+}
+
 export interface HoSoResponse {
   id: string;
   maNV: string;
@@ -63,7 +84,7 @@ export interface HoSoResponse {
   buocHienTai: number;
   zeebeProcessInstanceKey: number | null;
   steps: DossierStepResponse[];
-  taiLieu: CreateHoSoDocument[];
+  taiLieu: HoSoDocument[];
   maDeTai: string;
   tenDeTai: string;
   chuNhiem: string;
@@ -71,7 +92,20 @@ export interface HoSoResponse {
   thoiGianThucHien: string | null;
   duToan: string;
   cap: Cap;
+  hoiDongXetDuyet: HoiDongXetDuyetResponse[];
 }
+
+export interface HoSoDocument {
+  id: number;
+  ten: string;
+  loai: string;
+  version: number;
+  contentType: string | null;
+  sizeBytes: number | null;
+  hasContent: boolean;
+}
+
+export type UploadedHoSoDocument = HoSoDocument;
 
 export interface CreateHoSoDocument {
   ten: string;

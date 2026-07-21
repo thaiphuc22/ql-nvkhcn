@@ -25,6 +25,8 @@ import vn.vht.qtkhcn.workflow.WorkflowRuntimeEventReader;
 @Component
 public class CamundaWorkflowRuntimeEventReader implements WorkflowRuntimeEventReader {
     private static final String JOB_BACKED_USER_TASK = "io.camunda.zeebe:userTask";
+    // RD02.02: endEvent "Hồ sơ không được thông qua" (nhánh không đạt điểm HĐXD Tập đoàn phiên 2, T24).
+    private static final String REJECTING_END_EVENT_ID = "End_KhongThongQua";
     private final CamundaClient client;
     private final BpmnUserTaskMetadataCatalog metadata;
     private final WorkflowActionInboxRepository actionInbox;
@@ -53,7 +55,9 @@ public class CamundaWorkflowRuntimeEventReader implements WorkflowRuntimeEventRe
             if (instance.getState() == ProcessInstanceState.COMPLETED
                     || instance.getState() == ProcessInstanceState.TERMINATED) {
                 var type = instance.getState() == ProcessInstanceState.COMPLETED
-                        ? WorkflowRuntimeEvent.EventType.PROCESS_COMPLETED
+                        ? (reachedRejectingEndEvent(processInstanceKey)
+                                ? WorkflowRuntimeEvent.EventType.PROCESS_REJECTED
+                                : WorkflowRuntimeEvent.EventType.PROCESS_COMPLETED)
                         : rejected(processInstanceKey)
                                 ? WorkflowRuntimeEvent.EventType.PROCESS_REJECTED
                                 : WorkflowRuntimeEvent.EventType.PROCESS_CANCELLED;
@@ -82,6 +86,20 @@ public class CamundaWorkflowRuntimeEventReader implements WorkflowRuntimeEventRe
         return actionInbox.existsByProcessInstanceIdAndActionCodeAndStatusIn(
                 String.valueOf(processInstanceKey), "REJECT_STEP",
                 List.of(WorkflowActionInbox.Status.UNKNOWN, WorkflowActionInbox.Status.COMPLETED));
+    }
+
+    /**
+     * RD02.02: khi HĐXD Tập đoàn phiên 2 (T24) chấm điểm không đạt, quy trình kết thúc BÌNH THƯỜNG
+     * ở endEvent "End_KhongThongQua" (khác với GCheck, vốn quay lại T02 thay vì kết thúc) — Camunda
+     * báo ProcessInstanceState.COMPLETED giống hệt nhánh thành công, khác với REJECT_STEP (nơi
+     * process bị huỷ, TERMINATED). Phải tra thêm endEvent nào đã COMPLETED để phân biệt, rồi báo
+     * dossier là REJECTED thay vì COMPLETED — nhất quán với cách người dùng "Từ chối" thủ công.
+     */
+    private boolean reachedRejectingEndEvent(long processInstanceKey) {
+        return client.newElementInstanceSearchRequest()
+                .filter(f -> f.processInstanceKey(processInstanceKey).type(ElementInstanceType.END_EVENT)
+                        .elementId(REJECTING_END_EVENT_ID).state(ElementInstanceState.COMPLETED))
+                .page(p -> p.limit(1)).send().join().items().stream().findAny().isPresent();
     }
 
     private void addNativeTaskEvents(UserTask task, List<WorkflowRuntimeEvent> result) {

@@ -94,6 +94,23 @@ class ActionStudioServiceTest {
     }
 
     @Test
+    void scaffoldUsesApproveAndRejectActionCodesDeclaredByRd0202() {
+        when(routing.require("RD02_02")).thenReturn(new ProcessRoutingResponse("RD02_02", "Quy trình",
+                List.of(new ProcessStepResponse("T14_GD_TTMS", "Ký duyệt", "GD_TTMS", "phieu-phe-duyet",
+                        List.of(new RouteBranchResponse("APPROVE", "Đồng ý", "Bước sau", "forward"),
+                                new RouteBranchResponse("REJECT", "Từ chối", "Kết thúc", "reject"))))));
+        when(policies.findAllByOrderByDisplayOrderAscIdAsc()).thenReturn(List.of());
+        when(actions.findById(any())).thenAnswer(invocation -> Optional.of(action(invocation.getArgument(0), true, 1)));
+        when(policies.existsById(any())).thenReturn(false);
+        when(policies.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = service.scaffold("RD02_02", "alice");
+
+        assertThat(response.createdPolicies()).extracting(item -> item.actionCode())
+                .containsExactly("APPROVE_STEP", "REJECT_STEP");
+    }
+
+    @Test
     void availabilityRejectsTaskWithoutProcess() {
         when(actions.findById("APPROVE_STEP")).thenReturn(Optional.of(action("APPROVE_STEP", true, 1)));
         AvailabilityRequest request = new AvailabilityRequest("AP-X", "APPROVE_STEP", "DOSSIER_DETAIL",
@@ -159,6 +176,24 @@ class ActionStudioServiceTest {
             assertThat(item.value()).isEqualTo("bm-phe-duyet");
             assertThat(item.label()).isEqualTo("Biểu mẫu phê duyệt");
         });
+    }
+
+    @Test
+    void validatesRequiredEvidenceFieldsFromTheBoundFormSchema() {
+        Eform form = new Eform();
+        form.setKey("bm-major-step");
+        form.setSchemaJson("""
+                {"components":[
+                  {"type":"textarea","key":"nhanXet","label":"Nhận xét","validate":{"required":true}},
+                  {"type":"textfield","key":"ghiChu","label":"Ghi chú"}
+                ]}
+                """);
+        when(eforms.findById("bm-major-step")).thenReturn(Optional.of(form));
+
+        assertThat(service.missingRequiredFormFields("bm-major-step", java.util.Map.of("ghiChu", "ok")))
+                .containsExactly("Nhận xét");
+        assertThat(service.missingRequiredFormFields("bm-major-step", java.util.Map.of("nhanXet", "Đạt")))
+                .isEmpty();
     }
 
     private static ActionStudioAction action(String code, boolean active, long version) {

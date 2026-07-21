@@ -16,10 +16,15 @@ public class CamundaDeploymentService {
         this.camundaClient = camundaClient;
     }
 
-    public DeploymentResult deployClasspath(String classpathResource) {
+    /** Deploys một hoặc nhiều classpath resource (ví dụ BPMN + DMN) trong cùng một deployment của Zeebe. */
+    public DeploymentResult deployClasspath(String... classpathResources) {
         try {
-            return toResult(camundaClient.newDeployResourceCommand()
-                    .addResourceFromClasspath(classpathResource).send().join());
+            var command = camundaClient.newDeployResourceCommand()
+                    .addResourceFromClasspath(classpathResources[0]);
+            for (int i = 1; i < classpathResources.length; i++) {
+                command = command.addResourceFromClasspath(classpathResources[i]);
+            }
+            return toResult(command.send().join());
         } catch (Exception e) {
             throw deploymentFailure(e);
         }

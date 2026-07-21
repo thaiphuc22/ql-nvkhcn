@@ -30,6 +30,9 @@ transactional outbox và nhận workflow event bằng inbox/idempotency. Backend
 | `QTKHCN_WORKFLOW_SERVICE_TOKEN` | Bearer token riêng để gọi internal API service Quy trình |
 | `QTKHCN_OUTBOX_DISPATCH_MS` | `1000` |
 | `QTKHCN_WORKFLOW_PROJECTION_RECONCILE_MS` | `5000` |
+| `QTKHCN_DOCUMENT_STORAGE_PATH` | `./data/ho-so-files`; thư mục lưu nội dung tệp, cần gắn volume bền vững khi deploy |
+| `QTKHCN_DOCUMENT_MAX_FILE_SIZE` | `20MB` |
+| `QTKHCN_DOCUMENT_MAX_REQUEST_SIZE` | `21MB` |
 
 Không commit token/credential thật. Gateway ở Lát 2B sẽ inject service credential; frontend không gọi trực
 tiếp port 8093.
@@ -57,7 +60,11 @@ Lát 3 bổ sung:
 - `POST /api/ho-so`, `PUT /api/ho-so/{id}` (chỉ hồ sơ `DRAFT`).
 - `DELETE /api/nhiem-vu/{ma}` (xóa kèm toàn bộ hồ sơ trực thuộc), `DELETE /api/ho-so/{id}`;
   tạm thời không giới hạn theo giai đoạn/trạng thái.
-- `POST/PUT/DELETE /api/ho-so/{id}/documents/**`.
+- `POST/DELETE /api/ho-so/{id}/documents/**` cho phép thêm, xóa tài liệu ở mọi trạng thái hồ sơ;
+  `PUT` metadata vẫn chỉ áp dụng khi hồ sơ `DRAFT`.
+- `POST /api/ho-so/{id}/documents` với `multipart/form-data` (`file`) để upload tệp ở mọi trạng thái hồ sơ.
+- `GET /api/ho-so/{id}/documents/{documentId}/content` để xem inline và
+  `GET /api/ho-so/{id}/documents/{documentId}/download` để tải xuống.
 - Item GET và mutation response trả `ETag`; update/delete bắt buộc `If-Match`.
 - Mutation bắt buộc `X-QTKHCN-Actor` và ghi `domain_mutation_audit`.
 
@@ -95,6 +102,19 @@ Script tạo dữ liệu riêng theo timestamp và kiểm tra create → submit 
 → Task 4 mở lại với task key mới → reject → Hồ sơ `REJECTED`, đồng thời admin không còn thấy active task.
 Mỗi action được lấy từ `available-actions` trước khi thực thi; script fail nếu policy hoặc candidate group
 không đúng contract runtime.
+
+Smoke riêng cho lát RD02.02 v3 (worker kiểm tra mặc định và sinh HĐXD) chạy bằng:
+
+```powershell
+$env:QTKHCN_HO_SO_SERVICE_TOKEN = '<local-ho-so-token>'
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Invoke-RD0202V3E2E.ps1
+```
+
+Script đi qua full RD02.02 v3 đang deploy: T01/T02, bốn nhánh T03 song song, bước tổng hợp
+T03_PM, T04-T06 và `Generate_HDXD`; sau đó chạy tiếp toàn bộ các bước T07-T33, bao gồm các
+cụm song song T09/T12/T14/T23/T26/T28. Script assert hồ sơ kết thúc `APPROVED`, không còn
+active task, đã gặp đủ 56 task key của deployed process, rồi xóa riêng nhiệm vụ/hồ sơ test.
+Dùng `-KeepData` khi cần giữ artifact để xem trên UI.
 
 ## Ownership
 

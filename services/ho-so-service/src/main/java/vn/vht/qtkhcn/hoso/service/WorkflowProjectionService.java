@@ -162,6 +162,7 @@ public class WorkflowProjectionService {
                             step.setNguoi(blankToNull(action.actorId()));
                             step.setYKien(blankToNull(action.comment()));
                             step.setThoiDiem(action.occurredAt().toString());
+                            step.setFormDataJson(blankToNull(action.formDataJson()));
                         });
             }
         }
@@ -196,11 +197,18 @@ public class WorkflowProjectionService {
         }
     }
 
-    private static void action(Map<String, ActionState> actions, JsonNode payload, OffsetDateTime occurredAt) {
+    private void action(Map<String, ActionState> actions, JsonNode payload, OffsetDateTime occurredAt) {
         String taskKey = required(payload, "taskKey");
-        ActionState incoming = new ActionState(text(payload, "actorId"), text(payload, "comment"), occurredAt);
+        String formDataJson = payload.has("formData") ? writeFormData(payload.path("formData")) : null;
+        ActionState incoming = new ActionState(text(payload, "actorId"), text(payload, "comment"),
+                formDataJson, occurredAt);
         actions.merge(taskKey, incoming,
                 (left, right) -> right.occurredAt().isAfter(left.occurredAt()) ? right : left);
+    }
+
+    private String writeFormData(JsonNode formData) {
+        try { return json.writeValueAsString(formData); }
+        catch (Exception invalid) { return null; }
     }
 
     private TaskState task(Map<String, TaskState> tasks, JsonNode payload) {
@@ -287,5 +295,5 @@ public class WorkflowProjectionService {
         }
     }
 
-    private record ActionState(String actorId, String comment, OffsetDateTime occurredAt) {}
+    private record ActionState(String actorId, String comment, String formDataJson, OffsetDateTime occurredAt) {}
 }

@@ -30,9 +30,11 @@ public class SystemCheckJobWorker {
     private static final Logger log = LoggerFactory.getLogger(SystemCheckJobWorker.class);
 
     private final ServiceTaskConfigResolver configResolver;
+    private final Rd0202ConditionValidator rd0202Validator;
 
-    public SystemCheckJobWorker(ServiceTaskConfigResolver configResolver) {
+    public SystemCheckJobWorker(ServiceTaskConfigResolver configResolver, Rd0202ConditionValidator rd0202Validator) {
         this.configResolver = configResolver;
+        this.rd0202Validator = rd0202Validator;
     }
 
     @JobWorker(type = "khcn.rd0101.check-default-condition")
@@ -41,6 +43,15 @@ public class SystemCheckJobWorker {
         // chỉ nên làm cùng lúc với việc seed binding tương ứng, nếu không sẽ chỉ thêm log WARN.
         log.info("Xử lý job {} (processInstanceKey={})", job.getType(), job.getProcessInstanceKey());
         return Map.of(ProcessVariableContract.DIEU_KIEN_MAC_DINH_DAT, true);
+    }
+
+    /** Validates the real dossier aggregate; a business failure completes the job with false so GCheck returns to T02. */
+    @JobWorker(type = "khcn.rd0202.check-default-condition")
+    public Map<String, Object> checkRd0202DefaultCondition(ActivatedJob job) {
+        boolean valid = rd0202Validator.validate(job.getProcessInstanceKey());
+        log.info("Kiểm tra HSXD RD02.02 job {} (processInstanceKey={}): {}={}",
+                job.getType(), job.getProcessInstanceKey(), ProcessVariableContract.DIEU_KIEN_MAC_DINH_DAT, valid);
+        return Map.of(ProcessVariableContract.DIEU_KIEN_MAC_DINH_DAT, valid);
     }
 
     /**

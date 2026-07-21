@@ -6,6 +6,7 @@ import vn.vht.qtkhcn.hoso.domain.Cap;
 import vn.vht.qtkhcn.hoso.domain.DossierStatus;
 import vn.vht.qtkhcn.hoso.domain.HoSo;
 import vn.vht.qtkhcn.hoso.domain.HoSoLoai;
+import vn.vht.qtkhcn.hoso.domain.HoiDongXetDuyet;
 import vn.vht.qtkhcn.hoso.domain.NhiemVu;
 
 /** Legacy-compatible public read view used during the strangler phase. */
@@ -28,9 +29,10 @@ public record HoSoResponse(
         String donVi,
         String thoiGianThucHien,
         String duToan,
-        Cap cap) {
+        Cap cap,
+        List<HoiDongXetDuyetResponse> hoiDongXetDuyet) {
 
-    public static HoSoResponse from(HoSo hoSo, NhiemVu nhiemVu) {
+    public static HoSoResponse from(HoSo hoSo, NhiemVu nhiemVu, List<HoiDongXetDuyet> hoiDongXetDuyet) {
         return new HoSoResponse(
                 hoSo.getId(),
                 hoSo.getMaNV(),
@@ -50,6 +52,7 @@ public record HoSoResponse(
                 nhiemVu.getDonViChuTri(),
                 nhiemVu.getThoiGianThucHien(),
                 nhiemVu.getDuToan(),
-                nhiemVu.getCap());
+                nhiemVu.getCap(),
+                hoiDongXetDuyet.stream().map(HoiDongXetDuyetResponse::from).toList());
     }
 }

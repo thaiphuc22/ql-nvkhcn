@@ -39,13 +39,15 @@ public class HoSoMutationService {
     private final WorkflowProcessProjectionRepository processProjectionRepository;
     private final WorkflowTaskProjectionRepository taskProjectionRepository;
     private final WorkflowEventInboxRepository workflowEventInboxRepository;
+    private final DocumentStorageService documentStorageService;
 
     public HoSoMutationService(HoSoRepository hoSoRepository, NhiemVuRepository nhiemVuRepository,
                                TaiLieuRepository taiLieuRepository, BusinessIdGenerator idGenerator,
                                MutationSupport mutations, OutboxEventRepository outboxEventRepository,
                                WorkflowProcessProjectionRepository processProjectionRepository,
                                WorkflowTaskProjectionRepository taskProjectionRepository,
-                               WorkflowEventInboxRepository workflowEventInboxRepository) {
+                               WorkflowEventInboxRepository workflowEventInboxRepository,
+                               DocumentStorageService documentStorageService) {
         this.hoSoRepository = hoSoRepository;
         this.nhiemVuRepository = nhiemVuRepository;
         this.taiLieuRepository = taiLieuRepository;
@@ -55,6 +57,7 @@ public class HoSoMutationService {
         this.processProjectionRepository = processProjectionRepository;
         this.taskProjectionRepository = taskProjectionRepository;
         this.workflowEventInboxRepository = workflowEventInboxRepository;
+        this.documentStorageService = documentStorageService;
     }
 
     @Transactional
@@ -112,7 +115,7 @@ public class HoSoMutationService {
     @Transactional
     public TaiLieu addDocument(String hoSoId, CreateTaiLieuRequest request, String actorHeader) {
         String actor = mutations.requireActor(actorHeader);
-        HoSo hoSo = requiredDraft(hoSoId);
+        HoSo hoSo = requiredHoSo(hoSoId);
         TaiLieu document = taiLieuRepository.saveAndFlush(newDocument(hoSo, request));
         mutations.audit("TAI_LIEU", String.valueOf(document.getId()), document.getVersion(),
                 "CREATE", actor, "hoSoId=" + hoSoId);
@@ -137,11 +140,12 @@ public class HoSoMutationService {
     @Transactional
     public void deleteDocument(String hoSoId, long documentId, long expectedVersion, String actorHeader) {
         String actor = mutations.requireActor(actorHeader);
-        requiredDraft(hoSoId);
+        requiredHoSo(hoSoId);
         TaiLieu document = requiredDocument(hoSoId, documentId);
         mutations.verifyVersion("TaiLieu", String.valueOf(documentId), expectedVersion, document.getVersion());
         taiLieuRepository.delete(document);
         taiLieuRepository.flush();
+        documentStorageService.deleteAfterCommit(document.getStorageKey());
         mutations.audit("TAI_LIEU", String.valueOf(documentId), expectedVersion, "DELETE", actor,
                 "hoSoId=" + hoSoId);
     }
@@ -159,6 +163,7 @@ public class HoSoMutationService {
 
     void deleteAggregate(HoSo entity) {
         String id = entity.getId();
+        entity.getTaiLieu().forEach(document -> documentStorageService.deleteAfterCommit(document.getStorageKey()));
         taskProjectionRepository.deleteByHoSoId(id);
         processProjectionRepository.deleteByHoSoId(id);
         outboxEventRepository.deleteByAggregateId(id);
@@ -168,12 +173,16 @@ public class HoSoMutationService {
     }
 
     private HoSo requiredDraft(String id) {
-        HoSo entity = hoSoRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Khong tim thay HoSo " + id));
+        HoSo entity = requiredHoSo(id);
         if (entity.getTrangThai() != DossierStatus.DRAFT) {
             throw new IllegalStateException("Ho so " + id + " is not DRAFT and cannot be edited.");
         }
         return entity;
+    }
+
+    private HoSo requiredHoSo(String id) {
+        return hoSoRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Khong tim thay HoSo " + id));
     }
 
     private TaiLieu requiredDocument(String hoSoId, long documentId) {

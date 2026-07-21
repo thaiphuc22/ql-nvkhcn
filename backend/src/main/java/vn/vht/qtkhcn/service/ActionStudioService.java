@@ -1,5 +1,7 @@
 package vn.vht.qtkhcn.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -7,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -39,6 +42,7 @@ import vn.vht.qtkhcn.web.dto.ActionStudioDtos.SimulationRequest;
 
 @Service
 public class ActionStudioService {
+    private static final ObjectMapper JSON = new ObjectMapper();
     private static final Set<String> ACTION_TYPES = Set.of("STANDARD", "SUPPORT", "EXCEPTION");
     private static final Set<String> UI_GROUPS = Set.of("PRIMARY", "MORE", "EXCEPTION");
     private static final Set<String> TONES = Set.of("primary", "default", "danger", "warning");
@@ -253,6 +257,43 @@ public class ActionStudioService {
                 .map(action -> simulate(action, policies, request))
                 .sorted(Comparator.comparingInt(SimulatedActionResponse::order))
                 .toList();
+    }
+
+    /** Server-side required-field validation for the form bound to a concrete task policy. */
+    @Transactional(readOnly = true)
+    public List<String> missingRequiredFormFields(String formKey, Map<String, Object> formData) {
+        if (formKey == null || formKey.isBlank()) return List.of();
+        var form = eformRepository.findById(formKey)
+                .orElseThrow(() -> new IllegalArgumentException("Biểu mẫu không tồn tại: " + formKey));
+        try {
+            List<String> missing = new ArrayList<>();
+            collectMissingRequired(JSON.readTree(form.getSchemaJson()), formData, missing);
+            return List.copyOf(missing);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException invalidSchema) {
+            throw new IllegalStateException("Schema biểu mẫu không hợp lệ: " + formKey, invalidSchema);
+        }
+    }
+
+    private static void collectMissingRequired(JsonNode node, Map<String, Object> formData, List<String> missing) {
+        if (node == null) return;
+        if (node.isObject()) {
+            String key = node.path("key").asText("").trim();
+            if (!key.isEmpty() && node.path("validate").path("required").asBoolean(false)
+                    && emptyFormValue(formData.get(key))) {
+                missing.add(node.path("label").asText(key));
+            }
+            node.elements().forEachRemaining(child -> collectMissingRequired(child, formData, missing));
+        } else if (node.isArray()) {
+            node.elements().forEachRemaining(child -> collectMissingRequired(child, formData, missing));
+        }
+    }
+
+    private static boolean emptyFormValue(Object value) {
+        if (value == null) return true;
+        if (value instanceof String text) return text.isBlank();
+        if (value instanceof java.util.Collection<?> values) return values.isEmpty();
+        if (value instanceof Map<?, ?> values) return values.isEmpty();
+        return false;
     }
 
     @Transactional(readOnly = true)

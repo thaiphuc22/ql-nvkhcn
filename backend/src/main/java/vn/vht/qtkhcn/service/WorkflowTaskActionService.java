@@ -114,6 +114,7 @@ public class WorkflowTaskActionService {
             markUnknown(row.getRequestId(), task, mapping);
             Map<String, Object> variables = routing.variables(mapping.getProcessDefinitionId(),
                     task.taskDefinitionKey(), request.actionCode(), request.requestId().toString(), identity.userId());
+            variables = withDiemSoForT24(task.taskDefinitionKey(), request.actionCode(), variables, request.formData());
             runtime.apply(task, request.actionCode(), variables);
             return complete(row.getRequestId());
         } catch (TaskActionException validation) {
@@ -249,6 +250,9 @@ public class WorkflowTaskActionService {
         payload.put("actionCode", row.getActionCode());
         payload.put("actorId", row.getActorId());
         if (row.getComment() != null) payload.put("comment", row.getComment());
+        // Nguồn dữ liệu thật cho tự động hoá phía sau (vd sinh HĐXD sau khi ký QĐ thành lập) —
+        // ho-so-service lưu formData vào DossierStep, KHÔNG phải Camunda variable (đúng D3).
+        if (row.getFormDataJson() != null) payload.put("formData", readFormData(row.getFormDataJson()));
         WorkflowEventEnvelope envelope = new WorkflowEventEnvelope(eventId,
                 WorkflowRuntimeEvent.EventType.TASK_ACTION_APPLIED, row.getCompletedAt().toString(),
                 mapping.getRequestId().toString(), mapping.getHoSoId(), mapping.getProcessInstanceId(), payload);
@@ -279,6 +283,26 @@ public class WorkflowTaskActionService {
         });
     }
 
+    /**
+     * T24 (Họp HĐXD Tập đoàn phiên 2) là multi-instance: mỗi thành viên hoàn thành một instance
+     * riêng, và biến Zeebe outputCollection của multi-instance là nơi DUY NHẤT có thể giữ N điểm số
+     * song song để tính trung bình — dossier_step ở ho-so-service chỉ có 1 dòng theo
+     * taskDefinitionKey nên 3 lượt hoàn thành T24 sẽ ghi đè formData của nhau. Vì vậy CHỈ field
+     * điểm số (không phải cả formData) được chuyển thành biến Zeebe cục bộ của đúng instance đó —
+     * cùng mẫu "business data ngắn hạn phục vụ DMN" đã có tiền lệ ở
+     * SystemCheckJobWorker#checkChuTruongTapDoan (tongDuToan/loaiNhiemVu), không phá nguyên tắc D3
+     * vì không lưu lại lâu dài, chỉ đi qua Zeebe đúng 1 chặng tới business rule task rồi biến mất.
+     */
+    private static Map<String, Object> withDiemSoForT24(String taskDefinitionKey, String actionCode,
+            Map<String, Object> variables, Map<String, Object> formData) {
+        if (!"T24".equals(taskDefinitionKey) || !"APPROVE_STEP".equals(actionCode)) return variables;
+        Object diemSo = formData.get("diemSo");
+        if (!(diemSo instanceof Number)) return variables;
+        Map<String, Object> merged = new java.util.LinkedHashMap<>(variables);
+        merged.put("diemSo", diemSo);
+        return merged;
+    }
+
     private static void validateRequest(String pathTaskKey, ExecuteActionRequest request) {
         if (!pathTaskKey.equals(request.taskKey())) {
             throw new TaskActionException("TASK_KEY_MISMATCH", HttpStatus.BAD_REQUEST,
@@ -294,7 +318,7 @@ public class WorkflowTaskActionService {
         }
     }
 
-    private static void validateActionInput(SimulatedActionResponse action, ExecuteActionRequest request) {
+    private void validateActionInput(SimulatedActionResponse action, ExecuteActionRequest request) {
         if (action.requiresReason() && blankToNull(request.comment()) == null) {
             throw new TaskActionException("COMMENT_REQUIRED", HttpStatus.BAD_REQUEST,
                     "Action yêu cầu nhập ý kiến/lý do.");
@@ -302,6 +326,11 @@ public class WorkflowTaskActionService {
         if (action.requiresEvidence() && request.formData().isEmpty()) {
             throw new TaskActionException("EVIDENCE_REQUIRED", HttpStatus.BAD_REQUEST,
                     "Action yêu cầu dữ liệu minh chứng.");
+        }
+        List<String> missingFields = actionStudio.missingRequiredFormFields(action.formKey(), request.formData());
+        if (!missingFields.isEmpty()) {
+            throw new TaskActionException("FORM_VALIDATION_FAILED", HttpStatus.BAD_REQUEST,
+                    "Thiếu trường bắt buộc của biểu mẫu: " + String.join(", ", missingFields) + ".");
         }
     }
 
@@ -329,6 +358,13 @@ public class WorkflowTaskActionService {
         try { return json.writeValueAsString(value); }
         catch (JsonProcessingException e) {
             throw new TaskActionException("PAYLOAD_INVALID", HttpStatus.BAD_REQUEST, "Payload JSON không hợp lệ.");
+        }
+    }
+
+    private Object readFormData(String formDataJson) {
+        try { return json.readValue(formDataJson, Object.class); }
+        catch (JsonProcessingException e) {
+            throw new IllegalStateException("WorkflowActionInbox.formDataJson không hợp lệ.", e);
         }
     }
 

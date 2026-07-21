@@ -109,6 +109,38 @@
       <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
     </dependency>
+    <!--
+      CI check "BPMN đã deploy vs file repo" (backend/src/test/.../BundledBpmnDeployedConsistencyTest.java)
+      dựng Postgres thật qua Testcontainers thay vì H2, vì Flyway/JPA validate phải chạy đúng engine
+      production dùng. spring-boot-testcontainers cho @ServiceConnection; version do
+      spring-boot-starter-parent dependencyManagement quyết định.
+    -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!--
+      Spring Boot 4 tách @DataJpaTest/@AutoConfigureTestDatabase khỏi spring-boot-test-autoconfigure
+      (chỉ còn @JsonTest ở đó) sang starter riêng này — xác nhận bằng cách đọc trực tiếp
+      spring-boot-dependencies-4.0.7.pom trong ~/.m2, không đoán.
+    -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- Testcontainers 2.x đổi tên artifact sang tiền tố testcontainers-* (xác nhận qua testcontainers-bom-2.0.5.pom trong ~/.m2, không phải junit-jupiter/postgresql như dòng 1.x cũ). -->
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers-junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers-postgresql</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

@@ -19,19 +19,22 @@ import vn.vht.qtkhcn.hoso.domain.HoSo;
 import vn.vht.qtkhcn.hoso.domain.HoSoLoai;
 import vn.vht.qtkhcn.hoso.domain.NhiemVu;
 import vn.vht.qtkhcn.hoso.repository.HoSoRepository;
+import vn.vht.qtkhcn.hoso.repository.HoiDongXetDuyetRepository;
 import vn.vht.qtkhcn.hoso.repository.NhiemVuRepository;
 
 class HoSoQueryServiceTest {
 
     private HoSoRepository hoSoRepository;
     private NhiemVuRepository nhiemVuRepository;
+    private HoiDongXetDuyetRepository hoiDongXetDuyetRepository;
     private HoSoQueryService service;
 
     @BeforeEach
     void setUp() {
         hoSoRepository = mock(HoSoRepository.class);
         nhiemVuRepository = mock(NhiemVuRepository.class);
-        service = new HoSoQueryService(hoSoRepository, nhiemVuRepository);
+        hoiDongXetDuyetRepository = mock(HoiDongXetDuyetRepository.class);
+        service = new HoSoQueryService(hoSoRepository, nhiemVuRepository, hoiDongXetDuyetRepository);
     }
 
     @Test
@@ -41,6 +44,8 @@ class HoSoQueryServiceTest {
         NhiemVu nhiemVu = nhiemVu("NV-001");
         when(hoSoRepository.findAll()).thenReturn(List.of(first, second));
         when(nhiemVuRepository.findAllById(List.of("NV-001"))).thenReturn(List.of(nhiemVu));
+        when(hoiDongXetDuyetRepository.findByHoSoIdInOrderByCreatedAtAsc(List.of("HS-001", "HS-002")))
+                .thenReturn(List.of());
 
         var result = service.findAll();
 

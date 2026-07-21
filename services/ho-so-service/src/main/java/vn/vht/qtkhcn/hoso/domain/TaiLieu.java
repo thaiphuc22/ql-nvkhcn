@@ -10,6 +10,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
+import java.time.OffsetDateTime;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -34,6 +35,18 @@ public class TaiLieu {
 
     @Column(name = "loai", nullable = false)
     private String loai;
+
+    @Column(name = "content_type")
+    private String contentType;
+
+    @Column(name = "size_bytes")
+    private Long sizeBytes;
+
+    @Column(name = "storage_key", length = 64)
+    private String storageKey;
+
+    @Column(name = "uploaded_at")
+    private OffsetDateTime uploadedAt;
 
     @Version
     @Column(name = "version", nullable = false)

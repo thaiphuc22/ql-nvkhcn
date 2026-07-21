@@ -31,12 +31,18 @@ export const DEMO_USERS: DemoUser[] = [
   { hoTen: 'Lê Văn Cường', email: 'admin@example.com', chucDanh: 'Quản trị hệ thống', isAdmin: true, roleCodes: [], apps: ['qlnvkhcn', 'quytrinh', 'he-thong'] },
   { hoTen: 'Trần Văn Nam', email: 'pm@example.com', chucDanh: 'Chủ nhiệm đề tài (PM)', isAdmin: false, roleCodes: ['PM', 'PA', 'NNC'], apps: ['qlnvkhcn'] },
   { hoTen: 'Phạm Thu Hà', email: 'cqnv@example.com', chucDanh: 'Cơ quan nghiệp vụ VHT', isAdmin: false, roleCodes: ['CQ_KHCN', 'CQ_MS', 'CQ_NS', 'CQ_TCKT'], apps: ['qlnvkhcn', 'quytrinh'] },
-  { hoTen: 'Phạm Quang Vinh', email: 'tgd@example.com', chucDanh: 'Tổng Giám đốc VHT', isAdmin: false, roleCodes: ['TGD_VHT'], apps: ['qlnvkhcn'] },
+  { hoTen: 'Phạm Quang Vinh', email: 'tgd@example.com', chucDanh: 'Tổng Giám đốc VHT', isAdmin: false, roleCodes: ['TGD_VHT', 'PTGD_CT'], apps: ['qlnvkhcn'] },
   { hoTen: 'Ngô Thị Thanh Hằng', email: 'hdkhcn@example.com', chucDanh: 'Thường trực HĐ KHCN VHT', isAdmin: false, roleCodes: ['HDKHCN', 'HDXD', 'HDXD_DC', 'HDNT', 'HD_DGHT'], apps: ['qlnvkhcn'] },
+  { hoTen: 'Đỗ Văn Mạnh', email: 'gd-ttms@example.com', chucDanh: 'Giám đốc Trung tâm Mua sắm', isAdmin: false, roleCodes: ['GD_TTMS'], apps: ['qlnvkhcn'] },
+  { hoTen: 'Nguyễn Thu Hương', email: 'tp-ns@example.com', chucDanh: 'Trưởng phòng Nhân sự', isAdmin: false, roleCodes: ['TP_NS'], apps: ['qlnvkhcn'] },
+  { hoTen: 'Trần Quốc Dũng', email: 'tp-tckt@example.com', chucDanh: 'Trưởng phòng Tài chính Kế toán', isAdmin: false, roleCodes: ['TP_TCKT'], apps: ['qlnvkhcn'] },
   // Cấp Tập đoàn (RD02.02) — mỗi vai một tài khoản, cố ý không gộp để demo được phân tách thẩm
   // quyền qua 4 cấp. Phải giữ đồng bộ với DemoIdentityProvider.java ở ho-so-service, lệch là
   // đăng nhập được nhưng `/viec-cua-toi` trống.
   { hoTen: 'Vũ Đình Khoa', email: 'cqkhcn-td@example.com', chucDanh: 'Cơ quan KHCN Tập đoàn (Ban CNCNC)', isAdmin: false, roleCodes: ['CQ_KHCN_TD'], apps: ['qlnvkhcn'] },
+  { hoTen: 'Nguyễn Đức Thắng', email: 'cqtckt-td@example.com', chucDanh: 'Cơ quan TCKT Tập đoàn (Ban TCKT)', isAdmin: false, roleCodes: ['CQ_TCKT_TD'], apps: ['qlnvkhcn'] },
+  { hoTen: 'Lý Thị Mai Phương', email: 'cqdtxd-td@example.com', chucDanh: 'Cơ quan ĐTXD Tập đoàn (Ban ĐTXD)', isAdmin: false, roleCodes: ['CQ_DTXD_TD'], apps: ['qlnvkhcn'] },
+  { hoTen: 'Trịnh Văn Hiếu', email: 'cqtcnl-td@example.com', chucDanh: 'Cơ quan TCNL Tập đoàn (Ban TCNL)', isAdmin: false, roleCodes: ['CQ_TCNL_TD'], apps: ['qlnvkhcn'] },
   { hoTen: 'Đặng Minh Tuấn', email: 'hdxd-td@example.com', chucDanh: 'Hội đồng Xét duyệt Tập đoàn', isAdmin: false, roleCodes: ['HDXD_TD'], apps: ['qlnvkhcn'] },
   { hoTen: 'Bùi Thị Lan Anh', email: 'hdkhcn-td@example.com', chucDanh: 'Hội đồng KHCN Tập đoàn', isAdmin: false, roleCodes: ['HDKHCN_TD'], apps: ['qlnvkhcn'] },
   { hoTen: 'Hoàng Trọng Nghĩa', email: 'btgd-td@example.com', chucDanh: 'Ban Tổng Giám đốc Tập đoàn', isAdmin: false, roleCodes: ['BTGD_TD'], apps: ['qlnvkhcn'] },

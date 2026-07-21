@@ -74,12 +74,13 @@ class ReadApiContractTest {
 
         mvc.perform(get("/api/ho-so").header(HttpHeaders.AUTHORIZATION, AUTHORIZATION))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].*").value(org.hamcrest.Matchers.hasSize(19)))
+                .andExpect(jsonPath("$[0].*").value(org.hamcrest.Matchers.hasSize(20)))
                 .andExpect(jsonPath("$[0].id").value("HS-2026-001"))
                 .andExpect(jsonPath("$[0].steps[0].*").value(org.hamcrest.Matchers.hasSize(11)))
                 .andExpect(jsonPath("$[0].steps[0].taskDefinitionKey").value("t2"))
                 .andExpect(jsonPath("$[0].taiLieu[0].ten").value("Thuyết minh.pdf"))
-                .andExpect(jsonPath("$[0].thoiGianThucHien").value("2026-2027"));
+                .andExpect(jsonPath("$[0].thoiGianThucHien").value("2026-2027"))
+                .andExpect(jsonPath("$[0].hoiDongXetDuyet").isArray());
     }
 
     @Test
@@ -113,7 +114,8 @@ class ReadApiContractTest {
         mvc.perform(get("/api/ho-so/HS-2026-001")
                         .header(HttpHeaders.AUTHORIZATION, AUTHORIZATION)
                         .header(ReadAuditFilter.CANARY_HEADER, "true"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store"));
 
         double count = meterRegistry.get("qtkhcn.read.requests")
                 .tag("traffic", "canary")
@@ -161,13 +163,14 @@ class ReadApiContractTest {
                 1,
                 42L,
                 List.of(step),
-                List.of(new TaiLieuResponse("Thuyết minh.pdf", "PDF")),
+                List.of(new TaiLieuResponse(1L, "Thuyết minh.pdf", "PDF", 0L, null, null, false)),
                 "RD.2026.001",
                 "Nhiệm vụ thử nghiệm",
                 "TS. Nguyễn Văn A",
                 "VHT",
                 "2026-2027",
                 "1.000.000.000 đ",
-                Cap.TD);
+                Cap.TD,
+                List.of());
     }
 }

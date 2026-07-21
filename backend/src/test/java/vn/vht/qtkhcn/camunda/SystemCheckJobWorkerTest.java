@@ -22,12 +22,14 @@ class SystemCheckJobWorkerTest {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private ServiceTaskConfigResolver resolver;
+    private Rd0202ConditionValidator rd0202Validator;
     private SystemCheckJobWorker worker;
 
     @BeforeEach
     void setUp() {
         resolver = mock(ServiceTaskConfigResolver.class);
-        worker = new SystemCheckJobWorker(resolver);
+        rd0202Validator = mock(Rd0202ConditionValidator.class);
+        worker = new SystemCheckJobWorker(resolver, rd0202Validator);
     }
 
     @Test
@@ -89,6 +91,29 @@ class SystemCheckJobWorkerTest {
         Map<String, Object> variables = worker.checkChuTruongTapDoan(job());
 
         assertTrue((Boolean) variables.get("dieuKienMacDinhDat"));
+    }
+
+    @Test
+    void rd0202DefaultCheckCompletesWithTheGatewayVariable() {
+        ActivatedJob job = mock(ActivatedJob.class);
+        when(job.getType()).thenReturn("khcn.rd0202.check-default-condition");
+        when(job.getProcessInstanceKey()).thenReturn(2251799813685299L);
+
+        when(rd0202Validator.validate(2251799813685299L)).thenReturn(true);
+        Map<String, Object> variables = worker.checkRd0202DefaultCondition(job);
+
+        assertEquals(Map.of(ProcessVariableContract.DIEU_KIEN_MAC_DINH_DAT, true), variables);
+    }
+
+    @Test
+    void rd0202BusinessFailureReturnsFalseSoGatewayRoutesBackToT02() {
+        ActivatedJob job = mock(ActivatedJob.class);
+        when(job.getType()).thenReturn("khcn.rd0202.check-default-condition");
+        when(job.getProcessInstanceKey()).thenReturn(2251799813685300L);
+        when(rd0202Validator.validate(2251799813685300L)).thenReturn(false);
+
+        assertEquals(Map.of(ProcessVariableContract.DIEU_KIEN_MAC_DINH_DAT, false),
+                worker.checkRd0202DefaultCondition(job));
     }
 
     private void givenConfig(String configJson) throws Exception {

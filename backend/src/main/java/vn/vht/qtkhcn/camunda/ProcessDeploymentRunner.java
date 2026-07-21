@@ -31,6 +31,9 @@ public class ProcessDeploymentRunner implements ApplicationRunner {
     // ProcessNotActiveException và hồ sơ rơi vào START_FAILED.
     static final String RD0202_PROCESS_ID = "RD02_02";
     static final String RD0202_RESOURCE = "processes/rd0202.bpmn";
+    // Rule_DanhGiaT24 (businessRuleTask) gọi decision ketQuaDanhGiaT24 — PHẢI deploy cùng lượt với
+    // BPMN, nếu không Zeebe từ chối deploy BPMN vì calledDecision không resolve được.
+    static final String RD0202_DANH_GIA_DMN_RESOURCE = "processes/rd0202-danh-gia.dmn";
 
     private final StartupProcessDeploymentService startupDeploymentService;
     private final BundledProcessCatalogSyncService catalogSyncService;
@@ -44,12 +47,12 @@ public class ProcessDeploymentRunner implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         deployBundled(BUNDLED_PROCESS_ID, BUNDLED_RESOURCE);
-        deployBundled(RD0202_PROCESS_ID, RD0202_RESOURCE);
+        deployBundled(RD0202_PROCESS_ID, RD0202_RESOURCE, RD0202_DANH_GIA_DMN_RESOURCE);
         syncCatalog(RD0202_PROCESS_ID, RD0202_RESOURCE);
     }
 
-    private void deployBundled(String processId, String classpathResource) {
-        var result = startupDeploymentService.deployIfAbsent(processId, classpathResource);
+    private void deployBundled(String processId, String... classpathResources) {
+        var result = startupDeploymentService.deployIfAbsent(processId, classpathResources);
         if (result.deployed()) {
             log.info("Bundled process deployed: {} v{} (key={})", result.bpmnProcessId(), result.version(),
                     result.processDefinitionKey());

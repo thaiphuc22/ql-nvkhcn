@@ -69,4 +69,7 @@ public class DossierStep {
 
     @Column(name = "form_key")
     private String formKey;
+
+    @Column(name = "form_data_json", columnDefinition = "text")
+    private String formDataJson;
 }

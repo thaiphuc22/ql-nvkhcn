@@ -17,7 +17,7 @@ public class StartupProcessDeploymentService {
         this.deploymentService = deploymentService;
     }
 
-    public StartupDeploymentResult deployIfAbsent(String expectedProcessId, String classpathResource) {
+    public StartupDeploymentResult deployIfAbsent(String expectedProcessId, String... classpathResources) {
         var existing = lookup.findLatest(expectedProcessId);
         if (existing.isPresent()) {
             var definition = existing.get();
@@ -25,7 +25,7 @@ public class StartupProcessDeploymentService {
                     definition.processDefinitionKey());
         }
 
-        var deployed = deploymentService.deployClasspath(classpathResource);
+        var deployed = deploymentService.deployClasspath(classpathResources);
         if (!expectedProcessId.equals(deployed.bpmnProcessId())) {
             throw new ProcessImportException(ProcessImportException.Kind.DEPLOYMENT,
                     "Bundled BPMN deploy không khớp process id mong đợi.",

@@ -74,7 +74,10 @@ public class DeployedBpmnRoutingReader {
             List<Element> tasks = elements(document, "userTask");
             Map<String, Integer> taskOrder = new HashMap<>();
             for (int i = 0; i < tasks.size(); i++) taskOrder.put(tasks.get(i).getAttribute("id"), i);
-            List<ProcessStepResponse> steps = tasks.stream().map(task -> step(task, nodes, outgoing, taskOrder)).toList();
+            Element process = elements(document, "process").stream().findFirst().orElseThrow();
+            List<String> defaultUserTaskActions = actionCodes(propertyValue(process, "qtkhcn.userTaskActions"));
+            List<ProcessStepResponse> steps = tasks.stream()
+                    .map(task -> step(task, nodes, outgoing, taskOrder, defaultUserTaskActions)).toList();
             return new ProcessRoutingResponse(catalog.getBpmnProcessId(), catalog.getName(), steps);
         } catch (Exception exception) {
             throw new IllegalStateException("Không đọc được BPMN đã deploy: " + catalog.getBpmnProcessId(), exception);
@@ -82,9 +85,20 @@ public class DeployedBpmnRoutingReader {
     }
 
     private ProcessStepResponse step(Element task, Map<String, Element> nodes, Map<String, List<Element>> outgoing,
-            Map<String, Integer> taskOrder) {
+            Map<String, Integer> taskOrder, List<String> defaultUserTaskActions) {
         String taskId = task.getAttribute("id");
         List<Element> flows = outgoing.getOrDefault(taskId, List.of());
+        List<String> taskActions = actionCodes(propertyValue(task, "qtkhcn.actions"));
+        if (taskActions.isEmpty()) taskActions = defaultUserTaskActions;
+        if (!taskActions.isEmpty()) {
+            String forwardTarget = flows.stream().findFirst().map(flow -> nodes.get(flow.getAttribute("targetRef")))
+                    .map(DeployedBpmnRoutingReader::displayName).orElse("Tiếp tục");
+            List<RouteBranchResponse> actionBranches = taskActions.stream()
+                    .map(code -> actionBranch(code, forwardTarget)).toList();
+            return new ProcessStepResponse(taskId, displayName(task),
+                    descendantAttribute(task, "assignmentDefinition", "candidateGroups"),
+                    descendantAttribute(task, "formDefinition", "formKey"), actionBranches);
+        }
         List<RouteBranchResponse> routes = new ArrayList<>();
         for (Element flow : flows) {
             Element target = nodes.get(flow.getAttribute("targetRef"));
@@ -95,6 +109,16 @@ public class DeployedBpmnRoutingReader {
         }
         return new ProcessStepResponse(taskId, displayName(task), descendantAttribute(task, "assignmentDefinition", "candidateGroups"),
                 descendantAttribute(task, "formDefinition", "formKey"), routes);
+    }
+
+    private static RouteBranchResponse actionBranch(String actionCode, String forwardTarget) {
+        return switch (actionCode) {
+            case "APPROVE_STEP" -> new RouteBranchResponse("APPROVE", "Đồng ý duyệt", forwardTarget, "forward");
+            case "REJECT_STEP" -> new RouteBranchResponse("REJECT", "Từ chối duyệt", "Kết thúc — từ chối", "reject");
+            case "RETURN_STEP" -> new RouteBranchResponse("RETURN", "Yêu cầu điều chỉnh", "Bước trước", "rework");
+            case "SUBMIT" -> new RouteBranchResponse("SUBMIT", "Gửi duyệt", forwardTarget, "forward");
+            default -> new RouteBranchResponse(actionCode, actionCode, forwardTarget, "forward");
+        };
     }
 
     private RouteBranchResponse branch(Element flow, String taskId, Map<String, Element> nodes,
@@ -136,6 +160,18 @@ public class DeployedBpmnRoutingReader {
     private static String descendantAttribute(Element parent, String name, String attribute) {
         List<Element> matches = elements(parent, name);
         return matches.isEmpty() ? null : blankToNull(matches.get(0).getAttribute(attribute));
+    }
+
+    private static String propertyValue(Element scope, String propertyName) {
+        for (Element property : elements(scope, "property")) {
+            if (propertyName.equals(property.getAttribute("name"))) return property.getAttribute("value").trim();
+        }
+        return "";
+    }
+
+    private static List<String> actionCodes(String csv) {
+        if (csv == null || csv.isBlank()) return List.of();
+        return java.util.Arrays.stream(csv.split(",")).map(String::trim).filter(value -> !value.isEmpty()).toList();
     }
 
     private static String childText(Element parent, String name) {

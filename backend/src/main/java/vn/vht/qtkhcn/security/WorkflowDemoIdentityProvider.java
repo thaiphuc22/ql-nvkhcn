@@ -22,11 +22,17 @@ public class WorkflowDemoIdentityProvider {
             Map.entry("pm@example.com", identity("pm@example.com", false, "PM", "PA", "NNC")),
             Map.entry("cqnv@example.com", identity("cqnv@example.com", false,
                     "CQ_KHCN", "CQ_MS", "CQ_NS", "CQ_TCKT", "CQ_QLKHCN", "TP_CLKHCN")),
-            Map.entry("tgd@example.com", identity("tgd@example.com", false, "TGD_VHT", "BGD_TT", "BGD_KHOI")),
+            Map.entry("tgd@example.com", identity("tgd@example.com", false, "TGD_VHT", "BGD_TT", "BGD_KHOI", "PTGD_CT")),
             Map.entry("hdkhcn@example.com", identity("hdkhcn@example.com", false,
                     "HDKHCN", "HDXD", "HDXD_DC", "HDNT", "HD_DGHT")),
+            Map.entry("gd-ttms@example.com", identity("gd-ttms@example.com", false, "GD_TTMS")),
+            Map.entry("tp-ns@example.com", identity("tp-ns@example.com", false, "TP_NS")),
+            Map.entry("tp-tckt@example.com", identity("tp-tckt@example.com", false, "TP_TCKT")),
             // Cấp Tập đoàn (RD02.02) — mỗi vai một tài khoản.
             Map.entry("cqkhcn-td@example.com", identity("cqkhcn-td@example.com", false, "CQ_KHCN_TD")),
+            Map.entry("cqtckt-td@example.com", identity("cqtckt-td@example.com", false, "CQ_TCKT_TD")),
+            Map.entry("cqdtxd-td@example.com", identity("cqdtxd-td@example.com", false, "CQ_DTXD_TD")),
+            Map.entry("cqtcnl-td@example.com", identity("cqtcnl-td@example.com", false, "CQ_TCNL_TD")),
             Map.entry("hdxd-td@example.com", identity("hdxd-td@example.com", false, "HDXD_TD")),
             Map.entry("hdkhcn-td@example.com", identity("hdkhcn-td@example.com", false, "HDKHCN_TD")),
             Map.entry("btgd-td@example.com", identity("btgd-td@example.com", false, "BTGD_TD")));

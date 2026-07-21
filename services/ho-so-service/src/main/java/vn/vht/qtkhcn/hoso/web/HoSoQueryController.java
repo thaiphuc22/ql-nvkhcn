@@ -1,6 +1,7 @@
 package vn.vht.qtkhcn.hoso.web;
 
 import java.util.List;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,6 +28,9 @@ public class HoSoQueryController {
     @GetMapping("/{id}")
     public ResponseEntity<HoSoResponse> findById(@PathVariable String id) {
         var result = service.findById(id);
-        return ResponseEntity.ok().eTag(HttpVersion.etag(result.version())).body(result.body());
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .eTag(HttpVersion.etag(result.version()))
+                .body(result.body());
     }
 }

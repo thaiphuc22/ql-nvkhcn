@@ -3,6 +3,7 @@ package vn.vht.qtkhcn.hoso.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -135,6 +136,23 @@ class WorkflowProjectionServiceTest {
         assertNull(step.getYKien());
         assertNull(step.getThoiDiem());
         assertEquals("2026-07-21T10:00Z", step.getHanXuLy());
+    }
+
+    @Test void capturesFormDataFromCompletedActionIntoStep() {
+        WorkflowEventInbox created = taskEvent("TASK_CREATED", "2026-07-18T10:01:00Z");
+        WorkflowEventInbox completed = taskEvent("TASK_COMPLETED", "2026-07-18T10:02:00Z");
+        WorkflowEventInbox action = event("TASK_ACTION_APPLIED", "2026-07-18T10:02:01Z", """
+                {"taskKey":"2001","actionCode":"APPROVE_STEP","actorId":"tgd@example.com",
+                 "formData":{"capHoiDong":"vht","danhSachThanhVien":[{"hoTen":"Nguyen Van A"}]}}
+                """);
+        when(inbox.findByHoSoIdOrderByOccurredAtAscEventIdAsc("HS-1"))
+                .thenReturn(List.of(created, completed, action));
+
+        service.rebuild("HS-1");
+
+        DossierStep step = hoSo.getSteps().get(1);
+        assertNotNull(step.getFormDataJson());
+        assertTrue(step.getFormDataJson().contains("danhSachThanhVien"));
     }
 
     private static HoSo dossier() {

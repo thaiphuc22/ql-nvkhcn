@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import vn.vht.qtkhcn.hoso.service.VersionConflictException;
 import vn.vht.qtkhcn.hoso.service.WorkflowEventConflictException;
+import vn.vht.qtkhcn.hoso.service.DocumentStorageException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import vn.vht.qtkhcn.hoso.security.UnknownDemoIdentityException;
 
 @RestControllerAdvice
@@ -37,6 +39,17 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(UnknownDemoIdentityException.class)
     public ResponseEntity<ErrorBody> forbidden(UnknownDemoIdentityException exception) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorBody(exception.getMessage()));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorBody> uploadTooLarge(MaxUploadSizeExceededException exception) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .body(new ErrorBody("Tep vuot qua gioi han dung luong cho phep."));
+    }
+
+    @ExceptionHandler(DocumentStorageException.class)
+    public ResponseEntity<ErrorBody> storageFailure(DocumentStorageException exception) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorBody(exception.getMessage()));
     }
 
     public record ErrorBody(String message) {

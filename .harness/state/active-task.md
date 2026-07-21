@@ -1,5 +1,509 @@
 # Active Task
 
+## ★ DONE CODE / RUNTIME PENDING — DMN chấm điểm HĐXD Tập đoàn phiên 2 (T24), ngưỡng 70 điểm — 2026-07-21 (owner Claude, theo yêu cầu trực tiếp user + kế hoạch đã duyệt)
+
+**Yêu cầu:** tại T24 ("Họp HĐXD Tập đoàn phiên 2"), dùng điểm đánh giá (form `bm-02-12-pdg-dt`,
+field `diemSo`) để quyết định qua DMN: `>= 70` điểm đi T25, `< 70` điểm đi tới Node End "Hồ sơ
+không được thông qua". Trong lúc lập kế hoạch, user chọn tính **điểm trung bình nhiều thành viên**
+(không dùng điểm đơn) và **tái dùng trạng thái REJECTED** có sẵn — cả hai đều nâng phạm vi việc lên
+đáng kể so với "chỉ thêm 1 DMN", chi tiết dưới đây.
+
+**Phát hiện chặn trước khi code (đã trình bày và được user xác nhận qua AskUserQuestion):**
+- Hội đồng xét duyệt **cấp Tập đoàn** (T18B→T20, chính là hội đồng họp T21/T24) chưa từng có cơ chế
+  sinh `ThanhVienHoiDong` như cấp Cơ sở (`Generate_HDXD` sau T06) — phải xây thêm bước này (Lát 0)
+  thì multi-instance T24 mới có danh sách thành viên thật để lặp theo.
+- `formData` (điểm số) theo D3 KHÔNG tự động chảy vào biến Zeebe khi hoàn thành task
+  (`WorkflowTaskActionService` cố ý chỉ gửi formData qua event `TASK_ACTION_APPLIED` tới
+  `ho-so-service`, không set vào Camunda variables) — nhưng multi-instance outputCollection (cơ chế
+  DUY NHẤT gom được N điểm số song song, vì `dossier_step` chỉ có 1 dòng theo `taskDefinitionKey`
+  nên 3 lượt hoàn thành T24 sẽ ghi đè formData của nhau) cần `diemSo` là biến Zeebe cục bộ của từng
+  instance. Xử lý bằng một exception hẹp, tường minh trong `WorkflowTaskActionService`
+  (`withDiemSoForT24`): CHỈ khi `taskDefinitionKey=T24` và `actionCode=APPROVE_STEP`, forward đúng 1
+  field số điểm (không phải cả formData) thành biến Zeebe — cùng mẫu "business data ngắn hạn phục vụ
+  DMN" đã có tiền lệ ở `SystemCheckJobWorker#checkChuTruongTapDoan` (tongDuToan/loaiNhiemVu).
+- `rd0202-routing.dmn` (từ 2026-07-20) chưa từng được deploy lên Zeebe (`ProcessDeploymentRunner`
+  chỉ deploy `.bpmn`) và chưa có `businessRuleTask` nào gọi nó — DMN lần này là lần đầu tiên được
+  nối dây thật trong hệ thống, không chỉ thêm bảng quyết định.
+- Không có endEvent "reject" nào trong `rd0202.bpmn` trước đây; REJECT_STEP hoạt động bằng
+  `cancelInstanceCommand` (TERMINATED), không qua endEvent. EndEvent mới đạt tới sẽ khiến Camunda
+  báo `ProcessInstanceState.COMPLETED` (giống nhánh thành công) — phải sửa collector để phân biệt.
+
+**Đã code (Lát 0–5, theo kế hoạch đã trình bày cho user):**
+1. **Lát 0 — Sinh HĐXD Tập đoàn**: `HoiDongXetDuyetService` tổng quát hoá (`sinh()` dùng chung cho
+   CO_SO/T05 và TAP_DOAN/T18B) + `sinhTuBuoc18B` mới; `HoiDongXetDuyetRepository` thêm
+   `findByHoSoIdAndCapOrderByCreatedAtAsc`; `InternalHoiDongXetDuyetController` thêm
+   `POST .../tap-doan` (sinh) và `GET .../tap-doan/thanh-vien` (đọc); job worker mới
+   `GenerateHdxdTapDoanJobWorker` (`khcn.rd0202.generate-hdxd-decision-td`); BPMN thêm serviceTask
+   `Generate_HDXD_TD` chèn giữa T20→T21.
+2. **Lát 1 — DMN**: file mới `backend/src/main/resources/processes/rd0202-danh-gia.dmn`, decision
+   `ketQuaDanhGiaT24`, input `diemTrungBinhT24`, ngưỡng **70** (theo đúng số user chốt, KHÔNG phải
+   placeholder chờ OQ như `rd0202-routing.dmn`).
+3. **Lát 2 — BPMN quanh T24**: `G23Join → Load_HDXD_TD (serviceTask) → T24 (userTask, giờ là
+   multi-instance parallel: inputCollection=danhSachThanhVienHDXDTD, outputCollection=
+   danhSachDiemDanhGiaT24/diemSo) → Tinh_DiemTB_T24 (serviceTask) → Rule_DanhGiaT24
+   (businessRuleTask, calledDecision ketQuaDanhGiaT24) → G24 (exclusiveGateway) → F28→T25 (đạt) /
+   F_T24_KhongDat→End_KhongThongQua (không đạt, endEvent mới "Hồ sơ không được thông qua")`. Đã xác
+   minh referential integrity toàn bộ BPMN bằng script Python (205 element id, 105 sequenceFlow,
+   0 tham chiếu thiếu, incoming/outgoing khớp 100%).
+4. **Lát 3 — Job worker**: `Rd0202DanhGiaT24JobWorker` — `khcn.rd0202.load-hoi-dong-td` (nạp danh
+   sách thành viên TĐ thành collection Zeebe tạm cho multi-instance) và
+   `khcn.rd0202.compute-diem-trung-binh-t24` (tính trung bình từ outputCollection; hội đồng/phiếu
+   rỗng → trả 0, fail-closed thay vì lỗi mập mờ). `Rd0202JobWorkerContractTest` cập nhật đăng ký đủ
+   worker mới (test này grep toàn bộ `<zeebe:taskDefinition>` trong BPMN nên tự bắt lỗi nếu thiếu
+   worker cho bất kỳ service task mới nào).
+5. **Lát 4 — Deploy DMN**: `CamundaDeploymentService.deployClasspath` đổi thành varargs (deploy
+   nhiều resource cùng 1 lượt), `StartupProcessDeploymentService`/`ProcessDeploymentRunner` deploy
+   kèm `rd0202-danh-gia.dmn` cùng `rd0202.bpmn` — bắt buộc vì Zeebe từ chối deploy BPMN nếu
+   `calledDecision` không resolve được decision đã tồn tại.
+6. **Lát 5 — REJECTED cho endEvent mới**: `CamundaWorkflowRuntimeEventReader` thêm
+   `reachedRejectingEndEvent()` (search element-instance `type=END_EVENT, elementId=
+   End_KhongThongQua, state=COMPLETED`) — khi `ProcessInstanceState.COMPLETED` VÀ đạt tới endEvent
+   này thì phát `PROCESS_REJECTED` thay vì `PROCESS_COMPLETED`, tái dùng đúng luồng REJECTED có sẵn
+   ở `ho-so-service` (không cần đổi gì thêm bên đó).
+
+**Verify đã làm:** `mvn -o test` backend **231/232 PASS** (1 skip pre-existing, không liên quan),
+`mvn -o test` ho-so-service **57/57 PASS**; `mvn -o compile`/`test-compile` cả 2 module sạch. Test
+mới: `HoiDongXetDuyetServiceTest` (+2 case TAP_DOAN), `InternalHoiDongXetDuyetControllerTest` (+2
+case), `Rd0202DanhGiaT24JobWorkerTest` (4 case: trung bình đúng, mảng rỗng fail-closed=0, thiếu biến
+fail-closed=0, đúng ngưỡng biên 70 vẫn tính đúng). API client `elementId(String)` trên
+`ElementInstanceFilter` được xác nhận tồn tại bằng `javap` trực tiếp trên jar
+`camunda-client-java-8.9.12.jar`, không đoán.
+
+**CHƯA làm / RUNTIME PENDING (rõ ràng, không tự nhận là xong):**
+- **Chưa deploy lên Zeebe thật — nhưng đã đưa cả 2 lên đúng "Draft" để user tự bấm deploy, theo yêu
+  cầu trực tiếp của user sau khi nghe gap này** (2026-07-21, cùng phiên). `ProcessDeploymentRunner`
+  chỉ tự deploy khi engine "genuinely empty" nên không tự đẩy được; đã dùng đúng 2 cơ chế draft có
+  sẵn của hệ thống (không tự chế), gọi thẳng API thật trên backend dev đang chạy (8090, PID 20228):
+  - **BPMN**: `POST /api/process-definition-drafts` (import) rồi `POST .../validate` →
+    draft id `0b66608a-04cf-4261-9186-6ee613cbf813`, **status VALID, revision 1**. Bấm "Deploy" cho
+    draft này trên `/quy-trinh` (tab Process Definition Drafts) khi sẵn sàng.
+  - **DMN**: `POST /api/dmn-rules` (category THRESHOLD) rồi `POST .../versions` →
+    rule id `85579a41-38db-4b17-a5cf-1e57cb0795af`, code `RD0202-KETQUA-DANHGIA-T24`,
+    **version 1, deployStatus NOT_DEPLOYED**. Bấm "Activate" cho version này trên màn DMN Rules khi
+    sẵn sàng — activate mới thật sự gọi `DmnCamundaGateway.deploy()`.
+  - **Thứ tự khuyến nghị: Activate DMN trước, Deploy BPMN sau** — không bắt buộc (xem đính chính bên
+    dưới) nhưng an toàn hơn để tránh cửa sổ có process instance chạy tới `Rule_DanhGiaT24` trước khi
+    decision tồn tại.
+  - **Đính chính một khẳng định sai ở lát 4 phía trên:** không phải "Zeebe từ chối deploy BPMN nếu
+    calledDecision không resolve được" — tra cứu lại (Camunda 8 docs + GitHub issue #8095 "Create an
+    incident if the evaluation of a decision fails") cho thấy resolve `calledDecision` (binding mặc
+    định "latest") là **runtime, không phải deploy-time**: deploy BPMN thiếu DMN vẫn thành công, chỉ
+    khi process instance thật sự chạy tới `Rule_DanhGiaT24` mà decision chưa tồn tại thì Zeebe mới
+    tạo **INCIDENT** trên đúng task đó (không sập cả deployment). Không đổi code vì vẫn cùng bundle
+    BPMN+DMN ở lát 4 (đúng, an toàn hơn) — chỉ đính chính lý do đã ghi sai.
+  - Sự cố nhỏ gặp phải và đã tự sửa: lần tạo BPMN draft đầu tiên (qua `curl -F` multipart, field
+    `name` truyền trực tiếp qua argument shell) bị hỏng encoding tiếng Việt (`X�t duy?t...`) do
+    Windows/Git Bash mangling non-ASCII trong command-line argument — đã xoá draft hỏng
+    (`DELETE .../6adc56e4-...`) và tạo lại đúng bằng cách ghi JSON UTF-8 ra file rồi
+    `curl --data-binary @file` (không qua shell argument nữa) — draft mới có tên đúng
+    "Xét duyệt NV KHCN cấp Tập đoàn", xác nhận bằng đọc byte UTF-8 qua Python.
+  - Kết quả validate BPMN draft: `valid=true`, chỉ có warning/suggestion CŨ đã có từ trước (gateway
+    1 nhánh ra, thiếu nhãn sequence flow) — không phát sinh cảnh báo mới nào ở các phần tử mới thêm
+    (`Load_HDXD_TD`, `T24` multi-instance, `Tinh_DiemTB_T24`, `Rule_DanhGiaT24`, `G24`,
+    `End_KhongThongQua`).
+- **Chưa chạy E2E/click-through nào** cho nhánh mới (cả nhánh đạt lẫn không đạt) — chỉ verify ở tầng
+  unit/compile. `Invoke-RD0202V3E2E.ps1` chưa được mở rộng thêm case T24.
+- **Giới hạn đã biết, không giải quyết ở đây:** multi-instance T24 vẫn dùng chung
+  `candidateGroups="HDXD_TD"` cho mọi lượt (không có tài khoản đăng nhập gắn theo từng thành viên cụ
+  thể — chờ OQ-021/IAM); chỉ formData của LƯỢT HOÀN THÀNH CUỐI CÙNG của T24 được lưu ở
+  `dossier_step` (nhận xét chi tiết của 2 thành viên trước bị ghi đè) — điểm số không bị ảnh hưởng
+  (đi qua Zeebe outputCollection riêng) nhưng phần nhận xét text thì có; không seed
+  `service_task_binding` cho 3 job type mới (giống tiền lệ `check-default-condition`, nghĩa là các
+  service task này sẽ không hiện trên màn `/cau-hinh-tac-vu`).
+- Chưa đụng tới T10 ("Họp HĐXD cấp Cơ sở phiên 2") — cùng dùng form `bm-02-12-pdg-dt`, cùng thiếu
+  ngưỡng chấm điểm, nhưng ngoài phạm vi yêu cầu lần này (chỉ nói T24).
+
+---
+
+## ★ DONE + RUNTIME VERIFIED — RD02.02 v3: cả 3 gap chặn luồng đã đóng, full 56-task E2E PASS — 2026-07-21 (owner Claude, tiếp tục phiên dở dang theo yêu cầu user "kiểm tra lại và chủ động xử lý tiếp")
+
+**Bối cảnh khi vào phiên:** harness state ghi 2 gap (nút "Gửi duyệt" `permissions: []`, RD02.02 `Check` thiếu
+worker) ở trạng thái DONE CODE/RUNTIME PENDING, còn 8090/8093 đang chạy JAR cũ hơn cả các thay đổi này. Khi
+rà lại working tree phát hiện **một lượng lớn code thật đã được viết thêm nhưng chưa từng được ghi vào harness
+state**: `Rd0202ConditionValidator` (backend) + `Rd0202DefaultConditionService`/`InternalRd0202ValidationController`
+(ho-so-service) — nâng worker `Check` từ stub `true` cứng lên **validate thật** (cấp TD, thời gian thực hiện,
+dự toán, chủ nhiệm đủ họ tên+mã NV, đơn vị chủ trì, có tài liệu HSXD có nội dung thật) và trả `false` (quay
+GCheck về T02) khi hồ sơ chưa đủ điều kiện; `DeployedBpmnRoutingReader` đọc property zeebe
+`qtkhcn.userTaskActions`/`qtkhcn.actions` trong BPMN để sinh đúng route `APPROVE_STEP`/`REJECT_STEP` (khớp
+item #1 trong list cải thiện user đưa ra); demo users/roles cho `GD_TTMS`/`TP_NS`/`TP_TCKT` +
+`CQ_TCKT_TD`/`CQ_DTXD_TD`/`CQ_TCNL_TD` (khớp item #2); và script `Invoke-RD0202V3E2E.ps1` — E2E đầy đủ 56 task
+duy nhất từ submit tới `APPROVED` (khớp phần còn thiếu của item #4 "thêm case fail quay về T02" + item #6 dạng
+API, chưa phải browser).
+
+**Verify build/test trước khi đụng runtime:** backend `mvn -o test` **192/192 PASS**; ho-so-service
+`mvn -o test` **53/53 PASS**; Angular `npx tsc --noEmit` sạch; `ng test --include='**/ho-so-detail.spec.ts'`
+**16/16 PASS**.
+
+**Runtime — đã làm, theo đúng trình tự xác nhận với user trước khi đụng 2 tiến trình sống:**
+1. User xác nhận cho phép restart. Dừng PID cũ (8090 `21360`, 8093 `24428`), `mvn -o -DskipTests package` cả
+   hai module, khởi động lại bằng `java -jar` với đúng cặp token cũ
+   (`--qtkhcn.internal.service-token=dev-workflow-local-only --qtkhcn.ho-so.service-token=dev-ho-so-local-only`
+   cho 8090; `--qtkhcn.internal.service-token=dev-ho-so-local-only --qtkhcn.workflow.service-token=dev-workflow-local-only`
+   cho 8093). **PID mới: 8090 → `20228`, 8093 → `22276`.** Cả 2 job worker mới (`checkRd0202DefaultCondition`,
+   `generateHdxdDocumentJobWorker`) log "Starting job worker" khi khởi động — xác nhận đã nối đúng type job.
+2. Chạy `Invoke-RD0202V3E2E.ps1` lần 1: **FAIL đúng như thiết kế** — dossier bị GCheck trả về T02 vì mission
+   test do chính script tạo thiếu `thoiGianThucHien`/`duToan`/`chuNhiemMaNhanVien` và tài liệu HSXD không có
+   nội dung thật (script cũ viết cho worker stub `luôn true`, chưa cập nhật cho validator thật). Đây là bằng
+   chứng runtime đầu tiên rằng **nhánh fail của validator hoạt động đúng** (business-invalid → quay T02), dù
+   không phải là mục tiêu của lần chạy này.
+3. Sửa `Invoke-RD0202V3E2E.ps1`: thêm 3 field còn thiếu vào payload tạo Nhiệm vụ; thêm bước upload tài liệu
+   thật (`POST /api/ho-so/{id}/documents`) trước khi submit. Gặp bẫy môi trường: `Invoke-RestMethod -Form` chỉ
+   có ở PowerShell 7+, máy này chạy **Windows PowerShell 5.1** → phải tự dựng multipart/form-data body bằng
+   tay (hàm `Invoke-FileUpload` mới trong script, boundary tự sinh, encode ISO-8859-1 để giữ nguyên byte).
+4. Dọn 2 lần chạy hỏng trước đó: lần 1 có process instance đang chạy (T02 CURRENT) → cancel qua Camunda REST
+   `POST /v2/process-instances/{key}/cancellation` rồi `DELETE /api/nhiem-vu/{ma}` (được user xác nhận riêng vì
+   auto-mode classifier chặn lệnh DELETE); lần 2 dossier còn DRAFT (chưa submit, không có process instance) chỉ
+   cần DELETE thẳng.
+5. Chạy lại `Invoke-RD0202V3E2E.ps1` sau khi sửa: **RD02.02 V3 FULL E2E PASS** — toàn bộ 56 task duy nhất từ
+   `T01` tới `T33`, `submit → PROCESSING → APPROVED`, bao gồm `Check`/`GCheck` (nhánh đạt), 4 nhánh T03 song
+   song, `Generate_HDXD` (hội đồng 3 thành viên + văn bản QĐ HTML có nội dung thật), toàn bộ các bước còn lại
+   tới T33. Script tự dọn dữ liệu test (`RD.2026.019`/`HS-2026-020`) trong khối `finally` sau khi
+   `instanceClosed=true`.
+6. Click-through Playwright thật cho riêng gap #1 (nút "Gửi duyệt"): đăng nhập `pm@example.com` (không phải
+   admin), tạo Nhiệm vụ (`RD.2026.020`) + Hồ sơ Xét duyệt cấp Cơ sở (`HS-2026-021`) qua UI, mở Chi tiết hồ sơ —
+   **nút "Gửi duyệt" hiện và bấm được** (trước đây bug khiến nút này không bao giờ hiện cho user thường). Bấm
+   nút mở đúng dialog xác nhận submit, dialog tự nhận diện RD02.01 (Xét duyệt + cấp Cơ sở) là quy trình **chưa
+   deploy** và khóa nút xác nhận — đúng hành vi backend, không phải bug của gap #1. Đã Hủy dialog, dọn sạch
+   `RD.2026.020` (cascade `HS-2026-021`) qua DELETE. **Ghi chú vận hành:** một số click qua accessibility-tree
+   ref của Playwright MCP (button "Mở ứng dụng", "Tạo hồ sơ" ở trang chọn app/danh sách) không kích hoạt handler
+   Angular dù không báo lỗi; phải fallback `element.click()` qua `browser_evaluate` — nghi do overlay/change
+   detection, chưa điều tra sâu, không chặn việc xác nhận gap #1.
+
+**Kết luận:** cả 3 gap gốc của "SMOKE TEST RD02.02 v3" (2026-07-20) đã đóng và **verified runtime**, không chỉ
+source. Mục tiêu chính của v3 (job `Generate_HDXD` sinh HĐXD + hiển thị đúng) đã chứng minh qua E2E đầy đủ.
+Dữ liệu test đã dọn sạch cả 2 DB, không còn hồ sơ/nhiệm vụ rác (`GET /api/ho-so` trả rỗng sau cùng).
+
+**Follow-up còn lại (từ list cải thiện user đưa ra đầu phiên, CHƯA làm):**
+- #5: form validation/evidence bắt buộc theo từng bước lớn khác ngoài `Check` (T05 hội đồng, T06, v.v.) —
+  `Rd0202DefaultConditionService` mới chỉ phủ đúng 1 bước (`Check` sau T02).
+- #6: UI E2E mỏng qua browser cho happy path vài chặng chính (khác với click-through thủ công một lần vừa làm
+  ở bước 6) — chưa có script Playwright tái sử dụng được.
+
+---
+
+## ★ DONE — #3: CI check so sánh BPMN đã deploy vs file repo — 2026-07-21 (owner Claude)
+
+**Bối cảnh:** follow-up item #3 ở entry trên. Khảo sát trước khi code phát hiện rủi ro thật: cả
+`StartupProcessDeploymentService.deployIfAbsent()` (deploy Zeebe) lẫn `BundledProcessCatalogSyncService.sync()`
+(catalog Postgres cho `/quy-trinh` + `DeployedBpmnRoutingReader`) đều **chỉ đồng bộ từ file lần đầu tiên** —
+"Once a catalog exists, all changes must go through Draft -> Validate -> Deploy." Sửa `rd0202.bpmn`/`rd0101.bpmn`
+rồi restart KHÔNG tự cập nhật bản đang chạy; đúng lớp drift mà #3 muốn CI bắt được. `Rd0202JobWorkerContractTest`
+cũ chỉ đối chiếu job type qua regex trên file tĩnh, không chạm gì tới bản đã deploy.
+
+**Quyết định (hỏi user, chọn "Maven test + Testcontainers" trong 3 phương án):** không dùng script PowerShell
+đối chiếu dev stack sống (không chạy được trong CI) hay golden-checksum lockfile thuần offline (không xác minh
+nội dung deploy thật) — dùng Testcontainers Postgres thật để chạy đúng pipeline
+validate → deploy → persist (`ProcessDefinitionService.publishValidated`) rồi đọc lại từ DB.
+
+**Giới hạn có chủ đích, đã ghi rõ trong Javadoc test:** CI luôn chạy từ DB rỗng nên KHÔNG phát hiện được
+trường hợp một engine đang sống có catalog cũ bị bỏ qua đồng bộ (giới hạn cố hữu của CI stateless, không phải
+thiếu sót). Test bù lại bằng cách xác minh: (1) nội dung BPMN round-trip qua Postgres thật (không phải H2)
+khớp byte-for-byte với file repo — bắt lỗi encoding/mojibake (đã từng gặp thật, xem entry charset cp1252 ở
+`DELIVERY_STATE.md`); (2) checksum SHA-256 tính độc lập trong test khớp giá trị lưu trong
+`process_definition_version.checksum_sha256`; (3) `bpmnProcessId` khai trong file khớp hằng số hardcode ở
+`ProcessDeploymentRunner` (`RD01_01`/`RD02_02`).
+
+**Đã thêm:**
+- `backend/pom.xml`: `spring-boot-testcontainers`, `spring-boot-starter-data-jpa-test`,
+  `org.testcontainers:testcontainers-junit-jupiter`, `org.testcontainers:testcontainers-postgresql` (test
+  scope). **Phát hiện khi build thật:** Spring Boot 4 tách `@DataJpaTest`/`@AutoConfigureTestDatabase` khỏi
+  `spring-boot-test-autoconfigure` (giờ chỉ còn `@JsonTest`) sang package mới
+  `org.springframework.boot.data.jpa.test.autoconfigure`/`org.springframework.boot.jdbc.test.autoconfigure`/
+  `org.springframework.boot.jpa.test.autoconfigure`; Testcontainers 2.0.5 đổi hết artifactId sang tiền tố
+  `testcontainers-*` (không còn `junit-jupiter`/`postgresql` trần). Cả hai xác nhận bằng cách đọc trực tiếp
+  POM/jar đã tải trong `~/.m2`, không đoán — đã ghi comment tại chỗ trong pom.xml/test để không lặp lại việc dò.
+- `backend/src/test/java/vn/vht/qtkhcn/service/BundledBpmnDeployedConsistencyTest.java`: parameterized test
+  cho cả RD01_01 (`processes/rd0101.bpmn`) và RD02_02 (`processes/rd0202.bpmn`), Postgres 16-alpine qua
+  Testcontainers (đúng image `infra/docker-compose.override.yml` dùng), mock `CamundaDeploymentService` (không
+  cần Zeebe broker thật vì so sánh ở tầng persist Postgres).
+- `.github/workflows/backend-ci.yml`: **workflow CI backend đầu tiên của repo** (trước đó chỉ có
+  `deploy-pages.yml` build Angular webapp mock, không hề chạy `mvn test`). Trigger `push`/`pull_request`/
+  `workflow_dispatch`, JDK 21 Temurin, `mvn -B test` — chạy toàn bộ suite backend bao gồm test mới. GH-hosted
+  `ubuntu-latest` có sẵn Docker nên Testcontainers chạy được không cần setup thêm.
+
+**Verify thật đã chạy (không chỉ đọc code):**
+- `mvn -Dtest=BundledBpmnDeployedConsistencyTest test`: **2/2 PASS** (Postgres container khởi động thật,
+  Flyway áp đủ 24 migration, Hibernate insert/select thật qua Hikari, log SQL xác nhận round-trip qua DB).
+- Full backend suite `mvn -o test` (offline, dùng cache `~/.m2` đã tải): **194/194 PASS, BUILD SUCCESS**
+  (192 cũ + 2 test mới; không có test nào vỡ).
+- YAML workflow mới: parse sạch bằng Python, không tab, indent nhất quán.
+
+**Chưa làm (ngoài phạm vi #3, cân nhắc riêng sau):** chưa mở PR/push để tự kiểm chứng workflow chạy thật trên
+GitHub Actions (cần push nhánh hoặc PR — chưa làm vì user chưa yêu cầu push); chưa mở rộng CI này sang
+`ho-so-service`/Angular (giữ đúng phạm vi #3 là BPMN, không lấn sang mở rộng CI toàn repo).
+
+---
+
+## ★ DONE CODE / RUNTIME PENDING (SUPERSEDED BY ENTRY TRÊN) — Fix nút "Gửi duyệt" luôn gửi `permissions: []` — 2026-07-21 (owner Claude)
+
+**Bug (gap #1 trong "SMOKE TEST RD02.02 v3" bên dưới):** `ho-so-detail.ts:217` (`loadDossierActions()`) luôn
+gửi `permissions: []` cho `POST /api/action-studio/simulate`. Mọi policy SUBMIT đã seed (AP-01 generic —
+`allowedRoleCodes: ['PM','PA','NNC']`) đều yêu cầu permission `SUBMIT_DOSSIER`, nên `missingPermissions`
+không bao giờ rỗng cho user thường → `SimulatedAction.enabled=false` → nút "Gửi duyệt" bị lọc khỏi
+`dossierActions()` (`ho-so-detail.ts:146-151` chỉ hiện action có `visible && enabled`). Chỉ `isAdmin=true`
+bypass được cả hai điều kiện. Ảnh hưởng **mọi quy trình**, không riêng RD02.02 — nhưng trong
+`dossierActions()`, do filter `outcome === 'SUBMIT'` + `actionType !== 'EXCEPTION'`, đây là action DUY NHẤT
+từng bị chặn bởi bug này ở màn chi tiết hồ sơ (APPROVE/RETURN/REJECT dùng `availableActions()` — nguồn khác,
+task-level, xác thực thật qua candidateGroups, không đụng `permissions` field này).
+
+**Quyết định fix (chọn giữa 2 phương án nêu ở active-task cũ):** frontend chưa có nguồn permission thật theo
+user (`DemoUser` chỉ có `roleCodes`/`isAdmin`, không có `permissions` — xem D9). Thay vì bịa một bảng
+role→permission không có dữ liệu thật đứng sau, cấp sẵn toàn bộ danh mục quyền (`PERMISSION_LABEL` keys:
+`SUBMIT_DOSSIER, PROCESS_STEP, REQUEST_EXCEPTION, ADD_COMMENT, DOWNLOAD_DOCUMENT, VIEW_AUDIT`) cho bất kỳ
+user đã đăng nhập nào — cùng tinh thần với backend `WorkflowDemoIdentityProvider` vốn đã cấp `PROCESS_STEP`
+cho mọi identity demo không phân biệt vai trò. RBAC thật vẫn do `allowedRoleCodes` (AP-01: PM/PA/NNC) và
+`candidateGroups` (task-level) quyết định — permission catalog chỉ là lớp trung gian chưa có IAM thật
+(OQ-021) đứng sau, không tự thêm khả năng gì ngoài những gì role/candidateGroup đã cho phép.
+
+**Đã sửa:** `frontend-angular/src/app/pages/ho-so-detail/ho-so-detail.ts` — import `PERMISSION_LABEL` từ
+`core/models/action-studio`, thêm hằng `ALL_PERMISSIONS = Object.keys(PERMISSION_LABEL)`, đổi
+`permissions: []` → `permissions: ALL_PERMISSIONS` trong `loadDossierActions()`.
+
+**Verify đã làm:** `npx tsc -p tsconfig.app.json --noEmit` sạch (0 lỗi). Chưa chạy Angular dev server / chưa
+click-through thật — cần đăng nhập `pm@example.com`, mở hồ sơ `DRAFT`, xác nhận nút "Gửi duyệt" hiện và bấm
+được. **Chưa verify E2E đầy đủ** vì 2 gap còn lại (job worker RD02.02 `Check` — DONE CODE, RUNTIME PENDING;
+xem entry ngay dưới) vẫn chặn việc chứng minh toàn luồng tới `Generate_HDXD`. Không tự ý restart backend
+8090/`ho-so-service` 8093 — theo đúng yêu cầu trước đó, phải xác nhận với user trước khi restart 2 tiến
+trình đang sống.
+
+## ★ DONE CODE + TEST / RUNTIME PENDING — Fix RD02.02 service task `Check` sau T02 không có worker — 2026-07-21 (owner Codex)
+
+**Nguyên nhân đã xác nhận:** `processes/rd0202.bpmn` phát job
+`khcn.rd0202.check-default-condition` tại element `Check`, nhưng backend không có `@JobWorker` subscribe
+đúng type. Gateway `GCheck` ngay sau đó cần biến `dieuKienMacDinhDat`; vì job không được nhận/complete nên
+mọi instance RD02.02 dừng vĩnh viễn sau T02.
+
+**Đối chiếu nguồn nghiệp vụ** `C:\Users\DELL\Downloads\RD02_02_Gan_Bieu_mau.md`: bước hệ thống sau hoạt
+động 2 phải kiểm tra (1) QĐ phê duyệt chủ trương cấp TĐ, (2) độ đầy đủ HSXD — thời gian, kinh phí, nhân sự,
+sản phẩm, (3) thể thức văn bản và (4) việc gán đủ/đúng nhân sự thẩm định. Vì vậy không đổi BPMN sang worker
+`khcn.rd0202.check-chu-truong-td` hiện có: worker đó chỉ mang nghĩa kiểm tra QĐ chủ trương và không khớp
+phạm vi của element `Check`.
+
+**Kế hoạch triển khai:**
+
+1. Hotfix `SystemCheckJobWorker`: thêm handler riêng cho đúng type
+   `khcn.rd0202.check-default-condition`, trả biến điều khiển `dieuKienMacDinhDat=true` để khôi phục luồng;
+   ghi rõ đây là stub tạm thời, chưa tuyên bố đã thực hiện đủ bốn nhóm kiểm tra nghiệp vụ.
+2. Bổ sung unit test cho output của handler và contract test đối chiếu mọi `zeebe:taskDefinition` trong
+   bundled `rd0202.bpmn` với `@JobWorker` backend, ngăn tái diễn lỗi BPMN có job nhưng không có subscriber.
+3. Chạy test tập trung rồi full backend suite. Không cần tạo version BPMN mới cho code-only hotfix; sau khi
+   backend 8090 chạy build mới, worker có thể nhận cả job cũ đang chờ đúng type.
+4. Runtime E2E sau khi đồng bộ token 8090↔8093: hoàn tất T01/T02; xác nhận `Check` và `GCheck` COMPLETED,
+   bốn task T03 được tạo; tiếp tục tới T06 và xác nhận `Generate_HDXD` chạy; dọn dữ liệu test.
+5. Follow-up nghiệp vụ: đặt validation thật ở `ho-so-service` (owner aggregate), worker 8090 gọi internal API
+   theo `hoSoId`; business-invalid trả `dieuKienMacDinhDat=false` + reasons để quay T02, lỗi kỹ thuật phải
+   retry/incident. Tạo binding cấu hình mới cho `RD02_02 + Check + khcn.rd0202.check-default-condition`;
+   không tái sử dụng binding V21 của element cũ `Check_ChuTruongTD`.
+
+**Done-when hotfix:** hoàn thành T02 không còn job treo và instance tới đủ bốn nhánh T03. **Done-when đầy đủ
+nghiệp vụ:** có test cả nhánh đạt/chưa đạt bằng dữ liệu hồ sơ thật và lý do không đạt được lưu/hiển thị.
+
+**Đã triển khai source:**
+
+- `SystemCheckJobWorker.checkRd0202DefaultCondition()` đăng ký chính xác
+  `@JobWorker(type = "khcn.rd0202.check-default-condition")`, log định danh job/instance và trả duy nhất
+  `dieuKienMacDinhDat=true`. Không sửa BPMN, không dùng nhầm handler `checkChuTruongTapDoan`.
+- `SystemCheckJobWorkerTest` thêm case khóa output của handler RD02.02.
+- `Rd0202JobWorkerContractTest` mới đọc trực tiếp bundled `rd0202.bpmn`, lấy toàn bộ
+  `zeebe:taskDefinition type` và fail nếu application không có `@JobWorker` tương ứng. Hiện contract xác nhận
+  cả `khcn.rd0202.check-default-condition` và `khcn.rd0202.generate-hdxd-decision` đều có subscriber.
+
+**Verify 2026-07-21:**
+
+- Focused: `backend\\mvnw.cmd -o
+  '-Dtest=SystemCheckJobWorkerTest,Rd0202JobWorkerContractTest,ProcessDefinitionImportValidatorTest' test`
+  → **18/18 PASS, BUILD SUCCESS**.
+- Full backend: `backend\\mvnw.cmd -o test` → **188/188 PASS, 0 failure/error/skipped, BUILD SUCCESS**.
+- `git diff --check` trên các file của lát này: không có whitespace error (chỉ cảnh báo line-ending LF→CRLF
+  có sẵn theo working copy Windows).
+
+**Chưa tuyên bố runtime DONE:** backend 8090 đang chạy phải được build/restart bằng source mới rồi mới có
+thể chứng minh worker thực nhận job Zeebe. Token 8090↔8093 đã được entry Delivery State mới nhất xác nhận
+đồng bộ; runtime smoke vẫn cần hoàn tất T01/T02 và quan sát `Check` → `GCheck` → bốn T03. Không cần deploy
+version BPMN mới vì job type không đổi; worker mới có thể nhận cả job cùng type đã tồn tại sau khi restart.
+
+## ⚠ SMOKE TEST RD02.02 v3 — 3 GAP CHẶN LUỒNG PHÁT HIỆN, CHƯA SỬA — 2026-07-20 (owner Claude, theo yêu cầu
+user "smoke test E2E: khởi tạo hồ sơ xét duyệt → cho chạy vào quy trình")
+
+Chạy click-through thật qua Playwright trên `localhost:4200` (backend 8090 PID 22844 khởi động 22:46,
+`ho-so-service` 8093 PID 17980 khởi động 22:20 — cùng stack đang sống, không phải build riêng). Luồng test:
+tạo Nhiệm vụ cấp Tập đoàn → tạo Hồ sơ loại Xét duyệt (RD02) → Gửi duyệt. **Cả 3 bug đều CONFIRMED bằng
+network response thật, không phải suy đoán:**
+
+1. **[Toàn hệ thống, không riêng RD02.02] Nút "Gửi duyệt" không bao giờ hiện cho user thường.**
+   `ho-so-detail.ts:217` (`loadDossierActions()`) luôn gửi `permissions: []` cho
+   `POST /api/action-studio/simulate`. Mọi policy SUBMIT đã seed (AP-01 generic, AP-BPMN-RD01_01-Task_2-SUBMIT,
+   AP-BPMN-RD02_02-T01-SUBMIT) đều yêu cầu permission `SUBMIT_DOSSIER` — permission này không bao giờ được
+   gửi lên nên `enabled=false` với PM thật (đăng nhập `pm@example.com`, xác nhận qua response thật của
+   `/api/action-studio/simulate`: `"reasons":["Thiếu quyền: SUBMIT_DOSSIER."]`). Chỉ `isAdmin=true` mới bypass
+   (xem `ActionStudioService.java:299,304`). Bug có sẵn từ trước (không nằm trong diff uncommitted hôm nay,
+   `git diff` không đụng dòng 217/202), nhưng chặn đứng thao tác Gửi duyệt qua UI cho **mọi quy trình**, không
+   riêng RD02.02. Cần: hoặc map `roleCodes` → `permissions` thật ở FE, hoặc bỏ yêu cầu `SUBMIT_DOSSIER` khỏi
+   policy nếu chỉ định RBAC qua `allowedRoleCodes` là đủ.
+2. **[Riêng RD02.02] Service task "Check" sau T02 không có job worker — quy trình treo vĩnh viễn.**
+   `rd0202.bpmn:48` khai `serviceTask id="Check"` với `zeebe:taskDefinition type="khcn.rd0202.check-default-condition"`,
+   nhưng `SystemCheckJobWorker.java` chỉ có `@JobWorker` cho `khcn.rd0101.check-default-condition` (RD01.01) và
+   `khcn.rd0202.check-chu-truong-td` — không có worker nào subscribe đúng type
+   `khcn.rd0202.check-default-condition`. Zeebe sẽ tạo job nhưng không bao giờ có worker poll/complete, nên
+   MỌI hồ sơ RD02.02 sẽ treo vĩnh viễn ngay sau T02, không bao giờ tới được T03/T06/`Generate_HDXD` (service
+   task sinh HĐXD — chính là tính năng "v3" cần test). Đây là gap tĩnh phát hiện qua đọc code, **chưa kiểm
+   chứng runtime** vì bug #3 chặn trước khi tới được bước này.
+3. **[Môi trường hiện tại] `START_FAILED` — 8093 gọi sang 8090 để start Camunda bị 401 Unauthorized.**
+   Gửi duyệt (bằng admin, bypass bug #1) tạo hồ sơ `HS-2026-012` nhưng `trangThai` rơi thẳng vào
+   `START_FAILED`. `GET /api/internal-integration/status` trả
+   `"startFailedDossiers":[{"hoSoId":"HS-2026-012","reason":"401 Unauthorized..."}]`. Nghi vấn: 8090 (PID
+   22844) khởi động lúc 22:46, SAU 8093 (PID 17980, khởi động 22:20) 26 phút — rất có thể là restart 8090 để
+   deploy "v3" dùng `QTKHCN_WORKFLOW_SERVICE_TOKEN`/`QTKHCN_HO_SO_SERVICE_TOKEN` không khớp với token 8093
+   đang giữ trong bộ nhớ (đúng bẫy "cặp token lệch sau restart lệch pha" đã từng ghi nhận nhiều lần ở các
+   entry cũ). **Hiện tại KHÔNG hồ sơ nào (bất kỳ quy trình nào) start được Camunda** cho tới khi 2 service
+   được đồng bộ lại token. Chưa tự ý restart — cần xác nhận token đúng trước khi đụng vào 2 process đang chạy.
+
+**Đã dọn sạch dữ liệu test:** xóa `RD.2026.010`, `RD.2026.011` (cascade `HS-2026-012`) qua
+`DELETE /api/nhiem-vu/{ma}`; `outboxFailed` về lại 0, `startFailedDossiers` rỗng. Không để lại state.
+
+**Chưa làm được do bug #3 chặn (LÚC PHÁT HIỆN):** chưa xác nhận job worker `Generate_HDXD` chạy thật, chưa
+xác nhận Hội đồng xét duyệt + văn bản QĐ xuất hiện đúng trên Angular `ho-so-detail` — đúng mục tiêu chính của
+"smoke test v3" user yêu cầu nhưng KHÔNG thể verify được vì chặn từ bug #3 (không start được process) rồi tới
+bug #2 (treo ở Check) trước khi tới T06/Generate_HDXD.
+
+### ✅ Bug #3 (token 8090↔8093 lệch) ĐÃ SỬA — 2026-07-20 (owner Claude, theo yêu cầu user "đồng bộ lại token
+giữa 8090↔8093, restart lại đúng cặp)
+
+Dừng cả 2 process cũ (PID `22844` backend/8090, PID `17980` ho-so-service/8093) rồi khởi động lại **đồng thời
+trong cùng phiên PowerShell** với cặp token tường minh giống nhau ở cả hai:
+`QTKHCN_WORKFLOW_SERVICE_TOKEN=dev-workflow-local-only`, `QTKHCN_HO_SO_SERVICE_TOKEN=dev-ho-so-local-only`
+(cùng quy ước đã dùng ở lần restart V21 trước đó — xem entry seam cấu hình tác vụ hệ thống). Backend khởi
+động lại bằng `java -jar target/qtkhcn-backend.jar` (jar build lúc 22:46, đúng jar process cũ đang chạy, không
+rebuild). `ho-so-service` khởi động lại bằng `mvnw -o spring-boot:run` (KHÔNG dùng jar có sẵn trong `target/`
+vì jar đó build lúc 21:49, cũ hơn process cũ start lúc 22:20 — dùng sẽ regress code; process cũ trước đó cũng
+chạy qua `spring-boot:run`, giữ nguyên cách khởi động).
+
+**PID mới:** 8090 → `22880`, 8093 → `9356`.
+
+**Verify cả 2 chiều bằng HTTP thật (không chỉ suy đoán từ tài liệu):**
+- **8093→8090** (`QTKHCN_WORKFLOW_SERVICE_TOKEN`): `POST /internal/v1/process-instances` trên 8090 kèm
+  `Authorization: Bearer dev-workflow-local-only` + body rỗng trả **400** (lỗi validate field bắt buộc), KHÔNG
+  còn 401 — chứng minh token filter (`InternalServiceTokenFilter`, order 5, chỉ chặn `/internal/**`) đã chấp
+  nhận đúng token. (Lưu ý: lần thử đầu dùng nhầm `dev-ho-so-local-only` cho endpoint này ra 401 đúng như thiết
+  kế — hai token KHÔNG hoán đổi cho nhau được, mỗi service tự định nghĩa `qtkhcn.internal.service-token` theo
+  tên biến môi trường riêng.)
+- **8090→8093** (`QTKHCN_HO_SO_SERVICE_TOKEN`): `GET /api/internal-integration/status` trên 8093 kèm
+  `Authorization: Bearer dev-ho-so-local-only` + `X-QTKHCN-User-Id: admin@example.com` trả **200** với
+  `outboxFailed:0`, `startFailedDossiers: []` — token filter chấp nhận (lưu ý: filter này áp cho MỌI
+  `/api/**`/`/internal/**` trên 8093, không riêng nội bộ — gateway Caddy vốn tiêm header này cho cả traffic
+  Angular, gọi trực tiếp bỏ header sẽ luôn 401 dù token đúng).
+
+**Kết luận:** cặp token đã đồng bộ, bug #3 ĐÃ ĐÓNG. Bug #1 (nút "Gửi duyệt" luôn gửi `permissions: []`) và
+bug #2 (RD02.02 `Check` thiếu `@JobWorker` cho `khcn.rd0202.check-default-condition`) **vẫn CHƯA sửa** — vẫn
+chặn smoke test v3 đi hết luồng tới `Generate_HDXD`, cần xử lý tiếp theo thứ tự #1 → #2 rồi mới re-run smoke
+test full.
+
+## ★ DONE — UI xem danh sách/chi tiết Hội đồng xét duyệt trên Chi tiết hồ sơ — 2026-07-20 (owner Claude)
+
+Nối tiếp task sinh HĐXD tự động (entry bên dưới): dữ liệu hội đồng đã được tạo trong DB nhưng chưa có cách nào
+xem lại trên UI. Đã bổ sung tối thiểu:
+
+- **`ho-so-service`** — `GET /api/ho-so` và `GET /api/ho-so/{id}` nay trả thêm field `hoiDongXetDuyet` (list,
+  rỗng nếu chưa sinh): `HoiDongXetDuyetResponse`/`ThanhVienHoiDongResponse` (DTO mới), `HoSoResponse` thêm
+  field thứ 20 + tham số `from(...)`. `HoiDongXetDuyetRepository` thêm
+  `findByHoSoIdOrderByCreatedAtAsc`/`findByHoSoIdInOrderByCreatedAtAsc` (`@EntityGraph` trên `thanhVien` để
+  tránh N+1). `HoSoQueryService` inject repo này, `findAll()` batch-load theo `hoSoId` rồi group, `findById()`
+  load trực tiếp.
+- **Angular** — `ho-so.ts` thêm `HoiDongXetDuyetResponse`/`ThanhVienHoiDongResponse`/`HoiDongCap` +
+  `HOI_DONG_CAP_LABEL`. `ho-so-detail` thêm card "Hội đồng xét duyệt" (cột trái, dưới "Tài liệu / Phiếu") —
+  chỉ hiện khi `hoiDongXetDuyet.length > 0`, hiển thị cấp, căn cứ pháp lý, ngày sinh (`DatePipe`), bảng thành
+  viên (họ tên + vai trò). Văn bản QĐ sinh kèm (HTML) đã tự động xuất hiện trong danh sách "Tài liệu" có sẵn
+  (không cần thay đổi gì thêm) vì `HoiDongXetDuyetService` lưu nó như một `TaiLieu` bình thường.
+
+Verify: `ho-so-service` targeted (`HoSoQueryServiceTest`, `ReadApiContractTest`, cùng full suite) **50/51
+PASS** (1 fail `DemoIdentityProviderTest` pre-existing, không liên quan). Angular full suite **198/199 PASS**
+(1 fail `ho-so-create.spec.ts` actor-header — pre-existing, không đụng file này). Test mới:
+`ho-so-detail.spec.ts` 2 case (hiện đúng dữ liệu hội đồng khi có; ẩn card khi chưa có), `ReadApiContractTest`
+assert `hoiDongXetDuyet` là array + `hasSize(20)`.
+
+**Cố ý chưa làm:** không có UI tạo/sửa hội đồng thủ công (hội đồng chỉ sinh tự động qua service task); chưa
+làm tương đương cho cấp Tập đoàn (vẫn đang chờ theo entry gốc bên dưới).
+
+## ★ DONE — Service task tự động sinh HĐXD cấp Cơ sở sau bước 06 (RD02.02) — 2026-07-20 (owner Claude)
+
+Theo yêu cầu trực tiếp của user: chèn service task Camunda thật ngay sau T06 ("6. Phê duyệt QĐ thành lập
+HĐXD cấp Cơ sở") trong `rd0202.bpmn` để tự động sinh Hội đồng xét duyệt (HĐXD). Khảo sát phát hiện 3 gap phải
+xử lý cùng lúc (đã chốt qua `AskUserQuestion`, plan đầy đủ ở phiên chat, không lưu file riêng):
+
+1. **Nguồn dữ liệu chưa từng được lưu** — `formData` của eForm T05 (`bm-02-08-qdh-nv`, có
+   `danhSachThanhVien`/`canCuPhapLy`) bị `WorkflowTaskActionRouting` bỏ qua hoàn toàn, không tới Camunda (đúng
+   D3) và cũng chưa có bảng nào ở `ho-so-service` giữ lại.
+2. **`WorkflowProjectionService.rebuild()` replay toàn bộ event mỗi lần** — sinh tài liệu/entity phải nằm
+   ngoài projector, gọi đúng 1 lần qua service task, tự idempotent.
+3. **Không có hạ tầng sinh Word/PDF** và `DocumentFileService.upload()` chỉ cho phép hồ sơ `DRAFT`.
+
+**Đã làm (3 lát):**
+- **Lát 1** — `WorkflowTaskActionService.emitActionEvent()` (backend) nay gửi thêm `formData` trong payload
+  event `TASK_ACTION_APPLIED`; Flyway `V8__dossier_step_form_data.sql` thêm cột `dossier_step.form_data_json`;
+  `WorkflowProjectionService` capture và ghi đè field này khi rebuild (an toàn với replay, giống cơ chế
+  `nguoi`/`yKien` hiện có).
+- **Lát 2** (`ho-so-service`) — entity mới `HoiDongXetDuyet`/`ThanhVienHoiDong` (Flyway
+  `V9__hoi_dong_xet_duyet.sql`, unique theo `ho_so_id+cap+source_task_definition_key`); service
+  `HoiDongXetDuyetService.sinhTuBuoc05()` đọc `formData` đã lưu ở bước T05, tạo Hội đồng + thành viên, sinh
+  văn bản HTML đơn giản (không thêm dependency) và tạo `TaiLieu` trực tiếp (bỏ qua ràng buộc DRAFT-only vì
+  đây là ghi hệ thống, không qua `DocumentFileService.upload()`); endpoint nội bộ
+  `POST /internal/v1/ho-so/{id}/hoi-dong-xet-duyet` theo đúng mẫu `InternalWorkflowEventController`, tự động
+  được bảo vệ bởi `InternalServiceTokenFilter` có sẵn.
+- **Lát 3** (backend) — `rd0202.bpmn` thêm `serviceTask id="Generate_HDXD"`
+  (`zeebe:taskDefinition type="khcn.rd0202.generate-hdxd-decision" retries="3"`) chèn giữa T06 và T07 (lane
+  `Lane_LDVHT`, có DI shape/edge riêng, không đụng toạ độ các node khác); job worker mới
+  `GenerateHdxdDocumentJobWorker` gọi đồng bộ sang API ở Lát 2, lỗi thì để Zeebe tự retry.
+
+**Cố ý chưa làm:** cùng mẫu QĐ thành lập HĐXD lặp lại ở cấp Tập đoàn (T18B→T20, cùng formKey) — không đụng;
+dùng danh sách thành viên để gán candidate thật cho T07/T10 (thay group tĩnh `HDXD`) — quyết định RBAC lớn
+hơn, để riêng; nâng cấp HTML lên Word/PDF chuẩn thể thức — cần thêm dependency, để lát sau nếu cần.
+
+Verify: `ho-so-service` **50/51 PASS** (1 fail là `DemoIdentityProviderTest` — pre-existing, không liên quan,
+đã ghi nhận ở entry bên dưới); backend **186/186 PASS, BUILD SUCCESS**. Test mới:
+`HoiDongXetDuyetServiceTest` (3 case: tạo hội đồng + đính tài liệu, idempotent khi đã tồn tại, lỗi khi thiếu
+formData), `InternalHoiDongXetDuyetControllerTest` (auth bearer bắt buộc), `WorkflowProjectionServiceTest`
+(+1 case xác nhận `formDataJson` được set đúng sau rebuild). **Chưa làm:** smoke thật trên Postgres/Camunda
+sống (submit hồ sơ RD02.02 thật, duyệt qua T06, xác nhận job `Generate_HDXD` chạy và tài liệu/hội đồng xuất
+hiện đúng ở Angular) — chỉ mới verify ở tầng unit/contract test offline.
+
+## ★ DONE — Thêm / xóa tệp ở mọi trạng thái Hồ sơ — 2026-07-20 (owner Codex)
+
+Đã gỡ rào `DRAFT` khỏi upload multipart, thêm metadata và xóa tài liệu. DELETE vẫn dùng `If-Match` theo
+`TaiLieu.version`; read model trả `version` để Angular thực hiện optimistic delete, và binary được xóa sau khi
+transaction commit. Màn Chi tiết hồ sơ luôn cho phép Upload, có nút Xóa kèm xác nhận/loading/toast, đồng thời
+loại row khỏi signal ngay sau HTTP 204. Test mới chứng minh upload, thêm metadata và xóa binary khi hồ sơ đang
+`PROCESSING`.
+
+Verify: backend targeted `DocumentFileServiceTest,HoSoDocumentMutationServiceTest,DocumentFileControllerTest,
+ReadApiContractTest,MutationApiContractTest` **19/19 PASS**; Angular `ho-so-detail.spec.ts` **12/12 PASS**;
+production build PASS (chỉ warning budget/CommonJS có sẵn).
+
+**Runtime 21:29:** dừng tiến trình cũ PID 7144, chạy `mvnw -o -DskipTests package`, khởi động JAR mới trên
+8093 thành PID `18300` với cặp token khớp stack local và kho file tuyệt đối
+`services/ho-so-service/data/ho-so-files`. Readiness `UP`; DB xác nhận Flyway V7 `success=true`; GET trực tiếp
+8093 và qua proxy 4200 cùng trả 1 hồ sơ, tài liệu có field `version`; DELETE với ID giả trả 404, chứng minh
+route mới đang hoạt động mà không thay đổi dữ liệu thật.
+
+## ★ DONE — Upload / xem / tải tệp tại Chi tiết hồ sơ — 2026-07-20 (owner Codex)
+
+`ho-so-service` nay sở hữu cả metadata lẫn binary tài liệu: Flyway V7 thêm `content_type`, `size_bytes`,
+`storage_key`, `uploaded_at`; nội dung lưu dưới tên UUID trong kho cấu hình
+`QTKHCN_DOCUMENT_STORAGE_PATH` (mặc định `./data/ho-so-files`). Upload multipart ban đầu chỉ cho hồ sơ `DRAFT`,
+nhưng đã được lát mở rộng cùng ngày cho phép ở mọi trạng thái,
+giới hạn mặc định 20 MB, có audit; endpoint view dùng `Content-Disposition: inline`, download dùng
+`attachment`, đều giữ service-token fail-closed. Xóa tài liệu/hồ sơ lên lịch dọn binary sau khi transaction
+commit; rollback upload dọn file vừa ghi.
+
+Angular `/ho-so/:id` luôn hiển thị Upload, bổ sung Xem/Tải bằng Blob qua HTTP client để request vẫn
+đi qua auth/proxy, hiển thị dung lượng và trạng thái loading. Row legacy chưa có binary vẫn hiển thị metadata
+nhưng khóa Xem/Tải rõ ràng.
+
+Verify: backend targeted `DocumentFileServiceTest,DocumentFileControllerTest,ReadApiContractTest,
+MutationApiContractTest` **17/17 PASS**; Angular `ho-so-detail.spec.ts` **10/10 PASS**; `ng build` production
+PASS (chỉ warning budget/CommonJS có sẵn). Full `ho-so-service` suite chạy hết nhưng có 1 failure ngoài phạm
+vi tại `DemoIdentityProviderTest`: worktree song song đã thêm role `PTGD_CT` cho `lanhdao@example.com` nhưng
+expected test cũ chưa đổi; không sửa lẫn thay đổi người dùng.
+
 ## ★ DONE — Xem BPMN và current step tại Chi tiết hồ sơ — 2026-07-20 (owner Codex)
 
 Backend Quy trình có `GET /api/process-definitions/by-bpmn-process-id/{bpmnProcessId}` trả BPMN version mới
@@ -3983,6 +4487,35 @@ call, not assumed here.
 ---
 
 ## Task
+
+**RD02.02 v3 — sửa 3 gap chặn luồng do smoke test 2026-07-20 phát hiện — TO DO, chưa bắt đầu sửa.**
+Chi tiết đầy đủ + bằng chứng network response ở entry "⚠ SMOKE TEST RD02.02 v3" đầu file này. Thứ tự
+triển khai theo đúng phụ thuộc (không đảo được, mỗi bug chặn bug sau):
+
+1. **Đồng bộ token 8090↔8093.** `ho-so-service` (8093) gọi backend Quy trình (8090) để start Camunda
+   đang bị 401 Unauthorized — nghi `QTKHCN_WORKFLOW_SERVICE_TOKEN`/`QTKHCN_HO_SO_SERVICE_TOKEN` lệch sau
+   khi 8090 restart (sau 8093 tới 26 phút, khả năng do restart deploy v3). **Xác nhận giá trị token đúng
+   với user trước khi restart 2 tiến trình đang sống** — đây là gate mở khóa mọi việc còn lại, không sửa
+   được cái này thì không test được gì khác.
+2. **Thêm `@JobWorker(type = "khcn.rd0202.check-default-condition")`** trong
+   `backend/src/main/java/vn/vht/qtkhcn/camunda/SystemCheckJobWorker.java` cho service task `Check` sau
+   T02 trong `rd0202.bpmn` — hiện không có worker nào subscribe type này nên mọi hồ sơ RD02.02 sẽ treo
+   vĩnh viễn ở đó, không bao giờ tới T06 → `Generate_HDXD`. Có thể copy stub logic từ handler
+   `khcn.rd0101.check-default-condition` (luôn trả `dieuKienMacDinhDat=true`) trong cùng file.
+3. **Sửa `loadDossierActions()` ở `frontend-angular/src/app/pages/ho-so-detail/ho-so-detail.ts:211-217`**
+   — hiện luôn gửi `permissions: []` cho `POST /api/action-studio/simulate`, trong khi mọi Action Studio
+   policy SUBMIT đều yêu cầu quyền `SUBMIT_DOSSIER`, nên nút "Gửi duyệt" không bao giờ hiện cho user
+   thường (chỉ `isAdmin=true` bypass được) — ở **mọi quy trình**, không riêng RD02.02. Cần map
+   `user.roleCodes` sang danh sách permission thật, hoặc bỏ yêu cầu `SUBMIT_DOSSIER` khỏi các policy nếu
+   `allowedRoleCodes` đã đủ để enforce RBAC. Lỗi có sẵn từ trước, không phải do thay đổi v3 hôm nay.
+
+**Done-when**: chạy lại đúng kịch bản smoke test đã làm hôm nay — đăng nhập **`pm@example.com` thật**
+(KHÔNG dùng admin bypass), tạo Nhiệm vụ cấp Tập đoàn → Hồ sơ loại Xét duyệt (RD02) → bấm "Gửi duyệt" —
+xác nhận hồ sơ vào `PROCESSING` với `zeebeProcessInstanceKey` hợp lệ, duyệt qua tới T06, xác nhận job
+`Generate_HDXD` chạy và Hội đồng xét duyệt + văn bản QĐ hiện đúng trên Angular `ho-so-detail`. Nhớ dọn
+sạch dữ liệu test sau khi xong (theo đúng cách đã làm hôm nay: `DELETE /api/nhiem-vu/{ma}` cascade).
+
+---
 
 **Integration screen (`/tich-hop`) upgrade — Đợt 1 (Slice A–C) — DONE 2026-07-08.**
 Plan of record: `docs/research/integration-screen-upgrade-notes.md`. Frontend-mock evolution

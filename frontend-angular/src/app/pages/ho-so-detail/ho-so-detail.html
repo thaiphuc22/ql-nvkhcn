@@ -99,15 +99,55 @@
         </nz-card>
 
         <nz-card nzTitle="Tài liệu / Phiếu" nzSize="small">
-          @for (document of dossier.taiLieu; track document.ten) {
+          <div class="hsd-document-toolbar">
+            <input #documentInput type="file" hidden (change)="uploadDocument($event)" />
+            <button nz-button nzType="primary" [nzLoading]="documentUploading()"
+              (click)="chooseDocument(documentInput)">
+              <span nz-icon nzType="file-add"></span>Upload tài liệu
+            </button>
+            <small>Tối đa 20 MB/tệp · Có thể thêm ở mọi trạng thái hồ sơ</small>
+          </div>
+          @for (document of dossier.taiLieu; track document.id) {
             <div class="hsd-document">
               <span nz-icon [nzType]="documentIcon(document.loai)" class="hsd-document-icon"></span>
-              <div><strong>{{ document.ten }}</strong><small>{{ document.loai }}</small></div>
-              <button nz-button nzType="link" disabled>Xem</button><button nz-button nzType="link" disabled>Tải</button>
+              <div><strong>{{ document.ten }}</strong><small>{{ document.loai }} · {{ formatFileSize(document.sizeBytes) }}</small></div>
+              <button nz-button nzType="link" [disabled]="!document.hasContent"
+                [nzLoading]="documentLoadingId() === document.id" (click)="viewDocument(document)">Xem</button>
+              <button nz-button nzType="link" [disabled]="!document.hasContent"
+                [nzLoading]="documentLoadingId() === document.id" (click)="downloadDocument(document)">Tải</button>
+              <button nz-button nzType="link" nzDanger nz-popconfirm
+                nzPopconfirmTitle="Xóa tài liệu này?" nzPopconfirmOkText="Xóa" nzPopconfirmCancelText="Hủy"
+                [disabled]="documentDeletingId() !== null"
+                [nzLoading]="documentDeletingId() === document.id"
+                (nzOnConfirm)="deleteDocument(document)">Xóa</button>
             </div>
           } @empty { <nz-empty nzNotFoundContent="Hồ sơ chưa có tài liệu đính kèm."></nz-empty> }
-          <p class="hsd-storage-note">Kho tệp chưa được nối; metadata tài liệu được tải trực tiếp từ backend.</p>
+          <p class="hsd-storage-note">Tài liệu cũ chưa có nội dung tệp sẽ chỉ hiển thị metadata.</p>
         </nz-card>
+
+        @if (dossier.hoiDongXetDuyet.length) {
+          <nz-card nzTitle="Hội đồng xét duyệt" nzSize="small">
+            @for (hoiDong of dossier.hoiDongXetDuyet; track hoiDong.id) {
+              <div class="hsd-hoidong">
+                <div class="hsd-hoidong-header">
+                  <nz-tag nzColor="blue">Cấp {{ hoiDongCapLabel[hoiDong.cap] }}</nz-tag>
+                  <small>Sinh tự động sau bước {{ hoiDong.sourceTaskDefinitionKey }} · {{ hoiDong.createdAt | date:'dd/MM/yyyy HH:mm' }}</small>
+                </div>
+                @if (hoiDong.canCuPhapLy) { <p class="hsd-hoidong-cancu"><strong>Căn cứ:</strong> {{ hoiDong.canCuPhapLy }}</p> }
+                <table class="hsd-hoidong-table">
+                  <thead><tr><th>Họ và tên</th><th>Vai trò trong Hội đồng</th></tr></thead>
+                  <tbody>
+                    @for (member of hoiDong.thanhVien; track $index) {
+                      <tr><td>{{ member.hoTen }}</td><td>{{ member.vaiTroTrongHoiDong || '—' }}</td></tr>
+                    } @empty {
+                      <tr><td colspan="2">Chưa có thành viên.</td></tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </nz-card>
+        }
       </div>
 
       <div nz-col [nzXs]="24" [nzLg]="11" class="hsd-column">

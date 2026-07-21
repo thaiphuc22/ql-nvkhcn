@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  DMN kết quả đánh giá HĐXD Tập đoàn phiên 2 (T24) — RD02.02.
+
+  Điểm trung bình lấy từ diemTrungBinhT24 (do job worker
+  khcn.rd0202.compute-diem-trung-binh-t24 tính từ các phiếu bm-02-12/13/14 chấm thang 100 của
+  từng thành viên HĐXD, gom qua multi-instance outputCollection của userTask T24).
+
+  Ngưỡng 70 điểm do người dùng chốt trực tiếp khi yêu cầu bổ sung DMN này (khác với
+  rd0202-routing.dmn, ngưỡng ở đây KHÔNG phải placeholder chờ OQ) — nếu sau này nghiệp vụ đổi
+  ngưỡng thì chỉ sửa bảng này, không sửa BPMN.
+
+  Đạt (>= 70 điểm) → G24 đi F28 tới T25. Không đạt (< 70 điểm, kể cả trường hợp không có phiếu
+  nào — diemTrungBinhT24 = 0, fail-closed) → G24 đi tới endEvent "Hồ sơ không được thông qua".
+-->
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/"
+             xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/"
+             xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/"
+             id="drd_rd0202_danh_gia"
+             name="Kết quả đánh giá T24 RD02.02"
+             namespace="http://vht.vn/qtkhcn/dmn/rd0202-danh-gia">
+
+  <inputData id="in_diemTrungBinhT24" name="diemTrungBinhT24">
+    <variable id="var_diemTrungBinhT24" name="diemTrungBinhT24" typeRef="number" />
+  </inputData>
+
+  <decision id="ketQuaDanhGiaT24" name="Kết quả đánh giá HĐXD Tập đoàn phiên 2">
+    <informationRequirement id="ir_ketqua_diem">
+      <requiredInput href="#in_diemTrungBinhT24" />
+    </informationRequirement>
+    <decisionTable id="dt_ketqua" hitPolicy="FIRST">
+      <input id="dt_ketqua_i1" label="Điểm trung bình HĐXD">
+        <inputExpression id="dt_ketqua_i1e" typeRef="number"><text>diemTrungBinhT24</text></inputExpression>
+      </input>
+      <output id="dt_ketqua_o1" name="ketQua" typeRef="string" />
+
+      <rule id="dt_ketqua_r1">
+        <description>Đạt: từ 70 điểm trở lên</description>
+        <inputEntry id="dt_ketqua_r1i1"><text>&gt;= 70</text></inputEntry>
+        <outputEntry id="dt_ketqua_r1o1"><text>"DAT"</text></outputEntry>
+      </rule>
+      <rule id="dt_ketqua_r2">
+        <description>Không đạt: dưới 70 điểm (kể cả chưa có phiếu chấm nào)</description>
+        <inputEntry id="dt_ketqua_r2i1"><text>-</text></inputEntry>
+        <outputEntry id="dt_ketqua_r2o1"><text>"KHONG_DAT"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="dmndi_rd0202_danh_gia">
+      <dmndi:DMNShape id="shape_ketQuaDanhGiaT24" dmnElementRef="ketQuaDanhGiaT24">
+        <dc:Bounds x="260" y="80" width="180" height="80" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="shape_in_diemTrungBinhT24" dmnElementRef="in_diemTrungBinhT24">
+        <dc:Bounds x="280" y="240" width="140" height="60" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>
