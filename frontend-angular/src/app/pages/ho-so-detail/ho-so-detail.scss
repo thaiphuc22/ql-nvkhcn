@@ -7,7 +7,8 @@
 .hsd-title-line h2 { margin: 0; color: #1d2733; line-height: 1.3; }
 .hsd-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .hsd-column { display: grid; align-content: start; gap: 16px; }
-.hsd-process-strip { display: flex; align-items: flex-start; overflow-x: auto; padding: 12px 8px 4px; }
+.hsd-process-card { min-width: 0; }
+.hsd-process-strip { display: flex; align-items: flex-start; overflow-x: auto; width: 100%; min-width: 0; padding: 12px 8px 4px; scrollbar-width: thin; }
 .hsd-process-actions { display: flex; justify-content: flex-end; margin: -4px 0 4px; }
 .hsd-process-actions button { display: inline-flex; align-items: center; gap: 6px; }
 .hsd-bpmn-loading { min-height: 420px; display: grid; place-items: center; }

@@ -1,5 +1,51 @@
 # Active Task
 
+## ★ DONE + TEST VERIFIED — eForm không hiện khi bấm nút hành động task thật ("Đồng ý duyệt" T05 HS-2026-016 không ra `bm-02-08-qdh-nv`) — 2026-07-21 (owner Claude, theo yêu cầu user "kiểm tra binding eForm theo userTask và Luật hiển thị nút")
+
+**Bối cảnh:** user báo HS-2026-016 ở bước 5 ("Lập, trình QĐ thành lập HĐXD cấp Cơ sở", `T05`),
+bấm "Đồng ý duyệt" kỳ vọng ra form `bm-02-08-qdh-nv` nhưng không thấy — nghi cả "eForm binding
+theo userTask" lẫn "Luật hiển thị nút" (Ma trận Hành động) đều sai.
+
+**Điều tra — Luật hiển thị nút / eForm binding (backend, `action_availability_policy`):
+KHÔNG có bug hiện tại.** Gọi thẳng `GET /api/action-studio/reconcile?processCode=RD02_02` trên
+backend đang chạy (8090): `AP-BPMN-RD02_02-T05-APPROVE` đã tồn tại, `status: "ok"`,
+`formKey: "bm-02-08-qdh-nv"` — khớp đúng `zeebe:formDefinition` của `T05` trong `rd0202.bpmn`.
+110/122 dòng reconcile của RD02.02 là "ok", 11 "unfilled" (đúng — các task `*_GDK`/`*_GDTT` không
+tự ký thứ 2 vốn không khai báo formKey riêng trong BPMN), 1 "generic". Tức là `scaffold()`
+(`ActionStudioService.scaffold`, endpoint `POST /api/action-studio/reconcile/{code}/scaffold`) đã
+được chạy cho RD02.02 v3 (updatedBy "Lê Văn Cường", `updatedAt` hôm nay) — có thể do phiên khác
+(xem [[concurrent-sessions-same-repo]]) hoặc thao tác admin qua UI Ma trận Hành động. **Không sửa
+gì ở tầng này** — dữ liệu đã đúng, không cần scaffold lại.
+
+**Bug thật tìm thấy — frontend, `ho-so-detail.ts`:** `openAction()`/`applyAction()` (luồng hành
+động task thật, dùng `availableActions()` từ `TaskActionService`, khác hẳn `runDossierAction()`
+dùng cho action cấp hồ sơ) **chưa bao giờ đọc `TaskAvailableAction.formKey`**. Bấm bất kỳ nút nào
+trong khối `@if (dossier.trangThai === 'PROCESSING')` chỉ mở modal ghi chú (`actionNote`) rồi
+`applyAction()` POST `/api/tasks/{taskKey}/actions` với **`formData: {}` khoá cứng** — bất kể form
+nào được bind. Đây chính là lý do form không hiện, và cũng là lý do
+`HoiDongXetDuyetService.sinhTuBuoc05()` (sinh HĐXD sau khi ký QĐ thành lập ở `T05`/`T18B`) luôn có
+nguy cơ ném "chưa có formData để sinh HDXD" — vì `DossierStep.formDataJson` không bao giờ được
+điền từ luồng UI này.
+
+**Đã sửa** (`frontend-angular/src/app/pages/ho-so-detail/ho-so-detail.ts` +
+`ho-so-detail.html`): thêm `taskActionForm`/`taskActionFormLoading` (tách khỏi `actionForm`/
+`formLoading` vốn chỉ phục vụ xem-trước read-only của `runDossierAction`, để không đụng hành vi cũ
+đó) + `taskActionFormRenderer = viewChild<FormRendererComponent>('taskActionFormRenderer')`.
+`openAction()` nay gọi `eformService.loadOne(action.formKey)` giống hệt `runDossierAction()`.
+Modal `actionOpen` render `<app-form-renderer #taskActionFormRenderer>` khi action có `formKey`.
+`applyAction()` gọi `renderer.submit()` (API công khai có sẵn của `FormRendererComponent`, trả
+`{data, errors}`), chặn submit nếu có lỗi validate, và gửi `result.data` thay vì `{}`.
+
+**Verify:** `ng build` sạch. `ho-so-detail.spec.ts`: sửa lại test cũ "wires task-centric actions…"
+(trước đó gọi `applyAction()` ngay sau `openAction()` không qua `detectChanges()`/flush GET eform —
+tức test cũ đang xác nhận đúng hành vi lỗi cũ) để flush đúng GET `/api/eform/phieu-phe-duyet` trước
+khi submit; thêm test mới "loads the eForm bound to a real task action and submits the data the
+user entered" xác nhận `formData` POST đi đúng bằng giá trị người dùng nhập (qua
+`renderer.setValue()`) chứ không phải `{}`. Toàn bộ suite frontend: **44 file / 205 test PASS**.
+**Chưa làm:** chưa test tay qua trình duyệt thật (Playwright) trên HS-2026-016 sống — khuyến nghị
+user tự bấm lại "Đồng ý duyệt" ở bước 5 để xác nhận trực quan; chưa rà toàn bộ RD01.01/RD02.01/
+RD02.02 xem còn action nào khác có `formKey` mà UI khác (Worklist/mobile) cũng bỏ qua tương tự.
+
 ## ★ DONE + RUNTIME VERIFIED — HS-2026-016/018 kẹt do mất TASK_COMPLETED/TASK_CREATED trong `CamundaWorkflowRuntimeEventReader`; khôi phục T04/T13/T27/T29 tách GDTT/GDK trong `rd0202.bpmn` — 2026-07-21 (owner Claude)
 
 **Root cause:** `CamundaWorkflowRuntimeEventReader.read()` chỉ tin native

@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -104,6 +104,11 @@ export class HoSoDetailPage {
   readonly formAction = signal<SimulatedAction | null>(null);
   readonly actionForm = signal<ReturnType<EformService['getForm']>>(undefined);
   readonly formLoading = signal(false);
+  /** Biểu mẫu gắn theo `TaskAvailableAction.formKey` cho hành động task thật (khác `actionForm`,
+   * vốn chỉ phục vụ xem trước ở luồng dossier-level `runDossierAction`/SUBMIT). */
+  readonly taskActionForm = signal<ReturnType<EformService['getForm']>>(undefined);
+  readonly taskActionFormLoading = signal(false);
+  readonly taskActionFormRenderer = viewChild<FormRendererComponent>('taskActionFormRenderer');
   readonly bpmnOpen = signal(false);
   readonly bpmnLoading = signal(false);
   readonly bpmnXml = signal<string | null>(null);
@@ -261,7 +266,26 @@ export class HoSoDetailPage {
   openAction(outcome: HoSoActionOutcome): void {
     this.selectedOutcome.set(outcome);
     this.actionNote.set('');
+    this.taskActionForm.set(undefined);
     this.actionOpen.set(true);
+    const formKey = this.selectedAction()?.formKey;
+    if (!formKey) return;
+    this.taskActionFormLoading.set(true);
+    this.eformService.loadOne(formKey).subscribe({
+      next: (form) => {
+        this.taskActionForm.set(form);
+        this.taskActionFormLoading.set(false);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.taskActionFormLoading.set(false);
+        this.message.error(this.errorText(error, `Không thể tải biểu mẫu ${formKey}`));
+      },
+    });
+  }
+
+  closeAction(): void {
+    this.actionOpen.set(false);
+    this.taskActionForm.set(undefined);
   }
 
   runDossierAction(action: SimulatedAction): void {
@@ -324,17 +348,28 @@ export class HoSoDetailPage {
     const action = this.selectedAction();
     const note = this.actionNote().trim();
     if (!dossier || !key || !action || (action.requiresReason && !note)) return;
+    let formData: Record<string, unknown> = {};
+    if (action.formKey) {
+      const renderer = this.taskActionFormRenderer();
+      if (!renderer) return;
+      const result = renderer.submit();
+      if (Object.keys(result.errors).length) {
+        this.message.error('Vui lòng kiểm tra lại các trường trong biểu mẫu.');
+        return;
+      }
+      formData = result.data;
+    }
     this.saving.set(true);
     this.taskActionService.applyAction(key, {
       requestId: this.taskActionService.newRequestId(),
       taskKey: key,
       actionCode: action.actionCode,
       comment: note || null,
-      formData: {},
+      formData,
       expectedTaskState: 'ACTIVE',
     }).subscribe({
       next: () => {
-        this.actionOpen.set(false);
+        this.closeAction();
         this.message.success('Đã gửi yêu cầu xử lý — đang chờ quy trình cập nhật.');
         this.pollAfterAction(dossier.id, dossier.buocHienTai, dossier.trangThai);
       },

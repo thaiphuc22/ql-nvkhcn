@@ -375,6 +375,13 @@ describe('HoSoDetailPage', () => {
     expect(fixture.nativeElement.textContent).not.toContain('Không có quyền thao tác task từ đây');
 
     cmp.openAction('APPROVE_STEP');
+    fixture.detectChanges();
+    const form = http.expectOne('/api/eform/phieu-phe-duyet');
+    form.flush({
+      key: 'phieu-phe-duyet', ten: 'Phiếu phê duyệt', moTa: '', schema: { type: 'default', components: [] },
+      version: 1, updatedBy: 'admin', updatedAt: '2026-07-20T00:00:00Z', createdAt: '2026-07-20T00:00:00Z',
+    });
+    fixture.detectChanges();
     cmp.applyAction();
 
     const post = http.expectOne('/api/tasks/t2-key-1/actions');
@@ -396,6 +403,47 @@ describe('HoSoDetailPage', () => {
     expect(cmp.saving()).toBe(false);
     expect(cmp.taskKey()).toBeNull();
     expect(cmp.availableActions()).toEqual([]);
+  });
+
+  it('loads the eForm bound to a real task action and submits the data the user entered', () => {
+    setup(processingDossier.id, { taskKey: 't2-key-1' });
+    const fixture = TestBed.createComponent(HoSoDetailPage);
+    http.expectOne(`/api/ho-so/${processingDossier.id}`).flush(processingDossier);
+    flushSimulation();
+
+    http.expectOne('/api/tasks/t2-key-1/available-actions').flush({
+      taskKey: 't2-key-1', processInstanceKey: '2251799813697704', taskDefinitionKey: 't2',
+      actions: [{
+        actionCode: 'APPROVE_STEP', label: 'Đồng ý duyệt', tone: 'primary',
+        requiresReason: false, requiresEvidence: false, requiresConfirm: true, formKey: 'bm-02-08-qdh-nv',
+      }],
+    } satisfies TaskAvailableActionsResponse);
+    fixture.detectChanges();
+
+    const cmp = fixture.componentInstance;
+    cmp.openAction('APPROVE_STEP');
+    fixture.detectChanges();
+    http.expectOne('/api/eform/bm-02-08-qdh-nv').flush({
+      key: 'bm-02-08-qdh-nv', ten: 'QĐ thành lập HĐXD', moTa: '',
+      schema: { type: 'default', components: [{ type: 'textfield', key: 'canCuPhapLy', label: 'Căn cứ' }] },
+      version: 1, updatedBy: 'admin', updatedAt: '2026-07-20T00:00:00Z', createdAt: '2026-07-20T00:00:00Z',
+    });
+    fixture.detectChanges();
+
+    // Người dùng thật sẽ gõ vào trường form-js render trong modal; giả lập bằng cách gọi thẳng
+    // setValue của renderer (đường công khai duy nhất, không phụ thuộc cấu trúc DOM ngzorro).
+    const renderer = cmp.taskActionFormRenderer();
+    expect(renderer).toBeTruthy();
+    renderer!.setValue({ type: 'textfield', key: 'canCuPhapLy' }, 'Quyết định số 123/QĐ-VHT');
+
+    cmp.applyAction();
+    const post = http.expectOne('/api/tasks/t2-key-1/actions');
+    expect(post.request.body.formData).toEqual({ canCuPhapLy: 'Quyết định số 123/QĐ-VHT' });
+    post.flush({ requestId: post.request.body.requestId, taskKey: 't2-key-1',
+      processInstanceKey: '2251799813697704', status: 'ACCEPTED' });
+
+    const refetch = http.expectOne(`/api/ho-so/${processingDossier.id}`);
+    refetch.flush({ ...processingDossier, buocHienTai: 2 });
   });
 
   it('renders a draft support action from Action Studio and opens its configured form', () => {

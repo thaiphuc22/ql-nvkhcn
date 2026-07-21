@@ -57,7 +57,7 @@
         nzDescription="Lệnh gửi đã được giữ và thử lại có kiểm soát. Bạn có thể bấm “Thử gửi lại” để tạo một yêu cầu mới."></nz-alert>
     }
 
-    <nz-card nzTitle="Quy trình xử lý" nzSize="small">
+    <nz-card nzTitle="Quy trình xử lý" nzSize="small" class="hsd-process-card">
       @if (dossier.quyTrinh) {
         <div class="hsd-process-actions">
           <button nz-button nzSize="small" (click)="openBpmn()">
@@ -184,12 +184,19 @@
     </ng-container>
   </nz-modal>
 
-  <nz-modal [nzVisible]="actionOpen()" [nzTitle]="actionTitle()" nzOkText="Xác nhận" nzCancelText="Hủy"
+  <nz-modal [nzVisible]="actionOpen()" [nzTitle]="actionTitle()" nzOkText="Xác nhận" nzCancelText="Hủy" nzWidth="720px"
     [nzOkLoading]="saving()" [nzOkDanger]="selectedOutcome() === 'REJECT_STEP'"
-    [nzOkDisabled]="!!selectedAction()?.requiresReason && !actionNote().trim()"
-    (nzOnCancel)="actionOpen.set(false)" (nzOnOk)="applyAction()">
+    [nzOkDisabled]="(!!selectedAction()?.requiresReason && !actionNote().trim()) || taskActionFormLoading()"
+    (nzOnCancel)="closeAction()" (nzOnOk)="applyAction()">
     <ng-container *nzModalContent>
       @if (currentStep(); as current) { <p>Bước hiện tại: <strong>{{ current.ten }}</strong></p> }
+      @if (selectedAction()?.formKey) {
+        @if (taskActionFormLoading()) {
+          <div class="hsd-loading"><nz-spin nzSimple></nz-spin></div>
+        } @else if (taskActionForm(); as form) {
+          <app-form-renderer #taskActionFormRenderer [schema]="form.schema"></app-form-renderer>
+        }
+      }
       <label for="action-note">Ý kiến {{ selectedAction()?.requiresReason ? '(bắt buộc)' : '(không bắt buộc)' }}</label>
       <textarea id="action-note" nz-input rows="4" [ngModel]="actionNote()" (ngModelChange)="actionNote.set($event)" placeholder="Nhập ý kiến xử lý..."></textarea>
     </ng-container>
