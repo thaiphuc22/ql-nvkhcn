@@ -1,5 +1,17 @@
 # Delivery State
 
+> **2026-07-21 — HS-2026-016/018 KẸT Ở T04_GDTT DO MẤT SỰ KIỆN TASK_COMPLETED: ĐÃ SỬA + RUNTIME
+> VERIFIED (owner Claude).** `CamundaWorkflowRuntimeEventReader.read()` chỉ tin native
+> `newUserTaskSearchRequest()` và chỉ fallback sang job-backed search khi rỗng hoàn toàn — xác minh
+> live view này có thể trả **không rỗng nhưng thiếu item**. Đổi thành luôn chạy cả 2 nhánh (dedupe theo
+> `sourceKey` có sẵn ở `WorkflowEventCollector`, an toàn). Đồng thời khôi phục `rd0202.bpmn`: T04/T13/
+> T27/T29 tách lại thành 2 userTask GDTT/GDK nối tiếp mỗi cặp, khớp đúng bản v4 đang chạy thật (đối
+> chiếu trực tiếp XML deploy qua Zeebe REST) — file repo trước đó bị gộp nhầm, lệch với engine. Verify:
+> backend **231/231 PASS**; runtime restart 8090 (PID `32520`) tự phục hồi ngay chu kỳ collector đầu
+> tiên — Postgres xác nhận outbox có thêm `TASK_COMPLETED`/`TASK_CREATED` đúng lúc restart, `dossier_step`
+> của cả 2 hồ sơ chuyển đúng sang `T05` CURRENT, quét toàn hệ thống còn **0** instance kẹt kiểu này.
+> Không redeploy BPMN (cố ý, để user chủ động). Chi tiết đầy đủ ở đầu `active-task.md`.
+
 > **2026-07-21 — DMN CHẤM ĐIỂM HĐXD TẬP ĐOÀN PHIÊN 2 (T24), NGƯỠNG 70 ĐIỂM: DONE CODE, RUNTIME
 > PENDING (owner Claude).** Theo yêu cầu trực tiếp của user + kế hoạch đã trình bày/duyệt qua
 > AskUserQuestion (chọn tính điểm trung bình nhiều thành viên thay vì điểm đơn, và tái dùng
@@ -918,6 +930,47 @@ screen (`/tich-hop`) upgrade Đợt 1+2 (Slice A-G) DONE** + **EPIC06 Approval M
 ---
 
 ## Your Next Action
+
+> **★ Lỗi C — `WorkflowTaskActionRouting.rd0202()` khoá cứng element id skeleton cũ: DONE + TEST VERIFIED
+> (2026-07-21, owner Claude).** Chi tiết đầy đủ ở `.harness/state/active-task.md`. Tóm tắt: routing vẫn
+> `switch` trên `Task_2/3/4/7` (id thuộc bản BPMN skeleton 7-task đã bị thay hẳn bởi RD02.02 v3 33-task
+> trong commit `773264b`) — các id đó không còn tồn tại trong `processes/rd0202.bpmn` đang deploy. Khảo sát
+> xác nhận BPMN v3 không có gateway nào đọc biến do user action set (chỉ `GCheck`/`G24`, cả hai đều
+> system/DMN-driven) nên đã sửa `rd0202()` trả `Map.of()` không điều kiện và `RD02_02_RETURNABLE` về rỗng
+> (fail-closed có chủ đích — bật RETURN_STEP mà chưa có gateway hiệu chỉnh thật sẽ khiến nó chạy y hệt
+> APPROVE_STEP). Thêm `WorkflowTaskActionRoutingTest.java` (22 case, class này trước đó **0 test**).
+> `mvn -o test` **231/231 PASS**. Chưa verify runtime (rủi ro thấp vì không gateway nào phụ thuộc thay đổi).
+
+> **★ Ma trận quyết định — DRD nhiều bảng nối chuỗi: DONE + RUNTIME VERIFIED
+> (2026-07-21, owner Claude).** Theo plan `docs/arch/update_matran_quyet_dinh_plan.md` (bước 1–2 backend
+> đã có từ commit `773264b`, phiên này làm nốt backend 3–7 + toàn bộ frontend). Backend: Flyway **V25**
+> `dmn_rule_version_decision` (1 dòng/decision đã deploy, cờ `is_root`), entity/repository mới,
+> `DmnRuleService.activate()` lưu đủ mọi decision và trỏ 4 cột số ít cũ vào "primary root" (giữ CHECK V7),
+> `evaluate()` chạy từ mọi root + **fallback** cột số ít cho version deploy trước V25;
+> `EvaluateDmnDecisionResponse` đổi shape sang `{decisions:[...]}` (breaking có chủ đích, chỉ Angular dùng).
+> Frontend: `DecisionGrid` thay `DecisionTableDefinition`, `dmn-xml.ts` viết lại thành
+> `dmnXmlToDecisionGrid`/`decisionGridToDmnXml` (tự suy `informationRequirement` theo tên biến, giữ
+> hitPolicy verbatim — bỏ hẳn giới hạn FIRST), trang chi tiết thành nhiều `nz-card` 1 bảng/card + cấu hình
+> cột + gán nguồn, tab Chạy thử hiển thị 1 card/quyết định.
+> **Verify đã chạy:** backend `mvn -o test` **207/207 GREEN**; Angular `ng build` GREEN, `ng test`
+> **202/202 GREEN** (đã kiểm chứng spec mới thực sự chạy bằng canary assert cố tình fail rồi revert).
+> **Runtime thật ĐÃ CHẠY (2026-07-21, stack Docker → 8090 → 8093 → 4200):** dựng luật `BR-DRD-3-BANG`
+> 3 bảng nối chuỗi (`Xac dinh cap nhiem vu` FIRST → `Can hoi dong` UNIQUE → `Loai hoi dong` FIRST) bằng
+> **chính UI mới**, không nhập XML tay. V25 apply sạch lên DB dev; activate deploy đủ **3 decision với 3
+> `camunda_decision_key` riêng biệt** lên Zeebe thật, `is_root=true` đúng duy nhất ở decision cuối chuỗi,
+> `display_order` giữ thứ tự; tab Chạy thử trả đủ 3 card đúng thứ tự và đổi input gốc thì cả chuỗi đổi
+> theo (`15 → TAP_DOAN/true/HDXD_TAP_DOAN`, `5 → CO_SO/false/KHONG`), hitPolicy UNIQUE chạy thật OK.
+> **Runtime bắt được 1 bug thật mà toàn bộ unit test bỏ lọt:** `decisionGridToDmnXml` không phát ra
+> `<variable>` trên `<decision>`, nên Camunda không bind kết quả bảng trước — bảng sau đọc ra null và
+> không khớp dòng nào (chuỗi trả sai `KHONG` thay vì `HDXD_TAP_DOAN`). Test cũ chỉ round-trip XML nên
+> không phát hiện: **XML round-trip đúng vẫn có thể không chạy được trên engine thật.** Đã sửa: mỗi
+> `<decision>` khai báo `<variable>`; bảng 1 cột kết quả đặt tên biến quyết định trùng tên biến output
+> (bảng sau tham chiếu thẳng), bảng nhiều cột kết quả trả context nên tham chiếu qua `dv_<id>.<biến>` và
+> parser đọc ngược bỏ tiền tố. Thêm 2 test khoá đúng lỗi này. Verify lại sau sửa: `ng test`
+> **204/204 GREEN**, `ng build` GREEN, và chạy lại end-to-end trên Camunda thật cho kết quả đúng.
+> Fixture `webapp/src/dmn/rd02Routing.dmn.ts` (bản React tham chiếu) **cũng thiếu `<variable>`** — nó
+> chưa từng chạy trên Camunda thật (webapp eval bằng `feelin` in-browser), nên đừng coi nó là chuẩn
+> runtime. Dữ liệu test `BR-DRD-3-BANG` v1–v3 còn nằm lại trên DB/Zeebe dev.
 
 > **Status**: DONE + RUNTIME VERIFIED (2026-07-21, owner Claude) — cả 3 gap chặn luồng RD02.02 v3 (smoke
 > test 2026-07-20) đã đóng và verified trên stack thật, không chỉ source: (1) token

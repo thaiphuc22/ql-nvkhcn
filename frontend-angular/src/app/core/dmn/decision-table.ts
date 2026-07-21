@@ -1,9 +1,12 @@
 import {
   DecisionColumn,
   DecisionCondition,
+  DecisionGridDecision,
   DecisionRow,
-  DecisionTableDefinition,
 } from '../models/business-rule';
+
+/** Chỉ cần phần cấu trúc bảng — dùng được cho cả một decision trong DRD. */
+type DecisionTableShape = Pick<DecisionGridDecision, 'inputs' | 'outputs' | 'rows'>;
 
 export interface DecisionTableResult {
   matchedRowId: string | null;
@@ -45,7 +48,7 @@ export function matchesCondition(
 }
 
 export function evaluateDecisionTable(
-  definition: DecisionTableDefinition,
+  definition: DecisionTableShape,
   inputs: Record<string, unknown>,
 ): DecisionTableResult {
   const matched = definition.rows.find((candidate) =>
@@ -65,7 +68,7 @@ export function evaluateDecisionTable(
   };
 }
 
-export function newDecisionRow(definition: DecisionTableDefinition): DecisionRow {
+export function newDecisionRow(definition: DecisionTableShape): DecisionRow {
   return {
     id: `R${Date.now()}`,
     conditions: definition.inputs.map(() => ({ operator: 'ANY', value: null })),

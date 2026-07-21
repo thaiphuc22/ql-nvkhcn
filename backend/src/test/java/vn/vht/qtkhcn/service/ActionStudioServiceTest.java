@@ -66,6 +66,24 @@ class ActionStudioServiceTest {
     }
 
     @Test
+    void simulationMatchesPolicyRegardlessOfProcessCodeSeparator() {
+        ActionStudioAction approve = action("APPROVE_STEP", true, 1);
+        ActionAvailabilityPolicy storedWithUnderscore = policy("AP-BPMN-RD02_02-T01-APPROVE", "RD02_02", "T01", 10);
+        when(actions.findAllByOrderByDisplayOrderAsc()).thenReturn(List.of(approve));
+        when(policies.findAllByOrderByDisplayOrderAscIdAsc()).thenReturn(List.of(storedWithUnderscore));
+
+        var dotted = service.simulate(new SimulationRequest("DOSSIER_DETAIL", "RD02.02", "T01",
+                "processing", List.of("TD"), List.of("PROCESS_STEP"), false)).getFirst();
+        var dashed = service.simulate(new SimulationRequest("DOSSIER_DETAIL", "rd02-02", "T01",
+                "processing", List.of("TD"), List.of("PROCESS_STEP"), false)).getFirst();
+
+        assertThat(dotted.visible()).isTrue();
+        assertThat(dotted.policyId()).isEqualTo("AP-BPMN-RD02_02-T01-APPROVE");
+        assertThat(dashed.visible()).isTrue();
+        assertThat(dashed.policyId()).isEqualTo("AP-BPMN-RD02_02-T01-APPROVE");
+    }
+
+    @Test
     void stalePresentationUpdateIsRejectedBeforeMutation() {
         ActionStudioAction approve = action("APPROVE_STEP", true, 3);
         when(actions.findById("APPROVE_STEP")).thenReturn(Optional.of(approve));

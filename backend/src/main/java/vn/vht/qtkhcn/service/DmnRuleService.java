@@ -3,21 +3,25 @@ package vn.vht.qtkhcn.service;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.vht.qtkhcn.domain.DmnRule;
 import vn.vht.qtkhcn.domain.DmnRuleCategory;
 import vn.vht.qtkhcn.domain.DmnRuleStatus;
 import vn.vht.qtkhcn.domain.DmnRuleVersion;
+import vn.vht.qtkhcn.domain.DmnRuleVersionDecision;
 import vn.vht.qtkhcn.domain.DmnDeployStatus;
 import vn.vht.qtkhcn.camunda.DmnCamundaException;
 import vn.vht.qtkhcn.camunda.DmnCamundaGateway;
 import vn.vht.qtkhcn.repository.DmnRuleRepository;
+import vn.vht.qtkhcn.repository.DmnRuleVersionDecisionRepository;
 import vn.vht.qtkhcn.repository.DmnRuleVersionRepository;
 import vn.vht.qtkhcn.web.dto.CreateDmnRuleRequest;
 import vn.vht.qtkhcn.web.dto.DmnRuleDetailResponse;
@@ -31,15 +35,18 @@ import vn.vht.qtkhcn.web.dto.EvaluateDmnDecisionResponse;
 public class DmnRuleService {
     private final DmnRuleRepository ruleRepository;
     private final DmnRuleVersionRepository versionRepository;
+    private final DmnRuleVersionDecisionRepository decisionRepository;
     private final DmnArtifactValidator validator;
     private final DmnCamundaGateway camunda;
 
     public DmnRuleService(DmnRuleRepository ruleRepository,
             DmnRuleVersionRepository versionRepository,
+            DmnRuleVersionDecisionRepository decisionRepository,
             DmnArtifactValidator validator,
             DmnCamundaGateway camunda) {
         this.ruleRepository = ruleRepository;
         this.versionRepository = versionRepository;
+        this.decisionRepository = decisionRepository;
         this.validator = validator;
         this.camunda = camunda;
     }
@@ -98,7 +105,9 @@ public class DmnRuleService {
     @Transactional(readOnly = true)
     public DmnRuleVersionResponse getVersion(UUID id, int version) {
         rule(id);
-        return DmnRuleVersionResponse.from(version(id, version));
+        DmnRuleVersion artifact = version(id, version);
+        return DmnRuleVersionResponse.from(artifact,
+                decisionRepository.findByRuleVersionIdOrderByDisplayOrder(artifact.getId()));
     }
 
     @Transactional
@@ -125,7 +134,7 @@ public class DmnRuleService {
         rule.setUpdatedBy(actor);
         rule.setUpdatedAt(now);
         ruleRepository.saveAndFlush(rule);
-        return DmnRuleVersionResponse.from(artifact);
+        return DmnRuleVersionResponse.from(artifact, List.of());
     }
 
     @Transactional
@@ -137,15 +146,24 @@ public class DmnRuleService {
         if (artifact.getDeployStatus() != DmnDeployStatus.DEPLOYED) {
             try {
                 var deployed = camunda.deploy(artifact.getDmnXml(), rule.getCode() + "-v" + version + ".dmn");
+                // Một DRD deploy ra nhiều decision: lưu đủ vào bảng con, còn 4 cột số ít trên
+                // dmn_rule_version mang decision gốc đầu tiên theo thứ tự tài liệu (primary root)
+                // để giữ tương thích ngược với CHECK constraint V7.
+                var primary = deployed.decisions().stream()
+                        .filter(DmnCamundaGateway.DeployedDecision::root)
+                        .findFirst()
+                        .orElse(deployed.decisions().get(0));
                 artifact.setDeployStatus(DmnDeployStatus.DEPLOYED);
                 artifact.setCamundaDeploymentKey(deployed.deploymentKey());
-                artifact.setCamundaDecisionKey(deployed.decisionKey());
-                artifact.setCamundaDecisionId(deployed.decisionId());
-                artifact.setCamundaDecisionVersion(deployed.decisionVersion());
+                artifact.setCamundaDecisionKey(primary.decisionKey());
+                artifact.setCamundaDecisionId(primary.decisionId());
+                artifact.setCamundaDecisionVersion(primary.decisionVersion());
                 artifact.setDeployedAt(now());
                 artifact.setDeployError(null);
                 versionRepository.saveAndFlush(artifact);
+                replaceDeployedDecisions(artifact.getId(), deployed.decisions());
             } catch (DmnCamundaException e) {
+                decisionRepository.deleteByRuleVersionId(artifact.getId());
                 artifact.setDeployStatus(DmnDeployStatus.FAILED);
                 artifact.setCamundaDeploymentKey(null);
                 artifact.setCamundaDecisionKey(null);
@@ -176,7 +194,39 @@ public class DmnRuleService {
                 || artifact.getCamundaDecisionKey() == null) {
             throw new IllegalStateException("Phiên bản đang kích hoạt chưa deploy thành công lên Camunda.");
         }
-        return EvaluateDmnDecisionResponse.from(camunda.evaluate(artifact.getCamundaDecisionKey(), variables));
+        return EvaluateDmnDecisionResponse.from(camunda.evaluate(terminalDecisionKeys(artifact), variables));
+    }
+
+    /**
+     * Điểm bắt đầu evaluate = các decision gốc (terminal) của DRD. Với phiên bản deploy từ trước khi
+     * có bảng {@code dmn_rule_version_decision} thì bảng con rỗng — lùi về cột số ít cũ để dữ liệu
+     * cũ không vỡ.
+     */
+    private List<Long> terminalDecisionKeys(DmnRuleVersion artifact) {
+        List<Long> rootKeys = decisionRepository.findByRuleVersionIdOrderByDisplayOrder(artifact.getId()).stream()
+                .filter(DmnRuleVersionDecision::isRoot)
+                .map(DmnRuleVersionDecision::getCamundaDecisionKey)
+                .toList();
+        return rootKeys.isEmpty() ? List.of(artifact.getCamundaDecisionKey()) : rootKeys;
+    }
+
+    private void replaceDeployedDecisions(UUID versionId, List<DmnCamundaGateway.DeployedDecision> decisions) {
+        decisionRepository.deleteByRuleVersionId(versionId);
+        List<DmnRuleVersionDecision> rows = new ArrayList<>();
+        for (int order = 0; order < decisions.size(); order++) {
+            var source = decisions.get(order);
+            DmnRuleVersionDecision row = new DmnRuleVersionDecision();
+            row.setId(UUID.randomUUID());
+            row.setRuleVersionId(versionId);
+            row.setDecisionId(source.decisionId());
+            row.setDecisionName(source.decisionName());
+            row.setCamundaDecisionKey(source.decisionKey());
+            row.setCamundaDecisionVersion(source.decisionVersion());
+            row.setRoot(source.root());
+            row.setDisplayOrder(order);
+            rows.add(row);
+        }
+        decisionRepository.saveAllAndFlush(rows);
     }
 
     @Transactional
@@ -209,8 +259,17 @@ public class DmnRuleService {
     }
 
     private List<DmnRuleVersionSummaryResponse> listVersionSummaries(UUID id) {
-        return versionRepository.findByRuleIdOrderByVersionDesc(id).stream()
-                .map(DmnRuleVersionSummaryResponse::from)
+        List<DmnRuleVersion> versions = versionRepository.findByRuleIdOrderByVersionDesc(id);
+        if (versions.isEmpty()) {
+            return List.of();
+        }
+        Map<UUID, List<DmnRuleVersionDecision>> decisionsByVersion = decisionRepository
+                .findByRuleVersionIdInOrderByDisplayOrder(versions.stream().map(DmnRuleVersion::getId).toList())
+                .stream()
+                .collect(Collectors.groupingBy(DmnRuleVersionDecision::getRuleVersionId));
+        return versions.stream()
+                .map(version -> DmnRuleVersionSummaryResponse.from(version,
+                        decisionsByVersion.getOrDefault(version.getId(), List.of())))
                 .toList();
     }
 

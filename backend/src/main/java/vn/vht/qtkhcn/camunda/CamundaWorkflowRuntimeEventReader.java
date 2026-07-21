@@ -44,8 +44,13 @@ public class CamundaWorkflowRuntimeEventReader implements WorkflowRuntimeEventRe
         var tasks = client.newUserTaskSearchRequest()
                 .filter(f -> f.processInstanceKey(processInstanceKey))
                 .page(p -> p.limit(100)).send().join().items();
-        if (tasks.isEmpty()) readJobBackedTasks(processInstanceKey, result);
-        else tasks.forEach(task -> addNativeTaskEvents(task, result));
+        tasks.forEach(task -> addNativeTaskEvents(task, result));
+        // Native user-task search can return non-empty but still miss items (observed live on
+        // RD02.02 v4: it silently dropped a COMPLETED and an ACTIVE task from the same instance).
+        // Always cross-check against element-instance/job search rather than gating on isEmpty();
+        // WorkflowEventCollector.collect() dedupes by sourceKey so overlap between the two branches
+        // is harmless.
+        readJobBackedTasks(processInstanceKey, result);
 
         var instances = client.newProcessInstanceSearchRequest()
                 .filter(f -> f.processInstanceKey(processInstanceKey))
@@ -116,9 +121,11 @@ public class CamundaWorkflowRuntimeEventReader implements WorkflowRuntimeEventRe
     }
 
     /**
-     * Camunda 8.9's H2 secondary-storage profile can expose process/element/job views while returning
-     * an empty user-task view. RD01.01 uses job-backed user tasks, so correlate the working element and
-     * job views and recover assignment/form data from the exact deployed BPMN.
+     * The native {@code newUserTaskSearchRequest()} view has been observed live to return an
+     * incomplete result set (non-empty, but missing items) as well as an empty one — so this runs
+     * unconditionally for every process instance, not just job-backed user tasks or empty native
+     * results. Correlates the element-instance and job views (job key == user task key for native
+     * {@code zeebe:userTask}s) and recovers assignment/form data from the exact deployed BPMN.
      */
     private void readJobBackedTasks(long processInstanceKey, List<WorkflowRuntimeEvent> result) {
         List<ElementInstance> elements = client.newElementInstanceSearchRequest()

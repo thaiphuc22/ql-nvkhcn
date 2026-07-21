@@ -48,7 +48,7 @@
       nzType="info"
       nzShowIcon
       nzMessage="Bảng luật được lưu dưới dạng DMN XML"
-      nzDescription="Trình soạn chuyển bảng luật có cấu trúc sang DMN XML khi lưu và chuyển ngược DMN XML về bảng khi tải phiên bản. Chạy thử hiện vẫn thực hiện tại trình duyệt."
+      nzDescription="Một luật có thể gồm nhiều bảng nối chuỗi (DRD): cột NẾU của bảng này lấy nguồn từ KẾT QUẢ của bảng khác. Trình soạn chuyển lưới sang DMN XML khi lưu và chuyển ngược khi tải phiên bản. Chạy thử chạy thật trên Camunda."
     ></nz-alert>
 
     <div class="brd-meta">
@@ -81,16 +81,6 @@
         <nz-tab nzTitle="Soạn bảng luật">
           <div class="brd-tab-body">
             <div class="brd-editor-toolbar">
-              <div>
-                <label for="decision-name">Tên bảng quyết định</label>
-                <input
-                  id="decision-name"
-                  nz-input
-                  maxlength="255"
-                  [ngModel]="definition.name"
-                  (ngModelChange)="updateTableName($event)"
-                />
-              </div>
               <div class="brd-save-note">
                 <label for="save-note">Ghi chú phiên bản</label>
                 <input
@@ -102,13 +92,176 @@
                   (ngModelChange)="saveNote.set($event)"
                 />
               </div>
-              <nz-tag nzColor="purple">Chính sách khớp: Dòng đầu tiên</nz-tag>
+              <button nz-button (click)="toggleColumnConfig()">
+                <span nz-icon nzType="setting"></span>
+                {{ showColumnConfig() ? 'Ẩn cấu hình cột' : 'Cấu hình cột' }}
+              </button>
             </div>
 
-            <div class="brd-table-wrap">
+            @for (decision of definition; track decision.id; let decisionIndex = $index) {
+              <nz-card class="brd-decision-card" nzSize="small">
+                <div class="brd-decision-head">
+                  <nz-tag nzColor="blue">Bảng {{ decisionIndex + 1 }}/{{ definition.length }}</nz-tag>
+                  <input
+                    nz-input
+                    class="brd-decision-name"
+                    maxlength="255"
+                    placeholder="Tên bảng quyết định"
+                    [ngModel]="decision.name"
+                    (ngModelChange)="updateDecisionName(decisionIndex, $event)"
+                  />
+                  <span class="brd-hit-label">Ưu tiên:</span>
+                  <nz-select
+                    class="brd-hit-policy"
+                    [ngModel]="decision.hitPolicy"
+                    (ngModelChange)="updateHitPolicy(decisionIndex, $event)"
+                  >
+                    @for (option of hitPolicyOptions; track option.value) {
+                      <nz-option [nzValue]="option.value" [nzLabel]="option.label"></nz-option>
+                    }
+                  </nz-select>
+                  <button
+                    nz-button
+                    nzType="text"
+                    nzDanger
+                    nzSize="small"
+                    nz-popconfirm
+                    nzPopconfirmTitle="Xoá cả bảng này? Bảng khác đang lấy kết quả từ đây sẽ mất liên kết."
+                    nzOkText="Xoá"
+                    nzCancelText="Huỷ"
+                    (nzOnConfirm)="removeDecision(decisionIndex)"
+                  >
+                    <span nz-icon nzType="delete"></span>
+                    Xoá bảng
+                  </button>
+                </div>
+
+                @if (showColumnConfig()) {
+                  <div class="brd-column-config">
+                    <div class="brd-column-group">
+                      <span class="brd-column-title">Cột điều kiện (NẾU)</span>
+                      @for (column of decision.inputs; track column.id; let columnIndex = $index) {
+                        <div class="brd-column-item">
+                          <input
+                            nz-input
+                            nzSize="small"
+                            placeholder="Tên cột"
+                            [ngModel]="column.label"
+                            (ngModelChange)="
+                              patchInputColumn(decisionIndex, columnIndex, { label: $event })
+                            "
+                          />
+                          <nz-select
+                            nzSize="small"
+                            class="brd-source-select"
+                            nz-tooltip="Nguồn dữ liệu của cột"
+                            [ngModel]="boundSource(decisionIndex, columnIndex)"
+                            (ngModelChange)="bindInputSource(decisionIndex, columnIndex, $event)"
+                          >
+                            <nz-option
+                              [nzValue]="ownInputSource"
+                              nzLabel="Đầu vào riêng (nhập tay)"
+                            ></nz-option>
+                            @for (field of fieldsForDecision(decisionIndex); track field.variable) {
+                              <nz-option
+                                [nzValue]="field.variable"
+                                [nzLabel]="field.optionLabel"
+                              ></nz-option>
+                            }
+                          </nz-select>
+                          <nz-select
+                            nzSize="small"
+                            class="brd-type-select"
+                            [nzDisabled]="isBound(decisionIndex, columnIndex)"
+                            [ngModel]="column.type"
+                            (ngModelChange)="
+                              patchInputColumn(decisionIndex, columnIndex, { type: $event })
+                            "
+                          >
+                            @for (option of typeOptions; track option.value) {
+                              <nz-option [nzValue]="option.value" [nzLabel]="option.label"></nz-option>
+                            }
+                          </nz-select>
+                          <button
+                            nz-button
+                            nzType="text"
+                            nzDanger
+                            nzSize="small"
+                            [disabled]="decision.inputs.length <= 1"
+                            nz-tooltip="Xoá cột"
+                            (click)="removeInputColumn(decisionIndex, columnIndex)"
+                          >
+                            <span nz-icon nzType="delete"></span>
+                          </button>
+                        </div>
+                      }
+                      <button
+                        nz-button
+                        nzType="dashed"
+                        nzSize="small"
+                        (click)="addInputColumn(decisionIndex)"
+                      >
+                        <span nz-icon nzType="plus"></span>
+                        Thêm cột
+                      </button>
+                    </div>
+
+                    <div class="brd-column-group">
+                      <span class="brd-column-title">Cột kết quả (THÌ)</span>
+                      @for (column of decision.outputs; track column.id; let columnIndex = $index) {
+                        <div class="brd-column-item">
+                          <input
+                            nz-input
+                            nzSize="small"
+                            placeholder="Tên cột"
+                            [ngModel]="column.label"
+                            (ngModelChange)="
+                              patchOutputColumn(decisionIndex, columnIndex, { label: $event })
+                            "
+                          />
+                          <nz-select
+                            nzSize="small"
+                            class="brd-type-select"
+                            [ngModel]="column.type"
+                            (ngModelChange)="
+                              patchOutputColumn(decisionIndex, columnIndex, { type: $event })
+                            "
+                          >
+                            @for (option of typeOptions; track option.value) {
+                              <nz-option [nzValue]="option.value" [nzLabel]="option.label"></nz-option>
+                            }
+                          </nz-select>
+                          <button
+                            nz-button
+                            nzType="text"
+                            nzDanger
+                            nzSize="small"
+                            [disabled]="decision.outputs.length <= 1"
+                            nz-tooltip="Xoá cột"
+                            (click)="removeOutputColumn(decisionIndex, columnIndex)"
+                          >
+                            <span nz-icon nzType="delete"></span>
+                          </button>
+                        </div>
+                      }
+                      <button
+                        nz-button
+                        nzType="dashed"
+                        nzSize="small"
+                        (click)="addOutputColumn(decisionIndex)"
+                      >
+                        <span nz-icon nzType="plus"></span>
+                        Thêm cột
+                      </button>
+                    </div>
+                    <nz-divider></nz-divider>
+                  </div>
+                }
+
+                <div class="brd-table-wrap">
               <nz-table
                 #ruleTable
-                [nzData]="definition.rows"
+                [nzData]="decision.rows"
                 [nzPageSize]="100"
                 nzTableLayout="fixed"
                 [nzScroll]="{ x: '1100px' }"
@@ -116,18 +269,18 @@
                 <thead>
                   <tr class="brd-group-header">
                     <th nzWidth="70px" rowspan="2" nzAlign="center">STT</th>
-                    <th [attr.colspan]="definition.inputs.length" class="brd-when">NẾU</th>
-                    <th [attr.colspan]="definition.outputs.length" class="brd-then">THÌ</th>
+                    <th [attr.colspan]="decision.inputs.length" class="brd-when">NẾU</th>
+                    <th [attr.colspan]="decision.outputs.length" class="brd-then">THÌ</th>
                     <th nzWidth="116px" rowspan="2" nzAlign="center">Thao tác</th>
                   </tr>
                   <tr>
-                    @for (column of definition.inputs; track column.id) {
+                    @for (column of decision.inputs; track column.id) {
                       <th nzWidth="250px">
                         {{ column.label }}
                         <small>{{ column.variable }} · {{ column.type }}</small>
                       </th>
                     }
-                    @for (column of definition.outputs; track column.id) {
+                    @for (column of decision.outputs; track column.id) {
                       <th nzWidth="210px">
                         {{ column.label }}
                         <small>{{ column.variable }} · {{ column.type }}</small>
@@ -137,12 +290,12 @@
                 </thead>
                 <tbody>
                   @for (row of ruleTable.data; track row.id; let rowIndex = $index) {
-                    <tr [class.brd-fired-row]="testResult()?.matchedRules?.[0]?.ruleId === row.id">
+                    <tr [class.brd-fired-row]="isFiredRow(decision.id, row.id)">
                       <td nzAlign="center">
                         <strong>{{ rowIndex + 1 }}</strong>
                       </td>
                       @for (
-                        column of definition.inputs;
+                        column of decision.inputs;
                         track column.id;
                         let columnIndex = $index
                       ) {
@@ -151,7 +304,9 @@
                             <div class="brd-cell">
                               <nz-select
                                 [ngModel]="cell.operator"
-                                (ngModelChange)="changeOperator(rowIndex, columnIndex, $event)"
+                                (ngModelChange)="
+                                  changeOperator(decisionIndex, rowIndex, columnIndex, $event)
+                                "
                               >
                                 @for (operator of operatorOptions(column); track operator) {
                                   <nz-option
@@ -165,7 +320,7 @@
                                   <nz-input-number
                                     [ngModel]="cell.value"
                                     (ngModelChange)="
-                                      updateCondition(rowIndex, columnIndex, { value: $event })
+                                      updateCondition(decisionIndex, rowIndex, columnIndex, { value: $event })
                                     "
                                   ></nz-input-number>
                                   @if (cell.operator === 'BETWEEN') {
@@ -173,7 +328,7 @@
                                     <nz-input-number
                                       [ngModel]="cell.valueTo"
                                       (ngModelChange)="
-                                        updateCondition(rowIndex, columnIndex, { valueTo: $event })
+                                        updateCondition(decisionIndex, rowIndex, columnIndex, { valueTo: $event })
                                       "
                                     ></nz-input-number>
                                   }
@@ -181,7 +336,7 @@
                                   <nz-select
                                     [ngModel]="cell.value"
                                     (ngModelChange)="
-                                      updateCondition(rowIndex, columnIndex, { value: $event })
+                                      updateCondition(decisionIndex, rowIndex, columnIndex, { value: $event })
                                     "
                                   >
                                     <nz-option [nzValue]="true" nzLabel="Có"></nz-option>
@@ -191,7 +346,7 @@
                                   <nz-select
                                     [ngModel]="cell.value"
                                     (ngModelChange)="
-                                      updateCondition(rowIndex, columnIndex, { value: $event })
+                                      updateCondition(decisionIndex, rowIndex, columnIndex, { value: $event })
                                     "
                                   >
                                     @for (option of column.options; track option) {
@@ -203,7 +358,7 @@
                                     nz-input
                                     [ngModel]="cell.value"
                                     (ngModelChange)="
-                                      updateCondition(rowIndex, columnIndex, { value: $event })
+                                      updateCondition(decisionIndex, rowIndex, columnIndex, { value: $event })
                                     "
                                   />
                                 }
@@ -213,7 +368,7 @@
                         </td>
                       }
                       @for (
-                        column of definition.outputs;
+                        column of decision.outputs;
                         track column.id;
                         let columnIndex = $index
                       ) {
@@ -221,12 +376,12 @@
                           @if (column.type === 'number') {
                             <nz-input-number
                               [ngModel]="row.outputs[columnIndex]"
-                              (ngModelChange)="updateOutput(rowIndex, columnIndex, $event)"
+                              (ngModelChange)="updateOutput(decisionIndex, rowIndex, columnIndex, $event)"
                             ></nz-input-number>
                           } @else if (column.type === 'boolean') {
                             <nz-select
                               [ngModel]="row.outputs[columnIndex]"
-                              (ngModelChange)="updateOutput(rowIndex, columnIndex, $event)"
+                              (ngModelChange)="updateOutput(decisionIndex, rowIndex, columnIndex, $event)"
                             >
                               <nz-option [nzValue]="true" nzLabel="Có"></nz-option>
                               <nz-option [nzValue]="false" nzLabel="Không"></nz-option>
@@ -234,7 +389,7 @@
                           } @else if (column.options?.length) {
                             <nz-select
                               [ngModel]="row.outputs[columnIndex]"
-                              (ngModelChange)="updateOutput(rowIndex, columnIndex, $event)"
+                              (ngModelChange)="updateOutput(decisionIndex, rowIndex, columnIndex, $event)"
                             >
                               @for (option of column.options; track option) {
                                 <nz-option [nzValue]="option" [nzLabel]="option"></nz-option>
@@ -244,7 +399,7 @@
                             <input
                               nz-input
                               [ngModel]="row.outputs[columnIndex]"
-                              (ngModelChange)="updateOutput(rowIndex, columnIndex, $event)"
+                              (ngModelChange)="updateOutput(decisionIndex, rowIndex, columnIndex, $event)"
                             />
                           }
                         </td>
@@ -255,7 +410,7 @@
                           nzType="text"
                           nzSize="small"
                           nz-tooltip="Nhân đôi dòng"
-                          (click)="duplicateRow(rowIndex)"
+                          (click)="duplicateRow(decisionIndex, rowIndex)"
                         >
                           <span nz-icon nzType="copy"></span>
                         </button>
@@ -265,7 +420,7 @@
                           nzSize="small"
                           nzDanger
                           nz-tooltip="Xóa dòng"
-                          (click)="removeRow(rowIndex)"
+                          (click)="removeRow(decisionIndex, rowIndex)"
                         >
                           <span nz-icon nzType="delete"></span>
                         </button>
@@ -274,11 +429,34 @@
                   }
                 </tbody>
               </nz-table>
-            </div>
-            <button nz-button nzType="dashed" class="brd-add-row" (click)="addRow()">
+                </div>
+                <button
+                  nz-button
+                  nzType="dashed"
+                  class="brd-add-row"
+                  (click)="addRow(decisionIndex)"
+                >
+                  <span nz-icon nzType="plus"></span>
+                  Thêm dòng luật
+                </button>
+              </nz-card>
+            } @empty {
+              <nz-empty
+                nzNotFoundContent="Luật chưa có bảng nào. Tạo bảng quyết định đầu tiên để bắt đầu soạn."
+              ></nz-empty>
+            }
+
+            <button nz-button nzType="dashed" class="brd-add-decision" (click)="addDecision()">
               <span nz-icon nzType="plus"></span>
-              Thêm dòng luật
+              Thêm bảng quyết định
             </button>
+            @if (definition.length > 1) {
+              <p class="brd-drd-hint">
+                <span nz-icon nzType="partition"></span>
+                Mẹo: để một bảng dùng kết quả của bảng khác, mở “Cấu hình cột” và chọn
+                <strong>Nguồn</strong> cho cột NẾU = kết quả bảng đó — các bảng sẽ tự nối chuỗi.
+              </p>
+            }
           </div>
         </nz-tab>
 
@@ -286,7 +464,7 @@
           <div class="brd-tab-body brd-test-layout">
             <nz-card nzTitle="Dữ liệu đầu vào">
               <div class="brd-test-form">
-                @for (column of definition.inputs; track column.id) {
+                @for (column of testColumns(); track column.id) {
                   <label [for]="'test-' + column.id">{{ column.label }}</label>
                   @if (column.type === 'number') {
                     <nz-input-number
@@ -335,25 +513,51 @@
                 <nz-alert nzType="error" nzShowIcon nzMessage="Lỗi deploy/FEEL từ Camunda" [nzDescription]="error"></nz-alert>
               }
               @if (testResult(); as result) {
-                @if (result.matchedRules.length) {
-                  <nz-alert
-                    nzType="success"
-                    nzShowIcon
-                    [nzMessage]="'Khớp dòng ' + result.matchedRules[0].ruleId"
-                    [nzDescription]="'Camunda decision ' + result.decisionId + ' v' + result.decisionVersion + ' · evaluation ' + result.evaluationKey"
-                  ></nz-alert>
-                  <nz-descriptions nzBordered [nzColumn]="1" nzSize="small" class="brd-test-result">
-                    @for (column of definition.outputs; track column.id) {
-                      <nz-descriptions-item [nzTitle]="column.label">
-                        <strong>{{ result.outputs[column.variable] }}</strong>
-                      </nz-descriptions-item>
+                @for (decisionResult of result.decisions; track decisionResult.decisionId) {
+                  <nz-card
+                    class="brd-result-card"
+                    nzSize="small"
+                    [nzTitle]="decisionResult.decisionName || decisionResult.decisionId"
+                  >
+                    @if (decisionResult.matchedRules.length) {
+                      <nz-alert
+                        nzType="success"
+                        nzShowIcon
+                        [nzMessage]="'Khớp dòng ' + decisionResult.matchedRules[0].ruleId"
+                        [nzDescription]="
+                          'Camunda decision ' +
+                          decisionResult.decisionId +
+                          ' v' +
+                          decisionResult.decisionVersion +
+                          ' · evaluation ' +
+                          decisionResult.evaluationKey
+                        "
+                      ></nz-alert>
+                      <nz-descriptions
+                        nzBordered
+                        [nzColumn]="1"
+                        nzSize="small"
+                        class="brd-test-result"
+                      >
+                        @for (entry of decisionResult.outputs | keyvalue; track entry.key) {
+                          <nz-descriptions-item [nzTitle]="entry.key">
+                            <strong>{{ entry.value }}</strong>
+                          </nz-descriptions-item>
+                        }
+                      </nz-descriptions>
+                    } @else {
+                      <nz-alert
+                        nzType="warning"
+                        nzShowIcon
+                        nzMessage="Không có dòng luật nào khớp bộ dữ liệu thử."
+                      ></nz-alert>
                     }
-                  </nz-descriptions>
-                } @else {
+                  </nz-card>
+                } @empty {
                   <nz-alert
                     nzType="warning"
                     nzShowIcon
-                    nzMessage="Không có dòng luật nào khớp bộ dữ liệu thử."
+                    nzMessage="Camunda không trả về kết quả cho bộ dữ liệu thử."
                   ></nz-alert>
                 }
               } @else {
@@ -384,6 +588,11 @@
                     </div>
                     @if (version.deployStatus === 'DEPLOYED') {
                       <nz-tag nzColor="success">Đã deploy · decision key {{ version.camundaDecisionKey }}</nz-tag>
+                      @if (version.decisions?.length) {
+                        <nz-tag nzColor="geekblue">
+                          {{ version.decisions?.length }} quyết định đã deploy
+                        </nz-tag>
+                      }
                     } @else if (version.deployStatus === 'FAILED') {
                       <nz-alert nzType="error" nzShowIcon nzMessage="Deploy thất bại" [nzDescription]="version.deployError ?? ''"></nz-alert>
                     } @else {
@@ -392,7 +601,7 @@
                     <p>{{ version.note }}</p>
                     <small
                       >{{ version.savedAt }} · {{ version.savedBy }} ·
-                      {{ version.definition?.rows?.length ?? '—' }} dòng luật</small
+                      {{ version.definition?.length ?? '—' }} bảng quyết định</small
                     >
                   </nz-timeline-item>
                 }

@@ -81,7 +81,7 @@ class DmnRuleHttpContractTest {
         when(service.saveVersion(eq(id), any(), eq("alice"))).thenReturn(new DmnRuleVersionResponse(
                 versionId, id, 1, "<definitions/>", "a".repeat(64), "Initial", "alice",
                 OffsetDateTime.parse("2026-07-16T02:00:00Z"), DmnDeployStatus.NOT_DEPLOYED,
-                null, null, null, null, null, null));
+                null, null, null, null, null, null, List.of()));
 
         mvc.perform(post("/api/dmn-rules/{id}/versions", id)
                         .header("X-QTKHCN-Dev-Key", "dev-local-only")
@@ -150,10 +150,13 @@ class DmnRuleHttpContractTest {
     void evaluateAcceptsVariablesObjectAndReturnsMatchedRule() throws Exception {
         UUID id = UUID.randomUUID();
         when(service.evaluate(eq(id), eq(Map.of("budget", 10))))
-                .thenReturn(new EvaluateDmnDecisionResponse(30L, "decision-main", 2,
-                        Map.of("result", "APPROVE"),
-                        List.of(new EvaluateDmnDecisionResponse.MatchedRuleResponse(
-                                "R1", 0, Map.of("result", "APPROVE")))));
+                .thenReturn(new EvaluateDmnDecisionResponse(List.of(
+                        new EvaluateDmnDecisionResponse.DecisionResultResponse(30L, "capNhiemVu",
+                                "Cấp nhiệm vụ", 1, Map.of("cap", "TAP_DOAN"), List.of()),
+                        new EvaluateDmnDecisionResponse.DecisionResultResponse(30L, "decision-main",
+                                "Main", 2, Map.of("result", "APPROVE"),
+                                List.of(new EvaluateDmnDecisionResponse.MatchedRuleResponse(
+                                        "R1", 0, Map.of("result", "APPROVE")))))));
 
         mvc.perform(post("/api/dmn-rules/{id}/evaluate", id)
                         .header("X-QTKHCN-Dev-Key", "dev-local-only")
@@ -162,8 +165,10 @@ class DmnRuleHttpContractTest {
                                 {"variables":{"budget":10}}
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.outputs.result").value("APPROVE"))
-                .andExpect(jsonPath("$.matchedRules[0].ruleId").value("R1"));
+                .andExpect(jsonPath("$.decisions[0].decisionId").value("capNhiemVu"))
+                .andExpect(jsonPath("$.decisions[0].outputs.cap").value("TAP_DOAN"))
+                .andExpect(jsonPath("$.decisions[1].outputs.result").value("APPROVE"))
+                .andExpect(jsonPath("$.decisions[1].matchedRules[0].ruleId").value("R1"));
 
         mvc.perform(post("/api/dmn-rules/{id}/evaluate", id)
                         .header("X-QTKHCN-Dev-Key", "dev-local-only")
@@ -181,7 +186,7 @@ class DmnRuleHttpContractTest {
                 1, null, "alice", now, "alice", now);
         var failed = new DmnRuleVersionSummaryResponse(UUID.randomUUID(), 1, "a".repeat(64),
                 "Initial", "alice", now, DmnDeployStatus.FAILED,
-                null, null, null, null, null, "invalid FEEL expression");
+                null, null, null, null, null, "invalid FEEL expression", List.of());
         when(service.activate(eq(id), eq(1), eq(1), eq("alice")))
                 .thenReturn(new DmnRuleDetailResponse(rule, List.of(failed)));
 

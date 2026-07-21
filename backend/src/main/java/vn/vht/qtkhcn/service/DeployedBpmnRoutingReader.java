@@ -32,6 +32,7 @@ import vn.vht.qtkhcn.web.dto.ActionStudioDtos.RouteBranchResponse;
 public class DeployedBpmnRoutingReader {
     private static final Logger log = LoggerFactory.getLogger(DeployedBpmnRoutingReader.class);
     private static final Pattern FEEL_STRING = Pattern.compile("=\\s*[^=]+?=\\s*\"([^\"]+)\"");
+    private static final String BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL";
     private final ProcessDefinitionCatalogRepository catalogRepository;
     private final ProcessDefinitionVersionRepository versionRepository;
     private final Map<Long, ProcessRoutingResponse> cache = new ConcurrentHashMap<>();
@@ -71,7 +72,7 @@ public class DeployedBpmnRoutingReader {
             for (Element flow : elements(document, "sequenceFlow")) {
                 outgoing.computeIfAbsent(flow.getAttribute("sourceRef"), ignored -> new ArrayList<>()).add(flow);
             }
-            List<Element> tasks = elements(document, "userTask");
+            List<Element> tasks = bpmnElements(document, "userTask");
             Map<String, Integer> taskOrder = new HashMap<>();
             for (int i = 0; i < tasks.size(); i++) taskOrder.put(tasks.get(i).getAttribute("id"), i);
             Element process = elements(document, "process").stream().findFirst().orElseThrow();
@@ -147,6 +148,18 @@ public class DeployedBpmnRoutingReader {
         factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
         factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
         return factory;
+    }
+
+    /**
+     * Như {@link #elements} nhưng CHỈ lấy phần tử của chính mô hình BPMN — loại các phần tử trùng
+     * tên cục bộ ở namespace mở rộng. Bắt buộc cho {@code userTask}: Camunda Modeler / bpmn-js gắn
+     * marker {@code <zeebe:userTask />} (không có id) vào {@code extensionElements}, nên bản deploy
+     * thật sinh ra các "bước ma" key rỗng — scaffold khi đó đụng id trùng AP-BPMN-<mã>--APPROVE.
+     */
+    private static List<Element> bpmnElements(Node root, String localName) {
+        return elements(root, localName).stream()
+                .filter(element -> element.getNamespaceURI() == null || BPMN_NS.equals(element.getNamespaceURI()))
+                .toList();
     }
 
     private static List<Element> elements(Node root, String localName) {

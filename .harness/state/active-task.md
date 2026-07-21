@@ -1,5 +1,165 @@
 # Active Task
 
+## ★ DONE + RUNTIME VERIFIED — HS-2026-016/018 kẹt do mất TASK_COMPLETED/TASK_CREATED trong `CamundaWorkflowRuntimeEventReader`; khôi phục T04/T13/T27/T29 tách GDTT/GDK trong `rd0202.bpmn` — 2026-07-21 (owner Claude)
+
+**Root cause:** `CamundaWorkflowRuntimeEventReader.read()` chỉ tin native
+`client.newUserTaskSearchRequest()` và chỉ fallback sang `readJobBackedTasks()`
+(ElementInstance+Job search) khi `tasks.isEmpty()`. Xác minh trực tiếp trên hệ thống sống: view
+native trả **không rỗng nhưng thiếu item** (1/3 task thật của HS-2026-016), trong khi
+element-instance/job search luôn đầy đủ và đúng (jobKey của native `zeebe:userTask` == userTaskKey
+gốc → tái dùng thẳng làm `taskKey` không phá downstream). Đây là lỗi hệ thống, không riêng 1 hồ sơ —
+quét toàn `workflow_event_outbox` phát hiện thêm HS-2026-018 dính cùng pattern.
+
+**Đã sửa** (`backend/src/main/java/vn/vht/qtkhcn/camunda/CamundaWorkflowRuntimeEventReader.java`):
+`read()` nay LUÔN chạy `readJobBackedTasks()` bổ sung cho nhánh native, không còn gate bởi
+`isEmpty()`. An toàn: `WorkflowEventCollector.collect()` dedupe theo `sourceKey` nên 2 nhánh cùng
+phát hiện 1 task (taskKey trùng) không sinh outbox row đôi. Không cần backfill thủ công —
+`collect()` quét lại toàn bộ `workflow_process_mapping` mỗi 1s nên tự phục hồi sau restart.
+
+**Đã khôi phục `rd0202.bpmn`** (T04/T13/T27/T29 tách GDTT/GDK, khớp đúng v4 đang chạy
+`processDefinitionKey=2251799813756379`, đối chiếu trực tiếp `GET /v2/process-definitions/{key}/xml`):
+mỗi cặp thành 2 userTask nối tiếp (giữ nguyên `incoming`/`outgoing` gốc ở 2 đầu, thêm sequenceFlow nối
+giữa: `F06`→T04_GDTT→T04_GDK + `Flow_00mw9x8` mới; `Flow_18hoca3` mới + `Flow_0ae21gs` mới thay `F15` bị
+xoá; `Flow_1hjf0y8` mới + `F31` đổi sourceRef; `Flow_0tvm6l8` mới + `F33` đổi sourceRef), copy đúng
+`candidateGroups`/`formKey`/marker `<zeebe:userTask/>` verbatim theo v4 (chỉ 1 trong 2 task mỗi cặp có
+form, xác nhận đúng thực tế lệch giữa 4 cặp: T04/T13 form ở GDTT, T27/T29 form ở task 2). **Diagram DI:**
+KHÔNG copy nguyên toạ độ v4 (layout v4 là auto-layout hoàn toàn khác, không tương thích lưới đơn giản của
+file repo) — tự đặt 4 shape mới xếp dọc dưới task 1 (offset y+120, cùng x/width), kiểm tra thủ công không
+đè lên shape nào khác trong vùng lân cận; các edge nội bộ + edge ra ngoài đổi nguồn đều có waypoint mới,
+không còn `F15`. **Không redeploy** — chỉ sửa file nguồn theo đúng yêu cầu, việc bấm deploy v5 để dành cho
+user chủ động.
+
+**Verify:** `mvn -o compile` sạch; `WorkflowEventCollectorTest`/`BundledBpmnDeployedConsistencyTest`/
+`Rd0202JobWorkerContractTest` **4/4 PASS**; full backend suite **231/231 PASS, BUILD SUCCESS**. Runtime:
+dừng 8090 cũ, `mvn -o clean package`, restart PID mới `32520` (token pair
+`QTKHCN_WORKFLOW_SERVICE_TOKEN=dev-workflow-local-only`/`QTKHCN_HO_SO_SERVICE_TOKEN=dev-ho-so-local-only`,
+không đụng 8093 PID `6912` đang chạy). Query Postgres xác nhận outbox tự phục hồi ngay chu kỳ collector
+đầu tiên sau restart (`created_at` = đúng giờ restart): `TASK_COMPLETED` cho task key `2251799813763108`
+(HS-2026-016, T04_GDTT/T04_GDK) và `2251799813763987` (HS-2026-018), kèm `TASK_CREATED` task kế tiếp.
+Query `qtkhcn_ho_so` xác nhận `dossier_step` của cả 2 hồ sơ đã chuyển: `T04_GDTT`/`T04_GDK` = DONE, `T05` =
+CURRENT — và `task_definition_key` trong read-model khớp đúng id mới trong `rd0202.bpmn` (chứng minh BPMN
+sửa đúng khớp engine đang chạy). Quét lại toàn hệ thống (created-without-completed, có task sau đó) trả
+**0 row** — không còn instance nào kẹt kiểu này. **Chưa làm:** chưa redeploy BPMN thành v5 (cố ý, theo yêu
+cầu); chưa mở lại `rd0202.bpmn` bằng bpmn-js/Camunda Modeler để xác nhận trực quan layout mới (chỉ verify
+bằng test cấu trúc + kiểm tra toạ độ thủ công, không phải bằng mắt).
+
+## ★ DONE + TEST VERIFIED — Lỗi C: `WorkflowTaskActionRouting.rd0202()` khoá cứng element id skeleton cũ (`Task_2/3/4/7`) thay vì `T01`…`T33` thật — 2026-07-21 (owner Claude)
+
+**Bối cảnh:** RD02.02 từng trải qua 2 lần thiết kế lại BPMN: bản skeleton 7 task (`Task_1`…`Task_7`,
+`Gateway_3`/`Gateway_7` mặc định "không đồng ý") dùng ở phiên 2026-07-20 (DMN phân cấp `capNhiemVu`), rồi
+bị THAY HẲN bởi bản v3 33 task thật (`T01`…`T33`, một số lane song song như `T03_CQ_KHCN`) trong commit
+`773264b`. `WorkflowTaskActionRouting.rd0202()` (`backend/.../camunda/WorkflowTaskActionRouting.java`)
+không được cập nhật theo — vẫn `switch` trên `Task_2`/`Task_3`/`Task_4`/`Task_7`, các id **không còn tồn
+tại** trong `processes/rd0202.bpmn` đang deploy.
+
+**Khảo sát trước khi sửa (bắt buộc vì code không có test che phủ):** đọc lại toàn bộ `rd0202.bpmn` —
+process v3 chỉ có đúng 2 `exclusiveGateway` có điều kiện: `GCheck` (biến `dieuKienMacDinhDat`, do
+service task `Check`/`Rd0202DefaultConditionService` tính) và `G24` (biến `ketQuaDanhGiaT24Result`, do
+business rule task `Rd0202DanhGiaT24JobWorker`/DMN tính) — **không có gateway nào đọc biến do user action
+set** (`ketQuaKyDuyet`/`ketQuaThamDinh`/`ketQuaHDKHCN`/`ketQuaPheDuyet` — 0 match trong file BPMN). Mọi
+task khác chỉ có 1 outgoing flow hoặc là parallelGateway fork/join không điều kiện.
+
+**Hệ quả của bug trước khi sửa:**
+- APPROVE_STEP trên bất kỳ task thật nào (`T01`…`T33`) luôn set biến rỗng — vô hại với BPMN hiện tại
+  (không gateway nào cần các biến đó), nhưng code cũ mô tả sai hoàn toàn thực tế (dead code gây hiểu lầm).
+- `RD02_02_RETURNABLE` (`Task_2/3/4/7`) không bao giờ khớp id thật ⇒ `RETURN_STEP` bị **fail-closed cho
+  toàn bộ RD02.02** dù policy chung `AP-07` (process_code NULL) đáng lẽ đề xuất nó. Đây là hành vi ĐÚNG
+  một cách tình cờ: nếu "sửa" bằng cách map id thật vào `RETURN_STEP` mà KHÔNG thêm gateway hiệu chỉnh thật
+  trong BPMN, `RETURN_STEP` sẽ có tác dụng **y hệt APPROVE_STEP** (task chỉ có 1 outgoing flow, không rẽ
+  nhánh) — im lặng tiến tới thay vì "trả lại". Đây chính là loại lỗi "rơi vào nhánh mặc định" mà lẽ ra sẽ
+  xảy ra nếu sửa nông.
+
+**Đã sửa (`WorkflowTaskActionRouting.java`):**
+- Xoá `RD02_02_RETURNABLE` cũ (`Task_2/3/4/7`) → `Set.of()` rỗng, kèm Javadoc giải thích lý do fail-closed
+  (không có gateway hiệu chỉnh nào trong BPMN hiện tại — bật lên sẽ tạo bug "RETURN_STEP == APPROVE_STEP").
+- `rd0202()` bỏ toàn bộ switch trên id cũ, trả `Map.of()` không điều kiện — đúng thực tế BPMN v3 (task nào
+  cũng chỉ cần complete, không cần biến gateway).
+- Class Javadoc sửa "RD01.01 user tasks" → "RD01.01/RD02.02 user tasks" (thiếu RD02.02 trong doc gốc).
+
+**Test mới** (trước đó `WorkflowTaskActionRouting` **không có test nào**, kể cả `WorkflowTaskActionService`
+cũng không) — `backend/src/test/java/vn/vht/qtkhcn/camunda/WorkflowTaskActionRoutingTest.java`, 22 case
+parameterized: APPROVE_STEP trên id thật (`T01`, `T02`, `T05`, `T24`, `T33`, `T03_CQ_KHCN`, `T03_CQ_MS`)
+chỉ set 3 biến metadata (không set gateway var); id skeleton cũ (`Task_2/3/4/7`) không còn được coi đặc
+biệt; RETURN_STEP fail-closed cho mọi id (thật lẫn cũ); `ACTION_NOT_SUPPORTED` throw đúng khi cố RETURN_STEP.
+
+**Verify:** `mvn -o test` toàn backend **231/231 PASS** (209 cũ + 22 test mới), không vỡ test nào khác —
+đúng như dự đoán vì không có test nào trước đó khoá hành vi cũ.
+
+**Chưa làm / ngoài phạm vi:** nếu sau này business cần RETURN_STEP thật cho RD02.02 (vd trả T02 từ một bước
+thẩm định giữa chừng), phải thêm exclusiveGateway thật trong `rd0202.bpmn` trước, rồi mới map biến — không
+được set biến "khống" mà không có gateway đọc nó. Chưa restart 8090 để verify runtime (không có gateway
+nào phụ thuộc thay đổi này nên rủi ro runtime thấp, nhưng chưa tự xác nhận qua stack sống).
+
+---
+
+## ★ DONE + RUNTIME VERIFIED — Ma trận quyết định: tab "Soạn bảng luật" hỗ trợ DRD nhiều bảng nối chuỗi — 2026-07-21 (owner Claude)
+
+**Nguồn:** `docs/arch/update_matran_quyet_dinh_plan.md` (plan đã chốt với user, full parity với bản React
+`webapp/src/components/RuleGridBuilder.tsx`). Phiên trước đã làm bước backend 1–2 và commit trong
+`773264b`; phiên này làm nốt **backend 3–7 + toàn bộ frontend 1–4**.
+
+**Backend (mới trong phiên này):**
+- `V25__dmn_rule_version_decisions.sql` — bảng con `dmn_rule_version_decision`, mỗi dòng 1 decision đã
+  deploy của 1 version, có `is_root` + `display_order`, UNIQUE(rule_version_id, decision_id).
+- `domain/DmnRuleVersionDecision.java` + `repository/DmnRuleVersionDecisionRepository.java`.
+- `DmnRuleService`: `activate()` lưu đủ mọi `DeployedDecision` (idempotent — xoá trước khi ghi, kể cả
+  nhánh deploy FAILED), chọn **primary root** = root đầu tiên theo thứ tự tài liệu để set 4 cột số ít cũ
+  (giữ nguyên CHECK constraint V7, không cần migration thứ 2); `listVersionSummaries` batch-load decisions
+  con; `evaluate()` gọi Camunda từ **mọi** root, có **fallback** về `camundaDecisionKey` số ít khi bảng con
+  rỗng (version deploy trước V25 — dữ liệu cũ không vỡ).
+- DTO: `DmnRuleVersionDecisionResponse` mới; `DmnRuleVersionResponse`/`Summary` thêm `decisions`;
+  `EvaluateDmnDecisionResponse` đổi hẳn sang `{decisions:[{decisionId,decisionName,outputs,matchedRules...}]}`
+  — **breaking change có chủ đích**, chỉ Angular (sửa cùng lúc) tiêu thụ.
+
+**Frontend (toàn bộ mới trong phiên này):**
+- `models/business-rule.ts`: `DmnHitPolicy`, `DecisionColumn.typeRef?`, `DecisionGridDecision`/`DecisionGrid`
+  thay `DecisionTableDefinition` (kiểu cũ đã xoá hẳn), evaluation response đổi shape.
+- `core/dmn/dmn-xml.ts` viết lại: `dmnXmlToDecisionGrid` (đọc mọi `<decision>`, đọc `requires` từ
+  `requiredDecision`, **bỏ throw khi hitPolicy ≠ FIRST**) / `decisionGridToDmnXml` (suy `inputData` cho biến
+  gốc + `informationRequirement` theo **khớp tên biến**, `requires[]` chỉ bổ sung; emit hitPolicy verbatim);
+  thêm `rootInputColumns()`.
+- `core/dmn/decision-table.ts`: helper retype sang `Pick<DecisionGridDecision, 'inputs'|'outputs'|'rows'>`.
+- `business-rule.service.ts` + `business-rule-detail.ts/.html`: draft là mảng; thêm/xoá bảng (có popconfirm),
+  chọn hit policy, cấu hình cột (thêm/xoá/đổi tên/đổi kiểu → reset điều kiện, **gán nguồn** = trùng tên biến
+  để tự nối chuỗi); tab Chạy thử lấy input từ `rootInputColumns` và render **1 card/quyết định**; tô sáng
+  dòng khớp tra đúng theo `decisionId` trước rồi mới `ruleId`; lịch sử hiện số decision đã deploy.
+
+**Verify đã chạy trong phiên này:**
+- Backend `mvn -o test`: **207/207 GREEN** (gồm `DmnRuleServiceTest` 9 test — có test mới cho nhánh nhiều
+  decision + nhánh fallback rỗng — và `DmnRuleHttpContractTest` đã đổi jsonPath sang `$.decisions[...]`).
+- Angular `ng build --configuration development`: GREEN (template type-check sạch).
+- Angular `ng test`: **202/202 GREEN**, 44 file. Đã kiểm chứng `dmn-xml.spec.ts` mới **thực sự chạy** bằng
+  cách tạm sửa 1 assert thành canary sai → suite fail đúng test đó → revert → xanh lại.
+- Lưu ý công cụ: dự án dùng **Vitest** (không phải Karma) — `ng test --browsers=...`/`--reporter=...` đều
+  báo lỗi unknown argument; chạy `npx vitest` trực tiếp cũng fail vì thiếu pipeline build Angular. Dùng
+  `npx ng test --watch=false`.
+
+**Runtime thật ĐÃ CHẠY XONG (2026-07-21)** trên stack local (Docker → 8090 → 8093 → 4200). Dựng luật
+`BR-DRD-3-BANG` 3 bảng nối chuỗi bằng **chính UI mới**, không nhập XML tay:
+`Xac dinh cap nhiem vu` (FIRST) → `Can hoi dong` (UNIQUE) → `Loai hoi dong` (FIRST).
+
+Kết quả xác minh:
+
+- V25 apply sạch lên DB dev; Activate deploy đủ **3 decision, 3 `camunda_decision_key` riêng biệt** lên
+  Zeebe thật; `is_root=true` đúng duy nhất ở decision cuối chuỗi; `display_order` giữ thứ tự.
+- Dropdown "nguồn cột" chào đúng output của các bảng trước + input gốc; giá trị điều kiện tự thành enum
+  suy từ output bảng trước; tab Chạy thử chỉ hỏi đúng 2 input gốc; panel trả đủ 3 card đúng thứ tự.
+- Đổi input gốc thì cả chuỗi đổi theo: `15 → TAP_DOAN / true / HDXD_TAP_DOAN`, `5 → CO_SO / false / KHONG`.
+
+**Runtime bắt được 1 bug thật mà 202 unit test bỏ lọt** — `decisionGridToDmnXml` không phát ra
+`<variable>` trên `<decision>`, nên Camunda không bind kết quả bảng trước; bảng sau đọc null, không khớp
+dòng nào, chuỗi trả sai `KHONG`. Test cũ chỉ round-trip XML nên mù hoàn toàn: **XML round-trip đúng vẫn
+có thể không chạy được trên engine thật** — với DMN, chỉ deploy+evaluate thật mới là bằng chứng.
+
+Đã sửa trong `dmn-xml.ts`: mỗi `<decision>` khai báo `<variable>`; bảng 1 cột kết quả đặt tên biến quyết
+định trùng tên biến output (bảng sau tham chiếu thẳng), bảng nhiều cột kết quả trả context nên tham chiếu
+qua `dv_<id>.<biến>` và parser đọc ngược bỏ tiền tố. Thêm 2 test khoá đúng lỗi này. Verify lại sau sửa:
+`ng test` **204/204 GREEN**, `ng build` GREEN, chạy lại end-to-end trên Camunda thật đúng kết quả.
+
+Lưu ý cho lần sau: fixture `webapp/src/dmn/rd02Routing.dmn.ts` (bản React tham chiếu) **cũng thiếu
+`<variable>`** — nó chưa từng chạy trên Camunda thật (webapp eval bằng `feelin` in-browser), nên không
+được coi là chuẩn runtime. Dữ liệu test `BR-DRD-3-BANG` v1–v3 còn nằm lại trên DB/Zeebe dev.
+
 ## ★ DONE CODE / RUNTIME PENDING — DMN chấm điểm HĐXD Tập đoàn phiên 2 (T24), ngưỡng 70 điểm — 2026-07-21 (owner Claude, theo yêu cầu trực tiếp user + kế hoạch đã duyệt)
 
 **Yêu cầu:** tại T24 ("Họp HĐXD Tập đoàn phiên 2"), dùng điểm đánh giá (form `bm-02-12-pdg-dt`,

@@ -56,4 +56,45 @@ class DeployedBpmnRoutingReaderTest {
         assertThat(routing.steps().stream().filter(step -> step.key().equals("T14_GD_TTMS")).findFirst())
                 .isPresent().get().extracting(step -> step.role()).isEqualTo("GD_TTMS");
     }
+
+    /**
+     * Marker {@code <zeebe:userTask />} (Camunda Modeler / bpmn-js gắn vào extensionElements) trùng
+     * tên cục bộ với {@code bpmn:userTask}. Nếu đọc theo namespace wildcard, mỗi marker sinh thêm 1
+     * "bước ma" key rỗng ⇒ scaffold dựng trùng id AP-BPMN-<mã>--APPROVE và vỡ cả lượt.
+     */
+    @Test
+    void zeebeUserTaskMarkerDoesNotProduceGhostStepWithBlankKey() {
+        ProcessDefinitionCatalog catalog = new ProcessDefinitionCatalog();
+        catalog.setId(UUID.randomUUID());
+        catalog.setBpmnProcessId("RD02_02");
+        catalog.setName("Xét duyệt NV KHCN cấp Tập đoàn");
+        ProcessDefinitionVersion version = new ProcessDefinitionVersion();
+        version.setBpmnXml("""
+                <?xml version="1.0" encoding="UTF-8"?>
+                <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                    xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Defs_1">
+                  <bpmn:process id="RD02_02" name="Xét duyệt NV KHCN cấp Tập đoàn" isExecutable="true">
+                    <bpmn:extensionElements><zeebe:properties>
+                      <zeebe:property name="qtkhcn.userTaskActions" value="APPROVE_STEP,REJECT_STEP" />
+                    </zeebe:properties></bpmn:extensionElements>
+                    <bpmn:userTask id="T01" name="1. Khởi tạo"><bpmn:extensionElements>
+                      <zeebe:userTask />
+                      <zeebe:assignmentDefinition candidateGroups="PM" />
+                    </bpmn:extensionElements><bpmn:outgoing>F01</bpmn:outgoing></bpmn:userTask>
+                    <bpmn:userTask id="T02" name="2. Phê duyệt"><bpmn:extensionElements>
+                      <zeebe:userTask />
+                      <zeebe:assignmentDefinition candidateGroups="TGD_VHT" />
+                    </bpmn:extensionElements><bpmn:incoming>F01</bpmn:incoming></bpmn:userTask>
+                    <bpmn:sequenceFlow id="F01" sourceRef="T01" targetRef="T02" />
+                  </bpmn:process>
+                </bpmn:definitions>
+                """);
+
+        DeployedBpmnRoutingReader reader = new DeployedBpmnRoutingReader(
+                mock(ProcessDefinitionCatalogRepository.class), mock(ProcessDefinitionVersionRepository.class));
+        var routing = reader.parse(catalog, version);
+
+        assertThat(routing.steps()).extracting(step -> step.key()).containsExactly("T01", "T02");
+        assertThat(routing.steps()).extracting(step -> step.key()).doesNotContain("");
+    }
 }

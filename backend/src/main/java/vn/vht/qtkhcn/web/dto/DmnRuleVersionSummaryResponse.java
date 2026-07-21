@@ -1,8 +1,10 @@
 package vn.vht.qtkhcn.web.dto;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 import vn.vht.qtkhcn.domain.DmnRuleVersion;
+import vn.vht.qtkhcn.domain.DmnRuleVersionDecision;
 import vn.vht.qtkhcn.domain.DmnDeployStatus;
 
 public record DmnRuleVersionSummaryResponse(
@@ -18,13 +20,16 @@ public record DmnRuleVersionSummaryResponse(
         String camundaDecisionId,
         Integer camundaDecisionVersion,
         OffsetDateTime deployedAt,
-        String deployError
+        String deployError,
+        List<DmnRuleVersionDecisionResponse> decisions
 ) {
-    public static DmnRuleVersionSummaryResponse from(DmnRuleVersion version) {
+    public static DmnRuleVersionSummaryResponse from(DmnRuleVersion version,
+            List<DmnRuleVersionDecision> decisions) {
         return new DmnRuleVersionSummaryResponse(version.getId(), version.getVersion(),
                 version.getChecksumSha256(), version.getChangeNote(), version.getCreatedBy(),
                 version.getCreatedAt(), version.getDeployStatus(), version.getCamundaDeploymentKey(),
                 version.getCamundaDecisionKey(), version.getCamundaDecisionId(),
-                version.getCamundaDecisionVersion(), version.getDeployedAt(), version.getDeployError());
+                version.getCamundaDecisionVersion(), version.getDeployedAt(), version.getDeployError(),
+                decisions.stream().map(DmnRuleVersionDecisionResponse::from).toList());
     }
 }

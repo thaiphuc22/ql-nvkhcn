@@ -3,14 +3,14 @@ import { Injectable, inject, signal } from '@angular/core';
 import { Observable, map, of, switchMap, tap } from 'rxjs';
 
 import { API_BASE_URL, encodeAuditActor } from '../api-config';
-import { decisionTableToDmnXml, dmnXmlToDecisionTable } from '../dmn/dmn-xml';
+import { decisionGridToDmnXml, dmnXmlToDecisionGrid } from '../dmn/dmn-xml';
 import {
   BusinessRule,
   BusinessRuleCategory,
   BusinessRuleStatus,
   BusinessRuleVersion,
   CreateBusinessRuleInput,
-  DecisionTableDefinition,
+  DecisionGrid,
   DmnRuleDetailResponse,
   DmnRuleSummaryResponse,
   DmnRuleVersionResponse,
@@ -37,6 +37,7 @@ function toVersion(summary: DmnRuleVersionSummaryResponse): BusinessRuleVersion 
     camundaDecisionVersion: summary.camundaDecisionVersion,
     deployedAt: summary.deployedAt,
     deployError: summary.deployError,
+    decisions: summary.decisions ?? [],
   };
 }
 
@@ -125,12 +126,12 @@ export class BusinessRuleService {
 
   saveVersion(
     id: string,
-    definition: DecisionTableDefinition,
+    grid: DecisionGrid,
     note: string,
     actor: string,
     expectedVersion: number,
   ): Observable<BusinessRule> {
-    const dmnXml = decisionTableToDmnXml(definition, { definitionsId: `definitions_${id}` });
+    const dmnXml = decisionGridToDmnXml(grid, { definitionsId: `definitions_${id}` });
     return this.http
       .post<DmnRuleVersionResponse>(
         `${API_BASE_URL}/api/dmn-rules/${id}/versions`,
@@ -151,7 +152,7 @@ export class BusinessRuleService {
         map((artifact) => ({
           ...toVersion(artifact),
           dmnXml: artifact.dmnXml,
-          definition: dmnXmlToDecisionTable(artifact.dmnXml),
+          definition: dmnXmlToDecisionGrid(artifact.dmnXml),
         })),
       );
   }

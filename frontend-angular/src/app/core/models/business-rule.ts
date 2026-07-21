@@ -4,12 +4,15 @@ export type BusinessRuleCategory = 'ROUTING' | 'CLASSIFICATION' | 'THRESHOLD' | 
 export type DecisionValueType = 'number' | 'string' | 'boolean';
 export type DecisionOperator = 'ANY' | 'EQ' | 'GTE' | 'GT' | 'LTE' | 'LT' | 'BETWEEN';
 export type DmnDeployStatus = 'NOT_DEPLOYED' | 'DEPLOYED' | 'FAILED';
+export type DmnHitPolicy = 'FIRST' | 'UNIQUE' | 'COLLECT';
 
 export interface DecisionColumn {
   id: string;
   label: string;
   variable: string;
   type: DecisionValueType;
+  /** typeRef DMN gốc, giữ nguyên để round-trip không làm mất kiểu chi tiết (integer/long/double). */
+  typeRef?: string;
   options?: string[];
 }
 
@@ -25,14 +28,23 @@ export interface DecisionRow {
   outputs: Array<string | number | boolean | null>;
 }
 
-export interface DecisionTableDefinition {
+/**
+ * Một bảng quyết định trong DRD. Nhiều bảng có thể nối chuỗi: bảng này dùng output của bảng kia
+ * làm cột điều kiện — quan hệ đó suy ra từ tên biến, `requires` chỉ giữ thêm cạnh phụ đọc từ
+ * `<requiredDecision>` khi import DMN viết tay.
+ */
+export interface DecisionGridDecision {
   id: string;
   name: string;
-  hitPolicy: 'FIRST';
+  hitPolicy: DmnHitPolicy;
+  requires: string[];
   inputs: DecisionColumn[];
   outputs: DecisionColumn[];
   rows: DecisionRow[];
 }
+
+/** Toàn bộ DRD: danh sách bảng quyết định theo đúng thứ tự tài liệu DMN. */
+export type DecisionGrid = DecisionGridDecision[];
 
 export interface BusinessRuleVersion {
   id: string;
@@ -48,8 +60,9 @@ export interface BusinessRuleVersion {
   camundaDecisionVersion: number | null;
   deployedAt: string | null;
   deployError: string | null;
+  decisions?: DmnRuleVersionDecisionResponse[];
   dmnXml?: string;
-  definition?: DecisionTableDefinition;
+  definition?: DecisionGrid;
 }
 
 export interface BusinessRule {
@@ -65,7 +78,7 @@ export interface BusinessRule {
   activeVersion: number | null;
   updatedAt: string;
   updatedBy: string;
-  definition?: DecisionTableDefinition;
+  definition?: DecisionGrid;
   versions?: BusinessRuleVersion[];
   serviceInputs?: string;
   serviceOutput?: string;
@@ -87,6 +100,14 @@ export interface DmnRuleSummaryResponse {
   updatedAt: string;
 }
 
+export interface DmnRuleVersionDecisionResponse {
+  decisionId: string;
+  decisionName: string | null;
+  camundaDecisionKey: number;
+  camundaDecisionVersion: number;
+  root: boolean;
+}
+
 export interface DmnRuleVersionSummaryResponse {
   id: string;
   version: number;
@@ -101,6 +122,7 @@ export interface DmnRuleVersionSummaryResponse {
   camundaDecisionVersion: number | null;
   deployedAt: string | null;
   deployError: string | null;
+  decisions: DmnRuleVersionDecisionResponse[];
 }
 
 export interface DmnRuleVersionResponse extends DmnRuleVersionSummaryResponse {
@@ -122,9 +144,10 @@ export interface CreateBusinessRuleInput {
   actor: string;
 }
 
-export interface DmnDecisionEvaluationResponse {
+export interface DmnDecisionResultResponse {
   evaluationKey: number;
   decisionId: string;
+  decisionName: string | null;
   decisionVersion: number;
   outputs: Record<string, unknown>;
   matchedRules: Array<{
@@ -133,6 +156,17 @@ export interface DmnDecisionEvaluationResponse {
     outputs: Record<string, unknown>;
   }>;
 }
+
+/** Camunda trả kết quả của mọi decision đã chạy trong DRD, kể cả bảng trung gian. */
+export interface DmnDecisionEvaluationResponse {
+  decisions: DmnDecisionResultResponse[];
+}
+
+export const DMN_HIT_POLICY_LABEL: Record<DmnHitPolicy, string> = {
+  FIRST: 'FIRST — lấy dòng khớp đầu tiên',
+  UNIQUE: 'UNIQUE — chỉ được khớp đúng một dòng',
+  COLLECT: 'COLLECT — gom tất cả dòng khớp',
+};
 
 export const BUSINESS_RULE_CATEGORY_LABEL: Record<BusinessRuleCategory, string> = {
   ROUTING: 'Định tuyến',

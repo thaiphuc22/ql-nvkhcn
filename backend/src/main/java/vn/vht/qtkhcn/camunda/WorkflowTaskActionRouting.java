@@ -6,16 +6,24 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import vn.vht.qtkhcn.service.TaskActionException;
 
-/** Control-variable contract consumed by gateways immediately following RD01.01 user tasks. */
+/** Control-variable contract consumed by gateways immediately following RD01.01/RD02.02 user tasks. */
 @Component
 public class WorkflowTaskActionRouting {
     private static final Set<String> ACTIONS = Set.of("APPROVE_STEP", "RETURN_STEP", "REJECT_STEP");
 
     private static final Set<String> RD01_01_RETURNABLE =
             Set.of("Task_5", "Task_6", "Task_9", "Task_11_HD", "Task_11_TGD");
-    /** RD02.02: mọi bước có gateway "hiệu chỉnh" phía sau đều trả lại được (Task_QDTL thì không). */
-    private static final Set<String> RD02_02_RETURNABLE =
-            Set.of("Task_2", "Task_3", "Task_4", "Task_7");
+    /**
+     * RD02.02 v3 ({@code processes/rd0202.bpmn}, 33 user task {@code T01}…{@code T33}, một số bước
+     * còn tách 4 lane song song như {@code T03_CQ_KHCN}) không có bất kỳ exclusiveGateway nào đọc biến
+     * do user action set — hai gateway điều kiện duy nhất của quy trình, {@code GCheck} (biến
+     * {@code dieuKienMacDinhDat}) và {@code G24} (biến {@code ketQuaDanhGiaT24Result}), đều do
+     * service/DMN task tính, không do RETURN_STEP. Nếu "bật" RETURN_STEP cho một task ở đây mà chưa có
+     * gateway rẽ theo nó, task vẫn hoàn tất qua đúng 1 outgoing flow — tức RETURN_STEP sẽ có tác dụng
+     * y hệt APPROVE_STEP (âm thầm tiến tới, không hề "trả lại"). Vì vậy fail-closed rỗng ở đây cho tới
+     * khi BPMN thực sự có gateway hiệu chỉnh cho một bước cụ thể.
+     */
+    private static final Set<String> RD02_02_RETURNABLE = Set.of();
 
     public boolean supports(String processDefinitionId, String taskDefinitionKey, String actionCode) {
         if (!ACTIONS.contains(actionCode)) return false;
@@ -76,29 +84,15 @@ public class WorkflowTaskActionRouting {
     }
 
     /**
-     * RD02.02. Task_1/Task_QDTL/Task_6 không có gateway phía sau nên không cần biến điều khiển.
-     * Lưu ý Gateway_3 và Gateway_7 có nhánh MẶC ĐỊNH là "không đạt"/"không đồng ý" — nên RETURN_STEP
-     * ở Task_3/Task_7 bắt buộc set biến "hieu_chinh" tường minh, nếu để rỗng thì rơi vào nhánh từ
-     * chối và hồ sơ bị đóng thay vì trả lại.
+     * RD02.02 v3 ({@code T01}…{@code T33}, xem {@link #RD02_02_RETURNABLE}). Không có task nào trong
+     * quy trình hiện tại đứng trước một exclusiveGateway đọc biến do user action set — mọi task chỉ có
+     * đúng 1 outgoing flow (hoặc là parallelGateway fork/join, không cần điều kiện) nên APPROVE_STEP
+     * không cần set gì để "trúng nhánh đúng". RETURN_STEP chưa bao giờ supports() == true (xem
+     * {@link #RD02_02_RETURNABLE}) nên nhánh dưới đây không thể được gọi tới trong thực tế; giữ lại chỉ
+     * để đối xứng với {@link #rd0101} và không throw bất ngờ nếu supports() đổi trong tương lai mà quên
+     * cập nhật chỗ này.
      */
     private static Map<String, Object> rd0202(String elementId, String actionCode) {
-        if ("APPROVE_STEP".equals(actionCode)) {
-            return switch (elementId) {
-                case "Task_2" -> Map.of("ketQuaKyDuyet", "dong_y");
-                case "Task_3" -> Map.of("ketQuaThamDinh", "dong_y");
-                case "Task_4" -> Map.of("ketQuaHDKHCN", "dong_y");
-                case "Task_7" -> Map.of("ketQuaPheDuyet", "dong_y");
-                default -> Map.of();
-            };
-        }
-        if ("RETURN_STEP".equals(actionCode)) {
-            return switch (elementId) {
-                case "Task_2", "Task_4" -> Map.of(); // gateway default đã là "hiệu chỉnh"
-                case "Task_3" -> Map.of("ketQuaThamDinh", "hieu_chinh");
-                case "Task_7" -> Map.of("ketQuaPheDuyet", "hieu_chinh");
-                default -> Map.of(); // supports() already rejects this branch.
-            };
-        }
         return Map.of();
     }
 }

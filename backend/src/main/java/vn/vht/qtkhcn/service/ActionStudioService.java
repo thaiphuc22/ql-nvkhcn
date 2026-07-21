@@ -307,8 +307,12 @@ public class ActionStudioService {
         List<ReconcileResponse> missing = reconcile(processCode, current).stream()
                 .filter(row -> row.status().equals("missing")).toList();
         List<AvailabilityResponse> created = new ArrayList<>();
+        Set<String> seen = new LinkedHashSet<>();
         for (ReconcileResponse row : missing) {
             String id = "AP-BPMN-" + processCode + "-" + row.stepKey() + "-" + row.outcome();
+            // Id tất định ⇒ scaffold phải chạy lại được. Bỏ qua id đã có (vd luật cũ đang bị khoá nên
+            // đối soát vẫn báo "missing") thay vì ném xung đột làm rollback cả lượt scaffold.
+            if (!seen.add(id) || availabilityRepository.existsById(id)) continue;
             AvailabilityRequest request = new AvailabilityRequest(id, row.actionCode(), "DOSSIER_DETAIL",
                     processCode, row.stepKey(), row.outcome().equals("SUBMIT") ? "draft" : "processing",
                     List.of(), List.of(row.outcome().equals("SUBMIT") ? "SUBMIT_DOSSIER" : "PROCESS_STEP"),
@@ -328,7 +332,8 @@ public class ActionStudioService {
                 .filter(ActionAvailabilityPolicy::isEnabled)
                 .filter(item -> item.getActionCode().equals(action.getActionCode()))
                 .filter(item -> item.getSurface() == null || item.getSurface().equals(request.surface()))
-                .filter(item -> item.getProcessCode() == null || item.getProcessCode().equals(request.processCode()))
+                .filter(item -> item.getProcessCode() == null
+                        || normalizeProcessCode(item.getProcessCode()).equals(normalizeProcessCode(request.processCode())))
                 .filter(item -> item.getTaskDefinitionKey() == null || item.getTaskDefinitionKey().equals(request.taskDefinitionKey()))
                 .filter(item -> item.getDossierStatus() == null || item.getDossierStatus().equals(request.dossierStatus()))
                 .max(Comparator.comparingInt(ActionStudioService::specificity)
@@ -364,7 +369,8 @@ public class ActionStudioService {
                         "unmapped", null, "Outcome BPMN chưa được ánh xạ sang action code.");
             }
             ActionAvailabilityPolicy exact = policies.stream().filter(ActionAvailabilityPolicy::isEnabled)
-                    .filter(item -> processCode.equals(item.getProcessCode()))
+                    .filter(item -> item.getProcessCode() != null
+                            && normalizeProcessCode(item.getProcessCode()).equals(normalizeProcessCode(processCode)))
                     .filter(item -> step.key().equals(item.getTaskDefinitionKey()))
                     .filter(item -> actionCode.equals(item.getActionCode())).findFirst().orElse(null);
             ActionAvailabilityPolicy generic = policies.stream().filter(ActionAvailabilityPolicy::isEnabled)
@@ -400,7 +406,8 @@ public class ActionStudioService {
                 .filter(item -> !item.getId().equals(currentId))
                 .filter(item -> item.getActionCode().equals(request.actionCode().trim()))
                 .filter(item -> Objects.equals(item.getSurface(), blankToNull(request.surface())))
-                .filter(item -> Objects.equals(item.getProcessCode(), blankToNull(request.processCode())))
+                .filter(item -> Objects.equals(normalizeProcessCode(item.getProcessCode()),
+                        normalizeProcessCode(blankToNull(request.processCode()))))
                 .filter(item -> Objects.equals(item.getTaskDefinitionKey(), blankToNull(request.taskDefinitionKey())))
                 .filter(item -> Objects.equals(item.getDossierStatus(), blankToNull(request.dossierStatus())))
                 .findFirst().orElse(null);
@@ -529,6 +536,16 @@ public class ActionStudioService {
     private static LinkedHashSet<String> normalizeCodes(List<String> values) {
         return values.stream().map(String::trim)
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    /**
+     * Mã quy trình tồn tại song song ở 2 dạng không chủ ý thống nhất: dấu chấm (nghiệp vụ,
+     * {@code dossier.quyTrinh}) và gạch dưới ({@code bpmn:process id}). Chuẩn hoá về chữ hoa,
+     * bỏ mọi ký tự không phải chữ/số trước khi so khớp để luật không phụ thuộc người nhập/hệ
+     * thống gọi dùng dấu chấm, gạch dưới, gạch ngang hay khoảng trắng.
+     */
+    private static String normalizeProcessCode(String value) {
+        return value == null ? null : value.toUpperCase(java.util.Locale.ROOT).replaceAll("[^A-Z0-9]", "");
     }
 
     private static int specificity(ActionAvailabilityPolicy item) {

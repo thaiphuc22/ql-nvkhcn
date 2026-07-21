@@ -1,10 +1,11 @@
-import { DecisionTableDefinition } from '../models/business-rule';
+import { DecisionGridDecision } from '../models/business-rule';
 import { evaluateDecisionTable, matchesCondition } from './decision-table';
 
-const definition: DecisionTableDefinition = {
+const definition: DecisionGridDecision = {
   id: 'scale',
   name: 'Xếp quy mô',
   hitPolicy: 'FIRST',
+  requires: [],
   inputs: [{ id: 'i1', label: 'Dự toán', variable: 'budget', type: 'number' }],
   outputs: [{ id: 'o1', label: 'Quy mô', variable: 'scale', type: 'string' }],
   rows: [
