@@ -14,9 +14,10 @@ export type ServiceTaskTypeCode =
   | 'CALL_API'
   | 'UPDATE_DOSSIER'
   | 'GENERATE_DOCUMENT'
-  | 'EVALUATE_DECISION';
+  | 'EVALUATE_DECISION'
+  | 'AI_AGENT';
 
-export type ServiceTaskCategory = 'communication' | 'integration' | 'data' | 'document' | 'decision';
+export type ServiceTaskCategory = 'communication' | 'integration' | 'data' | 'document' | 'decision' | 'ai';
 
 export interface ServiceTaskCapabilities {
   supportsRetry: boolean;
@@ -127,7 +128,8 @@ export type ServiceTaskExecutionConfig =
   | CallApiConfig
   | UpdateDossierConfig
   | GenerateDocumentConfig
-  | EvaluateDecisionConfig;
+  | EvaluateDecisionConfig
+  | AiAgentConfig;
 
 export interface SendNotificationConfig {
   typeCode: 'SEND_NOTIFICATION';
@@ -164,6 +166,16 @@ export interface EvaluateDecisionConfig {
   decisionCode: string;
   decisionVersion?: string;
   resultVariable: string;
+}
+
+export interface AiAgentConfig {
+  typeCode: 'AI_AGENT';
+  /** Model thật gọi qua OpenAI Chat Completions API — xem OpenAiSummaryClient ở backend. */
+  model: string;
+  maxTokens: number;
+  promptTemplateCode: string;
+  /** Field hồ sơ nhận kết quả — chỉ mang tính hỗ trợ đọc, KHÔNG phải điều kiện nghiệp vụ. */
+  resultDossierField: string;
 }
 
 export interface ServiceTaskConfigVersion {
@@ -327,6 +339,7 @@ export const DOSSIER_OUTPUT_FIELD_WHITELIST = [
   'trangThaiDongBo',
   'ghiChuHeThong',
   'documentIds',
+  'tomTatAi',
 ];
 
 const EXPRESSION_RE = /\$\{([a-zA-Z][\w]*)\.([^}]+)\}/g;
@@ -499,6 +512,13 @@ function validateExecutionConfig(
     if (!config.resultVariable.trim()) errors.push('Thiếu biến lưu kết quả decision.');
   }
 
+  if (config.typeCode === 'AI_AGENT') {
+    if (!config.model.trim()) errors.push('Thiếu model LLM.');
+    if (config.maxTokens <= 0) errors.push('maxTokens phải lớn hơn 0.');
+    if (!config.promptTemplateCode.trim()) errors.push('Thiếu prompt template.');
+    if (!config.resultDossierField.trim()) errors.push('Thiếu field hồ sơ nhận tóm tắt.');
+  }
+
   return errors;
 }
 
@@ -593,6 +613,12 @@ function simulateResponse(config: ServiceTaskExecutionConfig, input: Record<stri
       documentId: 'doc-20260709-001',
       templateCode: config.templateCode,
       fileName: `${config.templateCode}.pdf`,
+    };
+  }
+  if (config.typeCode === 'AI_AGENT') {
+    return {
+      tomTat: 'Bản xem trước: hồ sơ mô tả đề tài, chủ nhiệm, đơn vị và các bước đã hoàn tất — do LLM mô phỏng.',
+      model: config.model,
     };
   }
   return {
@@ -751,6 +777,30 @@ export const seedServiceTaskTypes: ServiceTaskType[] = [
     },
     enabled: true,
   },
+  {
+    code: 'AI_AGENT',
+    name: 'AI Agent',
+    description:
+      'Gọi LLM thật (OpenAI) để sinh nội dung hỗ trợ đọc (vd. tóm tắt hồ sơ). KHÔNG phải điều ' +
+      'kiện nghiệp vụ — lỗi/timeout không được chặn luồng phê duyệt, mặc định fallback về text tĩnh.',
+    category: 'ai',
+    inputSchema: [
+      { key: 'maHoSo', label: 'Mã hồ sơ', type: 'string', required: true },
+      { key: 'promptTemplateCode', label: 'Prompt template', type: 'string', required: true },
+    ],
+    outputSchema: [
+      { key: 'tomTat', label: 'Nội dung AI sinh ra', type: 'string' },
+      { key: 'model', label: 'Model đã dùng', type: 'string' },
+    ],
+    capabilities: {
+      supportsRetry: false,
+      supportsPreview: true,
+      requiresConnector: false,
+      allowsOutputMapping: true,
+      mutatesDossier: true,
+    },
+    enabled: true,
+  },
 ];
 
 export const seedProcessServiceTasks: ProcessServiceTaskRef[] = [
@@ -787,6 +837,19 @@ export const seedProcessServiceTasks: ProcessServiceTaskRef[] = [
     jobType: 'khcn.rd0202.check-chu-truong-td',
     implementationHint: 'precondition-check',
     critical: true,
+  },
+  {
+    // Bám đúng backend/src/main/resources/processes/rd0202.bpmn — serviceTask "AI_Summarize"
+    // chèn ngay sau GCheck (nhánh FCheckOK), trước G03Split. Không critical: lỗi/timeout LLM
+    // không được chặn luồng phê duyệt thật (AiSummarizeDossierJobWorker luôn fallback).
+    processCode: 'RD02.02',
+    processVersion: '1.0',
+    bpmnProcessId: 'RD02_02',
+    taskDefinitionKey: 'AI_Summarize',
+    taskName: 'Hệ thống (AI Agent) tóm tắt hồ sơ',
+    jobType: 'khcn.rd0202.summarize-dossier',
+    implementationHint: 'ai-agent',
+    critical: false,
   },
   {
     processCode: 'RD03.03',
@@ -896,6 +959,23 @@ export const seedServiceTaskDefinitions: ServiceTaskDefinition[] = [
     updatedBy: 'admin',
     createdAt: '2026-07-20 10:00',
     updatedAt: '2026-07-20 10:05',
+  },
+  {
+    id: 'std-ai-summarize-dossier',
+    code: 'AI_SUMMARIZE_DOSSIER',
+    name: 'AI Agent tóm tắt hồ sơ',
+    description:
+      'Gọi OpenAI Chat Completions API thật để tóm tắt hồ sơ ngay sau GCheck, phục vụ 4 cơ quan ' +
+      'thẩm định song song đọc trước khi thẩm định. Không phải điều kiện nghiệp vụ.',
+    typeCode: 'AI_AGENT',
+    status: 'ACTIVE',
+    ownerModule: 'RD02',
+    tags: ['rd02', 'ai-agent', 'summarize'],
+    activeVersionNo: 1,
+    createdBy: 'admin',
+    updatedBy: 'admin',
+    createdAt: '2026-07-21 09:00',
+    updatedAt: '2026-07-21 09:05',
   },
   {
     id: 'std-evaluate-rd02-routing',
@@ -1080,6 +1160,29 @@ export const seedServiceTaskConfigVersions: ServiceTaskConfigVersion[] = [
     createdAt: '2026-07-20 10:05',
   },
   {
+    id: 'stv-ai-summarize-dossier-v1',
+    serviceTaskDefinitionId: 'std-ai-summarize-dossier',
+    versionNo: 1,
+    configJson: {
+      typeCode: 'AI_AGENT',
+      model: 'gpt-4o-mini',
+      maxTokens: 512,
+      promptTemplateCode: 'rd0202-tom-tat-ho-so',
+      resultDossierField: 'tomTatAi',
+    },
+    inputMapping: [
+      { id: 'in-ai-1', target: 'maHoSo', expression: '${dossier.id}', source: 'dossier', required: true },
+    ],
+    outputMapping: [
+      { id: 'out-ai-1', sourcePath: '$.tomTat', target: 'dossier', targetPath: 'tomTatAi' },
+    ],
+    errorPolicy: { ...DEFAULT_ERROR_POLICY, maxRetry: 1, onFailure: 'CONTINUE', notifyRoles: ['ADMIN'] },
+    status: 'ACTIVE',
+    changeNote: 'Cấu hình cho service task AI_Summarize của RD02.02 — gọi OpenAI thật.',
+    createdBy: 'admin',
+    createdAt: '2026-07-21 09:05',
+  },
+  {
     id: 'stv-evaluate-rd02-v1',
     serviceTaskDefinitionId: 'std-evaluate-rd02-routing',
     versionNo: 1,
@@ -1147,6 +1250,20 @@ export const seedServiceTaskBindings: ServiceTaskBinding[] = [
     effectiveFrom: '2026-07-20',
     createdBy: 'admin',
     updatedAt: '2026-07-20 10:10',
+  },
+  {
+    id: 'stb-rd0202-ai-summarize',
+    processCode: 'RD02.02',
+    processVersion: '1.0',
+    bpmnProcessId: 'RD02_02',
+    taskDefinitionKey: 'AI_Summarize',
+    taskName: 'Hệ thống (AI Agent) tóm tắt hồ sơ',
+    jobType: 'khcn.rd0202.summarize-dossier',
+    serviceTaskDefinitionId: 'std-ai-summarize-dossier',
+    bindingStatus: 'ACTIVE',
+    effectiveFrom: '2026-07-21',
+    createdBy: 'admin',
+    updatedAt: '2026-07-21 09:10',
   },
   {
     id: 'stb-rd0501-doc',

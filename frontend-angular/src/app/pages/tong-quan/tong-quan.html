@@ -1,0 +1,340 @@
+<div class="tq-page">
+  <div class="tq-header">
+    <div>
+      <h2 nz-typography>Tổng quan Optimize</h2>
+      <span nz-typography nzType="secondary" class="tq-subtitle">
+        Tổng hợp đa quy trình (mock Camunda Optimize) — kỳ {{ periodLabel() }}
+        @if (processGroup()) {
+          · nhóm {{ processGroup() }}
+        }. Dùng cho lãnh đạo theo dõi năng lực xử lý.
+      </span>
+    </div>
+    <div class="tq-header-actions">
+      <nz-segmented
+        [nzOptions]="[
+          { label: 'Tháng', value: 'month' },
+          { label: 'Quý', value: 'quarter' },
+          { label: 'Khoảng thời gian', value: 'range' },
+        ]"
+        [ngModel]="periodMode()"
+        (ngModelChange)="periodMode.set($event)"
+      ></nz-segmented>
+      @if (periodMode() === 'range') {
+        <input
+          type="date"
+          class="tq-date-input"
+          [ngModel]="rangeFrom()"
+          (ngModelChange)="rangeFrom.set($event)"
+        />
+        <span class="tq-date-sep">–</span>
+        <input type="date" class="tq-date-input" [ngModel]="rangeTo()" (ngModelChange)="rangeTo.set($event)" />
+      }
+      <nz-select
+        nzAllowClear
+        nzPlaceHolder="Nhóm quy trình"
+        [ngModel]="processGroup()"
+        (ngModelChange)="processGroup.set($event)"
+        class="tq-nhom-select"
+      >
+        @for (o of nhomOptions; track o.value) {
+          <nz-option [nzValue]="o.value" [nzLabel]="o.label"></nz-option>
+        }
+      </nz-select>
+    </div>
+  </div>
+
+  <!-- <nz-alert
+    nzType="info"
+    nzShowIcon
+    class="tq-alert"
+    nzMessage="Frontend mock — chưa nối Camunda Optimize / Operate"
+    nzDescription="KPI, biểu đồ tổng hợp và heatmap BPMN dùng số liệu seed mô phỏng báo cáo Optimize (thay bằng API Optimize thật khi Foundation 1 sẵn sàng). Riêng bảng &quot;Hồ sơ vượt SLA&quot; bên dưới lấy từ dữ liệu hồ sơ thật (API /api/ho-so)."
+  ></nz-alert> -->
+
+  <!-- 1. KPI tổng hợp -->
+  <div class="tq-section-title">1. Tổng hợp từ tất cả quy trình</div>
+  <div nz-row [nzGutter]="[12, 12]" class="tq-stats">
+    <div nz-col [nzXs]="12" [nzSm]="8" [nzMd]="4">
+      <div class="tq-stat-card tq-clickable" (click)="goToHoSo()">
+        <div class="tq-stat-value" style="color: var(--vht-red-chrome)">{{ totalInPeriod() }}</div>
+        <div class="tq-stat-label">Tổng HS trong kỳ</div>
+      </div>
+    </div>
+    <div nz-col [nzXs]="12" [nzSm]="8" [nzMd]="4">
+      <div class="tq-stat-card tq-clickable" (click)="goToHoSo('PROCESSING')">
+        <div class="tq-stat-value" style="color: #1677ff">{{ snap().kpi.byStatus.processing }}</div>
+        <div class="tq-stat-label">Đang xử lý</div>
+      </div>
+    </div>
+    <div nz-col [nzXs]="12" [nzSm]="8" [nzMd]="4">
+      <div class="tq-stat-card tq-clickable" (click)="goToHoSo('APPROVED')">
+        <div class="tq-stat-value" style="color: var(--vht-success)">{{ snap().kpi.byStatus.approved }}</div>
+        <div class="tq-stat-label">Đã phê duyệt</div>
+      </div>
+    </div>
+    <div nz-col [nzXs]="12" [nzSm]="8" [nzMd]="4">
+      <div class="tq-stat-card tq-clickable" (click)="goToHoSo('REJECTED')">
+        <div class="tq-stat-value" style="color: var(--vht-danger)">{{ snap().kpi.byStatus.rejected }}</div>
+        <div class="tq-stat-label">Bị từ chối</div>
+      </div>
+    </div>
+    <div nz-col [nzXs]="12" [nzSm]="8" [nzMd]="4">
+      <div class="tq-stat-card">
+        <div class="tq-stat-value" style="color: var(--vht-ink-3)">{{ snap().kpi.byStatus.cancelled }}</div>
+        <div class="tq-stat-label">Hủy</div>
+      </div>
+    </div>
+    <div nz-col [nzXs]="12" [nzSm]="8" [nzMd]="4">
+      <div class="tq-stat-card">
+        <div class="tq-stat-value" style="color: var(--vht-red)">{{ snap().kpi.avgCycleDays }}</div>
+        <div class="tq-stat-label">Cycle TB (ngày)</div>
+      </div>
+    </div>
+  </div>
+  <div nz-row [nzGutter]="[12, 12]" class="tq-stats">
+    <div nz-col [nzXs]="12" [nzMd]="8">
+      <div class="tq-stat-card tq-clickable" (click)="goToHoSo('PROCESSING')">
+        <div class="tq-stat-value" style="color: #1677ff">{{ snap().kpi.runningInstances }}</div>
+        <div class="tq-stat-label">Instance đang chạy</div>
+      </div>
+    </div>
+    <div nz-col [nzXs]="12" [nzMd]="8">
+      <div class="tq-stat-card tq-clickable" (click)="scrollToSla()">
+        <div class="tq-stat-value" [style.color]="snap().kpi.overdueSla ? 'var(--vht-danger)' : 'var(--vht-ink-3)'">
+          {{ snap().kpi.overdueSla }}
+        </div>
+        <div class="tq-stat-label">Quá hạn SLA</div>
+      </div>
+    </div>
+    <div nz-col [nzXs]="12" [nzMd]="8">
+      <div class="tq-stat-card tq-clickable" (click)="goToHoSo('PROCESSING')">
+        <div
+          class="tq-stat-value"
+          [style.color]="snap().kpi.openIncidents ? 'var(--vht-warning)' : 'var(--vht-ink-3)'"
+        >
+          {{ snap().kpi.openIncidents }}
+        </div>
+        <div class="tq-stat-label">Incident kỹ thuật mở</div>
+      </div>
+    </div>
+  </div>
+
+  <div nz-row [nzGutter]="[14, 14]" class="tq-charts">
+    <div nz-col [nzXs]="24" [nzLg]="10">
+      <nz-card nzTitle="Hồ sơ theo trạng thái" nzSize="small">
+        <app-simple-bar-chart [data]="statusChart()"></app-simple-bar-chart>
+      </nz-card>
+    </div>
+    <div nz-col [nzXs]="24" [nzLg]="14">
+      <nz-card nzTitle="Phân bố theo cấp × dải ngân sách" nzSize="small">
+        <app-simple-bar-chart
+          [data]="capBudgetChart()"
+          color="var(--vht-red-chrome)"
+          [rotateLabels]="true"
+        ></app-simple-bar-chart>
+      </nz-card>
+    </div>
+  </div>
+
+  <div nz-row [nzGutter]="[14, 14]" class="tq-charts">
+    <div nz-col [nzXs]="24" [nzLg]="12">
+      <nz-card nzTitle="Số HS đang nằm ở mỗi bước chính" nzSize="small">
+        <app-simple-bar-chart [data]="stepLoadChart()" orientation="horizontal" color="#1677ff"></app-simple-bar-chart>
+      </nz-card>
+    </div>
+    <div nz-col [nzXs]="24" [nzLg]="12">
+      <nz-card nzTitle="Top 5 bước cycle time dài nhất" nzSize="small">
+        <app-simple-bar-chart
+          [data]="topSlowStepsChart()"
+          orientation="horizontal"
+          color="var(--vht-red)"
+          valueSuffix="n"
+        ></app-simple-bar-chart>
+      </nz-card>
+    </div>
+  </div>
+
+  <!-- 2. Hồ sơ vượt SLA -->
+  <div class="tq-section-title" id="tq-sla-overdue">2. Hồ sơ đang vượt SLA</div>
+  <nz-card
+    [nzTitle]="'Danh sách HS vượt SLA (' + slaOverdueItems().length + ')'"
+    nzSize="small"
+    class="tq-charts"
+  >
+    @if (hoSoError()) {
+      <nz-alert nzType="error" nzShowIcon [nzMessage]="hoSoError()"></nz-alert>
+    } @else if (hoSoLoading()) {
+      <span nz-typography nzType="secondary">Đang tải danh sách hồ sơ…</span>
+    } @else if (slaOverdueItems().length === 0) {
+      <span nz-typography nzType="secondary">Không có hồ sơ vượt SLA trong kỳ.</span>
+    } @else {
+      <table class="tq-table">
+        <thead>
+          <tr>
+            <th>Mã HS</th>
+            <th>Mã NV</th>
+            <th>Tên đề tài</th>
+            <th>Bước hiện tại</th>
+            <th class="tq-num">Trễ (ngày)</th>
+            <th>Người / vai trò xử lý</th>
+            <th>Cấp</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of slaOverdueItems(); track row.id) {
+            <tr (click)="openDossier(row.id)" class="tq-row-clickable">
+              <td><code>{{ row.id }}</code></td>
+              <td><code>{{ row.maNV }}</code></td>
+              <td class="tq-ellipsis">{{ row.tenDeTai }}</td>
+              <td class="tq-ellipsis">{{ row.step }}</td>
+              <td class="tq-num"><span class="tq-overdue">{{ row.overdueDays }} ngày</span></td>
+              <td class="tq-ellipsis">{{ row.nguoi }}</td>
+              <td>{{ row.cap }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </nz-card>
+
+  <!-- 3. Năng lực đơn vị -->
+  <div class="tq-section-title">3. Năng lực xử lý theo đơn vị / role</div>
+  <div nz-row [nzGutter]="[14, 14]" class="tq-charts">
+    <div nz-col [nzXs]="24" [nzLg]="12">
+      <nz-card nzTitle="Cycle time & quá hạn theo đơn vị" nzSize="small">
+        <p class="tq-hint">Highlight đơn vị vượt ngưỡng SLA nội bộ (Hội đồng, Ban TGĐ trong kỳ demo).</p>
+        <table class="tq-table">
+          <thead>
+            <tr>
+              <th>Đơn vị</th>
+              <th class="tq-num">Cycle TB (ngày)</th>
+              <th class="tq-num">Hoàn thành</th>
+              <th class="tq-num">Quá hạn %</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of snap().unitPerf; track row.unit) {
+              <tr [class.tq-row-warn]="row.overThreshold">
+                <td>
+                  {{ row.unit }}
+                  @if (row.overThreshold) {
+                    <nz-tag nzColor="error">Vượt SLA</nz-tag>
+                  }
+                </td>
+                <td class="tq-num">{{ row.avgCycleDays }}</td>
+                <td class="tq-num">{{ row.completed }}</td>
+                <td class="tq-num">
+                  <span [class.tq-overdue]="row.overThreshold">{{ row.overdueRate }}%</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </nz-card>
+    </div>
+    <div nz-col [nzXs]="24" [nzLg]="12">
+      <nz-card nzTitle="Top 10 người/nhóm xử lý nhiều HS nhất" nzSize="small">
+        <table class="tq-table">
+          <thead>
+            <tr>
+              <th class="tq-num">#</th>
+              <th>Người / nhóm</th>
+              <th>Role</th>
+              <th class="tq-num">HS hoàn thành</th>
+              <th class="tq-num">Cycle TB</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of snap().topHandlers; track row.name + row.roleOrGroup; let i = $index) {
+              <tr>
+                <td class="tq-num">{{ i + 1 }}</td>
+                <td>{{ row.name }}</td>
+                <td><code>{{ row.roleOrGroup }}</code></td>
+                <td class="tq-num">{{ row.completed }}</td>
+                <td class="tq-num">{{ row.avgCycleDays }}n</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </nz-card>
+    </div>
+    <div nz-col [nzXs]="24">
+      <nz-card nzTitle="Heatmap Unit × SLA / cycle time" nzSize="small">
+        <div class="tq-unit-heatmap">
+          <div class="tq-uh-grid" [style.grid-template-columns]="'140px repeat(' + heatUnits().length + ', minmax(88px, 1fr))'">
+            <div></div>
+            @for (u of heatUnits(); track u) {
+              <span class="tq-uh-unit">{{ u }}</span>
+            }
+            @for (row of heatRows(); track row.metric; let ri = $index) {
+              <span class="tq-uh-metric">{{ row.metric }}</span>
+              @for (v of row.values; track $index) {
+                <div
+                  class="tq-uh-cell"
+                  [title]="heatUnits()[$index] + ' · ' + row.metric + ': ' + v"
+                  [style.background]="'rgba(238, 0, 51, ' + (0.08 + (v / heatRowMax()[ri]) * 0.65) + ')'"
+                  [class.tq-uh-cell-dark]="v / heatRowMax()[ri] > 0.55"
+                >
+                  {{ v }}
+                </div>
+              }
+            }
+          </div>
+        </div>
+      </nz-card>
+    </div>
+  </div>
+
+  <!-- 4. BPMN heatmap -->
+  <div class="tq-section-title">4. Heatmap BPMN (Optimize)</div>
+  <ng-template #tqHeatTitle>
+    <div class="tq-bpmn-header-left">
+      <span>Cường độ theo số HS đang mở + cycle time bước</span>
+      <nz-select
+        [ngModel]="heatProcess()"
+        (ngModelChange)="heatProcess.set($event)"
+        class="tq-heat-select"
+        aria-label="Chọn quy trình heatmap"
+      >
+        @for (o of heatProcessOptions(); track o.ma) {
+          <nz-option [nzValue]="o.ma" [nzLabel]="o.ma + ' — ' + o.ten"></nz-option>
+        }
+      </nz-select>
+    </div>
+  </ng-template>
+  <ng-template #tqHeatExtra>
+    <div class="tq-heat-legend">
+      <span class="tq-hint">Thấp</span>
+      <div class="tq-heat-gradient" title="Thang màu VHT (rose → brand red → chrome)"></div>
+      <span class="tq-hint">Cao</span>
+    </div>
+  </ng-template>
+  <nz-card nzSize="small" class="tq-charts" [nzTitle]="tqHeatTitle" [nzExtra]="tqHeatExtra">
+    <p class="tq-hint">
+      {{ heatProcess() }} · {{ heatProcessLabel() }} — glow kiểu Optimize, palette đỏ VHT (không dùng phổ cầu vồng).
+    </p>
+    <app-bpmn-viewer [xml]="heatXml()" [heatMarkers]="heatMarkers()"></app-bpmn-viewer>
+    <table class="tq-table" style="margin-top: 12px">
+      <thead>
+        <tr>
+          <th>Node</th>
+          <th>Bước</th>
+          <th class="tq-num">HS mở</th>
+          <th class="tq-num">Cycle TB</th>
+          <th class="tq-num">Cường độ</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (cell of sortedBpmnHeat(); track cell.elementId) {
+          <tr>
+            <td><code>{{ cell.elementId }}</code></td>
+            <td>{{ cell.label }}</td>
+            <td class="tq-num">{{ cell.openCount }}</td>
+            <td class="tq-num">{{ cell.avgCycleDays }}n</td>
+            <td class="tq-num">{{ (cell.intensity * 100) | number: '1.0-0' }}%</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </nz-card>
+</div>

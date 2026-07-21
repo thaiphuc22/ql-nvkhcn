@@ -72,6 +72,8 @@ export class BpmnViewerComponent implements AfterViewInit, OnChanges, OnDestroy 
   readonly activeElementIds = input<string[]>([]);
   /** Tuỳ chọn: elementId đang có incident (vd. gateway CONDITION_ERROR) để tô đỏ trên sơ đồ. */
   readonly incidentElementIds = input<string[]>([]);
+  /** Tuỳ chọn: heatmap kiểu Optimize — map elementId → tên lớp CSS marker (vd. `vht-heat-1`..`vht-heat-5`). */
+  readonly heatMarkers = input<Record<string, string>>({});
 
   @ViewChild('container', { static: true }) private containerRef!: ElementRef<HTMLDivElement>;
   @ViewChild('properties') private propertiesRef?: ElementRef<HTMLElement>;
@@ -87,6 +89,7 @@ export class BpmnViewerComponent implements AfterViewInit, OnChanges, OnDestroy 
   private renderSequence = 0;
   private markedActiveIds: string[] = [];
   private markedIncidentIds: string[] = [];
+  private markedHeatIds: { id: string; cls: string }[] = [];
 
   ngAfterViewInit(): void {
     this.viewReady = true;
@@ -98,7 +101,10 @@ export class BpmnViewerComponent implements AfterViewInit, OnChanges, OnDestroy 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['xml'] && this.viewReady) {
       this.render();
-    } else if ((changes['activeElementIds'] || changes['incidentElementIds']) && this.viewReady) {
+    } else if (
+      (changes['activeElementIds'] || changes['incidentElementIds'] || changes['heatMarkers']) &&
+      this.viewReady
+    ) {
       this.applyHighlights();
     }
   }
@@ -121,6 +127,7 @@ export class BpmnViewerComponent implements AfterViewInit, OnChanges, OnDestroy 
     this.pendingFitViewport = false;
     this.markedActiveIds = [];
     this.markedIncidentIds = [];
+    this.markedHeatIds = [];
     const renderSequence = ++this.renderSequence;
     void this.importXml(xml, renderSequence);
   }
@@ -238,6 +245,32 @@ export class BpmnViewerComponent implements AfterViewInit, OnChanges, OnDestroy 
       this.incidentElementIds(),
       'qtkhcn-bpmn-incident',
     );
+    this.markedHeatIds = this.remarkHeat(canvas, this.markedHeatIds, this.heatMarkers());
+  }
+
+  private remarkHeat(
+    canvas: BpmnMarkerCanvas,
+    previous: { id: string; cls: string }[],
+    next: Record<string, string>,
+  ): { id: string; cls: string }[] {
+    for (const { id, cls } of previous) {
+      try {
+        canvas.removeMarker(id, cls);
+      } catch {
+        // Phần tử có thể không còn tồn tại trên sơ đồ (diagram khác revision) — bỏ qua.
+      }
+    }
+    const applied: { id: string; cls: string }[] = [];
+    for (const [id, cls] of Object.entries(next)) {
+      if (!cls) continue;
+      try {
+        canvas.addMarker(id, cls);
+        applied.push({ id, cls });
+      } catch {
+        // elementId từ seed heatmap có thể không khớp diagram đang xem — bỏ qua, không chặn UI.
+      }
+    }
+    return applied;
   }
 
   private remark(canvas: BpmnMarkerCanvas, previous: string[], next: string[], marker: string): string[] {

@@ -29,7 +29,7 @@ import {
   type ServiceTaskTypeCode,
 } from '../../core/models/service-task';
 import { ServiceTaskService } from '../../core/services/service-task.service';
-import { ServiceTaskConfigApiService, type ServiceTaskApiDefinitionDetail, type ServiceTaskApiWriteRequest } from '../../core/services/service-task-config-api.service';
+import { ServiceTaskConfigApiService, type ServiceTaskApiDefinitionDetail, type ServiceTaskApiTypeCode, type ServiceTaskApiWriteRequest } from '../../core/services/service-task-config-api.service';
 import { ServiceTaskMappingEditor } from '../service-task-mapping-editor/service-task-mapping-editor';
 
 // Port của webapp/src/components/ServiceTaskFormDrawer.tsx — drawer Tạo/Sửa cấu
@@ -74,7 +74,14 @@ export class ServiceTaskFormDrawer {
   readonly saved = output<void>();
   readonly saving = signal(false);
 
-  readonly types = this.serviceTasks.types;
+  // AI_AGENT (worker riêng, không qua ServiceTaskConfigResolver) chưa có trong
+  // ServiceTaskApiTypeCode thật ở backend — lọc khỏi form CRUD nối API thật này để tránh gửi
+  // typeCode backend không hiểu; AI_AGENT vẫn hiển thị ở các màn hình đọc registry khác.
+  private static readonly API_SUPPORTED_TYPE_CODES: ReadonlySet<ServiceTaskTypeCode> = new Set([
+    'SEND_NOTIFICATION', 'CALL_API', 'UPDATE_DOSSIER', 'GENERATE_DOCUMENT', 'EVALUATE_DECISION',
+  ]);
+  readonly types = computed(() => this.serviceTasks.types()
+    .filter((t) => ServiceTaskFormDrawer.API_SUPPORTED_TYPE_CODES.has(t.code)));
   readonly connectorOptions = seedIntegrations.map((item) => ({ label: `${item.key} - ${item.ten}`, value: item.key }));
   readonly dossierFieldOptions = DOSSIER_OUTPUT_FIELD_WHITELIST.map((value) => ({ label: value, value }));
   readonly methodOptions = ['GET', 'POST', 'PUT', 'PATCH'].map((value) => ({ label: value, value }));
@@ -240,6 +247,12 @@ export class ServiceTaskFormDrawer {
         attachToDossier: this.attachToDossier(),
       };
     }
+    if (typeCode === 'AI_AGENT') {
+      // Không chọn được từ dropdown (xem API_SUPPORTED_TYPE_CODES) — nhánh này chỉ để buildConfig
+      // exhaustive theo type; AI_AGENT được cấu hình qua backend AiSummarizeDossierJobWorker, không
+      // qua form CRUD này.
+      return { typeCode, model: 'gpt-4o-mini', maxTokens: 512, promptTemplateCode: '', resultDossierField: '' };
+    }
     return {
       typeCode,
       decisionCode: this.decisionCode(),
@@ -266,7 +279,8 @@ export class ServiceTaskFormDrawer {
     };
     const request: ServiceTaskApiWriteRequest = {
       code: this.code().trim(), name: this.name().trim(), description: this.description().trim(),
-      typeCode: this.typeCode(), ownerModule: this.ownerModule().trim(), tags: this.tags(),
+      // An toàn: dropdown "Loại" chỉ liệt kê types() đã lọc theo API_SUPPORTED_TYPE_CODES ở trên.
+      typeCode: this.typeCode() as ServiceTaskApiTypeCode, ownerModule: this.ownerModule().trim(), tags: this.tags(),
       config: patch.configJson as unknown as Record<string, unknown>,
       inputMapping: patch.inputMapping as unknown as Record<string, unknown>[],
       outputMapping: patch.outputMapping as unknown as Record<string, unknown>[],

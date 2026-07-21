@@ -59,6 +59,7 @@ import {
   RedoOutline,
   ReloadOutline,
   RetweetOutline,
+  RobotOutline,
   SafetyCertificateOutline,
   SafetyOutline,
   SaveOutline,
@@ -146,6 +147,7 @@ export const SERVICE_TASK_ICONS = [
   PlayCircleOutline,
   ReloadOutline,
   RetweetOutline,
+  RobotOutline,
   SendOutline,
   ToolOutline,
 ];

@@ -30,7 +30,8 @@ public record HoSoResponse(
         String thoiGianThucHien,
         String duToan,
         Cap cap,
-        List<HoiDongXetDuyetResponse> hoiDongXetDuyet) {
+        List<HoiDongXetDuyetResponse> hoiDongXetDuyet,
+        String tomTatAi) {
 
     public static HoSoResponse from(HoSo hoSo, NhiemVu nhiemVu, List<HoiDongXetDuyet> hoiDongXetDuyet) {
         return new HoSoResponse(
@@ -53,6 +54,7 @@ public record HoSoResponse(
                 nhiemVu.getThoiGianThucHien(),
                 nhiemVu.getDuToan(),
                 nhiemVu.getCap(),
-                hoiDongXetDuyet.stream().map(HoiDongXetDuyetResponse::from).toList());
+                hoiDongXetDuyet.stream().map(HoiDongXetDuyetResponse::from).toList(),
+                hoSo.getTomTatAi());
     }
 }

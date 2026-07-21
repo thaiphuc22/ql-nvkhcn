@@ -1,5 +1,155 @@
 # Active Task
 
+## ★ DONE — Port tab "Báo cáo Optimize" + "DMN / Outcome" + "Đề xuất cải tiến" trên `/giam-sat` sang Angular — 2026-07-21 (owner Claude, theo yêu cầu trực tiếp user)
+
+**Bối cảnh:** tiếp nối việc port Optimize dashboard `/tong-quan` (entry ngay dưới) — user yêu cầu
+port nốt 3 mảng còn lại của Optimize mock đang nằm trên màn `ProcessMonitor.tsx` (mockup React ở
+worktree `ql-nvkhcn-tranngdt-check\webapp\src`) sang Angular `/giam-sat`
+(`pages/process-monitor`). Phát hiện quan trọng: bản mockup React (`ProcessMonitor.tsx`) **chỉ có
+2 tab** ("Instance" + "Báo cáo Optimize" gộp 4 biểu đồ: cycle time/bottleneck/heatmap/SLA KPI/
+gateway) — data file `webapp/src/data/optimizeOpsInsights.ts` có sẵn 3 export
+(`OPTIMIZE_OUTCOME_CORR`, `OPTIMIZE_DMN_RULE_HITS`, `OPTIMIZE_INSIGHTS`) nhưng **không được dùng ở
+bất kỳ .tsx nào** (xác nhận bằng grep cả thư mục `webapp/src`) — tức "DMN/Outcome" và "Đề xuất cải
+tiến" chưa từng có UI mẫu, chỉ có seed data mồ côi. Đã tự thiết kế cách trình bày 2 tab mới này
+(bảng + mini bar chart CSS + stacked bar tỷ lệ) dựa trên đúng field có sẵn, không bịa thêm field.
+
+**Đã thêm/sửa (frontend-angular, không đụng backend):**
+- `core/models/optimize-ops-insights.ts` (mới) — port nguyên vẹn toàn bộ constant/type từ
+  `optimizeOpsInsights.ts`: `OPTIMIZE_CYCLE_BY_PROCESS`, `OPTIMIZE_BOTTLENECKS`,
+  `OPTIMIZE_GATEWAY_RATES`, `OPTIMIZE_SLA_KPI`, `OPTIMIZE_OUTCOME_CORR`,
+  `OPTIMIZE_DMN_RULE_HITS`, `OPTIMIZE_INSIGHTS`, `INSIGHT_KIND_LABEL` + thêm
+  `INSIGHT_CONFIDENCE_LABEL`/`INSIGHT_CONFIDENCE_COLOR`/`bottleneckHeat()` (helper Angular cần mà
+  React không cần vì JSX inline được).
+- `pages/process-monitor/process-monitor.ts` — thêm computed cho 3 bar chart
+  (`bottleneckChart`/`slaChart`/`dmnHitsChart`, tái dùng `SimpleBarChartComponent` đã có từ lát
+  Tổng quan) + field tra cứu nhãn/màu cho template.
+- `pages/process-monitor/process-monitor.html` — tab "Báo cáo Optimize" đổi từ alert placeholder
+  "Chưa kết nối" sang 5 card thật (bảng cycle time, `SimpleBarChartComponent` ngang cho bottleneck,
+  heatmap CSS glow đỏ tái dùng công thức mockup, `SimpleBarChartComponent` dọc cho SLA KPI có màu
+  theo ngưỡng 20%, bảng gateway rates); thêm 2 tab mới "DMN / Outcome" (bar chart + bảng chi tiết
+  rule, bảng outcome correlation với stacked bar CSS 3 màu đồng ý/từ chối/yêu cầu sửa) và "Đề xuất
+  cải tiến" (card list, tag loại đề xuất + tag độ tin cậy màu theo mức).
+- `pages/process-monitor/process-monitor.scss` — style mới: `.pm-mini-table`, `.pm-heat-wrap/-cell`,
+  `.pm-outcome-bar`, `.pm-insight-*`.
+
+**Khác với bản React:** giữ nguyên chuỗi field/label; 2 tab DMN/Outcome + Đề xuất cải tiến là UI
+tự thiết kế (không có bản mockup để đối chiếu 1:1) — ưu tiên bảng + mini chart nhất quán phong cách
+đã có ở `/tong-quan` (không thêm chart lib mới, dùng lại `SimpleBarChartComponent`). Toàn bộ vẫn là
+seed mock (banner ghi rõ "chờ Camunda Optimize + DMN engine thật khi F1"), khớp nguyên tắc đã áp
+dụng cho `/tong-quan`.
+
+**Verify:** `npx tsc -p tsconfig.app.json --noEmit` sạch; `ng build --configuration production`
+**GREEN** (chunk `process-monitor` tăng 24.58 kB, không vượt budget mới; chỉ còn warning
+`action-studio.scss` budget + 3 CommonJS có sẵn, không liên quan). **Chưa làm:** chưa click-through
+trình duyệt thật — cổng 4200 và trình duyệt Playwright MCP đều đang bị 1 phiên khác chiếm giữ tại
+thời điểm này (xem [[concurrent-sessions-same-repo]]); đã tự dựng + tắt `ng serve --port 4210` chỉ
+để xác nhận compile, không giữ tiến trình lại. Chưa có unit test (`.spec.ts`) cho phần mở rộng này
+(giống tiền lệ `/tong-quan` cũng chưa có).
+
+## ★ DONE — Port trang "Tổng quan" (Optimize leadership dashboard) từ React sang Angular — 2026-07-21 (owner Claude, theo yêu cầu trực tiếp user)
+
+**Bối cảnh:** user yêu cầu pull nhánh `tranngdt` (remote-only, đã checkout vào worktree riêng
+`ql-nvkhcn-tranngdt-check`, xem entry pull ở lịch sử hội thoại) rồi port trang `/tong-quan`
+(`webapp/src/pages/Dashboard.tsx`, React + antd + recharts, ~690 dòng) sang Angular. Route
+`/tong-quan` trước đó dùng `PlaceholderPage` (chưa có trang thật).
+
+**Đã thêm (frontend-angular):**
+- `pages/tong-quan/` (ts/html/scss) — component chính, đăng ký lazy route thay `PlaceholderPage`
+  trong `app.routes.ts`.
+- `shared/simple-bar-chart/` — component biểu đồ cột dựng bằng CSS thuần (không thêm thư viện
+  chart mới; project chưa có chart lib nào), hỗ trợ orientation dọc/ngang, kèm `<table>`
+  ẩn-visual cho screen reader (theo skill `dataviz`).
+- `core/models/optimize-analytics.ts` — port mock Optimize snapshot từ
+  `webapp/src/data/optimizeAnalytics.ts` (chỉ giữ phần Dashboard thực dùng, bỏ backlogTrend/
+  outcomesBy*/reworkLoops/dmnRuleHits vì Dashboard.tsx không dùng).
+- `core/models/rd0101-bpmn.ts` / `rd0102-bpmn.ts` / `rd0201-bpmn.ts` — copy verbatim BPMN XML mock
+  từ webapp (dùng cho heatmap BPMN, 3 quy trình RD01.01/RD01.02/RD02.01 chưa có backend thật).
+- `core/models/process-registry.ts` — thêm export `NHOM` (nhãn nhóm quy trình RD01..RD08), trước
+  đây file này chỉ có `seedProcesses` (đã lược bpmnXml theo comment sẵn có trong file).
+- `shared/bpmn-viewer/bpmn-viewer.ts` + `.scss` — thêm input `heatMarkers` (map elementId → CSS
+  class) + 5 class `.vht-heat-1..5` (glow drop-shadow, đối chiếu
+  `webapp/src/branding/bpmnio-skin.css`), tái dùng cơ chế `canvas.addMarker` sẵn có.
+- `pages/ho-so-list/ho-so-list.ts` — đọc thêm query param `status` (bên cạnh `id` có sẵn) để stat
+  card trên Tổng quan điều hướng `/ho-so?status=PROCESSING` có filter đúng ngay.
+
+**Khác với bản React:** KPI/4 biểu đồ/heatmap BPMN vẫn là seed mock (giữ nguyên, chờ Optimize API
+thật — F1 chưa xong). Riêng bảng "2. Hồ sơ đang vượt SLA" đổi sang gọi `HoSoService.list()` thật
+(Angular đã có backend thật cho hồ sơ, không cần mock/join như React) — tính "quá hạn" so với
+`Date` thực tại thời điểm xem, không hardcode ngày như bản React.
+
+**Verify:** `npx tsc -p tsconfig.app.json --noEmit` sạch; `ng build` production **GREEN** (chunk
+`tong-quan` tách lazy, không vượt budget). Test tay bằng Playwright trên `ng serve --port 4201`
+(port 4200 đã bị phiên khác chiếm — xem [[concurrent-sessions-same-repo]]): đăng nhập
+admin@example.com, chọn app "Quản lý NV KHCN & Hồ sơ", vào `/tong-quan` — 0 console error, KPI/2
+biểu đồ dọc/2 biểu đồ ngang/bảng SLA (0 kết quả thật, đúng vì không có HS quá hạn tại thời điểm
+test)/bảng năng lực đơn vị/heatmap Unit×metric/heatmap BPMN (glow đỏ đúng node) đều render đúng.
+Test tương tác: chuyển Tháng→Quý (số liệu đổi theo, 126→282 tổng HS), chuyển "Khoảng thời gian"
+(hiện 2 input date, label đổi theo), click stat card "Đang xử lý" → điều hướng `/ho-so?status=
+PROCESSING` và list lọc đúng ngay. **Chưa làm:** chưa test đổi "Nhóm quy trình" / đổi quy trình
+heatmap qua UI thật (chỉ verify logic qua code); chưa có unit test (`.spec.ts`) cho trang mới hay
+cho `simple-bar-chart`.
+
+## ★ DONE — Đổi provider LLM của `khcn.rd0202.summarize-dossier` từ Anthropic sang OpenAI — 2026-07-21 (owner Claude, theo yêu cầu trực tiếp user)
+
+**Quyết định (hỏi qua AskUserQuestion, user chọn):** thay hẳn Anthropic bằng OpenAI (không giữ cả
+hai provider chọn qua config) — đơn giản nhất, đúng 1 provider duy nhất.
+
+**Đã sửa:**
+- Backend: xóa `ai/AnthropicSummaryClient.java`, thêm `ai/OpenAiSummaryClient.java` (cùng implement
+  `AiSummaryGenerator`, cùng hành vi fallback khi thiếu key/lỗi) — gọi OpenAI Chat Completions API
+  (`POST /v1/chat/completions`, header `Authorization: Bearer <key>`, đọc
+  `choices[0].message.content`) thay vì Anthropic Messages API. `application.yml`:
+  `qtkhcn.ai.anthropic.*` → `qtkhcn.ai.openai.*`; biến môi trường
+  `ANTHROPIC_API_KEY`/`QTKHCN_AI_ANTHROPIC_*` → `OPENAI_API_KEY`/`QTKHCN_AI_OPENAI_*`; model mặc
+  định đổi `claude-sonnet-5` → `gpt-4o-mini`. Javadoc `AiSummarizeDossierJobWorker` cập nhật theo.
+- Frontend: mọi chỗ nhắc "Anthropic"/`claude-sonnet-5`/`ANTHROPIC_API_KEY` trong
+  `core/models/service-task.ts`, `core/services/service-task.service.ts`,
+  `shared/service-task-form-drawer/service-task-form-drawer.ts`,
+  `pages/service-task-config/service-task-config.ts` + `.html` (banner AI Agent thêm ở mục ngay
+  dưới) đổi sang OpenAI/`gpt-4o-mini`/`OPENAI_API_KEY` để khớp backend.
+- `AiSummarizeDossierJobWorkerTest` không cần sửa (mock interface `AiSummaryGenerator`, không đụng
+  class cụ thể).
+
+**Verify:** `mvn -o compile` sạch; `mvn -o test -Dtest=AiSummarizeDossierJobWorkerTest` **3/3 PASS**;
+grep xác nhận không còn tham chiếu `AnthropicSummaryClient`/`OpenAiSummaryClient` lẫn lộn trong
+`backend/src`. Frontend: `tsc --noEmit` sạch, `service-task-config.spec.ts` **9/9 PASS**. **Chưa
+làm:** chưa gọi OpenAI thật (chưa có `OPENAI_API_KEY` thật để test), chưa restart 8090 với biến môi
+trường mới.
+
+## ★ DONE — UI `/cau-hinh-service-task` cho `khcn.rd0202.summarize-dossier` (AI_Summarize) — 2026-07-21 (owner Claude, theo yêu cầu trực tiếp user)
+
+**Bối cảnh:** phiên trước (uncommitted) đã thêm seed AI_AGENT (`std-ai-summarize-dossier`,
+version, binding) vào `frontend-angular/src/app/core/models/service-task.ts` +
+`service-task.service.ts`, và đã cố tình loại AI_AGENT khỏi `API_SUPPORTED_TYPE_CODES` trong
+`service-task-form-drawer.ts` (đúng, vì backend `ServiceTaskApiTypeCode` không có AI_AGENT — job
+worker `AiSummarizeDossierJobWorker` gọi thẳng Anthropic, đọc cấu hình từ
+`application.yml`/biến môi trường qua `AnthropicSummaryClient`, không qua bảng
+`service_task_definition`). Việc còn thiếu khi user hỏi lại: 2 gap hiển thị trên chính trang
+`/cau-hinh-service-task`.
+
+**Đã sửa (chỉ frontend-angular, không đụng backend):**
+1. `pages/service-task-config/service-task-config.ts` — `CATEGORY_GROUPS` thiếu nhóm `ai` nên
+   panel "Loại Service Task" ở tab Tổng quan không hiện AI_AGENT dù seed đã có — thêm
+   `{ key: 'ai', label: 'AI Agent', icon: 'robot' }`.
+2. `core/icons-provider.ts` — thêm `RobotOutline` vào `SERVICE_TASK_ICONS` (icon `robot` chưa được
+   đăng ký tĩnh, `nz-icon` sẽ không hiện nếu thiếu).
+3. `service-task-config.ts` + `.html` — thêm computed `aiAgentDefinitions` + banner `nz-alert` mới
+   trong tab "Cấu hình", ngay dưới banner nguồn dữ liệu thật hiện có. Banner liệt kê từng definition
+   AI_AGENT (tên, mã, jobType từ binding ACTIVE) và giải thích rõ: loại này không hiện trong bảng
+   "Cấu hình" (nguồn `/api/service-tasks` thật) và không sửa được qua nút "Sửa cấu hình" — muốn đổi
+   phải đặt biến môi trường backend rồi restart: `ANTHROPIC_API_KEY` (bắt buộc để gọi LLM thật, để
+   trống thì luôn fallback tĩnh, không lỗi), `QTKHCN_AI_ANTHROPIC_MODEL` (mặc định
+   `claude-sonnet-5`), `QTKHCN_AI_ANTHROPIC_MAX_TOKENS` (mặc định `512`),
+   `QTKHCN_AI_ANTHROPIC_BASE_URL` (mặc định `https://api.anthropic.com`) — khớp đúng
+   `application.yml` đã sửa ở phiên trước (`qtkhcn.ai.anthropic.*`).
+
+**Verify:** `npx tsc -p tsconfig.app.json --noEmit` sạch; `ng test --include=**/service-task-config.spec.ts`
+**9/9 PASS** (không cần sửa test — banner mới không có definition AI_AGENT nào trong fixture của
+spec nên `@if` không render, không phá test cũ); `ng build` production **GREEN** (chỉ warning
+budget/CommonJS có sẵn, không liên quan). **Chưa làm:** chưa click-through trình duyệt thật; các
+tab "Đối soát BPMN"/"Kiểm thử" đã tự hoạt động đúng từ seed data có sẵn (không cần sửa) vì cả 2 đọc
+từ `ServiceTaskService` (mock signal store), không phải `/api/service-tasks` thật.
+
 ## ★ DONE + TEST VERIFIED — eForm không hiện khi bấm nút hành động task thật ("Đồng ý duyệt" T05 HS-2026-016 không ra `bm-02-08-qdh-nv`) — 2026-07-21 (owner Claude, theo yêu cầu user "kiểm tra binding eForm theo userTask và Luật hiển thị nút")
 
 **Bối cảnh:** user báo HS-2026-016 ở bước 5 ("Lập, trình QĐ thành lập HĐXD cấp Cơ sở", `T05`),

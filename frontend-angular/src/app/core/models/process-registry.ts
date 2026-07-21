@@ -3,6 +3,16 @@
 // `taskSteps`/`bpmnXml` (không dùng ở màn Service Task, và bpmnXml kéo theo các
 // hằng số XML lớn của màn Danh mục quy trình — màn đó chưa lên Angular).
 
+export const NHOM: Record<string, string> = {
+  RD01: 'Xét duyệt Chủ trương',
+  RD02: 'Xét duyệt NV KHCN',
+  RD03: 'Thực hiện NV KHCN',
+  RD04: 'Điều chỉnh NV KHCN',
+  RD05: 'Nghiệm thu',
+  RD06: 'Quyết toán',
+  RD08: 'Sở hữu trí tuệ',
+};
+
 export type ProcessStatus = 'active' | 'draft' | 'stopped' | 'planned';
 
 export interface ProcessVersion {

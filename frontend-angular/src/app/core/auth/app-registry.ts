@@ -14,14 +14,14 @@ export const APP_REGISTRY: readonly AppDefinition[] = [
     label: 'Quản lý NV KHCN & Hồ sơ',
     moTa: 'Quản lý nhiệm vụ khoa học công nghệ, hồ sơ và công việc cần xử lý.',
     icon: 'experiment',
-    defaultRoute: '/tong-quan',
+    defaultRoute: '/viec-cua-toi',
   },
   {
     code: 'quytrinh',
     label: 'Quản trị quy trình',
     moTa: 'Thiết kế, cấu hình, giám sát quy trình và theo dõi tích hợp.',
     icon: 'partition',
-    defaultRoute: '/quy-trinh',
+    defaultRoute: '/tong-quan',
   },
   {
     code: 'he-thong',

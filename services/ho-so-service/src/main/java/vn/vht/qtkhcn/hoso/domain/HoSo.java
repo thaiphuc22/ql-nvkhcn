@@ -12,6 +12,7 @@ import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -64,6 +65,13 @@ public class HoSo {
 
     @Column(name = "start_failure", length = 512)
     private String startFailure;
+
+    /** Tóm tắt do AI Agent sinh sau GCheck (RD02.02) — chỉ hỗ trợ đọc, không phải dữ liệu quyết định. */
+    @Column(name = "tom_tat_ai", columnDefinition = "text")
+    private String tomTatAi;
+
+    @Column(name = "tom_tat_ai_luc")
+    private OffsetDateTime tomTatAiLuc;
 
     @Version
     @Column(name = "version", nullable = false)

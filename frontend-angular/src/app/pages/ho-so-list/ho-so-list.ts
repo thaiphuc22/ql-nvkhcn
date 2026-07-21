@@ -124,6 +124,10 @@ export class HoSoListPage {
 
   constructor() {
     this.query.set(this.route.snapshot.queryParamMap.get('id') ?? '');
+    const status = this.route.snapshot.queryParamMap.get('status');
+    if (status && this.statusOptions.some((o) => o.value === status)) {
+      this.statusFilter.set(status as StatusFilter);
+    }
     this.reload();
   }
 

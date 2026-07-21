@@ -28,7 +28,6 @@ export function isNavGroup(item: NavItem): item is NavGroup & { app: AppCode } {
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { key: 'dashboard', label: 'Tổng quan', route: '/tong-quan', icon: 'dashboard', app: 'qlnvkhcn' },
   { key: 'worklist', label: 'Việc của tôi', route: '/viec-cua-toi', icon: 'carry-out', app: 'qlnvkhcn' },
   {
     key: 'nvkhcn',
@@ -40,6 +39,7 @@ export const NAV_ITEMS: NavItem[] = [
       { key: 'ho-so', label: 'Danh sách Hồ sơ KHCN', route: '/ho-so' },
     ],
   },
+  { key: 'dashboard', label: 'Tổng quan', route: '/tong-quan', icon: 'dashboard', app: 'quytrinh' },
   {
     key: 'quytrinh-config',
     app: 'quytrinh',

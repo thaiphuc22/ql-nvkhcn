@@ -74,13 +74,14 @@ class ReadApiContractTest {
 
         mvc.perform(get("/api/ho-so").header(HttpHeaders.AUTHORIZATION, AUTHORIZATION))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].*").value(org.hamcrest.Matchers.hasSize(20)))
+                .andExpect(jsonPath("$[0].*").value(org.hamcrest.Matchers.hasSize(21)))
                 .andExpect(jsonPath("$[0].id").value("HS-2026-001"))
                 .andExpect(jsonPath("$[0].steps[0].*").value(org.hamcrest.Matchers.hasSize(11)))
                 .andExpect(jsonPath("$[0].steps[0].taskDefinitionKey").value("t2"))
                 .andExpect(jsonPath("$[0].taiLieu[0].ten").value("Thuyết minh.pdf"))
                 .andExpect(jsonPath("$[0].thoiGianThucHien").value("2026-2027"))
-                .andExpect(jsonPath("$[0].hoiDongXetDuyet").isArray());
+                .andExpect(jsonPath("$[0].hoiDongXetDuyet").isArray())
+                .andExpect(jsonPath("$[0].tomTatAi").value(org.hamcrest.Matchers.nullValue()));
     }
 
     @Test
@@ -171,6 +172,7 @@ class ReadApiContractTest {
                 "2026-2027",
                 "1.000.000.000 đ",
                 Cap.TD,
-                List.of());
+                List.of(),
+                null);
     }
 }

@@ -32,6 +32,7 @@ class ProcessDefinitionDraftServiceTest {
     private ProcessDefinitionDraftRevisionRepository revisions;
     private ProcessDefinitionImportValidator validator;
     private ProcessDefinitionService publisher;
+    private BpmnSourceExportService bpmnSourceExportService;
     private ProcessDefinitionDraftService service;
 
     @BeforeEach
@@ -40,7 +41,8 @@ class ProcessDefinitionDraftServiceTest {
         revisions = mock(ProcessDefinitionDraftRevisionRepository.class);
         validator = mock(ProcessDefinitionImportValidator.class);
         publisher = mock(ProcessDefinitionService.class);
-        service = new ProcessDefinitionDraftService(drafts, revisions, validator, publisher);
+        bpmnSourceExportService = mock(BpmnSourceExportService.class);
+        service = new ProcessDefinitionDraftService(drafts, revisions, validator, publisher, bpmnSourceExportService);
         when(drafts.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(revisions.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(revisions.findByDraftIdOrderByRevisionDesc(any())).thenReturn(List.of());
@@ -178,6 +180,7 @@ class ProcessDefinitionDraftServiceTest {
         assertEquals(ProcessDefinitionDraftStatus.DRAFT, draft.getStatus());
         verify(drafts, never()).saveAndFlush(any());
         verify(revisions, never()).save(any());
+        verify(bpmnSourceExportService, never()).exportAfterDeploy(any(), any());
     }
 
     @Test
@@ -195,6 +198,7 @@ class ProcessDefinitionDraftServiceTest {
         assertEquals(ProcessDefinitionDraftStatus.DEPLOYED, draft.getStatus());
         assertEquals(versionId, draft.getDeployedVersionId());
         verify(publisher, times(1)).publishValidated(any(), any());
+        verify(bpmnSourceExportService, times(1)).exportAfterDeploy("demo.bpmn", XML);
     }
 
     @Test

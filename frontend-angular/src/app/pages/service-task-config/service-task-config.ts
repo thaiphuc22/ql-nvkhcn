@@ -68,6 +68,7 @@ const CATEGORY_GROUPS: { key: string; label: string; icon: string }[] = [
   { key: 'data', label: 'Dữ liệu', icon: 'database' },
   { key: 'document', label: 'Văn bản', icon: 'file-text' },
   { key: 'decision', label: 'Quyết định', icon: 'branches' },
+  { key: 'ai', label: 'AI Agent', icon: 'robot' },
 ];
 
 function latestVersion(versions: ServiceTaskConfigVersion[]): ServiceTaskConfigVersion | undefined {
@@ -262,6 +263,28 @@ export class ServiceTaskConfigPage {
 
   readonly definitionOptions = computed(() =>
     this.serviceTasks.definitions().map((d) => ({ label: `${d.name} - ${d.code}`, value: d.id })),
+  );
+
+  // AI_AGENT (vd. AI_Summarize/khcn.rd0202.summarize-dossier) không đi qua ServiceTaskConfigResolver
+  // thật ở backend — job worker gọi thẳng OpenAI, đọc cấu hình từ application.yml/biến môi
+  // trường (xem OpenAiSummaryClient), không phải từ `service_task_definition`. Do đó các
+  // definition này không xuất hiện trong `rows()` (nguồn `/api/service-tasks` thật) và không sửa
+  // được qua drawer Tạo/Sửa — banner này chỉ để người dùng biết sửa ở đâu cho đúng.
+  readonly aiAgentDefinitions = computed(() =>
+    this.serviceTasks
+      .definitions()
+      .filter((d) => d.typeCode === 'AI_AGENT')
+      .map((definition) => ({
+        definition,
+        jobTypes: [
+          ...new Set(
+            this.serviceTasks
+              .bindings()
+              .filter((b) => b.serviceTaskDefinitionId === definition.id && b.bindingStatus === 'ACTIVE')
+              .map((b) => b.jobType),
+          ),
+        ],
+      })),
   );
 
   readonly selectedLog = computed(() => this.serviceTasks.executionLogs().find((log) => log.id === this.selectedLogId()));

@@ -10,12 +10,52 @@ import { NzSpinModule } from 'ng-zorro-antd/spin'; import { NzTableModule } from
 import { NzTabsModule } from 'ng-zorro-antd/tabs'; import { NzTagModule } from 'ng-zorro-antd/tag';
 import { ProcessMonitorInstance, ProcessMonitorStats } from '../../core/models/process-monitor';
 import { ProcessMonitorService } from '../../core/services/process-monitor.service';
+import { SimpleBarChartComponent, type BarChartItem } from '../../shared/simple-bar-chart/simple-bar-chart';
+import {
+  INSIGHT_CONFIDENCE_COLOR,
+  INSIGHT_CONFIDENCE_LABEL,
+  INSIGHT_KIND_LABEL,
+  OPTIMIZE_BOTTLENECKS,
+  OPTIMIZE_CYCLE_BY_PROCESS,
+  OPTIMIZE_DMN_RULE_HITS,
+  OPTIMIZE_GATEWAY_RATES,
+  OPTIMIZE_INSIGHTS,
+  OPTIMIZE_OUTCOME_CORR,
+  OPTIMIZE_SLA_KPI,
+  bottleneckHeat,
+} from '../../core/models/optimize-ops-insights';
+
+const DANGER = '#ba1a1a';
+const WARNING = '#daa520';
+const APPROVE_GREEN = '#17935a';
 
 @Component({ selector: 'app-process-monitor', imports: [DatePipe, FormsModule, NzAlertModule, NzButtonModule, NzCardModule,
-  NzDescriptionsModule, NzDrawerModule, NzGridModule, NzInputModule, NzSelectModule, NzSpinModule, NzTableModule, NzTabsModule, NzTagModule],
+  NzDescriptionsModule, NzDrawerModule, NzGridModule, NzInputModule, NzSelectModule, NzSpinModule, NzTableModule, NzTabsModule, NzTagModule,
+  SimpleBarChartComponent],
   templateUrl: './process-monitor.html', styleUrl: './process-monitor.scss' })
 export class ProcessMonitorPage {
   private readonly service = inject(ProcessMonitorService);
+  readonly insightKindLabel = INSIGHT_KIND_LABEL;
+  readonly insightConfidenceLabel = INSIGHT_CONFIDENCE_LABEL;
+  readonly insightConfidenceColor = INSIGHT_CONFIDENCE_COLOR;
+  readonly cycleByProcess = OPTIMIZE_CYCLE_BY_PROCESS;
+  readonly bottlenecks = OPTIMIZE_BOTTLENECKS;
+  readonly gatewayRates = OPTIMIZE_GATEWAY_RATES;
+  readonly dmnRuleHits = OPTIMIZE_DMN_RULE_HITS;
+  readonly outcomeCorr = OPTIMIZE_OUTCOME_CORR;
+  readonly insights = OPTIMIZE_INSIGHTS;
+  readonly bottleneckHeat = bottleneckHeat;
+  readonly outcomeColor = { approve: APPROVE_GREEN, reject: DANGER, rework: WARNING };
+
+  readonly bottleneckChart = computed<BarChartItem[]>(() =>
+    this.bottlenecks.map((a) => ({ label: a.activity, value: a.avgHours })),
+  );
+  readonly slaChart = computed<BarChartItem[]>(() =>
+    OPTIMIZE_SLA_KPI.map((r) => ({ label: r.process, value: r.rate, color: r.rate >= 20 ? DANGER : WARNING })),
+  );
+  readonly dmnHitsChart = computed<BarChartItem[]>(() =>
+    this.dmnRuleHits.map((r) => ({ label: r.ruleId, value: r.hits })),
+  );
   readonly loading = signal(true); readonly available = signal(true); readonly errorMessage = signal<string | null>(null);
   readonly observedAt = signal<string | null>(null); readonly stats = signal<ProcessMonitorStats>({ active: 0, incidents: 0, completed: 0, terminated: 0 });
   readonly allRows = signal<ProcessMonitorInstance[]>([]); readonly query = signal(''); readonly processFilter = signal<string | null>(null);

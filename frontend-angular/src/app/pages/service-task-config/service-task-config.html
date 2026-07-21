@@ -48,6 +48,37 @@
     </ng-template>
   }
 
+  @if (aiAgentDefinitions().length) {
+    <nz-alert nzType="info" nzShowIcon class="stc-real-source" [nzMessage]="aiAgentTitle" [nzDescription]="aiAgentBody"></nz-alert>
+    <ng-template #aiAgentTitle>
+      <span nz-icon nzType="robot"></span>
+      {{ aiAgentDefinitions().length }} tác vụ AI Agent — cấu hình bằng biến môi trường backend, không qua nút "Sửa cấu hình" ở trên
+    </ng-template>
+    <ng-template #aiAgentBody>
+      <ul class="stc-real-source-list">
+        @for (item of aiAgentDefinitions(); track item.definition.id) {
+          <li>
+            <strong>{{ item.definition.name }}</strong> ({{ item.definition.code }})
+            @for (jobType of item.jobTypes; track jobType) {
+              <code>{{ jobType }}</code>
+            }
+          </li>
+        }
+      </ul>
+      <p>
+        Job worker gọi thẳng OpenAI Chat Completions API, không đọc bảng <code>service_task_definition</code> — vì vậy
+        loại này không hiện trong bảng "Cấu hình" (nguồn DB thật) và không sửa được qua form Tạo/Sửa. Để đổi cấu
+        hình, đặt biến môi trường khi chạy backend rồi khởi động lại tiến trình:
+      </p>
+      <ul class="stc-real-source-list">
+        <li><code>OPENAI_API_KEY</code> — bắt buộc để gọi LLM thật; để trống thì worker luôn dùng tóm tắt fallback tĩnh, không báo lỗi.</li>
+        <li><code>QTKHCN_AI_OPENAI_MODEL</code> — mặc định <code>gpt-4o-mini</code>.</li>
+        <li><code>QTKHCN_AI_OPENAI_MAX_TOKENS</code> — mặc định <code>512</code>.</li>
+        <li><code>QTKHCN_AI_OPENAI_BASE_URL</code> — mặc định <code>https://api.openai.com</code>.</li>
+      </ul>
+    </ng-template>
+  }
+
   <div nz-row [nzGutter]="[12, 12]" class="stc-stats">
     <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6">
       <div class="stc-stat-card">

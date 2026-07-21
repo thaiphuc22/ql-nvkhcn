@@ -1,5 +1,18 @@
 # Delivery State
 
+> **2026-07-21 — `/giam-sat` ANGULAR: TAB "BÁO CÁO OPTIMIZE" + 2 TAB MỚI "DMN / OUTCOME" + "ĐỀ XUẤT
+> CẢI TIẾN" DONE (owner Claude).** Tiếp nối lát port `/tong-quan`. Tab "Báo cáo Optimize" hết còn là
+> alert placeholder "Chưa kết nối" — nay có 5 card thật (bảng cycle time, bar chart bottleneck,
+> heatmap CSS, bar chart SLA KPI theo ngưỡng 20%, bảng gateway rates), tái dùng
+> `SimpleBarChartComponent` sẵn có, không thêm chart lib. Phát hiện khi khảo sát mockup React
+> (`ProcessMonitor.tsx`, worktree `ql-nvkhcn-tranngdt-check`): 3 export
+> `OPTIMIZE_OUTCOME_CORR`/`OPTIMIZE_DMN_RULE_HITS`/`OPTIMIZE_INSIGHTS` có sẵn trong data file nhưng
+> **chưa từng được dùng ở bất kỳ .tsx nào** — 2 tab "DMN / Outcome" và "Đề xuất cải tiến" là UI tự
+> thiết kế (bảng + stacked bar + card list), không có mockup 1:1 để đối chiếu. File mới:
+> `core/models/optimize-ops-insights.ts`. Verify: `tsc --noEmit` sạch, `ng build production`
+> **GREEN**. Chưa làm: click-through trình duyệt thật (Playwright MCP + cổng 4200 đang bị phiên
+> khác chiếm giữ), chưa có `.spec.ts`. Chi tiết đầy đủ ở đầu `active-task.md`.
+
 > **2026-07-21 — HS-2026-016/018 KẸT Ở T04_GDTT DO MẤT SỰ KIỆN TASK_COMPLETED: ĐÃ SỬA + RUNTIME
 > VERIFIED (owner Claude).** `CamundaWorkflowRuntimeEventReader.read()` chỉ tin native
 > `newUserTaskSearchRequest()` và chỉ fallback sang job-backed search khi rỗng hoàn toàn — xác minh

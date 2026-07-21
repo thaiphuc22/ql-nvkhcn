@@ -22,7 +22,11 @@ export const routes: Routes = [
     canActivateChild: [appChildGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: '/chon-ung-dung' },
-      { path: 'tong-quan', component: PlaceholderPage, data: { title: 'Tổng quan', app: 'qlnvkhcn' } },
+      {
+        path: 'tong-quan',
+        loadComponent: () => import('./pages/tong-quan/tong-quan').then((module) => module.TongQuanPage),
+        data: { title: 'Tổng quan', app: 'quytrinh' },
+      },
       {
         path: 'viec-cua-toi',
         loadComponent: () => import('./pages/worklist/worklist').then((module) => module.WorklistPage),

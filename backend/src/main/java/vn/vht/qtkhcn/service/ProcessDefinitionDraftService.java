@@ -29,15 +29,18 @@ public class ProcessDefinitionDraftService {
     private final ProcessDefinitionDraftRevisionRepository revisionRepository;
     private final ProcessDefinitionImportValidator validator;
     private final ProcessDefinitionService processDefinitionService;
+    private final BpmnSourceExportService bpmnSourceExportService;
 
     public ProcessDefinitionDraftService(ProcessDefinitionDraftRepository draftRepository,
             ProcessDefinitionDraftRevisionRepository revisionRepository,
             ProcessDefinitionImportValidator validator,
-            ProcessDefinitionService processDefinitionService) {
+            ProcessDefinitionService processDefinitionService,
+            BpmnSourceExportService bpmnSourceExportService) {
         this.draftRepository = draftRepository;
         this.revisionRepository = revisionRepository;
         this.validator = validator;
         this.processDefinitionService = processDefinitionService;
+        this.bpmnSourceExportService = bpmnSourceExportService;
     }
 
     @Transactional
@@ -182,6 +185,7 @@ public class ProcessDefinitionDraftService {
         draft.setUpdatedAt(now);
         draft = draftRepository.saveAndFlush(draft);
         revisionRepository.save(snapshot(draft, actor, now));
+        bpmnSourceExportService.exportAfterDeploy(draft.getResourceName(), draft.getBpmnXml());
         return published;
     }
 

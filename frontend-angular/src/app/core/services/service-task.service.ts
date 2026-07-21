@@ -75,6 +75,9 @@ function defaultConfig(typeCode: ServiceTaskTypeCode): ServiceTaskExecutionConfi
   if (typeCode === 'GENERATE_DOCUMENT') {
     return { typeCode, templateCode: '', attachToDossier: true };
   }
+  if (typeCode === 'AI_AGENT') {
+    return { typeCode, model: 'gpt-4o-mini', maxTokens: 512, promptTemplateCode: '', resultDossierField: '' };
+  }
   return { typeCode, decisionCode: '', resultVariable: '' };
 }
 

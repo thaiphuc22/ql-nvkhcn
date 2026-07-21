@@ -31,6 +31,7 @@ class Rd0202JobWorkerContractTest {
         collectJobTypes(GenerateHdxdDocumentJobWorker.class, registeredJobTypes);
         collectJobTypes(GenerateHdxdTapDoanJobWorker.class, registeredJobTypes);
         collectJobTypes(Rd0202DanhGiaT24JobWorker.class, registeredJobTypes);
+        collectJobTypes(AiSummarizeDossierJobWorker.class, registeredJobTypes);
 
         assertTrue(registeredJobTypes.containsAll(bpmnJobTypes),
                 () -> "RD02.02 thiếu @JobWorker cho: " + difference(bpmnJobTypes, registeredJobTypes));

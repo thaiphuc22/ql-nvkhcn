@@ -46,6 +46,15 @@ qtkhcn:
     base-url: ${QTKHCN_HO_SO_BASE_URL:http://127.0.0.1:8093}
     service-token: ${QTKHCN_HO_SO_SERVICE_TOKEN:}
     # Integration destination for workflow events. Business CRUD is never served by this service.
+  ai:
+    openai:
+      # Real LLM call (OpenAI Chat Completions API) for service task "AI_Summarize" in RD02.02.
+      # Không cấu hình key thì OpenAiSummaryClient trả Optional.empty() và worker dùng fallback text
+      # — tóm tắt AI không được phép chặn luồng phê duyệt thật.
+      base-url: ${QTKHCN_AI_OPENAI_BASE_URL:https://api.openai.com}
+      api-key: ${OPENAI_API_KEY:}
+      model: ${QTKHCN_AI_OPENAI_MODEL:gpt-4o-mini}
+      max-tokens: ${QTKHCN_AI_OPENAI_MAX_TOKENS:512}
   workflow-events:
     collect-ms: ${QTKHCN_WORKFLOW_EVENT_COLLECT_MS:1000}
     dispatch-ms: ${QTKHCN_WORKFLOW_EVENT_DISPATCH_MS:1000}
