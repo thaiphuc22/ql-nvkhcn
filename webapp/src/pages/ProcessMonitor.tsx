@@ -18,7 +18,6 @@ import {
   ClockCircleOutlined,
   ThunderboltOutlined,
   BarChartOutlined,
-  BulbOutlined,
   ApartmentOutlined,
 } from '@ant-design/icons'
 import {
@@ -47,18 +46,15 @@ import {
   type InstanceState,
   type ProcessInstance,
 } from '../data/camundaOps'
+import { seedHoSo, joinDossiers } from '../data/dossiers'
+import { getNhiemVu } from '../data/nhiemVu'
 import {
   OPTIMIZE_BOTTLENECKS,
   OPTIMIZE_CYCLE_BY_PROCESS,
-  OPTIMIZE_DMN_RULE_HITS,
   OPTIMIZE_GATEWAY_RATES,
-  OPTIMIZE_INSIGHTS,
-  OPTIMIZE_OUTCOME_CORR,
   OPTIMIZE_SLA_KPI,
-  INSIGHT_KIND_LABEL,
-  type OptimizeInsight,
 } from '../data/optimizeOpsInsights'
-import { RED, RED_CHROME, SUCCESS, DANGER, WARNING } from '../theme'
+import { RED, RED_CHROME, DANGER, WARNING } from '../theme'
 
 const { Text, Paragraph } = Typography
 const CHART_H = 260
@@ -84,22 +80,32 @@ export default function ProcessMonitor() {
     [],
   )
 
+  // Build dossier name lookup: maHoSo → tenDeTai (from joinDossiers)
+  const tenHoSoByMaHoSo = useMemo(() => {
+    const dossiers = joinDossiers(seedHoSo, getNhiemVu)
+    return new Map<string, string>(dossiers.map((d) => [d.id, d.tenDeTai]))
+  }, [])
+
+  // Resolve tenHoSo for each instance + apply filters
   const rows = useMemo(() => {
-    return seedInstances.filter((i) => {
-      if (fProcess && i.process !== fProcess) return false
-      if (fState && i.trangThai !== fState) return false
-      if (q) {
-        const s = q.toLowerCase()
-        if (
-          !i.maHoSo.toLowerCase().includes(s) &&
-          !i.instanceKey.includes(s) &&
-          !i.maNV.toLowerCase().includes(s)
-        )
-          return false
-      }
-      return true
-    })
-  }, [q, fProcess, fState])
+    return seedInstances
+      .map((i) => ({ ...i, tenHoSo: tenHoSoByMaHoSo.get(i.maHoSo) ?? i.maHoSo }))
+      .filter((i) => {
+        if (fProcess && i.process !== fProcess) return false
+        if (fState && i.trangThai !== fState) return false
+        if (q) {
+          const s = q.toLowerCase()
+          if (
+            !i.maHoSo.toLowerCase().includes(s) &&
+            !i.instanceKey.includes(s) &&
+            !i.maNV.toLowerCase().includes(s) &&
+            !i.tenHoSo.toLowerCase().includes(s)
+          )
+            return false
+        }
+        return true
+      })
+  }, [q, fProcess, fState, tenHoSoByMaHoSo])
 
   const columns: ColumnsType<ProcessInstance> = [
     {
@@ -125,6 +131,14 @@ export default function ProcessMonitor() {
             </Text>
           </div>
         </div>
+      ),
+    },
+    {
+      title: 'Tên hồ sơ',
+      dataIndex: 'tenHoSo',
+      width: 280,
+      render: (v: string) => (
+        <Text strong style={{ fontSize: 13 }}>{v}</Text>
       ),
     },
     {
@@ -181,28 +195,6 @@ export default function ProcessMonitor() {
           </Space>
         )
       },
-    },
-  ]
-
-  const insightCols: ColumnsType<OptimizeInsight> = [
-    {
-      title: 'Loại',
-      dataIndex: 'kind',
-      width: 140,
-      render: (k: OptimizeInsight['kind']) => <Tag color="red">{INSIGHT_KIND_LABEL[k]}</Tag>,
-    },
-    { title: 'Đề xuất', dataIndex: 'title', width: 260 },
-    { title: 'Căn cứ Optimize', dataIndex: 'detail' },
-    { title: 'Tác động ước lượng', dataIndex: 'impact', width: 200 },
-    {
-      title: 'Độ tin cậy',
-      dataIndex: 'confidence',
-      width: 110,
-      render: (c: OptimizeInsight['confidence']) => (
-        <Tag color={c === 'cao' ? 'success' : c === 'trung_binh' ? 'warning' : 'default'}>
-          {c === 'cao' ? 'Cao' : c === 'trung_binh' ? 'TB' : 'Thấp'}
-        </Tag>
-      ),
     },
   ]
 
@@ -417,91 +409,6 @@ export default function ProcessMonitor() {
                     </Card>
                   </Col>
                 </Row>
-              </>
-            ),
-          },
-          {
-            key: 'dmn',
-            label: (
-              <span>
-                <BarChartOutlined /> DMN / Outcome
-              </span>
-            ),
-            children: (
-              <Row gutter={[14, 14]}>
-                <Col xs={24} lg={10}>
-                  <Card title="Rule DMN dùng nhiều nhất" size="small">
-                    <Table
-                      size="small"
-                      pagination={false}
-                      rowKey="ruleId"
-                      dataSource={OPTIMIZE_DMN_RULE_HITS}
-                      columns={[
-                        {
-                          title: 'Rule',
-                          dataIndex: 'ruleId',
-                          width: 140,
-                          render: (v) => <Text code>{v}</Text>,
-                        },
-                        { title: 'Điều kiện', dataIndex: 'condition' },
-                        { title: 'Hits', dataIndex: 'hits', width: 70, align: 'right' },
-                      ]}
-                    />
-                  </Card>
-                </Col>
-                <Col xs={24} lg={14}>
-                  <Card title="Outcome (approve/reject/rework) × thuộc tính hồ sơ" size="small">
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={OPTIMIZE_OUTCOME_CORR}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                        <XAxis
-                          dataKey="value"
-                          tick={{ fontSize: 10 }}
-                          interval={0}
-                          angle={-20}
-                          textAnchor="end"
-                          height={55}
-                        />
-                        <YAxis unit="%" tick={{ fontSize: 11 }} />
-                        <RTooltip />
-                        <Legend />
-                        <Bar dataKey="approve" name="Đồng ý" stackId="a" fill={SUCCESS} />
-                        <Bar dataKey="rework" name="Điều chỉnh" stackId="a" fill={WARNING} />
-                        <Bar dataKey="reject" name="Từ chối" stackId="a" fill={DANGER} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                    <Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 0 }}>
-                      Tương quan outcome với cấp / ngân sách / loại NV — từ log DMN + user-task
-                      outcome (mock).
-                    </Paragraph>
-                  </Card>
-                </Col>
-              </Row>
-            ),
-          },
-          {
-            key: 'insights',
-            label: (
-              <span>
-                <BulbOutlined /> Đề xuất cải tiến
-              </span>
-            ),
-            children: (
-              <>
-                <Alert
-                  type="warning"
-                  showIcon
-                  style={{ marginBottom: 14 }}
-                  message="Insight định lượng từ Optimize"
-                  description="Đề xuất rút bước / đổi SLA / gom–tách quy trình dựa trên bottleneck, gateway rate và rule hits. Cần BA/architect xác nhận trước khi đổi BPMN."
-                />
-                <Table<OptimizeInsight>
-                  rowKey="id"
-                  size="small"
-                  pagination={false}
-                  columns={insightCols}
-                  dataSource={OPTIMIZE_INSIGHTS}
-                />
               </>
             ),
           },

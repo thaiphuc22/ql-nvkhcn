@@ -55,6 +55,7 @@ export default function BpmnViewer({
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
+    console.log("[BpmnViewer] xml length:", xml?.length ?? "undefined/null");
     const viewer = new NavigatedViewer({
       container: el,
       additionalModules: [minimapModule],
@@ -66,15 +67,26 @@ export default function BpmnViewer({
     viewer
       .importXML(xml || STARTER_BPMN)
       .then(() => {
+        console.log("[BpmnViewer] importXML success, xml length:", xml?.length);
         const canvas = viewer.get("canvas") as {
           zoom: (m?: string | number) => number;
+          resized: () => void;
         };
+        // Trigger resize so bpmn-js recalculates viewport dimensions
+        canvas.resized?.();
         const fittedZoom = canvas.zoom("fit-viewport");
+        console.log("[BpmnViewer] fittedZoom:", fittedZoom);
         if (fittedZoom < 0.42) canvas.zoom(0.42);
+        // Double-resize after a short delay to ensure DOM has settled
+        setTimeout(() => {
+          canvas.resized?.();
+          canvas.zoom("fit-viewport");
+        }, 100);
         setReady(true);
       })
-      .catch(() => {
-        /* XML lỗi — bỏ qua */
+      .catch((err: unknown) => {
+        console.error("[BpmnViewer] importXML failed:", err);
+        setReady(true); // show empty canvas so user sees something
       });
     return () => {
       viewer.destroy();
@@ -179,11 +191,18 @@ export default function BpmnViewer({
           onToggleFullscreen={toggleFullscreen}
         />
       </div>
-      <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
+      <div
+        style={{
+          position: "relative",
+          flex: 1,
+          // Ensure minimum height so diagram can render even if flex height is auto
+          minHeight: "400px",
+        }}
+      >
         <div
           ref={containerRef}
           className="vht-diagram"
-          style={{ height: "100%" }}
+          style={{ height: "100%", width: "100%" }}
         />
       </div>
     </div>

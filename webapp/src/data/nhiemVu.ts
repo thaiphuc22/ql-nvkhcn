@@ -87,13 +87,13 @@ export const seedNhiemVu: NhiemVu[] = [
   },
   {
     ma: 'RD.2026.021',
-    ten: 'Nghiên cứu vật liệu hấp thụ sóng radar',
+    ten: 'Nghiên cứu xây dựng nền tảng quản trị quy trình KHCN thông minh cho VHT',
     cap: 'Tập đoàn',
     chuNhiem: { hoTen: 'Hoàng Đức Anh', hocHamHocVi: 'TS.', maNhanVien: 'VHT0210', email: 'anhhd@viettel.com.vn', donViCongTac: 'TT Nghiên cứu Vật liệu' },
     donViChuTri: 'TT Nghiên cứu Vật liệu',
     thoiGianThucHien: '01/2026 – 12/2028',
     duToan: '12.500.000.000 đ',
-    giaiDoan: 'chu_truong',
+    giaiDoan: 'xet_duyet', // Demo: chuyển sang giai đoạn Xét duyệt để test RD02.02
   },
   {
     ma: 'RD.2026.009',

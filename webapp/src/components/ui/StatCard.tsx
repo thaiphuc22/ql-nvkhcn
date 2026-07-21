@@ -11,12 +11,13 @@ export interface StatCardProps {
   size?: 'default' | 'small'
   /** Style Card bọc ngoài (vd. vạch nhấn trái kiểu bento). */
   style?: CSSProperties
+  onClick?: () => void
 }
 
 /** Thẻ KPI chuẩn (Card + Statistic). Dùng ở mọi trang có dải chỉ số. */
-export default function StatCard({ title, value, suffix, color, valueStyle, size = 'default', style }: StatCardProps) {
+export default function StatCard({ title, value, suffix, color, valueStyle, size = 'default', style, onClick }: StatCardProps) {
   return (
-    <Card size={size} style={style}>
+    <Card size={size} style={style} onClick={onClick}>
       <Statistic title={title} value={value as string | number} suffix={suffix} valueStyle={{ color, ...valueStyle }} />
     </Card>
   )

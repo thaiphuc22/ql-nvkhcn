@@ -607,6 +607,58 @@ export default function DossierDetail() {
     message.success("Đã ghi ý kiến trao đổi vào hồ sơ.");
   };
 
+  // Tải tài liệu: tạo file placeholder (mock) — chưa nối kho tài liệu thật.
+  const downloadDocument = (t: { ten: string; loai: string }) => {
+    const content = [
+      `TÀI LIỆU: ${t.ten}`,
+      `Loại: ${t.loai}`,
+      `Hồ sơ: ${d.id}`,
+      `Nhiệm vụ: ${d.maDeTai}`,
+      `Ngày tạo: ${d.ngayTao}`,
+      '',
+      '---',
+      'Lưu ý: Đây là file mock placeholder. Tài liệu thật sẽ được tải từ kho tài liệu khi kết nối backend.',
+    ].join('\n')
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = t.ten.replace(/\s+/g, '_')
+    a.click()
+    URL.revokeObjectURL(url)
+    message.success(`Đã tải file mock: ${t.ten}`)
+  }
+
+  // Xem tài liệu: mở tab mới với nội dung mock preview.
+  const viewDocument = (t: { ten: string; loai: string }) => {
+    const content = `
+      <html><head><title>${t.ten}</title><style>
+        body { font-family: Arial, sans-serif; padding: 40px; background: #f5f5f5; }
+        .card { background: white; border-radius: 8px; padding: 32px; max-width: 800px; margin: 0 auto; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h1 { color: #ee0033; font-size: 20px; margin-bottom: 8px; }
+        .meta { color: #666; font-size: 14px; margin-bottom: 24px; }
+        .placeholder { border: 2px dashed #ccc; border-radius: 8px; padding: 60px; text-align: center; color: #999; }
+        .icon { font-size: 48px; margin-bottom: 16px; }
+        .note { margin-top: 24px; padding: 16px; background: #fff3cd; border-radius: 6px; font-size: 13px; color: #856404; }
+      </style></head><body>
+      <div class="card">
+        <h1>${t.ten}</h1>
+        <div class="meta">Loại: ${t.loai} · Hồ sơ: ${d.id} · NV: ${d.maDeTai}</div>
+        <div class="placeholder">
+          <div class="icon">📄</div>
+          <div>Xem trước tài liệu sẽ hiển thị ở đây</div>
+          <div style="font-size:13px;margin-top:8px">Kết nối kho tài liệu (F1) để xem nội dung thật</div>
+        </div>
+        <div class="note">⚠️ Đây là trang xem trước mock. Nội dung thật sẽ được hiển thị khi hệ thống kết nối với kho tài liệu VHT.</div>
+      </div>
+      </body></html>
+    `
+    const blob = new Blob([content], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    window.open(url, '_blank')
+    message.info(`Đang mở xem tài liệu: ${t.ten}`)
+  }
+
   // Tải hồ sơ: export bản tóm tắt (text) hoàn toàn client-side — mock, chưa nối kho tài liệu.
   const downloadDossier = () => {
     const lines = [
@@ -1110,26 +1162,24 @@ export default function DossierDetail() {
               renderItem={(t) => (
                 <List.Item
                   actions={[
-                    <Tooltip key="v" title="Sắp ra mắt — chưa nối kho tài liệu">
-                      <Button
-                        type="link"
-                        size="small"
-                        style={{ paddingInline: 4 }}
-                        disabled
-                      >
-                        Xem
-                      </Button>
-                    </Tooltip>,
-                    <Tooltip key="d" title="Sắp ra mắt — chưa nối kho tài liệu">
-                      <Button
-                        type="link"
-                        size="small"
-                        style={{ paddingInline: 4 }}
-                        disabled
-                      >
-                        Tải
-                      </Button>
-                    </Tooltip>,
+                    <Button
+                      key="v"
+                      type="link"
+                      size="small"
+                      style={{ paddingInline: 4 }}
+                      onClick={() => viewDocument(t)}
+                    >
+                      Xem
+                    </Button>,
+                    <Button
+                      key="d"
+                      type="link"
+                      size="small"
+                      style={{ paddingInline: 4 }}
+                      onClick={() => downloadDocument(t)}
+                    >
+                      Tải
+                    </Button>,
                   ]}
                 >
                   <List.Item.Meta

@@ -28,6 +28,8 @@ export interface ProcessInstance {
   instanceKey: string;
   /** Correlation key ↔ dữ liệu nghiệp vụ ở app (D3, mục 5.2). */
   maHoSo: string;
+  /** Tên hồ sơ (tenDeTai của NV) — resolved từ seedHoSo trong ProcessMonitor. */
+  tenHoSo?: string;
   maNV: string;
   /** Process definition id ↔ mã quy trình (data/processes.ts). */
   process: string;

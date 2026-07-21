@@ -40,6 +40,7 @@ export const DOSSIER_STATUS_LABEL: Record<DossierStatus, string> = {
   processing: "Đang xử lý",
   approved: "Đã duyệt",
   rejected: "Từ chối",
+  cancelled: "Hủy",
 };
 
 /**

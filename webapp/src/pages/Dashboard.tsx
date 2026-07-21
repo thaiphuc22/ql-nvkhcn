@@ -16,6 +16,7 @@ import {
 import type { ColumnsType } from 'antd/es/table'
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
+import { useNavigate } from 'react-router-dom'
 import {
   BarChart,
   Bar,
@@ -24,9 +25,6 @@ import {
   CartesianGrid,
   Tooltip as RTooltip,
   ResponsiveContainer,
-  LineChart,
-  Line,
-  Legend,
   Cell,
 } from 'recharts'
 import { PageHeader, StatCard } from '../components/ui'
@@ -40,12 +38,13 @@ import {
   BPMN_HEAT_PROCESS_OPTIONS,
   type AnalyticsPeriod,
   type BpmnHeatProcessMa,
-  type DmnRuleHit,
   type TopHandler,
   type UnitPerf,
 } from '../data/optimizeAnalytics'
 import { NHOM, seedProcesses } from '../data/processes'
 import { RED, RED_CHROME, SUCCESS, DANGER, WARNING } from '../theme'
+import { seedHoSo, joinDossiers, type Dossier } from '../data/dossiers'
+import { getNhiemVu } from '../data/nhiemVu'
 
 const { RangePicker } = DatePicker
 
@@ -55,11 +54,42 @@ const BpmnViewer = lazy(() => import('../components/BpmnViewer'))
 
 const { Text, Paragraph } = Typography
 
-const OUTCOME_COLORS = {
-  approve: SUCCESS,
-  rework: WARNING,
-  reject: DANGER,
-} as const
+/** Hồ sơ đang vượt SLA — bước hiện tại quá hạn so với hanXuLy. */
+export interface SlaOverdueItem {
+  id: string
+  maNV: string
+  tenDeTai: string
+  step: string
+  /** Số ngày quá hạn (dương = quá hạn). */
+  overdueDays: number
+  nguoi: string
+  cap: string
+}
+
+/** Compute SLA-overdue dossiers từ seed. Hạn xử lý tính từ hanXuLy. */
+function computeSlaOverdue(dossiers: Dossier[], now: Dayjs): SlaOverdueItem[] {
+  const items: SlaOverdueItem[] = dossiers
+    .filter((d) => d.trangThai === 'processing')
+    .map((d): SlaOverdueItem | null => {
+      const currentStep = d.steps.find((s) => s.trangThai === 'current')
+      if (!currentStep?.hanXuLy) return null
+      const deadline = dayjs(currentStep.hanXuLy, 'DD/MM/YYYY')
+      if (!deadline.isValid()) return null
+      const diff = now.diff(deadline, 'day', true)
+      if (diff < 0) return null
+      return {
+        id: d.id,
+        maNV: d.maNV,
+        tenDeTai: d.tenDeTai,
+        step: currentStep.ten,
+        overdueDays: Math.ceil(diff),
+        nguoi: currentStep.nguoi ?? currentStep.vaiTro,
+        cap: d.cap as string,
+      }
+    })
+    .filter((x): x is SlaOverdueItem => x !== null)
+  return items.sort((a, b) => b.overdueDays - a.overdueDays)
+}
 
 const CHART_H = 260
 
@@ -135,6 +165,7 @@ function UnitMetricHeatmap({
  * Route: `/tong-quan`. Dữ liệu thật chờ F1 + Optimize API.
  */
 export default function Dashboard() {
+  const navigate = useNavigate()
   const [periodMode, setPeriodMode] = useState<PeriodMode>('month')
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | null>([
     dayjs('2026-06-01'),
@@ -142,6 +173,8 @@ export default function Dashboard() {
   ])
   const [processGroup, setProcessGroup] = useState<string | undefined>()
   const [heatProcess, setHeatProcess] = useState<BpmnHeatProcessMa>('RD01.01')
+
+  const today = dayjs('2026-07-21')
 
   const period: AnalyticsPeriod = periodMode === 'quarter' ? 'quarter' : 'month'
   const snap = useMemo(() => getOptimizeSnapshot(period), [period])
@@ -202,38 +235,30 @@ export default function Dashboard() {
     [snap],
   )
 
-  const outcomeRd = useMemo(() => {
-    let rows = snap.outcomesByRd
-    if (processGroup) rows = rows.filter((o) => o.label === processGroup)
-    return rows.map((o) => ({
-      label: o.label,
-      Đồngý: o.approve,
-      'Điều chỉnh': o.rework,
-      'Từ chối': o.reject,
-    }))
-  }, [snap, processGroup])
+  // Danh sách HS (dùng cho SLA overdue).
+  const allDossiers = useMemo(() => joinDossiers(seedHoSo, getNhiemVu), [])
 
-  const outcomeBudget = useMemo(
-    () =>
-      snap.outcomesByBudget.map((o) => ({
-        label: o.label,
-        Đồngý: o.approve,
-        'Điều chỉnh': o.rework,
-        'Từ chối': o.reject,
-      })),
-    [snap],
-  )
-  const outcomeCap = useMemo(
-    () =>
-      snap.outcomesByCap.map((o) => ({
-        label: o.label,
-        Đồngý: o.approve,
-        'Điều chỉnh': o.rework,
-        'Từ chối': o.reject,
-      })),
-    [snap],
-  )
+  // SLA overdue: HS đang xử lý mà bước hiện tại đã quá hạn.
+  // Resolve handler name through topHandlers so the "Người/Vai trò xử lý" column shows actual names.
+  const slaOverdueItems = useMemo(() => {
+    const items = computeSlaOverdue(allDossiers, today)
+    // Build lookup: handler name → resolved name from topHandlers
+    const nameByHandler = new Map(snap.topHandlers.map((h) => [h.name, h.name]))
+    return items.map((item) => {
+      // Try exact match first
+      let resolved = nameByHandler.get(item.nguoi)
+      if (!resolved) {
+        // Try prefix match: "TS. Hoàng Đức Anh" matches handler "TS. Hoàng Đức Anh"
+        const handler = snap.topHandlers.find((h) =>
+          item.nguoi && (h.name === item.nguoi || h.name.startsWith(item.nguoi.split(' ').slice(0, 2).join(' ')))
+        )
+        resolved = handler?.name ?? item.nguoi
+      }
+      return { ...item, nguoi: resolved }
+    })
+  }, [allDossiers, today, snap.topHandlers])
 
+  
   const heatMarkers = useMemo(() => {
     const m: Record<string, string> = {}
     bpmnHeat.forEach((c) => {
@@ -290,16 +315,23 @@ export default function Dashboard() {
     { title: 'Cycle TB', dataIndex: 'avgCycleDays', width: 100, align: 'right', render: (v) => `${v}n` },
   ]
 
-  const dmnCols: ColumnsType<DmnRuleHit> = [
-    { title: 'Rule', dataIndex: 'ruleId', width: 140, render: (v) => <Text code>{v}</Text> },
-    { title: 'Điều kiện', dataIndex: 'condition' },
-    { title: 'Lượt khớp', dataIndex: 'hits', width: 100, align: 'right' },
+  // Columns for SLA overdue table.
+  const slaOverdueCols: ColumnsType<SlaOverdueItem> = [
+    { title: 'Mã HS', dataIndex: 'id', width: 130, render: (v) => <Text code>{v}</Text> },
+    { title: 'Mã NV', dataIndex: 'maNV', width: 110, render: (v) => <Text code>{v}</Text> },
+    { title: 'Tên đề tài', dataIndex: 'tenDeTai', ellipsis: true },
+    { title: 'Bước hiện tại', dataIndex: 'step', ellipsis: true },
     {
-      title: 'Loại',
-      dataIndex: 'blocking',
-      width: 110,
-      render: (b: boolean) => (b ? <Tag color="error">Chặn / bổ sung</Tag> : <Tag>Định tuyến</Tag>),
+      title: 'Trễ (ngày)',
+      dataIndex: 'overdueDays',
+      width: 100,
+      align: 'right',
+      render: (v: number) => (
+        <Text style={{ color: DANGER, fontWeight: 600 }}>{v} ngày</Text>
+      ),
     },
+    { title: 'Người / vai trò xử lý', dataIndex: 'nguoi', ellipsis: true },
+    { title: 'Cấp', dataIndex: 'cap', width: 90 },
   ]
 
   return (
@@ -361,19 +393,49 @@ export default function Dashboard() {
       <SectionTitle>1. Tổng hợp từ tất cả quy trình</SectionTitle>
       <Row gutter={[12, 12]} style={{ marginBottom: 8 }}>
         <Col xs={12} sm={8} md={4}>
-          <StatCard title="Tổng HS trong kỳ" value={totalInPeriod} color={RED_CHROME} />
+          <StatCard
+            title="Tổng HS trong kỳ"
+            value={totalInPeriod}
+            color={RED_CHROME}
+            style={{ cursor: 'pointer' }}
+            onClick={() => navigate('/ho-so')}
+          />
         </Col>
         <Col xs={12} sm={8} md={4}>
-          <StatCard title="Đang xử lý" value={snap.kpi.byStatus.processing} color="#1677ff" />
+          <StatCard
+            title="Đang xử lý"
+            value={snap.kpi.byStatus.processing}
+            color="#1677ff"
+            style={{ cursor: 'pointer' }}
+            onClick={() => navigate('/ho-so?status=processing')}
+          />
         </Col>
         <Col xs={12} sm={8} md={4}>
-          <StatCard title="Đã phê duyệt" value={snap.kpi.byStatus.approved} color={SUCCESS} />
+          <StatCard
+            title="Đã phê duyệt"
+            value={snap.kpi.byStatus.approved}
+            color={SUCCESS}
+            style={{ cursor: 'pointer' }}
+            onClick={() => navigate('/ho-so?status=approved')}
+          />
         </Col>
         <Col xs={12} sm={8} md={4}>
-          <StatCard title="Bị từ chối" value={snap.kpi.byStatus.rejected} color={DANGER} />
+          <StatCard
+            title="Bị từ chối"
+            value={snap.kpi.byStatus.rejected}
+            color={DANGER}
+            style={{ cursor: 'pointer' }}
+            onClick={() => navigate('/ho-so?status=rejected')}
+          />
         </Col>
         <Col xs={12} sm={8} md={4}>
-          <StatCard title="Hủy" value={snap.kpi.byStatus.cancelled} color="#8593a3" />
+          <StatCard
+            title="Hủy"
+            value={snap.kpi.byStatus.cancelled}
+            color="#8593a3"
+            style={{ cursor: 'pointer' }}
+            onClick={() => navigate('/ho-so?status=cancelled')}
+          />
         </Col>
         <Col xs={12} sm={8} md={4}>
           <StatCard title="Cycle TB (ngày)" value={snap.kpi.avgCycleDays} color={RED} />
@@ -381,13 +443,21 @@ export default function Dashboard() {
       </Row>
       <Row gutter={[12, 12]} style={{ marginBottom: 18 }}>
         <Col xs={12} md={8}>
-          <StatCard title="Instance đang chạy" value={snap.kpi.runningInstances} color="#1677ff" />
+          <StatCard
+            title="Instance đang chạy"
+            value={snap.kpi.runningInstances}
+            color="#1677ff"
+            style={{ cursor: 'pointer' }}
+            onClick={() => navigate('/ho-so?status=processing')}
+          />
         </Col>
         <Col xs={12} md={8}>
           <StatCard
             title="Quá hạn SLA"
             value={snap.kpi.overdueSla}
             color={snap.kpi.overdueSla ? DANGER : '#8593a3'}
+            style={{ cursor: 'pointer' }}
+            onClick={() => navigate('/ho-so?sla=overdue')}
           />
         </Col>
         <Col xs={12} md={8}>
@@ -395,6 +465,8 @@ export default function Dashboard() {
             title="Incident kỹ thuật mở"
             value={snap.kpi.openIncidents}
             color={snap.kpi.openIncidents ? WARNING : '#8593a3'}
+            style={{ cursor: 'pointer' }}
+            onClick={() => navigate('/ho-so?status=processing')}
           />
         </Col>
       </Row>
@@ -467,126 +539,38 @@ export default function Dashboard() {
             </ResponsiveContainer>
           </Card>
         </Col>
-        <Col xs={24} lg={12}>
-          <Card title="Xu hướng backlog (HS mở)" size="small">
-            <ResponsiveContainer width="100%" height={CHART_H}>
-              <LineChart data={snap.backlogTrend} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                <RTooltip />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="open"
-                  name="Hồ sơ mở"
-                  stroke={RED_CHROME}
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </Card>
-        </Col>
-        <Col xs={24} lg={12}>
-          <Card title="Tỷ lệ HS trễ SLA theo cấp phê duyệt" size="small">
-            <ResponsiveContainer width="100%" height={CHART_H}>
-              <BarChart data={snap.slaByCap} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="cap" tick={{ fontSize: 12 }} />
-                <YAxis unit="%" tick={{ fontSize: 11 }} domain={[0, 40]} />
-                <RTooltip
-                  formatter={(v: number, _n, p) => {
-                    const row = p.payload as { late: number; total: number }
-                    return [`${v}% (${row.late}/${row.total})`, 'Trễ SLA']
-                  }}
-                />
-                <Bar dataKey="lateRate" name="% trễ" fill={DANGER} radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-        </Col>
       </Row>
 
-      {/* DMN + outcome */}
-      <SectionTitle>2. DMN + outcome user task</SectionTitle>
+      {/* Hồ sơ vượt SLA */}
+      <SectionTitle>2. Hồ sơ đang vượt SLA</SectionTitle>
       <Row gutter={[14, 14]} style={{ marginBottom: 18 }}>
-        <Col xs={24} lg={8}>
-          <Card title="Outcome theo loại NV (RD)" size="small">
-            <ResponsiveContainer width="100%" height={CHART_H}>
-              <BarChart data={outcomeRd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                <YAxis unit="%" tick={{ fontSize: 11 }} />
-                <RTooltip />
-                <Legend />
-                <Bar dataKey="Đồngý" stackId="a" fill={OUTCOME_COLORS.approve} />
-                <Bar dataKey="Điều chỉnh" stackId="a" fill={OUTCOME_COLORS.rework} />
-                <Bar dataKey="Từ chối" stackId="a" fill={OUTCOME_COLORS.reject} />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-        </Col>
-        <Col xs={24} lg={8}>
-          <Card title="Outcome theo dải ngân sách" size="small">
-            <ResponsiveContainer width="100%" height={CHART_H}>
-              <BarChart data={outcomeBudget} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                <YAxis unit="%" tick={{ fontSize: 11 }} />
-                <RTooltip />
-                <Legend />
-                <Bar dataKey="Đồngý" stackId="a" fill={OUTCOME_COLORS.approve} />
-                <Bar dataKey="Điều chỉnh" stackId="a" fill={OUTCOME_COLORS.rework} />
-                <Bar dataKey="Từ chối" stackId="a" fill={OUTCOME_COLORS.reject} />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-        </Col>
-        <Col xs={24} lg={8}>
-          <Card title="Outcome theo cấp phê duyệt" size="small">
-            <ResponsiveContainer width="100%" height={CHART_H}>
-              <BarChart data={outcomeCap} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                <YAxis unit="%" tick={{ fontSize: 11 }} />
-                <RTooltip />
-                <Legend />
-                <Bar dataKey="Đồngý" stackId="a" fill={OUTCOME_COLORS.approve} />
-                <Bar dataKey="Điều chỉnh" stackId="a" fill={OUTCOME_COLORS.rework} />
-                <Bar dataKey="Từ chối" stackId="a" fill={OUTCOME_COLORS.reject} />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-        </Col>
-        <Col xs={24} lg={10}>
-          <Card title="Vòng lặp điều chỉnh (số lần quay lại)" size="small">
-            <ResponsiveContainer width="100%" height={CHART_H}>
-              <BarChart data={snap.reworkLoops} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis
-                  dataKey="times"
-                  tick={{ fontSize: 11 }}
-                  tickFormatter={(t) => (t === 0 ? '0 lần' : `${t} lần`)}
-                />
-                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                <RTooltip
-                  labelFormatter={(t) => (Number(t) === 0 ? 'Không quay lại' : `Quay lại ${t} lần`)}
-                />
-                <Bar dataKey="dossiers" name="Số hồ sơ" fill={WARNING} radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-        </Col>
-        <Col xs={24} lg={14}>
-          <Card title="Rule DMN / ma trận quyết định dùng nhiều nhất" size="small">
-            <Table<DmnRuleHit>
-              rowKey="ruleId"
-              size="small"
-              pagination={false}
-              columns={dmnCols}
-              dataSource={snap.dmnRuleHits}
-            />
+        <Col xs={24} lg={24}>
+          <Card
+            title={`Danh sách HS vượt SLA (${slaOverdueItems.length})`}
+            size="small"
+            extra={
+              slaOverdueItems.length > 0 && (
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Cột trễ = số ngày quá hạn so với hạn xử lý bước hiện tại
+                </Text>
+              )
+            }
+          >
+            {slaOverdueItems.length === 0 ? (
+              <Text type="secondary">Không có hồ sơ vượt SLA trong kỳ.</Text>
+            ) : (
+              <Table<SlaOverdueItem>
+                rowKey="id"
+                size="small"
+                pagination={{ pageSize: 8 }}
+                columns={slaOverdueCols}
+                dataSource={slaOverdueItems}
+                onRow={(record) => ({
+                  style: { cursor: 'pointer' },
+                  onClick: () => navigate(`/ho-so/${record.id}`),
+                })}
+              />
+            )}
           </Card>
         </Col>
       </Row>
