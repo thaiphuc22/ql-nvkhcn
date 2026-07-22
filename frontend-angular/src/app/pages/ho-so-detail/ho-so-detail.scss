@@ -51,6 +51,9 @@
 .hsd-hoidong-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
 .hsd-hoidong-table th, .hsd-hoidong-table td { border: 1px solid #eef1f4; padding: 6px 10px; text-align: left; }
 .hsd-hoidong-table th { background: #f5f7fa; color: #59677a; font-weight: 600; }
+.hsd-ai-summary { background: #f5f8ff; border-color: #d6e4ff; }
+.hsd-ai-summary-icon { float: left; margin: 2px 10px 0 0; font-size: 20px; color: #1677ff; }
+.hsd-ai-summary-text { margin: 0; color: #384252; line-height: 1.6; }
 a { cursor: pointer; }
 textarea { margin-top: 6px; }
 @media (max-width: 900px) { .hsd-header { flex-wrap: wrap; } .hsd-actions { width: 100%; padding-left: 40px; justify-content: flex-start; } }

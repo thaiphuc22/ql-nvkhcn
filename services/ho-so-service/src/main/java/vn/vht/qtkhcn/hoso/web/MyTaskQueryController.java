@@ -1,7 +1,9 @@
 package vn.vht.qtkhcn.hoso.web;
 
 import java.util.List;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 import vn.vht.qtkhcn.hoso.service.MyTaskQueryService;
@@ -24,5 +26,14 @@ public class MyTaskQueryController {
     public List<MyTaskResponse> findMine(
             @RequestHeader(value = USER_ID_HEADER, required = false) String userId) {
         return service.findActiveTasks(identities.resolve(userId));
+    }
+
+    @GetMapping("/api/ho-so/{id}/active-task")
+    public ResponseEntity<MyTaskResponse> findMineForHoSo(
+            @PathVariable("id") String hoSoId,
+            @RequestHeader(value = USER_ID_HEADER, required = false) String userId) {
+        return service.findActiveTaskForHoSo(identities.resolve(userId), hoSoId)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 }

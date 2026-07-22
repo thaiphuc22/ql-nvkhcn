@@ -14,8 +14,9 @@ import vn.vht.qtkhcn.repository.WorkflowProcessMappingRepository;
 /**
  * Job worker cho service task "AI_Summarize" (type khcn.rd0202.summarize-dossier) trong
  * RD02.02 — chèn ngay sau GCheck (nhánh FCheckOK), trước khi hồ sơ vào thẩm định song song 4 cơ
- * quan. Gọi LLM thật (OpenAI, xem OpenAiSummaryClient) để tóm tắt hồ sơ và ghi lại vào
- * HoSo.tomTatAi qua ho-so-service, để 4 cơ quan thẩm định có ngữ cảnh đọc trước.
+ * quan. Gọi LLM thật (OpenAI, xem OpenAiSummaryClient) để tóm tắt hồ sơ (kèm trích đoạn nội dung
+ * tệp đính kèm PDF/Word/Excel do ho-so-service trích xuất sẵn — xem DocumentTextExtractor) và ghi
+ * lại vào HoSo.tomTatAi qua ho-so-service, để 4 cơ quan thẩm định có ngữ cảnh đọc trước.
  *
  * KHÔNG được phép chặn luồng phê duyệt thật: nếu LLM lỗi hoặc chưa cấu hình OPENAI_API_KEY,
  * worker vẫn hoàn tất job với tóm tắt fallback thay vì ném lỗi — khác với Check/Generate_HDXD
@@ -68,10 +69,18 @@ public class AiSummarizeDossierJobWorker {
         context.cacBuocDaHoanTat().forEach(buoc -> steps.add("- " + buoc.ten()
                 + (buoc.nguoi() == null ? "" : " (" + buoc.nguoi() + ")")
                 + (buoc.yKien() == null || buoc.yKien().isBlank() ? "" : ": " + buoc.yKien())));
+        StringJoiner attachments = new StringJoiner("\n\n");
+        context.tepDinhKem().forEach(tep -> attachments.add("--- " + tep.ten() + " (" + tep.loai() + ")"
+                + (tep.daCatBot() ? ", đã cắt bớt do giới hạn độ dài" : "") + " ---\n" + tep.noiDung()));
         return """
-                Bạn là trợ lý tóm tắt hồ sơ xét duyệt nhiệm vụ khoa học công nghệ. Hãy viết một đoạn \
-                tóm tắt ngắn gọn (3-5 câu, tiếng Việt) cho các cơ quan thẩm định đọc trước khi thẩm \
-                định song song. KHÔNG đưa ra kết luận đạt/không đạt, chỉ mô tả khách quan.
+                Bạn là trợ lý tóm tắt hồ sơ xét duyệt nhiệm vụ khoa học công nghệ. Hãy viết đúng 3-5 \
+                câu tiếng Việt, thành một đoạn hoàn chỉnh, để các cơ quan thẩm định đọc trước khi thẩm \
+                định song song. Mỗi câu phải kết thúc bằng dấu câu đầy đủ, không được bỏ lửng giữa ý.
+
+                Ưu tiên khai thác thông tin cụ thể từ nội dung trích từ tệp đính kèm nếu có; nếu nội \
+                dung tệp không liên quan hoặc không đủ dữ kiện thì nói rõ hồ sơ hiện chủ yếu có thông \
+                tin mô tả cơ bản. KHÔNG đưa ra kết luận đạt/không đạt, chỉ mô tả khách quan. Không \
+                sao chép nguyên văn đoạn dài từ tệp, hãy tổng hợp lại.
 
                 Tên đề tài: %s
                 Chủ nhiệm: %s
@@ -82,8 +91,12 @@ public class AiSummarizeDossierJobWorker {
 
                 Các bước đã hoàn tất:
                 %s
+
+                Nội dung trích từ tệp đính kèm (có thể bị cắt bớt do giới hạn độ dài, dùng để tham khảo thêm):
+                %s
                 """.formatted(context.tenDeTai(), context.chuNhiem(), context.donVi(),
                 context.thoiGianThucHien(), context.duToan(), context.cap(),
-                steps.length() == 0 ? "(chưa có)" : steps.toString());
+                steps.length() == 0 ? "(chưa có)" : steps.toString(),
+                attachments.length() == 0 ? "(không có tệp đính kèm khả dụng)" : attachments.toString());
     }
 }

@@ -66,15 +66,20 @@
         }
       </ul>
       <p>
-        Job worker gọi thẳng OpenAI Chat Completions API, không đọc bảng <code>service_task_definition</code> — vì vậy
+        Job worker gọi thẳng LLM provider (OpenAI hoặc Gemini), không đọc bảng <code>service_task_definition</code> — vì vậy
         loại này không hiện trong bảng "Cấu hình" (nguồn DB thật) và không sửa được qua form Tạo/Sửa. Để đổi cấu
         hình, đặt biến môi trường khi chạy backend rồi khởi động lại tiến trình:
       </p>
       <ul class="stc-real-source-list">
-        <li><code>OPENAI_API_KEY</code> — bắt buộc để gọi LLM thật; để trống thì worker luôn dùng tóm tắt fallback tĩnh, không báo lỗi.</li>
+        <li><code>QTKHCN_AI_PROVIDER</code> — mặc định <code>auto</code>; đặt <code>gemini</code> nếu muốn ép dùng Gemini khi cả hai key cùng tồn tại.</li>
+        <li><code>OPENAI_API_KEY</code> — key OpenAI; trong chế độ <code>auto</code> được ưu tiên nếu có giá trị.</li>
+        <li><code>GEMINI_API_KEY</code> — key Gemini; được dùng khi <code>QTKHCN_AI_PROVIDER=gemini</code> hoặc khi <code>auto</code> mà không có <code>OPENAI_API_KEY</code>.</li>
         <li><code>QTKHCN_AI_OPENAI_MODEL</code> — mặc định <code>gpt-4o-mini</code>.</li>
         <li><code>QTKHCN_AI_OPENAI_MAX_TOKENS</code> — mặc định <code>512</code>.</li>
         <li><code>QTKHCN_AI_OPENAI_BASE_URL</code> — mặc định <code>https://api.openai.com</code>.</li>
+        <li><code>QTKHCN_AI_GEMINI_MODEL</code> — mặc định <code>gemini-flash-latest</code>.</li>
+        <li><code>QTKHCN_AI_GEMINI_MAX_OUTPUT_TOKENS</code> — mặc định <code>1024</code>.</li>
+        <li><code>QTKHCN_AI_GEMINI_BASE_URL</code> — mặc định <code>https://generativelanguage.googleapis.com</code>.</li>
       </ul>
     </ng-template>
   }

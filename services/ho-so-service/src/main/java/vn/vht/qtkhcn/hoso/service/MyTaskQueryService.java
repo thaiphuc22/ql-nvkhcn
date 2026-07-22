@@ -1,6 +1,7 @@
 package vn.vht.qtkhcn.hoso.service;
 
 import java.util.List;
+import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.vht.qtkhcn.hoso.domain.WorkflowTaskProjection;
@@ -28,6 +29,19 @@ public class MyTaskQueryService {
             tasks = repository.findActiveForUserOrGroups(identity.userId(), identity.roleCodes());
         }
         return tasks.stream().map(MyTaskQueryService::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<MyTaskResponse> findActiveTaskForHoSo(DemoIdentity identity, String hoSoId) {
+        List<WorkflowTaskProjection> tasks;
+        if (identity.administrator()) {
+            tasks = repository.findActiveByHoSoId(hoSoId);
+        } else if (identity.roleCodes().isEmpty()) {
+            tasks = repository.findActiveByHoSoIdForUser(hoSoId, identity.userId());
+        } else {
+            tasks = repository.findActiveByHoSoIdForUserOrGroups(hoSoId, identity.userId(), identity.roleCodes());
+        }
+        return tasks.stream().findFirst().map(MyTaskQueryService::toResponse);
     }
 
     private static MyTaskResponse toResponse(WorkflowTaskProjection task) {

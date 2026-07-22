@@ -35,6 +35,7 @@ import {
   StepStatus,
 } from '../../core/models/ho-so';
 import { HoSoService } from '../../core/services/ho-so.service';
+import { MyTaskService } from '../../core/services/my-task.service';
 import { TaskAvailableAction } from '../../core/models/task-action';
 import { TaskActionService } from '../../core/services/task-action.service';
 import { PERMISSION_LABEL, SimulatedAction, type DossierStatus as PolicyDossierStatus } from '../../core/models/action-studio';
@@ -75,6 +76,7 @@ const ALL_PERMISSIONS = Object.keys(PERMISSION_LABEL);
 })
 export class HoSoDetailPage {
   private readonly service = inject(HoSoService);
+  private readonly myTaskService = inject(MyTaskService);
   private readonly taskActionService = inject(TaskActionService);
   private readonly actionStudioService = inject(ActionStudioService);
   private readonly eformService = inject(EformService);
@@ -179,12 +181,34 @@ export class HoSoDetailPage {
         this.item.set(item);
         this.loading.set(false);
         this.loadDossierActions();
-        this.loadAvailableActions();
+        this.resolveTaskContextAndLoadActions();
       },
       error: (error: HttpErrorResponse) => {
         this.notFound.set(error.status === 404);
         if (error.status !== 404) this.errorMessage.set(this.errorText(error, 'Không thể tải chi tiết hồ sơ'));
         this.loading.set(false);
+      },
+    });
+  }
+
+  private resolveTaskContextAndLoadActions(): void {
+    const dossier = this.item();
+    const userId = this.auth.user()?.email;
+    if (this.taskKey() || dossier?.trangThai !== 'PROCESSING' || !userId) {
+      this.loadAvailableActions();
+      return;
+    }
+    this.actionsLoading.set(true);
+    this.myTaskService.activeForHoSo(dossier.id, userId).subscribe({
+      next: (task) => {
+        this.taskKey.set(task.taskKey);
+        this.actionsLoading.set(false);
+        this.loadAvailableActions();
+      },
+      error: () => {
+        this.taskKey.set(null);
+        this.availableActions.set([]);
+        this.actionsLoading.set(false);
       },
     });
   }
@@ -393,6 +417,7 @@ export class HoSoDetailPage {
           this.saving.set(false);
           this.taskKey.set(null);
           this.availableActions.set([]);
+          this.resolveTaskContextAndLoadActions();
           return;
         }
         if (attempt + 1 >= maxAttempts) {

@@ -15,16 +15,21 @@ public record AiSummaryContextResponse(
         String thoiGianThucHien,
         String duToan,
         Cap cap,
-        List<BuocHoanTat> cacBuocDaHoanTat) {
+        List<BuocHoanTat> cacBuocDaHoanTat,
+        List<TepDinhKem> tepDinhKem) {
 
     public record BuocHoanTat(String ten, String nguoi, String yKien) {}
 
-    public static AiSummaryContextResponse from(HoSo hoSo, NhiemVu nhiemVu) {
+    /** noiDung đã được cắt bớt theo giới hạn cấu hình (qtkhcn.ai.attachments.*) trước khi tới đây. */
+    public record TepDinhKem(String ten, String loai, String noiDung, boolean daCatBot) {}
+
+    public static AiSummaryContextResponse from(HoSo hoSo, NhiemVu nhiemVu, List<TepDinhKem> tepDinhKem) {
         List<BuocHoanTat> buoc = hoSo.getSteps().stream()
                 .filter(step -> step.getTrangThai() == StepStatus.DONE)
                 .map(step -> new BuocHoanTat(step.getTen(), step.getNguoi(), step.getYKien()))
                 .toList();
         return new AiSummaryContextResponse(hoSo.getId(), nhiemVu.getTen(), nhiemVu.getChuNhiem().label(),
-                nhiemVu.getDonViChuTri(), nhiemVu.getThoiGianThucHien(), nhiemVu.getDuToan(), nhiemVu.getCap(), buoc);
+                nhiemVu.getDonViChuTri(), nhiemVu.getThoiGianThucHien(), nhiemVu.getDuToan(), nhiemVu.getCap(), buoc,
+                tepDinhKem);
     }
 }

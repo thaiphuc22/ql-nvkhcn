@@ -47,6 +47,9 @@ qtkhcn:
     service-token: ${QTKHCN_HO_SO_SERVICE_TOKEN:}
     # Integration destination for workflow events. Business CRUD is never served by this service.
   ai:
+    # auto = OpenAI neu OPENAI_API_KEY co gia tri, neu khong thi dung Gemini khi GEMINI_API_KEY co gia tri.
+    # Dat QTKHCN_AI_PROVIDER=gemini de ep dung Gemini khi ca hai key cung ton tai.
+    provider: ${QTKHCN_AI_PROVIDER:auto}
     openai:
       # Real LLM call (OpenAI Chat Completions API) for service task "AI_Summarize" in RD02.02.
       # Không cấu hình key thì OpenAiSummaryClient trả Optional.empty() và worker dùng fallback text
@@ -55,6 +58,11 @@ qtkhcn:
       api-key: ${OPENAI_API_KEY:}
       model: ${QTKHCN_AI_OPENAI_MODEL:gpt-4o-mini}
       max-tokens: ${QTKHCN_AI_OPENAI_MAX_TOKENS:512}
+    gemini:
+      base-url: ${QTKHCN_AI_GEMINI_BASE_URL:https://generativelanguage.googleapis.com}
+      api-key: ${GEMINI_API_KEY:}
+      model: ${QTKHCN_AI_GEMINI_MODEL:gemini-flash-latest}
+      max-output-tokens: ${QTKHCN_AI_GEMINI_MAX_OUTPUT_TOKENS:1024}
   workflow-events:
     collect-ms: ${QTKHCN_WORKFLOW_EVENT_COLLECT_MS:1000}
     dispatch-ms: ${QTKHCN_WORKFLOW_EVENT_DISPATCH_MS:1000}

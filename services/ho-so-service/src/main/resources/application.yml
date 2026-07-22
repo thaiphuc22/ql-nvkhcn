@@ -35,6 +35,11 @@ management:
 qtkhcn:
   documents:
     storage-path: ${QTKHCN_DOCUMENT_STORAGE_PATH:./data/ho-so-files}
+  ai:
+    attachments:
+      max-files: ${QTKHCN_AI_ATTACHMENT_MAX_FILES:5}
+      max-chars-per-file: ${QTKHCN_AI_ATTACHMENT_MAX_CHARS_PER_FILE:4000}
+      max-chars-total: ${QTKHCN_AI_ATTACHMENT_MAX_CHARS_TOTAL:8000}
   internal:
     service-token: ${QTKHCN_HO_SO_SERVICE_TOKEN:}
   workflow:

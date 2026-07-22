@@ -93,6 +93,7 @@ export interface HoSoResponse {
   duToan: string;
   cap: Cap;
   hoiDongXetDuyet: HoiDongXetDuyetResponse[];
+  tomTatAi: string | null;
 }
 
 export interface HoSoDocument {

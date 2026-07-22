@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <style>
+    *{box-sizing:border-box}body{margin:0;padding:16px;font:12px Inter,Arial,sans-serif;color:#1b1c1c;background:#fbf9f9}
+    h1{font-size:16px;margin:0 0 4px}.sub{color:#5a6675;line-height:18px;margin-bottom:14px}
+    .group{background:#fff;border:1px solid #e6e9ee;border-radius:8px;padding:12px;margin-bottom:10px}
+    .group h2{font-size:12px;margin:0 0 8px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    button{height:32px;border:1px solid #c7cfda;border-radius:6px;background:#fff;color:#1b1c1c;font-weight:600;cursor:pointer}
+    button:hover{border-color:#ee0033;color:#ee0033}.primary{background:#ee0033;border-color:#ee0033;color:#fff;grid-column:1/-1}
+    .primary:hover{background:#bf0027;color:#fff}.status{min-height:34px;padding:8px;border-radius:6px;background:#f5f3f3;color:#5a6675;line-height:18px}
+    .status.error{background:#fff2f0;color:#ba1a1a}
+  </style>
+</head>
+<body>
+  <h1>VHT Figma Builder</h1>
+  <div class="sub">Tạo design system và mockup từ source React. Chạy lại an toàn, không tạo trùng.</div>
+  <div class="group"><h2>Design system</h2><div class="grid">
+    <button data-action="foundations">1. Foundations</button>
+    <button data-action="components">2. Components</button>
+    <button class="primary" data-action="all-system">Build design system</button>
+  </div></div>
+  <div class="group"><h2>React screens</h2><div class="grid">
+    <button data-action="screen-subsystems">Danh sách Phân hệ</button>
+    <button data-action="screen-users">Quản lý người dùng</button>
+    <button data-action="screen-org">Cơ cấu tổ chức</button>
+    <button data-action="screen-permissions">Phân quyền</button>
+    <button data-action="screen-tasks">Nhiệm vụ KHCN</button>
+    <button data-action="screen-task-create">Tạo nhiệm vụ</button>
+    <button data-action="screen-task-detail">Chi tiết RD.2026.012</button>
+    <button data-action="screen-dossiers">Hồ sơ KHCN</button>
+    <button data-action="screen-dossier-create">Tạo hồ sơ</button>
+    <button data-action="screen-dossier-detail">Chi tiết HS-2026-018</button>
+    <button data-action="screen-worklist">Việc của tôi</button>
+    <button data-action="screen-processes">Danh mục quy trình</button>
+    <button data-action="screen-process-create">Tạo &amp; vẽ BPMN</button>
+    <button data-action="screen-process-detail">Chi tiết RD01.01</button>
+    <button data-action="screen-rule-scale">Luật quy mô</button>
+    <button data-action="screen-integrations">Trạng thái tích hợp</button>
+    <button class="primary" data-action="all">Build tất cả</button>
+  </div></div>
+  <div id="status" class="status">Sẵn sàng.</div>
+  <script>
+    const status=document.getElementById('status');
+    document.querySelectorAll('button').forEach(b=>b.onclick=()=>{status.className='status';status.textContent='Đang thực hiện…';parent.postMessage({pluginMessage:{type:b.dataset.action}},'*')});
+    onmessage=e=>{const m=e.data.pluginMessage;if(!m)return;status.className='status'+(m.error?' error':'');status.textContent=m.message};
+  </script>
+</body>
+</html>

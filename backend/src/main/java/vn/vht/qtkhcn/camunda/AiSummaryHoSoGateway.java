@@ -37,8 +37,11 @@ public class AiSummaryHoSoGateway {
     /** Mirrors AiSummaryContextResponse ở ho-so-service — hai service triển khai độc lập nên không share class. */
     public record AiSummaryContext(
             String hoSoId, String tenDeTai, String chuNhiem, String donVi, String thoiGianThucHien,
-            String duToan, String cap, List<BuocHoanTat> cacBuocDaHoanTat) {
+            String duToan, String cap, List<BuocHoanTat> cacBuocDaHoanTat, List<TepDinhKem> tepDinhKem) {
 
         public record BuocHoanTat(String ten, String nguoi, String yKien) {}
+
+        /** noiDung là trích đoạn text từ PDF/Word/Excel, đã cắt bớt theo giới hạn cấu hình ở ho-so-service. */
+        public record TepDinhKem(String ten, String loai, String noiDung, boolean daCatBot) {}
     }
 }

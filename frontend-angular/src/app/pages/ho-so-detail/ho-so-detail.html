@@ -48,8 +48,8 @@
     } @else if (currentStep(); as current) {
       <nz-alert nzType="info" nzShowIcon [nzMessage]="'Đang xử lý: ' + current.ten" [nzDescription]="'Vai trò phụ trách: ' + current.vaiTro + (current.hanXuLy ? ' · Hạn xử lý: ' + current.hanXuLy : '')"></nz-alert>
       @if (!taskKey() && !actionsLoading()) {
-        <nz-alert nzType="warning" nzShowIcon nzMessage="Không có quyền thao tác task từ đây"
-          nzDescription="Mở hồ sơ trực tiếp không mang theo task đang xử lý — vào “Việc của tôi” để phê duyệt/trả lại/từ chối bước này."></nz-alert>
+        <nz-alert nzType="warning" nzShowIcon nzMessage="Không có quyền thao tác task ở bước này"
+          nzDescription="Bạn không phải người xử lý/candidate của task hiện tại, hoặc task đã được xử lý. Vào “Việc của tôi” để kiểm tra các việc đang được phân công."></nz-alert>
       }
     }
     @if (dossier.trangThai === 'START_FAILED') {
@@ -78,6 +78,13 @@
         <nz-empty nzNotFoundContent="Hồ sơ chưa vào quy trình — bấm “Gửi duyệt” để bắt đầu."></nz-empty>
       }
     </nz-card>
+
+    @if (dossier.tomTatAi) {
+      <nz-card nzTitle="Tóm tắt AI" nzSize="small" class="hsd-ai-summary">
+        <span nz-icon nzType="robot" class="hsd-ai-summary-icon"></span>
+        <p class="hsd-ai-summary-text">{{ dossier.tomTatAi }}</p>
+      </nz-card>
+    }
 
     <div nz-row [nzGutter]="16">
       <div nz-col [nzXs]="24" [nzLg]="13" class="hsd-column">

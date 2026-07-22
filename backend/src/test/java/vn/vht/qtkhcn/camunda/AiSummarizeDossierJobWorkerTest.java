@@ -36,7 +36,20 @@ class AiSummarizeDossierJobWorkerTest {
         when(gateway.fetchContext("HS-2026-033")).thenReturn(new AiSummaryContext(
                 "HS-2026-033", "Nghiên cứu nền tảng mô phỏng số", "TS. Nguyễn Văn A", "VHT-RD",
                 "2026-2027", "2.500.000.000 VND", "Co_So",
-                List.of(new AiSummaryContext.BuocHoanTat("1. Khởi tạo", "pm01", "Đạt"))));
+                List.of(new AiSummaryContext.BuocHoanTat("1. Khởi tạo", "pm01", "Đạt")),
+                List.of(new AiSummaryContext.TepDinhKem("thuyet-minh.pdf", "PDF", "Nội dung thuyết minh...", false))));
+    }
+
+    @Test
+    void includesAttachmentExcerptInPromptSentToGenerator() {
+        org.mockito.ArgumentCaptor<String> promptCaptor = org.mockito.ArgumentCaptor.forClass(String.class);
+        when(generator.summarize(promptCaptor.capture())).thenReturn(Optional.of("Tóm tắt."));
+
+        worker.summarize(job());
+
+        String prompt = promptCaptor.getValue();
+        org.junit.jupiter.api.Assertions.assertTrue(prompt.contains("thuyet-minh.pdf"));
+        org.junit.jupiter.api.Assertions.assertTrue(prompt.contains("Nội dung thuyết minh..."));
     }
 
     @Test

@@ -1,5 +1,48 @@
 # Active Task
 
+## ★ DONE — AI_Summarize đọc thêm nội dung tệp đính kèm (PDF/Word/Excel) — 2026-07-21 (owner Claude, theo yêu cầu trực tiếp user)
+
+**Bối cảnh:** tiếp nối việc chuyển provider AI_Summarize sang OpenAI (entry ngay dưới). Trước đó
+`AiSummaryService.buildContext` chỉ đọc metadata `HoSo`/`NhiemVu` + ý kiến các bước đã hoàn tất,
+KHÔNG đọc nội dung tệp đính kèm (`TaiLieu`, lưu qua `DocumentStorageService` trên disk, chưa có
+lib trích xuất text nào trong repo). User yêu cầu bổ sung để AI tóm tắt luôn cả nội dung file.
+
+**Đã thêm/sửa:**
+- `services/ho-so-service/pom.xml` — thêm `org.apache.pdfbox:pdfbox:3.0.3` +
+  `org.apache.poi:poi-ooxml:5.3.0` (chỉ 2 lib này, không dùng Tika để tránh kéo theo dependency
+  tree quá lớn/OCR không cần).
+- `services/ho-so-service/.../service/DocumentTextExtractor.java` (mới) — trích text từ
+  PDF (PDFBox `PDFTextStripper`), `.docx` (POI `XWPFWordExtractor`), `.xlsx`/`.csv`/`.txt` (đọc
+  thẳng ô/plain text). Archive/Image/`.doc`/`.xls` cũ (binary) KHÔNG hỗ trợ — trả `Optional.empty()`,
+  không ném lỗi (nhất quán nguyên tắc fail-safe của AI_Summarize: 1 tệp lỗi không được chặn tóm tắt).
+- `AiSummaryService` — inject `DocumentStorageService` + `DocumentTextExtractor`, thêm
+  `extractAttachments(HoSo)`: lặp `hoSo.getTaiLieu()`, bỏ qua tệp không có `storageKey`/loại
+  Archive/Image, cắt độ dài theo 3 config mới (`qtkhcn.ai.attachments.max-files` mặc định 5,
+  `max-chars-per-file` mặc định 4000, `max-chars-total` mặc định 8000 — env override
+  `QTKHCN_AI_ATTACHMENT_MAX_FILES`/`MAX_CHARS_PER_FILE`/`MAX_CHARS_TOTAL`) để tránh phình
+  prompt/chi phí gọi LLM.
+- `AiSummaryContextResponse` — thêm record `TepDinhKem(ten, loai, noiDung, daCatBot)` +
+  field `tepDinhKem` trả về từ `/internal/v1/ho-so/{id}/ai-summary/context`.
+- Backend: `AiSummaryHoSoGateway.AiSummaryContext` mirror thêm `TepDinhKem`;
+  `AiSummarizeDossierJobWorker.buildPrompt` thêm đoạn "Nội dung trích từ tệp đính kèm" vào prompt
+  gửi OpenAI.
+- Test mới: `DocumentTextExtractorTest` (PDF/docx dựng trong bộ nhớ bằng chính PDFBox/POI, csv/txt,
+  skip Archive/Image, file PDF hỏng không ném lỗi), `AiSummaryServiceTest` (đọc được tệp hợp lệ,
+  bỏ qua tệp thiếu storageKey/Archive, cắt đúng theo giới hạn cấu hình). Cập nhật
+  `AiSummarizeDossierJobWorkerTest` cho record mới + test prompt có chứa trích đoạn tệp.
+
+**Verify:** `mvn -q compile` + `mvn -q test` cả 2 module (`services/ho-so-service`, `backend`)
+đều EXIT=0, không FAILURE/ERROR liên quan (1 dòng ERROR log trong backend test là pre-existing,
+không liên quan AI_Summarize). Dependency PDFBox/POI được fetch qua `mvn` online 1 lần (build sau
+vẫn chạy `-o` được vì đã cache trong `~/.m2`).
+
+**Chưa làm / giới hạn đã biết:** không hỗ trợ `.doc`/`.xls` nhị phân cũ (chỉ OOXML `.docx`/`.xlsx`
++ PDF + `.csv`/`.txt`); chưa test qua UI thật (`/cau-hinh-service-task` banner chưa cập nhật để
+nhắc thêm 3 env var attachment mới — cân nhắc bổ sung nếu cần); chưa chạy thử với OpenAI key thật
+kèm hồ sơ có file đính kèm thật.
+
+## ★ DONE — Đổi provider LLM của `khcn.rd0202.summarize-dossier` từ Anthropic sang OpenAI
+
 ## ★ DONE — Port tab "Báo cáo Optimize" + "DMN / Outcome" + "Đề xuất cải tiến" trên `/giam-sat` sang Angular — 2026-07-21 (owner Claude, theo yêu cầu trực tiếp user)
 
 **Bối cảnh:** tiếp nối việc port Optimize dashboard `/tong-quan` (entry ngay dưới) — user yêu cầu

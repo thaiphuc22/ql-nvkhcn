@@ -31,7 +31,7 @@ const dossier: HoSoResponse = {
   maDeTai: 'RD.2026.031', tenDeTai: 'Nghiên cứu nền tảng xử lý tín hiệu số dùng chung cho radar',
   chuNhiem: 'ThS. Lê Thị Mai', donVi: 'TT Nghiên cứu Vô tuyến', thoiGianThucHien: '09/2026 – 09/2027',
   duToan: '2.750.000.000 đ', cap: 'CS',
-  hoiDongXetDuyet: [],
+  hoiDongXetDuyet: [], tomTatAi: null,
 };
 
 const processingDossier: HoSoResponse = {
@@ -51,6 +51,14 @@ describe('HoSoDetailPage', () => {
   let http: HttpTestingController;
   let paramMap: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
   let queryParamMap: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
+
+  beforeAll(() => {
+    globalThis.ResizeObserver ??= class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    } as typeof ResizeObserver;
+  });
 
   afterEach(() => http.verify());
 
@@ -97,6 +105,11 @@ describe('HoSoDetailPage', () => {
     request.flush(actions);
   }
 
+  function flushNoActiveTask() {
+    http.expectOne(`/api/ho-so/${processingDossier.id}/active-task`)
+      .flush(null, { status: 404, statusText: 'Not Found' });
+  }
+
   it('renders live dossier fields and persisted documents', () => {
     const fixture = createPage();
     expect(fixture.nativeElement.textContent).toContain(dossier.tenDeTai);
@@ -134,6 +147,27 @@ describe('HoSoDetailPage', () => {
   it('does not render the council card when there is none yet', () => {
     const fixture = createPage();
     expect(fixture.nativeElement.textContent).not.toContain('Hội đồng xét duyệt');
+  });
+
+  it('renders the AI summary when the dossier has one', () => {
+    const withSummary: HoSoResponse = {
+      ...dossier,
+      tomTatAi: 'Hồ sơ đề nghị xét duyệt nhiệm vụ nghiên cứu nền tảng xử lý tín hiệu số dùng chung cho radar.',
+    };
+    setup(withSummary.id);
+    const fixture = TestBed.createComponent(HoSoDetailPage);
+    http.expectOne(`/api/ho-so/${withSummary.id}`).flush(withSummary);
+    flushSimulation();
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('Tóm tắt AI');
+    expect(text).toContain(withSummary.tomTatAi);
+  });
+
+  it('does not render the AI summary card when the dossier has none yet', () => {
+    const fixture = createPage();
+    expect(fixture.nativeElement.textContent).not.toContain('Tóm tắt AI');
   });
 
   it('reloads the dossier when Angular reuses the detail route', () => {
@@ -314,17 +348,52 @@ describe('HoSoDetailPage', () => {
     http.expectNone(`/api/ho-so/${coSo.id}/submit`);
   });
 
-  it('shows no action controls and does not call the task API when opened without a taskKey', () => {
+  it('shows no action controls when opened directly and no active task belongs to the user', () => {
     setup(processingDossier.id);
     const fixture = TestBed.createComponent(HoSoDetailPage);
     const get = http.expectOne(`/api/ho-so/${processingDossier.id}`);
     get.flush(processingDossier);
     flushSimulation();
+    flushNoActiveTask();
     fixture.detectChanges();
 
     expect(fixture.componentInstance.taskKey()).toBeNull();
-    expect(fixture.nativeElement.textContent).toContain('Không có quyền thao tác task từ đây');
-    expect(fixture.nativeElement.textContent).not.toContain('Phê duyệt');
+    expect(fixture.nativeElement.textContent).toContain('Không có quyền thao tác task ở bước này');
+    expect(fixture.nativeElement.textContent).not.toContain('Đồng ý duyệt');
+  });
+
+  it('resolves the current active task when opened directly and then loads task actions', () => {
+    setup(processingDossier.id);
+    const fixture = TestBed.createComponent(HoSoDetailPage);
+    http.expectOne(`/api/ho-so/${processingDossier.id}`).flush(processingDossier);
+    flushSimulation();
+    http.expectOne(`/api/ho-so/${processingDossier.id}/active-task`).flush({
+      processInstanceKey: '2251799813697704',
+      taskKey: 't2-key-1',
+      taskDefinitionKey: 't2',
+      maHoSo: processingDossier.id,
+      tenBuoc: 'Thẩm định hồ sơ',
+      assignee: null,
+      candidateUsers: [],
+      candidateGroups: ['TD'],
+      createdAt: '2026-07-20T00:00:00Z',
+      dueAt: null,
+      formKey: 'phieu-phe-duyet',
+    });
+    http.expectOne('/api/tasks/t2-key-1/available-actions').flush({
+      taskKey: 't2-key-1',
+      processInstanceKey: '2251799813697704',
+      taskDefinitionKey: 't2',
+      actions: [{
+        actionCode: 'APPROVE_STEP', label: 'Đồng ý duyệt', tone: 'primary',
+        requiresReason: false, requiresEvidence: false, requiresConfirm: true, formKey: null,
+      }],
+    });
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.taskKey()).toBe('t2-key-1');
+    expect(fixture.nativeElement.textContent).toContain('Đồng ý duyệt');
+    expect(fixture.nativeElement.textContent).not.toContain('Không có quyền thao tác task ở bước này');
   });
 
   it('loads BPMN by deployed process id and keeps the current task as active node', () => {
@@ -332,6 +401,7 @@ describe('HoSoDetailPage', () => {
     const fixture = TestBed.createComponent(HoSoDetailPage);
     http.expectOne(`/api/ho-so/${processingDossier.id}`).flush(processingDossier);
     flushSimulation();
+    flushNoActiveTask();
 
     fixture.componentInstance.openBpmn();
     const request = http.expectOne('/api/process-definitions/by-bpmn-process-id/RD01_01');
@@ -372,7 +442,7 @@ describe('HoSoDetailPage', () => {
     const cmp = fixture.componentInstance;
     expect(cmp.availableActions().some((action) => action.actionCode === 'APPROVE_STEP')).toBe(true);
     expect(cmp.availableActions().some((action) => action.actionCode === 'REJECT_STEP')).toBe(false);
-    expect(fixture.nativeElement.textContent).not.toContain('Không có quyền thao tác task từ đây');
+    expect(fixture.nativeElement.textContent).not.toContain('Không có quyền thao tác task ở bước này');
 
     cmp.openAction('APPROVE_STEP');
     fixture.detectChanges();
@@ -397,12 +467,48 @@ describe('HoSoDetailPage', () => {
     });
     expect(cmp.actionOpen()).toBe(false);
 
+    const nextStepDossier: HoSoResponse = {
+      ...processingDossier,
+      buocHienTai: 2,
+      steps: [
+        ...processingDossier.steps.map((step) => step.buocIndex === 1 ? { ...step, trangThai: 'DONE' as const } : step),
+        {
+          buocIndex: 2, taskDefinitionKey: 't3', ten: 'Phê duyệt hồ sơ', vaiTro: 'Lãnh đạo',
+          vaiTroCodes: ['LD'], nguoi: null, trangThai: 'CURRENT', thoiDiem: null,
+          yKien: null, hanXuLy: null, formKey: null,
+        },
+      ],
+    };
     const refetch = http.expectOne(`/api/ho-so/${processingDossier.id}`);
-    refetch.flush({ ...processingDossier, buocHienTai: 2 });
+    refetch.flush(nextStepDossier);
+    http.expectOne(`/api/ho-so/${processingDossier.id}/active-task`).flush({
+      processInstanceKey: '2251799813697704',
+      taskKey: 't3-key-1',
+      taskDefinitionKey: 't3',
+      maHoSo: processingDossier.id,
+      tenBuoc: 'Phê duyệt hồ sơ',
+      assignee: null,
+      candidateUsers: [],
+      candidateGroups: ['LD'],
+      createdAt: '2026-07-20T00:05:00Z',
+      dueAt: null,
+      formKey: null,
+    });
+    http.expectOne('/api/tasks/t3-key-1/available-actions').flush({
+      taskKey: 't3-key-1',
+      processInstanceKey: '2251799813697704',
+      taskDefinitionKey: 't3',
+      actions: [{
+        actionCode: 'APPROVE_STEP', label: 'Phê duyệt bước mới', tone: 'primary',
+        requiresReason: false, requiresEvidence: false, requiresConfirm: true, formKey: null,
+      }],
+    } satisfies TaskAvailableActionsResponse);
+    fixture.detectChanges();
 
     expect(cmp.saving()).toBe(false);
-    expect(cmp.taskKey()).toBeNull();
-    expect(cmp.availableActions()).toEqual([]);
+    expect(cmp.taskKey()).toBe('t3-key-1');
+    expect(cmp.availableActions().map((action) => action.label)).toContain('Phê duyệt bước mới');
+    expect(fixture.nativeElement.textContent).toContain('Phê duyệt bước mới');
   });
 
   it('loads the eForm bound to a real task action and submits the data the user entered', () => {
@@ -444,6 +550,7 @@ describe('HoSoDetailPage', () => {
 
     const refetch = http.expectOne(`/api/ho-so/${processingDossier.id}`);
     refetch.flush({ ...processingDossier, buocHienTai: 2 });
+    flushNoActiveTask();
   });
 
   it('renders a draft support action from Action Studio and opens its configured form', () => {

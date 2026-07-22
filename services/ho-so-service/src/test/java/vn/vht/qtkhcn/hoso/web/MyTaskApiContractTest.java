@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,6 +67,32 @@ class MyTaskApiContractTest {
                         .header(HttpHeaders.AUTHORIZATION, AUTHORIZATION))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("X-QTKHCN-User-Id is required."));
+    }
+
+    @Test
+    void returnsTheCurrentUsersActiveTaskForADossier() throws Exception {
+        DemoIdentity identity = new DemoIdentity("pm@example.com", Set.of("PM", "PA", "NNC"), false);
+        when(service.findActiveTaskForHoSo(identity, "HS-2026-001")).thenReturn(Optional.of(task()));
+
+        mvc.perform(get("/api/ho-so/HS-2026-001/active-task")
+                        .header(HttpHeaders.AUTHORIZATION, AUTHORIZATION)
+                        .header(MyTaskQueryController.USER_ID_HEADER, " PM@EXAMPLE.COM "))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.taskKey").value("2001"))
+                .andExpect(jsonPath("$.maHoSo").value("HS-2026-001"));
+
+        verify(service).findActiveTaskForHoSo(eq(identity), eq("HS-2026-001"));
+    }
+
+    @Test
+    void returnsNotFoundWhenTheDossierHasNoActiveTaskForTheCurrentUser() throws Exception {
+        DemoIdentity identity = new DemoIdentity("pm@example.com", Set.of("PM", "PA", "NNC"), false);
+        when(service.findActiveTaskForHoSo(identity, "HS-2026-999")).thenReturn(Optional.empty());
+
+        mvc.perform(get("/api/ho-so/HS-2026-999/active-task")
+                        .header(HttpHeaders.AUTHORIZATION, AUTHORIZATION)
+                        .header(MyTaskQueryController.USER_ID_HEADER, "pm@example.com"))
+                .andExpect(status().isNotFound());
     }
 
     @Test

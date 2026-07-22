@@ -15,4 +15,11 @@ export class MyTaskService {
       headers: { [DEMO_USER_ID_HEADER]: userId.trim().toLowerCase() },
     });
   }
+
+  activeForHoSo(maHoSo: string, userId: string): Observable<MyTaskResponse> {
+    return this.http.get<MyTaskResponse>(
+      `${API_BASE_URL}/api/ho-so/${encodeURIComponent(maHoSo)}/active-task`,
+      { headers: { [DEMO_USER_ID_HEADER]: userId.trim().toLowerCase() } },
+    );
+  }
 }
