@@ -1,0 +1,243 @@
+<nz-card nzSize="small" [nzTitle]="simTitle" [nzExtra]="scenarios().length > 0 ? simExtra : undefined">
+  <ng-template #simTitle>
+    <span nz-icon nzType="thunderbolt"></span>
+    Mô phỏng (Simulation)
+  </ng-template>
+  <ng-template #simExtra>
+    <nz-tag nzColor="blue">{{ scenarios().length }}</nz-tag>
+  </ng-template>
+
+  <div class="simp-root">
+    <div>
+      <span nz-typography nzType="secondary">Loại phê duyệt (Need Role từ BPMN)</span>
+      <nz-select class="simp-block" [ngModel]="simSlot()" (ngModelChange)="handleSlotChange($event)">
+        @for (opt of activeSlots; track opt.value) {
+          <nz-option [nzValue]="opt.value" [nzLabel]="opt.label"></nz-option>
+        }
+      </nz-select>
+    </div>
+
+    @for (def of simVars(); track def.key) {
+      <div>
+        <span nz-typography nzType="secondary"
+          >{{ def.label }} <span class="simp-source">({{ def.source }})</span></span
+        >
+        <div class="simp-field">
+          @switch (def.type) {
+            @case ('boolean') {
+              <label nz-checkbox [ngModel]="boolVarValue(def.key)" (ngModelChange)="updateVar(def.key, $event)"></label>
+            }
+            @case ('enum') {
+              <nz-select class="simp-block" [ngModel]="stringVarValue(def.key)" (ngModelChange)="updateVar(def.key, $event)">
+                @for (opt of def.options ?? []; track opt.value) {
+                  <nz-option [nzValue]="opt.value" [nzLabel]="opt.label"></nz-option>
+                }
+              </nz-select>
+            }
+            @case ('multiEnum') {
+              <nz-select
+                class="simp-block"
+                nzMode="multiple"
+                nzAllowClear
+                [ngModel]="multiVarValue(def.key)"
+                (ngModelChange)="updateVar(def.key, $event)"
+              >
+                @for (opt of def.options ?? []; track opt.value) {
+                  <nz-option [nzValue]="opt.value" [nzLabel]="opt.label"></nz-option>
+                }
+              </nz-select>
+            }
+            @case ('number') {
+              <nz-input-number
+                class="simp-block"
+                [nzMin]="0"
+                [nzStep]="def.key === 'tongDuToan' ? 1000000000 : 1"
+                [ngModel]="numberVarValue(def.key)"
+                (ngModelChange)="updateVar(def.key, $event ?? 0)"
+                [nzFormatter]="def.key === 'tongDuToan' ? formatVnd : undefined"
+                [nzParser]="def.key === 'tongDuToan' ? parseVnd : undefined"
+              ></nz-input-number>
+            }
+            @case ('date') {
+              <nz-date-picker
+                class="simp-block"
+                [ngModel]="dateVarValue(def.key)"
+                (ngModelChange)="onDateVarChange(def.key, $event)"
+              ></nz-date-picker>
+            }
+            @default {
+              <input
+                nz-input
+                [ngModel]="stringVarValue(def.key)"
+                (ngModelChange)="updateVar(def.key, $event)"
+                placeholder="Nhập {{ def.label.toLowerCase() }}"
+              />
+            }
+          }
+        </div>
+      </div>
+    }
+
+    <div>
+      <span nz-typography nzType="secondary" class="simp-presets-label">Preset nhanh:</span>
+      <div class="simp-presets">
+        @for (p of quickPresets; track p.label) {
+          <button nz-button nzSize="small" (click)="applyPreset(p)">{{ p.label }}</button>
+        }
+      </div>
+    </div>
+
+    <button nz-button nzType="primary" nzBlock (click)="runSim()">
+      <span nz-icon nzType="thunderbolt"></span>
+      Xem kết quả
+    </button>
+
+    <div class="simp-save">
+      <input
+        nz-input
+        nzSize="small"
+        placeholder="Tên kịch bản..."
+        [ngModel]="scenarioName()"
+        (ngModelChange)="scenarioName.set($event)"
+        (keydown.enter)="saveScenario()"
+      />
+      <button nz-button nzSize="small" nz-tooltip nzTooltipTitle="Lưu kịch bản hiện tại" (click)="saveScenario()">
+        <span nz-icon nzType="save"></span>
+      </button>
+    </div>
+
+    @if (result(); as r) {
+      <nz-divider class="simp-divider"></nz-divider>
+
+      @if (hasDiff()) {
+        <nz-alert nzType="info" nzShowIcon [nzMessage]="diffMessage()"></nz-alert>
+      }
+
+      <nz-alert
+        [nzType]="r.matchedRule ? 'success' : 'warning'"
+        nzShowIcon
+        [nzMessage]="r.matchedRule ? 'Kết quả: ' + (r.mode ? modeLabel[r.mode] : '') : 'Không có luật khớp'"
+        [nzDescription]="r.reason"
+      ></nz-alert>
+
+      @if (r.warnings.length > 0) {
+        <nz-alert nzType="warning" nzShowIcon nzMessage="Cảnh báo" [nzDescription]="warningsTpl">
+        </nz-alert>
+        <ng-template #warningsTpl>
+          <ul class="simp-warning-list">
+            @for (w of r.warnings; track $index) {
+              <li>{{ w }}</li>
+            }
+          </ul>
+        </ng-template>
+      }
+
+      @if (r.approvers.length > 0) {
+        <nz-card nzSize="small" class="simp-approvers">
+          @for (a of r.approvers; track a.user.id) {
+            <div class="simp-approver">
+              <nz-avatar nzText="{{ initials(a.user.hoTen) }}" class="simp-avatar"></nz-avatar>
+              <div>
+                <strong>{{ a.user.hoTen }}</strong>
+                <div><span nz-typography nzType="secondary" class="simp-chuc-danh">{{ a.user.chucDanh }}</span></div>
+                @if (a.viaRoleCode) {
+                  <nz-tag nzColor="green">{{ roleLabel(a.viaRoleCode) }}</nz-tag>
+                }
+                @if (a.delegatedFrom) {
+                  <nz-tag nzColor="volcano">UQ: {{ a.delegatedFrom.hoTen }}</nz-tag>
+                }
+                @if (a.placeholder) {
+                  <nz-tag nzColor="orange">placeholder</nz-tag>
+                }
+              </div>
+            </div>
+          }
+        </nz-card>
+      }
+
+      @if (r.approvers.length === 0 && r.matchedRule == null) {
+        <nz-empty nzNotFoundContent="Không có người phê duyệt"></nz-empty>
+      }
+
+      @if (r.evaluatedRules.length > 0 && relevantEvaluated(); as ev) {
+        <div>
+          <span nz-typography nzType="secondary" class="simp-evaluated-label"
+            >Đã xét {{ r.evaluatedRules.length }} luật cùng slot:</span
+          >
+          <div class="simp-evaluated-list">
+            @for (e of ev.relevant; track e.rule.id) {
+              <div class="simp-evaluated-row">
+                <span class="simp-evaluated-left">
+                  <nz-tag [nzColor]="e.chosen ? 'green' : e.matched ? 'blue' : 'default'">#{{ e.rule.priority }}</nz-tag>
+                  <span [class.simp-strike]="!e.matched && !e.chosen">{{ e.rule.ten }}</span>
+                </span>
+                <span nz-typography nzType="secondary">{{ e.note }}</span>
+              </div>
+            }
+          </div>
+
+          @if (ev.skippedCount > 0) {
+            <div class="simp-evaluated-toggle">
+              <button nz-button nzType="link" nzSize="small" (click)="toggleShowAllEvaluated()">
+                {{ showAllEvaluated() ? 'Ẩn bớt' : ev.skippedCount + ' luật khác (khác slot / đã tắt) ▸' }}
+              </button>
+              @if (showAllEvaluated()) {
+                <div class="simp-evaluated-list">
+                  @for (e of ev.skipped; track e.rule.id) {
+                    <div class="simp-evaluated-row simp-evaluated-row--dim">
+                      <span class="simp-evaluated-left">
+                        <nz-tag>#{{ e.rule.priority }}</nz-tag>
+                        <span class="simp-strike">{{ e.rule.ten }}</span>
+                      </span>
+                      <span nz-typography nzType="secondary">{{ e.note }}</span>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+    }
+
+    @if (scenarios().length > 0) {
+      <nz-divider class="simp-divider"></nz-divider>
+      <button nz-button nzType="link" nzSize="small" (click)="toggleScenariosExpanded()">
+        <span nz-icon nzType="history"></span>
+        Kịch bản đã lưu ({{ scenarios().length }})
+      </button>
+      @if (scenariosExpanded()) {
+        <div class="simp-scenario-list">
+          @for (s of scenarios(); track s.id) {
+            <div class="simp-scenario-row">
+              <span class="simp-scenario-left">
+                <nz-tag nzColor="purple">{{ s.slot }}</nz-tag>
+                <button nz-button nzType="link" nzSize="small" (click)="loadScenario(s)">{{ s.name }}</button>
+              </span>
+              <span class="simp-scenario-actions">
+                <button
+                  nz-button
+                  nzType="text"
+                  nzSize="small"
+                  nz-tooltip
+                  nzTooltipTitle="Sao chép context JSON"
+                  (click)="copyScenarioContext(s)"
+                >
+                  <span nz-icon nzType="copy"></span>
+                </button>
+                <button nz-button nzType="text" nzSize="small" nzDanger (click)="deleteScenario(s.id)">
+                  <span nz-icon nzType="delete"></span>
+                </button>
+              </span>
+            </div>
+          }
+        </div>
+      }
+    }
+
+    <p nz-typography nzType="secondary" class="simp-footer">
+      Nút mô phỏng gọi <code>POST /api/approval-matrix/resolve</code>; Camunda chỉ nhận danh sách
+      <code>candidateUsers</code> đã tính. BPMN &amp; ma trận giữ nguyên.
+    </p>
+  </div>
+</nz-card>

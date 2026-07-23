@@ -1,0 +1,28 @@
+<div class="am-page">
+  <div class="am-header">
+    <div>
+      <h2 nz-typography>Ma trận phê duyệt</h2>
+      <p>
+        Luật ánh xạ điều kiện nghiệp vụ → người phê duyệt cụ thể theo Need Role (BPMN chỉ ghi "cần
+        phê duyệt ở đâu"; ma trận này trả lời "chính xác ai phê duyệt").
+      </p>
+    </div>
+  </div>
+
+  <nz-tabs>
+    <nz-tab [nzTitle]="matrixTabTitle">
+      <ng-template #matrixTabTitle>
+        <span nz-icon nzType="solution"></span>
+        Ma trận
+      </ng-template>
+      <app-approval-matrix-rules-tab></app-approval-matrix-rules-tab>
+    </nz-tab>
+    <nz-tab [nzTitle]="catalogTabTitle">
+      <ng-template #catalogTabTitle>
+        <span nz-icon nzType="appstore"></span>
+        Danh mục Loại phê duyệt
+      </ng-template>
+      <app-approval-slot-catalog-tab></app-approval-slot-catalog-tab>
+    </nz-tab>
+  </nz-tabs>
+</div>

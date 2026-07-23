@@ -1,0 +1,20 @@
+{
+  "runId": "vht-draft-ds-v1",
+  "fileKey": "jC6ldmlIeFmBWKx4dRvn6e",
+  "phase": "phase1",
+  "step": "P1.c-blocked-rate-limit",
+  "completedSteps": ["phase0", "P1.a", "P1.b"],
+  "entities": {
+    "collections": {
+      "primitives": "VariableCollectionId:7:2",
+      "color": "VariableCollectionId:7:3",
+      "dimensions": "VariableCollectionId:7:4"
+    },
+    "variables": {
+      "range": "VariableID:7:5 through VariableID:7:31",
+      "count": 27
+    }
+  },
+  "pending": ["P1.c", "P1.d", "P1.e", "P1.f", "P1.g", "P1.h", "phase2", "phase3", "phase4"],
+  "blocker": "Figma MCP Starter plan tool-call limit reached"
+}

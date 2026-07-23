@@ -1,0 +1,49 @@
+http://127.0.0.1:8443 {
+	bind 127.0.0.1
+
+	log {
+		output stderr
+		format console
+	}
+
+	basic_auth {
+		demo {$DEMO_BASIC_AUTH_HASH}
+	}
+
+	# Service Quan ly NV KHCN owns every dossier/mission API and its workflow projections.
+	# There is intentionally no monolith fallback or read/write cutover switch.
+	@nvkhcn_api {
+		path /api/ho-so /api/ho-so/* /api/nhiem-vu /api/nhiem-vu/* /api/my-tasks /api/my-tasks/ /api/internal-integration/status
+	}
+	handle @nvkhcn_api {
+		reverse_proxy {$QTKHCN_HO_SO_UPSTREAM} {
+			header_up X-QTKHCN-Dev-Key {$QTKHCN_DEV_API_KEY}
+			header_up Authorization "Bearer {$QTKHCN_HO_SO_SERVICE_TOKEN}"
+			header_up -X-QTKHCN-Role-Codes
+		}
+	}
+
+	# Runtime task commands belong exclusively to Service Quan tri quy trinh.
+	@task_actions {
+		method GET POST
+		path_regexp taskAction ^/api/tasks/[^/]+/(available-actions|actions)$
+	}
+	handle @task_actions {
+		reverse_proxy 127.0.0.1:8090 {
+			header_up X-QTKHCN-Dev-Key {$QTKHCN_DEV_API_KEY}
+			header_up -X-QTKHCN-Role-Codes
+		}
+	}
+
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8090 {
+			header_up X-QTKHCN-Dev-Key {$QTKHCN_DEV_API_KEY}
+		}
+	}
+
+	handle {
+		root * {$DEMO_STATIC_ROOT}
+		try_files {path} /index.html
+		file_server
+	}
+}

@@ -1,0 +1,12 @@
+.hsc-page { display: grid; gap: 16px; max-width: 1440px; }
+.hsc-header { display: flex; align-items: flex-start; gap: 8px; }
+.hsc-header h2 { margin: 0; }
+.hsc-header > div > div { color: var(--vht-ink-2); }
+.hsc-loading { display: grid; min-height: 320px; place-items: center; }
+.hsc-page form { display: block; }
+.hsc-page nz-card { display: block; margin-bottom: 16px; }
+.hsc-page nz-select, .hsc-page nz-date-picker { width: 100%; }
+.hsc-documents, .hsc-preview { display: grid; gap: 8px; }
+.hsc-actions { display: flex; gap: 8px; margin-top: 16px; }
+.hsc-muted { color: var(--vht-ink-2); font-size: 12px; }
+@media (max-width: 767px) { .hsc-actions button { flex: 1; } }

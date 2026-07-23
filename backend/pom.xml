@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  QTKHCN backend (D14). Scaffold cho Mốc 2 — chưa build/run được trong phiên viết code này
+  (môi trường thực thi không có Maven/JDK cài sẵn). Version của io.camunda:camunda-spring-boot-starter
+  và spring-boot-starter-parent đã được kiểm tra qua tra cứu web tại thời điểm viết (2026-07-15),
+  nhưng CẦN xác nhận lại bằng `mvn dependency:resolve` ngay lần build đầu tiên — nếu artifact không
+  tồn tại, `mvn` sẽ báo lỗi rõ ràng ngay (fail loud), không âm thầm sai.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <!--
+      Bump 2026-07-15 sau khi chạy thật: camunda-spring-boot-starter:8.9.12 đòi Spring Boot 4.0.7
+      / Spring Framework 7.0.8 (kiểm tra bằng cách đọc thẳng POM đã tải trong ~/.m2, không đoán) —
+      3.3.4 ban đầu gây NoClassDefFoundError (AdditionalPathsMapper, lớp Spring Boot Actuator mới
+      hơn 3.3.x) ngay khi khởi động. Xem backend/README.md mục "Đã verify".
+    -->
+    <version>4.0.7</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>vn.vht.qtkhcn</groupId>
+  <artifactId>qtkhcn-backend</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <name>qtkhcn-backend</name>
+  <description>QTKHCN — Backend (D14: Java 21 + Spring Boot + Camunda 8 Zeebe client)</description>
+
+  <properties>
+    <java.version>21</java.version>
+    <!-- Khớp CAMUNDA_VERSION trong infra/README.md (Mốc 1) — cùng dòng release 8.9. -->
+    <camunda.version>8.9.12</camunda.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <!--
+      Spring Boot 4 tách autoconfigure thành nhiều module nhỏ (xác nhận qua docs.spring.io
+      2026-07-15, không đoán) — riêng `flyway-core`/`flyway-database-postgresql` (chỉ engine, đã
+      có ở dưới) KHÔNG đủ để Flyway tự chạy nữa; cần `spring-boot-starter-flyway` cho
+      FlywayAutoConfiguration (package org.springframework.boot.flyway.autoconfigure). Thiếu
+      starter này gây lỗi im lặng: Flyway không log gì, không tạo bảng, rồi Hibernate
+      ddl-auto=validate fail vì bảng chưa tồn tại — dễ nhầm là lỗi JPA.
+    -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-flyway</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-database-postgresql</artifactId>
+    </dependency>
+
+    <!--
+      Camunda 8 Java SDK (Zeebe client + Spring integration). Coordinates xác nhận qua tra cứu
+      Maven Central 2026-07-15: io.camunda:spring-zeebe-starter đã RELOCATE sang
+      io.camunda:camunda-spring-boot-starter theo dòng release hợp nhất "Camunda 8" (khớp image
+      camunda/camunda dùng ở infra/README.md, không còn tách zeebe/operate/tasklist riêng).
+    -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-spring-boot-starter</artifactId>
+      <version>${camunda.version}</version>
+    </dependency>
+    <!--
+      Ghi đè httpclient5 (2026-07-15, sau khi chạy thật): camunda-client-java:8.9.12 tự khai
+      httpclient5:5.6.2 (đọc trực tiếp POM của nó trong ~/.m2, không đoán) nhưng dependencyManagement
+      của spring-boot-starter-parent:4.0.7 kéo về 5.5.2 "gần" hơn trong cây phụ thuộc nên thắng
+      mediation — 5.5.2 thiếu method `HttpAsyncClientBuilder.disableContentCompression()` mà
+      camunda-client-java gọi trực tiếp, gây NoSuchMethodError lúc khởi tạo bean CamundaClient (lỗi
+      chỉ hiện ở RUNTIME khi bean thật sự khởi tạo, không phải compile-time). Ghim tường minh version
+      camunda-client-java cần để nó thắng mediation.
+    -->
+    <dependency>
+      <groupId>org.apache.httpcomponents.client5</groupId>
+      <artifactId>httpclient5</artifactId>
+      <version>5.6.2</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents.core5</groupId>
+      <artifactId>httpcore5</artifactId>
+      <version>5.4.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents.core5</groupId>
+      <artifactId>httpcore5-h2</artifactId>
+      <version>5.4.1</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <optional>true</optional>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!--
+      CI check "BPMN đã deploy vs file repo" (backend/src/test/.../BundledBpmnDeployedConsistencyTest.java)
+      dựng Postgres thật qua Testcontainers thay vì H2, vì Flyway/JPA validate phải chạy đúng engine
+      production dùng. spring-boot-testcontainers cho @ServiceConnection; version do
+      spring-boot-starter-parent dependencyManagement quyết định.
+    -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!--
+      Spring Boot 4 tách @DataJpaTest/@AutoConfigureTestDatabase khỏi spring-boot-test-autoconfigure
+      (chỉ còn @JsonTest ở đó) sang starter riêng này — xác nhận bằng cách đọc trực tiếp
+      spring-boot-dependencies-4.0.7.pom trong ~/.m2, không đoán.
+    -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- Testcontainers 2.x đổi tên artifact sang tiền tố testcontainers-* (xác nhận qua testcontainers-bom-2.0.5.pom trong ~/.m2, không phải junit-jupiter/postgresql như dòng 1.x cũ). -->
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers-junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers-postgresql</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>qtkhcn-backend</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+</project>

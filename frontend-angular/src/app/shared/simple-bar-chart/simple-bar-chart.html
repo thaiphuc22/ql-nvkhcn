@@ -1,0 +1,35 @@
+@if (orientation() === 'vertical') {
+  <div class="sbc-vertical" [style.height.px]="height()">
+    @for (bar of bars(); track bar.label) {
+      <div class="sbc-vcol" [title]="bar.label + ': ' + formatValue(bar.value)">
+        <span class="sbc-vvalue">{{ formatValue(bar.value) }}</span>
+        <div class="sbc-vbar" [style.height.%]="bar.pct" [style.background]="bar.fill"></div>
+        <span class="sbc-vlabel" [class.sbc-vlabel-rotate]="rotateLabels()">{{ bar.label }}</span>
+      </div>
+    }
+  </div>
+} @else {
+  <div class="sbc-horizontal">
+    @for (bar of bars(); track bar.label) {
+      <div class="sbc-hrow" [title]="bar.label + ': ' + formatValue(bar.value)">
+        <span class="sbc-hlabel">{{ bar.label }}</span>
+        <div class="sbc-htrack">
+          <div class="sbc-hbar" [style.width.%]="bar.pct" [style.background]="bar.fill"></div>
+        </div>
+        <span class="sbc-hvalue">{{ formatValue(bar.value) }}</span>
+      </div>
+    }
+  </div>
+}
+
+<table class="sbc-sr-table">
+  <caption>Dữ liệu biểu đồ dạng bảng</caption>
+  <tbody>
+    @for (bar of bars(); track bar.label) {
+      <tr>
+        <th scope="row">{{ bar.label }}</th>
+        <td>{{ formatValue(bar.value) }}</td>
+      </tr>
+    }
+  </tbody>
+</table>

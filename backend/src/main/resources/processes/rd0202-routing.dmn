@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  DMN định tuyến RD02.02 — xác định cấp thẩm quyền của nhiệm vụ.
+
+  ⚠️ BẢN GIẢ LẬP (2026-07-20) — NGƯỠNG CHƯA CHỐT.
+  OQ-001 ("tiêu chí phân cấp Cơ sở vs Tập đoàn là gì") vẫn MỞ trong
+  docs/req/RD01-RD02-requirements.md §7 và chính doc đó đánh dấu OQ-001 **chặn RD02.02**. Bảng dưới
+  dùng ngưỡng 10 tỷ kế thừa từ bản nháp EPIC09 (webapp/src/dmn/rd02Routing.dmn.ts ở nhánh 0bbac99),
+  vốn cũng đã tự ghi là placeholder chờ OQ-008. Khi khách chốt tiêu chí thật, sửa BẢNG NÀY — không
+  sửa BPMN, đó chính là lý do tách ra DMN.
+
+  Output `cap` là biến điều khiển đã khai trong ProcessVariableContract (CAP_CO_SO="CS",
+  CAP_TAP_DOAN="TD") — không đặt tên biến mới.
+  Lưu ý FEEL: số KHÔNG dùng dấu '_' phân tách.
+-->
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/"
+             xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/"
+             xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/"
+             id="drd_rd0202_routing"
+             name="Định tuyến RD02.02"
+             namespace="http://vht.vn/qtkhcn/dmn/rd0202">
+
+  <inputData id="in_tongDuToan" name="tongDuToan">
+    <variable id="var_tongDuToan" name="tongDuToan" typeRef="number" />
+  </inputData>
+  <inputData id="in_loaiNhiemVu" name="loaiNhiemVu">
+    <variable id="var_loaiNhiemVu" name="loaiNhiemVu" typeRef="string" />
+  </inputData>
+
+  <decision id="capNhiemVu" name="Phân cấp thẩm quyền nhiệm vụ">
+    <informationRequirement id="ir_cap_dutoan">
+      <requiredInput href="#in_tongDuToan" />
+    </informationRequirement>
+    <informationRequirement id="ir_cap_loai">
+      <requiredInput href="#in_loaiNhiemVu" />
+    </informationRequirement>
+    <decisionTable id="dt_cap" hitPolicy="FIRST">
+      <input id="dt_cap_i1" label="Tổng dự toán (đồng)">
+        <inputExpression id="dt_cap_i1e" typeRef="number"><text>tongDuToan</text></inputExpression>
+      </input>
+      <input id="dt_cap_i2" label="Loại nhiệm vụ">
+        <inputExpression id="dt_cap_i2e" typeRef="string"><text>loaiNhiemVu</text></inputExpression>
+      </input>
+      <output id="dt_cap_o1" name="cap" typeRef="string" />
+
+      <rule id="dt_cap_r1">
+        <description>Dự án cấp Tập đoàn: luôn thuộc thẩm quyền TĐ bất kể dự toán</description>
+        <inputEntry id="dt_cap_r1i1"><text>-</text></inputEntry>
+        <inputEntry id="dt_cap_r1i2"><text>"du_an"</text></inputEntry>
+        <outputEntry id="dt_cap_r1o1"><text>"TD"</text></outputEntry>
+      </rule>
+      <rule id="dt_cap_r2">
+        <description>Từ 10 tỷ trở lên: cấp Tập đoàn [ngưỡng placeholder, chờ OQ-001]</description>
+        <inputEntry id="dt_cap_r2i1"><text>&gt;= 10000000000</text></inputEntry>
+        <inputEntry id="dt_cap_r2i2"><text>-</text></inputEntry>
+        <outputEntry id="dt_cap_r2o1"><text>"TD"</text></outputEntry>
+      </rule>
+      <rule id="dt_cap_r3">
+        <description>Còn lại: cấp Cơ sở</description>
+        <inputEntry id="dt_cap_r3i1"><text>-</text></inputEntry>
+        <inputEntry id="dt_cap_r3i2"><text>-</text></inputEntry>
+        <outputEntry id="dt_cap_r3o1"><text>"CS"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="dmndi_rd0202">
+      <dmndi:DMNShape id="shape_capNhiemVu" dmnElementRef="capNhiemVu">
+        <dc:Bounds x="260" y="80" width="180" height="80" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="shape_in_tongDuToan" dmnElementRef="in_tongDuToan">
+        <dc:Bounds x="180" y="240" width="140" height="60" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="shape_in_loaiNhiemVu" dmnElementRef="in_loaiNhiemVu">
+        <dc:Bounds x="380" y="240" width="140" height="60" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

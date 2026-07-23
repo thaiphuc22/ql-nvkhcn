@@ -1,0 +1,97 @@
+.fd-shell {
+  position: relative;
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  background: #fff;
+  border: 1px solid var(--vht-border);
+  border-radius: var(--vht-radius);
+  overflow: hidden;
+}
+
+.fd-palette-dock,
+.fd-panel-dock {
+  flex: 0 0 auto;
+  overflow: hidden;
+  transition: width 0.18s ease;
+}
+
+.fd-dock-border {
+  border-right: 1px solid var(--vht-border);
+}
+
+.fd-dock-border-left {
+  border-left: 1px solid var(--vht-border);
+}
+
+.fd-dock-inner {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.fd-dock-header {
+  height: 42px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px 0 14px;
+  border-bottom: 1px solid var(--vht-border);
+  background: var(--vht-surface-2);
+}
+
+.fd-dock-title {
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.fd-dock-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.fd-hidden {
+  display: none;
+}
+
+.fd-canvas {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+}
+
+.fd-toolbar {
+  position: absolute;
+  top: 10px;
+  z-index: 26;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  transition: right 0.18s ease;
+}
+
+.fd-toolbar-group {
+  display: flex;
+}
+
+.fd-toolbar-group button {
+  border-radius: 0;
+}
+
+.fd-toolbar-group button:first-child {
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+}
+
+.fd-toolbar-group button:last-child {
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
+.fd-preview-body {
+  max-height: 70vh;
+  overflow: auto;
+  padding: 4px;
+}

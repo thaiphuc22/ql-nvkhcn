@@ -1,0 +1,68 @@
+:host {
+  display: block;
+}
+
+.pd-subline {
+  color: var(--vht-ink-2);
+  font-size: 13px;
+}
+
+.pd-body {
+  margin-top: 8px;
+}
+
+.pd-loading {
+  display: flex;
+  justify-content: center;
+  padding: 60px 0;
+}
+
+.pd-descriptions {
+  margin-bottom: 20px;
+}
+
+.pd-section-title {
+  margin: 0 0 12px;
+}
+
+.pd-version-collapse {
+  margin-bottom: 8px;
+}
+
+.pd-version-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pd-version-header-date {
+  color: var(--vht-ink-2);
+  font-size: 12px;
+}
+
+.pd-checksum {
+  word-break: break-all;
+  font-size: 12px;
+}
+
+.pd-warnings {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--vht-danger, #cf1322);
+  font-size: 13px;
+}
+
+.pd-view-diagram-btn {
+  margin-top: 8px;
+}
+
+.pd-diagram-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.pd-no-versions {
+  color: var(--vht-ink-2);
+}

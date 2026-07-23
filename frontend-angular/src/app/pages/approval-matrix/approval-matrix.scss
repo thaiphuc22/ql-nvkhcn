@@ -1,0 +1,13 @@
+.am-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.am-header h2 {
+  margin: 0;
+}
+.am-header p {
+  margin: 4px 0 0;
+  color: var(--vht-ink-2);
+  max-width: 860px;
+}

@@ -1,0 +1,106 @@
+<nz-alert
+  nzType="info"
+  nzShowIcon
+  class="asc-alert"
+  nzMessage="Danh mục Loại phê duyệt (Need Role)"
+  [nzDescription]="ascAlertDesc"
+></nz-alert>
+<ng-template #ascAlertDesc>
+  Nguồn duy nhất cho các loại phê duyệt mà BPMN có thể gán qua Need Role (Properties Panel) và Ma
+  trận phê duyệt dùng để ánh xạ luật. Thêm loại phê duyệt ở đây trước khi gán trên BPMN — tránh gõ
+  tự do sinh mã trôi (vd <code>XYZ</code>/<code>xyz</code>).
+</ng-template>
+
+<nz-table #table [nzData]="sortedSlots()" [nzPageSize]="20" [nzShowPagination]="false" class="asc-table">
+  <thead>
+    <tr>
+      <th>Loại phê duyệt</th>
+      <th nzWidth="200px">Nhóm quy trình</th>
+      <th nzWidth="84px">Thứ tự</th>
+      <th nzWidth="120px">Luật tham chiếu</th>
+      <th nzWidth="110px">Trạng thái</th>
+      <th nzWidth="56px"></th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (s of table.data; track s.code) {
+      <tr>
+        <td>
+          <strong>{{ s.ten }}</strong>
+          <div><code class="asc-code">{{ s.code }}</code></div>
+          @if (s.moTa) {
+            <div><span nz-typography nzType="secondary" class="asc-mota">{{ s.moTa }}</span></div>
+          }
+        </td>
+        <td>
+          @if (s.nhomQuyTrinh?.length) {
+            @for (n of s.nhomQuyTrinh; track n) {
+              <nz-tag>{{ n }}</nz-tag>
+            }
+          } @else {
+            <span nz-typography nzType="secondary" class="asc-mota">Mọi quy trình</span>
+          }
+        </td>
+        <td><nz-tag>{{ s.thuTu }}</nz-tag></td>
+        <td><nz-tag [nzColor]="usage(s.code) > 0 ? 'blue' : 'default'">{{ usage(s.code) }} luật</nz-tag></td>
+        <td>
+          <nz-switch [ngModel]="s.trangThai === 'active'" (ngModelChange)="toggleStatus(s, $event)"></nz-switch>
+        </td>
+        <td>
+          <button nz-button nzType="text" nzSize="small" (click)="openEdit(s)">
+            <span nz-icon nzType="edit"></span>
+          </button>
+        </td>
+      </tr>
+    }
+  </tbody>
+</nz-table>
+
+<div class="asc-add-bar">
+  <button nz-button nzType="primary" (click)="openCreate()">
+    <span nz-icon nzType="plus"></span>
+    Thêm loại phê duyệt
+  </button>
+</div>
+
+<nz-modal
+  [nzVisible]="modalOpen()"
+  [nzTitle]="modalTitle()"
+  [nzFooter]="ascFooter"
+  (nzOnCancel)="modalOpen.set(false)"
+>
+  <ng-container *nzModalContent>
+    <div class="asc-form">
+      <label>Mã loại phê duyệt <span class="asc-required">*</span></label>
+      <input
+        nz-input
+        placeholder="VD: TAI_CHINH_RASOAT"
+        [disabled]="!!editing()"
+        [ngModel]="formCode()"
+        (ngModelChange)="formCode.set($event)"
+      />
+      <label>Tên hiển thị <span class="asc-required">*</span></label>
+      <input nz-input placeholder="VD: Rà soát tài chính" [ngModel]="formTen()" (ngModelChange)="formTen.set($event)" />
+      <label>Mô tả nghiệp vụ</label>
+      <textarea
+        nz-input
+        rows="2"
+        placeholder="Loại phê duyệt này dùng cho bước nào, khi nào?"
+        [ngModel]="formMoTa()"
+        (ngModelChange)="formMoTa.set($event)"
+      ></textarea>
+      <label>Nhóm quy trình áp dụng</label>
+      <nz-select nzMode="tags" placeholder="VD: RD01, RD02" [ngModel]="formNhom()" (ngModelChange)="formNhom.set($event)">
+      </nz-select>
+      @if (editing()) {
+        <label>Thứ tự hiển thị</label>
+        <nz-input-number class="asc-form-block" [nzMin]="0" [ngModel]="formThuTu()" (ngModelChange)="formThuTu.set($event ?? 0)"></nz-input-number>
+      }
+    </div>
+  </ng-container>
+</nz-modal>
+
+<ng-template #ascFooter>
+  <button nz-button (click)="modalOpen.set(false)">Huỷ</button>
+  <button nz-button nzType="primary" [disabled]="!canSave()" (click)="save()">Lưu</button>
+</ng-template>

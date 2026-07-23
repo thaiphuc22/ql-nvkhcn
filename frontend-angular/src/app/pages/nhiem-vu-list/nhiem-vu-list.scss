@@ -1,0 +1,17 @@
+.nvl-page { display: grid; gap: 16px; }
+.nvl-header { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+.nvl-header h2 { margin: 0; }
+.nvl-subtitle, .nvl-meta, .nvl-count { color: #6b7785; font-size: 13px; }
+.nvl-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.nvl-alert { margin-bottom: 0; }
+.nvl-stats { margin-top: 0; }
+.nvl-stat { min-height: 92px; padding: 16px; border: 1px solid #e8edf2; border-radius: 8px; background: #fff; display: flex; flex-direction: column; }
+.nvl-stat strong { font-size: 27px; line-height: 1.2; color: #233044; }
+.nvl-stat span { color: #6b7785; margin-top: 7px; }
+.nvl-stat.blue strong { color: #1677ff; } .nvl-stat.purple strong { color: #722ed1; } .nvl-stat.red strong { color: #ee0033; }
+.nvl-filters { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 12px; background: #fff; border: 1px solid #e8edf2; border-radius: 8px; }
+.nvl-search { width: min(360px, 100%); } .nvl-filters nz-select { width: 170px; } .nvl-count { margin-left: auto; }
+.nvl-row { cursor: pointer; } .nvl-row:hover td { background: #f5f9ff !important; }
+.nvl-title { font-weight: 600; } .nvl-meta { margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nvl-money { text-align: right; } .nvl-center { text-align: center; }
+@media (max-width: 767px) { .nvl-header { flex-direction: column; } .nvl-actions { justify-content: flex-start; } .nvl-count { margin-left: 0; width: 100%; } }

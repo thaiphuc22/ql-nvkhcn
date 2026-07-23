@@ -2,9 +2,40 @@
 .claude/settings.local.json
 .env
 .env.local
+.env.*
+!.env.example
 *.key
+*.pem
+*.p12
+*.pfx
+*.jks
 tools/docs-to-drive/.credentials/
+
+# Build outputs and dependencies
+**/node_modules/
+**/dist/
+**/.angular/
+**/target/
+
+# Local rendering runtimes/browser profiles (may contain session data)
+outputs/**/pdf_runtime/
+outputs/**/previews/edge_profile/
+
+# Runtime logs / local database snapshots
+*.log
+*.out.log
+*.err.log
+*.dump
+*.backup
+
+# Vendored Camunda 8 Self-Managed dev stack (infra/README.md) — fetched from
+# camunda/camunda-distributions at setup time, not project source; contains demo secrets.
+infra/camunda/
+infra/camunda-src/
 
 # OS / editor noise
 .DS_Store
 Thumbs.db
+
+# Playwright MCP session dumps (console logs, page snapshots)
+.playwright-mcp/

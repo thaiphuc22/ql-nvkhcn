@@ -1,0 +1,158 @@
+<div class="is-page">
+  <div class="is-header">
+    <h2 nz-typography>
+      <span nz-icon nzType="api" class="is-header-icon"></span>
+      Trạng thái Tích hợp
+    </h2>
+  </div>
+  <p nz-typography nzType="secondary" class="is-subtitle">
+    Theo dõi kênh tích hợp nội bộ giữa hai service và quản lý kết nối tới các hệ thống ngoài.
+  </p>
+
+  <section class="is-internal" aria-labelledby="internal-integration-title">
+    <div class="is-internal-head">
+      <div>
+        <span class="is-section-kicker">Kênh tích hợp nội bộ</span>
+        <h3 id="internal-integration-title">Quản lý NV KHCN ↔ Quản lý quy trình</h3>
+      </div>
+      <div class="is-internal-actions">
+        <nz-tag [nzColor]="internalHealth().color">{{ internalHealth().label }}</nz-tag>
+        <button nz-button nzSize="small" [nzLoading]="loadingInternalStatus()" (click)="loadInternalStatus()">
+          <span nz-icon nzType="reload"></span> Làm mới
+        </button>
+      </div>
+    </div>
+
+    <div class="is-service-flow">
+      <div class="is-service-node">
+        <span nz-icon nzType="database" class="is-service-icon"></span>
+        <div><strong>Service Quản lý NV KHCN</strong><span>Sở hữu nhiệm vụ, hồ sơ và trạng thái nghiệp vụ</span></div>
+      </div>
+      <div class="is-flow-channels">
+        <div class="is-flow-channel is-flow-right">
+          <span><strong>Lệnh khởi tạo quy trình</strong><small>Transactional outbox · idempotent</small></span>
+          <b>→</b>
+        </div>
+        <div class="is-flow-channel is-flow-left">
+          <b>←</b>
+          <span><strong>Sự kiện task / quy trình</strong><small>Inbox · projection trạng thái</small></span>
+        </div>
+      </div>
+      <div class="is-service-node">
+        <span nz-icon nzType="api" class="is-service-icon"></span>
+        <div><strong>Service Quản lý quy trình</strong><span>Sở hữu BPMN, task, action và Camunda</span></div>
+      </div>
+    </div>
+
+    @if (internalStatus(); as status) {
+      <div class="is-internal-metrics">
+        <div><span>Lệnh chờ gửi</span><strong>{{ status.outboxPending }}</strong></div>
+        <div><span>Lệnh gửi lỗi</span><strong [class.is-danger-text]="status.outboxFailed > 0">{{ status.outboxFailed }}</strong></div>
+        <div><span>Loại sự kiện đã nhận</span><strong>{{ status.latestInboxByType.length }}</strong></div>
+        <div><span>Hồ sơ lỗi khởi tạo</span><strong [class.is-danger-text]="status.startFailedDossiers.length > 0">{{ status.startFailedDossiers.length }}</strong></div>
+        <div class="is-latest-event">
+          <span>Sự kiện nhận gần nhất</span>
+          @if (latestInternalEvent(); as event) {
+            <strong>{{ event.eventType }}</strong>
+            <small>{{ fmtIso(event.receivedAt) }}</small>
+          } @else {
+            <strong>Chưa có</strong>
+            <small>Chưa có dữ liệu</small>
+          }
+        </div>
+      </div>
+    } @else if (!loadingInternalStatus()) {
+      <div class="is-internal-unavailable">Chưa tải được dữ liệu trạng thái của kênh tích hợp nội bộ.</div>
+    }
+
+    <a nz-button nzType="link" routerLink="/nhat-ky" class="is-view-log">
+      Xem nhật ký trao đổi giữa hai service <span nz-icon nzType="arrow-right"></span>
+    </a>
+  </section>
+
+  <nz-tabs>
+    <nz-tab nzTitle="Hệ thống ngoài">
+      <div nz-row [nzGutter]="[14, 14]" class="is-stats">
+        <div nz-col [nzXs]="12" [nzMd]="6">
+          <div class="is-stat-card is-stat-red">
+            <div class="is-stat-value">{{ stats().connected }} / {{ stats().total }}</div>
+            <span class="is-stat-label">Đã kết nối</span>
+          </div>
+        </div>
+        <div nz-col [nzXs]="12" [nzMd]="6">
+          <div class="is-stat-card is-stat-dark">
+            <div class="is-stat-value">{{ stats().total }}</div>
+            <span class="is-stat-label">Hệ tích hợp</span>
+          </div>
+        </div>
+        <div nz-col [nzXs]="12" [nzMd]="6">
+          <div class="is-stat-card is-stat-danger">
+            <div class="is-stat-value">{{ stats().errors }}</div>
+            <span class="is-stat-label">Lỗi 24h</span>
+          </div>
+        </div>
+        <div nz-col [nzXs]="12" [nzMd]="6">
+          <div class="is-stat-card is-stat-warning">
+            <div class="is-stat-value">{{ stats().queued }}</div>
+            <span class="is-stat-label">Job trong hàng đợi</span>
+          </div>
+        </div>
+      </div>
+
+      <div nz-row [nzGutter]="[14, 14]" class="is-grid">
+        @for (s of systems.systems(); track s.key) {
+          <div nz-col [nzXs]="24" [nzSm]="12" [nzXl]="8">
+            <app-integration-system-card
+              [system]="s"
+              [jobRuns]="systems.jobRunsFor(s.key)"
+              (connect)="openConnect(s)"
+              (disconnect)="disconnect(s)"
+              (detail)="openDetail(s)"
+            />
+          </div>
+        }
+      </div>
+    </nz-tab>
+
+    <nz-tab nzTitle="Mapping dữ liệu">
+      <app-integration-mapping-studio />
+    </nz-tab>
+
+    <nz-tab nzTitle="Job & lỗi (sắp có)" [nzDisabled]="true"></nz-tab>
+    <nz-tab nzTitle="Cấu hình kết nối (sắp có)" [nzDisabled]="true"></nz-tab>
+    <nz-tab nzTitle="Kiểm thử (sắp có)" [nzDisabled]="true"></nz-tab>
+  </nz-tabs>
+
+  <!-- Popup Kết nối / Cấu hình lại: nhập API key + endpoint. -->
+  <nz-modal
+    [nzVisible]="!!target()"
+    [nzTitle]="target() ? (target()!.trangThai === 'down' ? 'Kết nối ' : 'Cấu hình kết nối ') + target()!.key : undefined"
+    (nzOnCancel)="closeConnect()"
+    (nzOnOk)="submitConnect()"
+    [nzOkLoading]="connecting()"
+    [nzOkText]="target()?.trangThai === 'down' ? 'Kết nối' : 'Lưu cấu hình'"
+    nzCancelText="Huỷ"
+  >
+    <ng-container *nzModalContent>
+      @if (target(); as t) {
+        <div class="is-connect-form">
+          <div class="is-form-item">
+            <label>Hệ thống</label>
+            <input nz-input disabled [value]="t.key + ' — ' + t.ten" />
+          </div>
+          <div class="is-form-item">
+            <label>API Key</label>
+            <input nz-input type="password" placeholder="vd: vht_live_xxxxxxxxxxxxxxxx" [ngModel]="apiKey()" (ngModelChange)="apiKey.set($event)" />
+            <span class="is-form-extra">Key được mã hoá khi lưu; màn hình chỉ hiển thị 4 ký tự cuối.</span>
+          </div>
+          <div class="is-form-item">
+            <label>Endpoint</label>
+            <input nz-input placeholder="https://..." [ngModel]="endpoint()" (ngModelChange)="endpoint.set($event)" />
+          </div>
+        </div>
+      }
+    </ng-container>
+  </nz-modal>
+
+  <app-integration-system-detail-drawer [system]="detail()" (closed)="closeDetail()" />
+</div>

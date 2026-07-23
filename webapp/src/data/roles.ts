@@ -52,6 +52,9 @@ export const ROLES: Role[] = [
 
   // Cấp Tập đoàn
   { code: 'CQ_KHCN_TD', ten: 'Cơ quan KHCN Tập đoàn (Ban CNCNC)', nhom: 'Cấp Tập đoàn' },
+  { code: 'CQ_TCKT_TD', ten: 'Cơ quan TCKT Tập đoàn (Ban TCKT)', nhom: 'Cấp Tập đoàn' },
+  { code: 'CQ_DTXD_TD', ten: 'Cơ quan ĐTXD Tập đoàn (Ban ĐTXD)', nhom: 'Cấp Tập đoàn' },
+  { code: 'CQ_TCNL_TD', ten: 'Cơ quan TCNL Tập đoàn (Ban TCNL)', nhom: 'Cấp Tập đoàn' },
   { code: 'CQNV_TD', ten: 'Cơ quan nghiệp vụ Tập đoàn', nhom: 'Cấp Tập đoàn' },
   { code: 'HDKHCN_TD', ten: 'Hội đồng KHCN Tập đoàn', nhom: 'Cấp Tập đoàn' },
   { code: 'HDXD_TD', ten: 'Hội đồng Xét duyệt Tập đoàn', nhom: 'Cấp Tập đoàn' },

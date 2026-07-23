@@ -36,74 +36,74 @@ export const RD0101_BPMN = `<?xml version="1.0" encoding="UTF-8"?>
 
     <bpmn:startEvent id="Start_RD01_01" name="Bắt đầu"><bpmn:outgoing>Flow_01</bpmn:outgoing></bpmn:startEvent>
     <bpmn:userTask id="Task_1" name="1. Khởi tạo luồng xét duyệt cấp CS RD01.01">
-      <bpmn:extensionElements><zeebe:AssignmentDefinition candidateGroups="PM" /></bpmn:extensionElements>
+      <bpmn:extensionElements><zeebe:assignmentDefinition candidateGroups="PM" /></bpmn:extensionElements>
       <bpmn:incoming>Flow_01</bpmn:incoming><bpmn:outgoing>Flow_02</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:userTask id="Task_2" name="2. Dự thảo HS xét duyệt cấp CS">
-      <bpmn:extensionElements><zeebe:AssignmentDefinition candidateGroups="PM" /></bpmn:extensionElements>
+      <bpmn:extensionElements><zeebe:assignmentDefinition candidateGroups="PM" /></bpmn:extensionElements>
       <bpmn:incoming>Flow_02</bpmn:incoming><bpmn:incoming>Flow_Scope_CS</bpmn:incoming><bpmn:incoming>Flow_Check_Fail</bpmn:incoming><bpmn:outgoing>Flow_03</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:serviceTask id="Gateway_SystemCheck" name="Hệ thống — Check điều kiện mặc định">
-      <bpmn:extensionElements><zeebe:TaskDefinition type="khcn.rd0101.check-default-condition" retries="3" /></bpmn:extensionElements>
+      <bpmn:extensionElements><zeebe:taskDefinition type="khcn.rd0101.check-default-condition" retries="3" /></bpmn:extensionElements>
       <bpmn:incoming>Flow_03</bpmn:incoming><bpmn:outgoing>Flow_Check_Result</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:exclusiveGateway id="Gateway_SystemResult" name="Đủ điều kiện mặc định?" default="Flow_Check_Fail">
       <bpmn:incoming>Flow_Check_Result</bpmn:incoming><bpmn:outgoing>Flow_Check_OK</bpmn:outgoing><bpmn:outgoing>Flow_Check_Fail</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:userTask id="Task_3" name="3. PNX cho HS chủ trương">
-      <bpmn:extensionElements><zeebe:AssignmentDefinition candidateGroups="CQ_KHCN" /><zeebe:FormDefinition formKey="phieu-nhan-xet" /></bpmn:extensionElements>
+      <bpmn:extensionElements><zeebe:assignmentDefinition candidateGroups="CQ_KHCN" /><zeebe:formDefinition formKey="phieu-nhan-xet" /></bpmn:extensionElements>
       <bpmn:incoming>Flow_Check_OK</bpmn:incoming><bpmn:outgoing>Flow_04</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:userTask id="Task_4" name="4. Hoàn chỉnh Dự thảo HS chủ trương">
-      <bpmn:extensionElements><zeebe:AssignmentDefinition candidateGroups="PM" /></bpmn:extensionElements>
+      <bpmn:extensionElements><zeebe:assignmentDefinition candidateGroups="PM" /></bpmn:extensionElements>
       <bpmn:incoming>Flow_04</bpmn:incoming><bpmn:incoming>Flow_5_Reject</bpmn:incoming><bpmn:outgoing>Flow_05</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:userTask id="Task_5" name="5. Ký HS đề xuất xét duyệt Chủ trương">
-      <bpmn:extensionElements><zeebe:AssignmentDefinition candidateGroups="BGD_TT,BGD_KHOI" /><zeebe:FormDefinition formKey="phieu-phe-duyet" /></bpmn:extensionElements>
+      <bpmn:extensionElements><zeebe:assignmentDefinition candidateGroups="BGD_TT,BGD_KHOI" /><zeebe:formDefinition formKey="phieu-phe-duyet" /></bpmn:extensionElements>
       <bpmn:incoming>Flow_05</bpmn:incoming><bpmn:outgoing>Flow_06</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:exclusiveGateway id="Gateway_5" name="Kết quả xét duyệt?" default="Flow_5_Reject">
       <bpmn:incoming>Flow_06</bpmn:incoming><bpmn:outgoing>Flow_5_Approve</bpmn:outgoing><bpmn:outgoing>Flow_5_Reject</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:userTask id="Task_6" name="6. Thẩm định Chủ trương">
-      <bpmn:extensionElements><zeebe:AssignmentDefinition candidateGroups="HDKHCN" /><zeebe:FormDefinition formKey="phieu-nhan-xet" /></bpmn:extensionElements>
+      <bpmn:extensionElements><zeebe:assignmentDefinition candidateGroups="HDKHCN" /><zeebe:formDefinition formKey="phieu-nhan-xet" /></bpmn:extensionElements>
       <bpmn:incoming>Flow_5_Approve</bpmn:incoming><bpmn:outgoing>Flow_07</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:exclusiveGateway id="Gateway_6" name="Kết quả thẩm định?" default="Flow_6_Reject">
       <bpmn:incoming>Flow_07</bpmn:incoming><bpmn:outgoing>Flow_6_Supplement</bpmn:outgoing><bpmn:outgoing>Flow_6_Rework</bpmn:outgoing><bpmn:outgoing>Flow_6_Reject</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:userTask id="Task_7" name="7. Hoàn chỉnh HS chủ trương">
-      <bpmn:extensionElements><zeebe:AssignmentDefinition candidateGroups="PM" /></bpmn:extensionElements>
+      <bpmn:extensionElements><zeebe:assignmentDefinition candidateGroups="PM" /></bpmn:extensionElements>
       <bpmn:incoming>Flow_6_Supplement</bpmn:incoming><bpmn:incoming>Flow_9_Rework</bpmn:incoming><bpmn:incoming>Flow_11HD_Rework</bpmn:incoming><bpmn:outgoing>Flow_08</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:userTask id="Task_8" name="8. Ký duyệt HS">
-      <bpmn:extensionElements><zeebe:AssignmentDefinition candidateGroups="BGD_TT,BGD_KHOI" /><zeebe:FormDefinition formKey="phieu-phe-duyet" /></bpmn:extensionElements>
+      <bpmn:extensionElements><zeebe:assignmentDefinition candidateGroups="BGD_TT,BGD_KHOI" /><zeebe:formDefinition formKey="phieu-phe-duyet" /></bpmn:extensionElements>
       <bpmn:incoming>Flow_08</bpmn:incoming><bpmn:outgoing>Flow_09</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:userTask id="Task_9" name="9. Ký duyệt HS">
-      <bpmn:extensionElements><zeebe:AssignmentDefinition candidateGroups="TP_CLKHCN" /><zeebe:FormDefinition formKey="phieu-phe-duyet" /></bpmn:extensionElements>
+      <bpmn:extensionElements><zeebe:assignmentDefinition candidateGroups="TP_CLKHCN" /><zeebe:formDefinition formKey="phieu-phe-duyet" /></bpmn:extensionElements>
       <bpmn:incoming>Flow_09</bpmn:incoming><bpmn:outgoing>Flow_10</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:exclusiveGateway id="Gateway_9" name="Kết quả ký duyệt?" default="Flow_9_Rework">
       <bpmn:incoming>Flow_10</bpmn:incoming><bpmn:outgoing>Flow_9_Approve</bpmn:outgoing><bpmn:outgoing>Flow_9_Rework</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:userTask id="Task_10a" name="10a. Lập Báo cáo thẩm định HS Chủ trương">
-      <bpmn:extensionElements><zeebe:AssignmentDefinition candidateGroups="CQ_QLKHCN" /><zeebe:FormDefinition formKey="bao-cao-tham-dinh" /></bpmn:extensionElements>
+      <bpmn:extensionElements><zeebe:assignmentDefinition candidateGroups="CQ_QLKHCN" /><zeebe:formDefinition formKey="bao-cao-tham-dinh" /></bpmn:extensionElements>
       <bpmn:incoming>Flow_9_Approve</bpmn:incoming><bpmn:outgoing>Flow_11a</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:userTask id="Task_10b" name="10b. Lập, trình ký QĐ phê duyệt Chủ trương">
-      <bpmn:extensionElements><zeebe:AssignmentDefinition candidateGroups="CQ_QLKHCN" /></bpmn:extensionElements>
+      <bpmn:extensionElements><zeebe:assignmentDefinition candidateGroups="CQ_QLKHCN" /></bpmn:extensionElements>
       <bpmn:incoming>Flow_11HD_Approve</bpmn:incoming><bpmn:outgoing>Flow_11b</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:userTask id="Task_11_HD" name="11. Ký thông qua Báo cáo Chủ trương">
-      <bpmn:extensionElements><zeebe:AssignmentDefinition candidateGroups="HDKHCN" /><zeebe:FormDefinition formKey="phieu-phe-duyet" /></bpmn:extensionElements>
+      <bpmn:extensionElements><zeebe:assignmentDefinition candidateGroups="HDKHCN" /><zeebe:formDefinition formKey="phieu-phe-duyet" /></bpmn:extensionElements>
       <bpmn:incoming>Flow_11a</bpmn:incoming><bpmn:outgoing>Flow_12</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:exclusiveGateway id="Gateway_11_HD" name="HĐ KHCN thông qua?" default="Flow_11HD_Rework">
       <bpmn:incoming>Flow_12</bpmn:incoming><bpmn:outgoing>Flow_11HD_Approve</bpmn:outgoing><bpmn:outgoing>Flow_11HD_Rework</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:userTask id="Task_11_TGD" name="12. Phê duyệt Quyết định mở mới">
-      <bpmn:extensionElements><zeebe:AssignmentDefinition candidateGroups="TGD_VHT" /><zeebe:FormDefinition formKey="phieu-phe-duyet" /></bpmn:extensionElements>
+      <bpmn:extensionElements><zeebe:assignmentDefinition candidateGroups="TGD_VHT" /><zeebe:formDefinition formKey="phieu-phe-duyet" /></bpmn:extensionElements>
       <bpmn:incoming>Flow_11b</bpmn:incoming><bpmn:outgoing>Flow_14</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:exclusiveGateway id="Gateway_11_TGD" name="TGĐ phê duyệt?" default="Flow_TGD_Reject">
@@ -113,11 +113,11 @@ export const RD0101_BPMN = `<?xml version="1.0" encoding="UTF-8"?>
       <bpmn:incoming>Flow_6_Rework</bpmn:incoming><bpmn:incoming>Flow_TGD_Rework</bpmn:incoming><bpmn:outgoing>Flow_Scope_CS</bpmn:outgoing><bpmn:outgoing>Flow_Scope_TD</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:callActivity id="Call_TD" name="Quy trình xét duyệt Chủ trương cấp TĐ">
-      <bpmn:extensionElements><zeebe:CalledElement processId="RD01_02" propagateAllChildVariables="true" /></bpmn:extensionElements>
+      <bpmn:extensionElements><zeebe:calledElement processId="RD01_02" propagateAllChildVariables="true" /></bpmn:extensionElements>
       <bpmn:incoming>Flow_Scope_TD</bpmn:incoming><bpmn:outgoing>Flow_End_TD</bpmn:outgoing>
     </bpmn:callActivity>
     <bpmn:callActivity id="Call_CS" name="Quy trình xét duyệt cấp CS">
-      <bpmn:extensionElements><zeebe:CalledElement processId="RD02_01" propagateAllChildVariables="true" /></bpmn:extensionElements>
+      <bpmn:extensionElements><zeebe:calledElement processId="RD02_01" propagateAllChildVariables="true" /></bpmn:extensionElements>
       <bpmn:incoming>Flow_TGD_Approve</bpmn:incoming><bpmn:outgoing>Flow_End_CS</bpmn:outgoing>
     </bpmn:callActivity>
     <bpmn:endEvent id="End_TD" name="Chuyển quy trình cấp TĐ"><bpmn:incoming>Flow_End_TD</bpmn:incoming></bpmn:endEvent>

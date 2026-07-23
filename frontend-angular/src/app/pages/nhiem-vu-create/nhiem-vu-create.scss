@@ -1,0 +1,2 @@
+.nvc-page { display: grid; gap: 16px; max-width: 1280px; } .nvc-header { display: flex; align-items: flex-start; gap: 8px; } .nvc-header h2 { margin: 0; } .nvc-header div div { color: #6b7785; }
+.nvc-page form { display: grid; gap: 16px; } .nvc-page nz-card { display: block; margin-bottom: 16px; height: calc(100% - 16px); } .nvc-full, .nvc-page nz-range-picker, .nvc-page nz-select { width: 100%; } .nvc-actions { display: flex; gap: 8px; }

@@ -1,0 +1,78 @@
+<div #wrapper class="fd-shell vht-designer">
+  <!-- Dock trái: Thành phần (palette AntD tự viết, D13) -->
+  <div class="fd-palette-dock" [style.width.px]="paletteOpen() ? PALETTE_W : 0" [class.fd-dock-border]="paletteOpen()">
+    <div class="fd-dock-inner" [style.width.px]="PALETTE_W">
+      <div class="fd-dock-header">
+        <span class="fd-dock-title">Thành phần</span>
+        <button nz-button nzType="text" nzSize="small" (click)="paletteOpen.set(false)"><span nz-icon nzType="close"></span></button>
+      </div>
+      <div class="fd-dock-body">
+        <app-form-field-palette (add)="addField($event)"></app-form-field-palette>
+      </div>
+    </div>
+  </div>
+
+  <!-- Palette NATIVE form-js: ẩn, chỉ giữ dịch vụ/dragula sống cho portal target -->
+  <div #palette class="fd-hidden" aria-hidden="true"></div>
+
+  <!-- Canvas kéo–thả -->
+  <div #canvas class="fd-canvas vht-fd-canvas"></div>
+
+  <!-- Dock phải: Thuộc tính trường (panel AntD tự viết, D13) -->
+  <div class="fd-panel-dock" [style.width.px]="panelOpen() ? PANEL_W : 0" [class.fd-dock-border-left]="panelOpen()">
+    <div class="fd-dock-inner" [style.width.px]="PANEL_W">
+      <div class="fd-dock-header">
+        <span class="fd-dock-title">Thuộc tính trường</span>
+        <button nz-button nzType="text" nzSize="small" (click)="panelOpen.set(false)"><span nz-icon nzType="close"></span></button>
+      </div>
+      <div class="fd-dock-body">
+        @for (f of [selectedField()]; track (f ? f.id + '#' + selVersion() : 'none')) {
+          <app-form-field-properties [field]="f" (edit)="editField($event)" (remove)="removeField($event)"></app-form-field-properties>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel NATIVE form-js: ẩn, chỉ giữ dịch vụ sống cho portal target -->
+  <div #props class="fd-hidden" aria-hidden="true"></div>
+
+  <!-- Toolbar nổi trên-phải -->
+  <div class="fd-toolbar" [style.right.px]="(panelOpen() ? PANEL_W : 0) + 12">
+    @if (!paletteOpen()) {
+      <button nz-button nz-tooltip nzTooltipTitle="Mở danh sách thành phần" nzTooltipPlacement="bottom" (click)="paletteOpen.set(true)">
+        <span nz-icon nzType="appstore"></span>
+      </button>
+    }
+    <div class="fd-toolbar-group">
+      <button nz-button nz-tooltip nzTooltipTitle="Hoàn tác" [disabled]="!canUndo()" (click)="undo()"><span nz-icon nzType="undo"></span></button>
+      <button nz-button nz-tooltip nzTooltipTitle="Làm lại" [disabled]="!canRedo()" (click)="redo()"><span nz-icon nzType="redo"></span></button>
+      <button nz-button (click)="togglePreview()">
+        <span nz-icon [nzType]="previewOpen() ? 'eye-invisible' : 'eye'"></span>
+        Xem trước
+      </button>
+    </div>
+    @if (dirty()) { <nz-tag nzColor="warning">Chưa lưu</nz-tag> }
+    @if (!panelOpen()) {
+      <button nz-button nz-tooltip nzTooltipTitle="Mở panel thuộc tính" nzTooltipPlacement="left" (click)="panelOpen.set(true)">
+        <span nz-icon nzType="profile"></span>
+      </button>
+    }
+  </div>
+
+  <!-- Modal xem trước trực tiếp -->
+  <nz-modal
+    [nzTitle]="'Xem trước trực tiếp'"
+    [nzVisible]="previewOpen()"
+    (nzOnCancel)="togglePreview()"
+    [nzFooter]="null"
+    [nzWidth]="640"
+  >
+    <ng-container *nzModalContent>
+      <div class="vht-form fd-preview-body">
+        @if (previewSchema() !== null) {
+          <app-form-renderer [schema]="previewSchema()"></app-form-renderer>
+        }
+      </div>
+    </ng-container>
+  </nz-modal>
+</div>

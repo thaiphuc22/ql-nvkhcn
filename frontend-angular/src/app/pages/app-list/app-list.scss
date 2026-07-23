@@ -1,0 +1,19 @@
+:host { display: block; min-height: 100vh; background: #f6f7f9; }
+.app-picker { min-height: 100vh; }
+.app-picker__header { min-height: 68px; padding: 12px clamp(20px, 5vw, 72px); background: #fff; border-bottom: 1px solid #e6e9ee; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.brand, .account { display: flex; align-items: center; gap: 12px; }
+.brand span { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 8px; background: #bf0027; color: #fff; font-weight: 900; }
+.brand strong { font-size: 16px; }
+.account > div { display: flex; flex-direction: column; text-align: right; }
+.account small { color: #687386; }
+.app-picker__content { width: min(1120px, calc(100% - 40px)); margin: 0 auto; padding: 72px 0; }
+.intro { max-width: 680px; margin-bottom: 32px; }
+.intro h1 { margin: 2px 0 8px; }
+.eyebrow { margin: 0; color: #bf0027; font-size: 12px; font-weight: 800; letter-spacing: .12em; }
+.app-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 20px; }
+.app-card { height: 100%; cursor: pointer; border-radius: 12px; transition: transform .18s ease, box-shadow .18s ease; }
+.app-card:hover, .app-card:focus { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(31, 38, 50, .12); outline: none; }
+.app-card h2 { margin: 18px 0 8px; font-size: 19px; }
+.app-card p { min-height: 48px; color: #687386; }
+.app-icon { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 12px; background: #fff0f2; color: #bf0027; font-size: 24px; }
+@media (max-width: 700px) { .account > div, .account button { display: none; } .app-picker__content { padding-top: 42px; } }

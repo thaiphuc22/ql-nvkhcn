@@ -1,0 +1,87 @@
+<div class="imfe-list">
+  @for (f of fields(); track f.id; let idx = $index) {
+    <div class="imfe-field-card">
+      <div class="imfe-field-head">
+        <span nz-typography nzType="secondary" class="imfe-field-index">Field {{ idx + 1 }}</span>
+        <button nz-button nzType="text" nzDanger nzSize="small" (click)="remove(f.id)">
+          <span nz-icon nzType="delete"></span>
+        </button>
+      </div>
+
+      <div class="imfe-field-controls">
+        <div class="imfe-control">
+          <span class="imfe-control-label">Trường QTKHCN</span>
+          <input nz-input style="width:160px" placeholder="vd: maHoSo" [ngModel]="f.truongQTKHCN"
+                 (ngModelChange)="update(f.id, { truongQTKHCN: $event })" />
+        </div>
+        <div class="imfe-control">
+          <span class="imfe-control-label">Kiểu dữ liệu</span>
+          <nz-select style="width:140px" [ngModel]="f.kieuDuLieu" (ngModelChange)="update(f.id, { kieuDuLieu: $event })">
+            @for (opt of typeOptions; track opt.value) {
+              <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+            }
+          </nz-select>
+        </div>
+        <div class="imfe-control">
+          <span class="imfe-control-label">Trường hệ ngoài</span>
+          <input nz-input style="width:160px" placeholder="vd: dossierCode" [ngModel]="f.truongHeNgoai"
+                 [class.imfe-input-warning]="!f.truongHeNgoai.trim()"
+                 (ngModelChange)="update(f.id, { truongHeNgoai: $event })" />
+        </div>
+        <div class="imfe-control">
+          <span class="imfe-control-label">Bắt buộc</span>
+          <nz-switch [ngModel]="f.batBuoc" (ngModelChange)="update(f.id, { batBuoc: $event })"></nz-switch>
+        </div>
+        <div class="imfe-control">
+          <span class="imfe-control-label">Khoá định danh</span>
+          <nz-switch [ngModel]="!!f.khoaDinhDanh" (ngModelChange)="update(f.id, { khoaDinhDanh: $event })"></nz-switch>
+        </div>
+        <div class="imfe-control">
+          <span class="imfe-control-label">Transform</span>
+          <nz-select style="width:220px" nzAllowClear nzPlaceHolder="Không transform" [ngModel]="f.transform"
+                     (ngModelChange)="update(f.id, { transform: $event })">
+            @for (opt of transformOptions; track opt.value) {
+              <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+            }
+          </nz-select>
+        </div>
+        @if (f.transform === 'default-value') {
+          <div class="imfe-control">
+            <span class="imfe-control-label">Giá trị mặc định</span>
+            <input nz-input style="width:160px" [ngModel]="f.giaTriMacDinh ?? ''"
+                   (ngModelChange)="update(f.id, { giaTriMacDinh: $event })" />
+          </div>
+        }
+      </div>
+
+      @if (needsValueMapping(f)) {
+        <div class="imfe-value-mapping">
+          <span nz-typography nzType="secondary" class="imfe-vm-title">
+            Value mapping — giá trị QTKHCN → giá trị hệ ngoài
+          </span>
+          <div class="imfe-vm-rows">
+            @for (row of f.valueMappings ?? []; track $index; let vidx = $index) {
+              <div class="imfe-vm-row">
+                <input nz-input style="width:140px" placeholder="Giá trị QTKHCN" [ngModel]="row.qtkhcn"
+                       (ngModelChange)="updateValueMappingRow(f, vidx, { qtkhcn: $event })" />
+                <nz-tag>→</nz-tag>
+                <input nz-input style="width:140px" placeholder="Giá trị hệ ngoài" [ngModel]="row.heNgoai"
+                       (ngModelChange)="updateValueMappingRow(f, vidx, { heNgoai: $event })" />
+                <button nz-button nzType="text" nzDanger nzSize="small" (click)="removeValueMappingRow(f, vidx)">
+                  <span nz-icon nzType="delete"></span>
+                </button>
+              </div>
+            }
+            <button nz-button nzSize="small" (click)="addValueMapping(f)">
+              <span nz-icon nzType="plus"></span> Thêm value mapping
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <button nz-button class="imfe-add-btn" (click)="add()">
+    <span nz-icon nzType="plus"></span> Thêm field
+  </button>
+</div>

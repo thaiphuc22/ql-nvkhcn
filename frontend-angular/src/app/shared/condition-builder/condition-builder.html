@@ -1,0 +1,152 @@
+<div class="condb-group" [class.condb-group--nested]="!isRoot()">
+  <div class="condb-group-head">
+    <div class="condb-group-head-left">
+      <nz-segmented [nzOptions]="logicOptions" [ngModel]="value().logic" (ngModelChange)="setLogic($event)"></nz-segmented>
+      @if (value().items.length === 0) {
+        <nz-tag>bất kỳ hồ sơ</nz-tag>
+      }
+    </div>
+    @if (!isRoot()) {
+      <button nz-button nzType="text" nzDanger nzSize="small" (click)="removeGroup.emit()">
+        <span nz-icon nzType="delete"></span>
+        Xoá nhóm
+      </button>
+    }
+  </div>
+
+  <div class="condb-items">
+    @for (item of value().items; track $index) {
+      @if (isLeaf(item)) {
+        <div class="condb-leaf">
+          <nz-select
+            class="condb-field"
+            nzShowSearch
+            [ngModel]="item.field"
+            (ngModelChange)="onFieldChange($index, $event)"
+          >
+            @for (opt of fieldOptions; track opt.value) {
+              <nz-option [nzValue]="opt.value" [nzLabel]="opt.label"></nz-option>
+            }
+          </nz-select>
+          <nz-select
+            class="condb-operator"
+            [ngModel]="item.operator"
+            (ngModelChange)="onOperatorChange($index, item, $event)"
+          >
+            @for (opt of operatorOptions(item); track opt.value) {
+              <nz-option [nzValue]="opt.value" [nzLabel]="opt.label"></nz-option>
+            }
+          </nz-select>
+
+          @switch (controlKind(item)) {
+            @case ('multiSelect') {
+              <nz-select
+                class="condb-value condb-value--wide"
+                nzMode="multiple"
+                nzPlaceHolder="Chọn giá trị"
+                [ngModel]="multiValue(item)"
+                (ngModelChange)="onValueChange($index, item, { value: $event })"
+              >
+                @for (opt of selectOptions(item); track opt.value) {
+                  <nz-option [nzValue]="opt.value" [nzLabel]="opt.label"></nz-option>
+                }
+              </nz-select>
+            }
+            @case ('select') {
+              <nz-select
+                class="condb-value"
+                nzPlaceHolder="Chọn giá trị"
+                [ngModel]="stringValue(item)"
+                (ngModelChange)="onValueChange($index, item, { value: $event })"
+              >
+                @for (opt of selectOptions(item); track opt.value) {
+                  <nz-option [nzValue]="opt.value" [nzLabel]="opt.label"></nz-option>
+                }
+              </nz-select>
+            }
+            @case ('boolean') {
+              <nz-select
+                class="condb-value condb-value--narrow"
+                nzPlaceHolder="—"
+                [ngModel]="boolValue(item)"
+                (ngModelChange)="onValueChange($index, item, { value: $event })"
+              >
+                <nz-option [nzValue]="true" nzLabel="Có"></nz-option>
+                <nz-option [nzValue]="false" nzLabel="Không"></nz-option>
+              </nz-select>
+            }
+            @case ('numberRange') {
+              <div class="condb-range">
+                <nz-input-number
+                  placeholder="Từ"
+                  [ngModel]="numberValue(item)"
+                  (ngModelChange)="onValueChange($index, item, { value: $event })"
+                  [nzFormatter]="formatVnd"
+                  [nzParser]="parseVnd"
+                ></nz-input-number>
+                <span nz-typography nzType="secondary">–</span>
+                <nz-input-number
+                  placeholder="Đến"
+                  [ngModel]="numberToValue(item)"
+                  (ngModelChange)="onValueChange($index, item, { valueTo: $event })"
+                  [nzFormatter]="formatVnd"
+                  [nzParser]="parseVnd"
+                ></nz-input-number>
+              </div>
+            }
+            @case ('number') {
+              <nz-input-number
+                class="condb-value"
+                placeholder="Giá trị"
+                [ngModel]="numberValue(item)"
+                (ngModelChange)="onValueChange($index, item, { value: $event })"
+                [nzFormatter]="formatVnd"
+                [nzParser]="parseVnd"
+              ></nz-input-number>
+            }
+            @case ('text') {
+              <input
+                nz-input
+                class="condb-value"
+                placeholder="Giá trị"
+                [ngModel]="stringValue(item)"
+                (ngModelChange)="onValueChange($index, item, { value: $event })"
+              />
+            }
+          }
+
+          <button nz-button nzType="text" nzDanger nzSize="small" (click)="removeItem($index)">
+            <span nz-icon nzType="delete"></span>
+          </button>
+        </div>
+      } @else {
+        <div class="condb-nested">
+          <app-condition-builder
+            [value]="asGroup(item)"
+            [isRoot]="false"
+            (valueChange)="setItem($index, $event)"
+            (removeGroup)="removeItem($index)"
+          ></app-condition-builder>
+        </div>
+      }
+    }
+  </div>
+
+  <div class="condb-actions">
+    <button nz-button nzSize="small" (click)="addLeaf()">
+      <span nz-icon nzType="plus"></span>
+      Thêm điều kiện
+    </button>
+    <button nz-button nzSize="small" (click)="addGroup()">
+      <span nz-icon nzType="branches"></span>
+      Thêm nhóm con
+    </button>
+  </div>
+</div>
+
+@if (isRoot()) {
+  <div class="condb-preview">
+    <span nz-typography nzType="secondary">Diễn giải: </span>
+    <span nz-typography>{{ preview() }}</span>
+  </div>
+}

@@ -1,0 +1,35 @@
+<main class="app-picker">
+  <header class="app-picker__header">
+    <div class="brand"><span>VHT</span><strong>Hệ thống QTKHCN</strong></div>
+    <div class="account">
+      <div><strong>{{ user()?.hoTen }}</strong><small>{{ user()?.chucDanh }}</small></div>
+      <nz-avatar [nzText]="userInitials()" />
+      <button nz-button nzType="text" (click)="logout()"><nz-icon nzType="logout" /> Đăng xuất</button>
+    </div>
+  </header>
+
+  <section class="app-picker__content">
+    <div class="intro">
+      <p class="eyebrow">CỔNG ỨNG DỤNG</p>
+      <h1 nz-typography>Chọn ứng dụng làm việc</h1>
+      <p nz-typography nzType="secondary">Các ứng dụng hiển thị theo quyền đã được cấp cho tài khoản của bạn.</p>
+    </div>
+
+    @if (apps().length) {
+      <div class="app-grid">
+        @for (app of apps(); track app.code) {
+          <nz-card class="app-card" tabindex="0" (click)="open(app)" (keydown.enter)="open(app)">
+            <div class="app-icon"><nz-icon [nzType]="app.icon" /></div>
+            <h2>{{ app.label }}</h2>
+            <p>{{ app.moTa }}</p>
+            <button nz-button nzType="primary" (click)="open(app); $event.stopPropagation()">
+              Mở ứng dụng <nz-icon nzType="arrow-right" />
+            </button>
+          </nz-card>
+        }
+      </div>
+    } @else {
+      <nz-empty nzNotFoundContent="Tài khoản chưa được cấp quyền vào ứng dụng nào."></nz-empty>
+    }
+  </section>
+</main>

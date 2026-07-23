@@ -1,0 +1,44 @@
+.stxd-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.stxd-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.stxd-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stxd-section-title {
+  font-weight: 600;
+}
+
+.stxd-json-block {
+  margin: 0;
+  padding: 12px;
+  max-height: 260px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--vht-surface-2, #f6f8fa);
+  border: 1px solid var(--vht-border);
+  border-radius: 6px;
+  font-family: 'Fira Code', ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 12px;
+}
+
+.stxd-timeline-time {
+  color: var(--vht-ink-2);
+}
+
+.stxd-timeline-error {
+  color: var(--vht-danger, #cf1322);
+}

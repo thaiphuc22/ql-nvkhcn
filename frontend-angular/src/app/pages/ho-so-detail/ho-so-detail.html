@@ -1,0 +1,245 @@
+@if (loading()) {
+  <div class="hsd-loading"><nz-spin nzSimple></nz-spin></div>
+} @else if (notFound()) {
+  <nz-result nzStatus="404" nzTitle="Không tìm thấy hồ sơ" nzSubTitle="Mã hồ sơ không tồn tại hoặc đã bị xoá.">
+    <div nz-result-extra><button nz-button nzType="primary" (click)="back()">Về danh sách hồ sơ</button></div>
+  </nz-result>
+} @else if (item(); as dossier) {
+  <div class="hsd-page">
+    <header class="hsd-header">
+      <button nz-button nzType="text" class="hsd-back" (click)="back()"><span nz-icon nzType="arrow-left"></span></button>
+      <div class="hsd-heading">
+        <div class="hsd-title-line"><h2>{{ dossier.tenDeTai }}</h2><nz-tag [nzColor]="statusColor[dossier.trangThai]">{{ statusLabel[dossier.trangThai] }}</nz-tag></div>
+        <div><code>{{ dossier.id }}</code> · {{ dossier.quyTrinh ? dossier.quyTrinh + ' · ' + dossier.quyTrinhTen : dossier.quyTrinhTen }} · cấp {{ capLabel[dossier.cap] }}</div>
+      </div>
+      <div class="hsd-actions">
+        @if (actionsLoading()) {
+          <nz-spin nzSimple></nz-spin>
+        }
+        @for (action of dossierActions(); track action.actionCode) {
+          <button nz-button [nzType]="actionButtonType(action)" [nzDanger]="action.tone === 'danger'"
+            [title]="action.helpText || ''" (click)="runDossierAction(action)">
+            {{ action.label }}
+          </button>
+        }
+        @if (dossier.trangThai === 'PROCESSING') {
+          @if (saving()) {
+            <nz-tag nzColor="processing">Đang cập nhật…</nz-tag>
+          } @else {
+            @for (action of availableActions(); track action.actionCode) {
+              <button nz-button [nzType]="action.tone === 'primary' ? 'primary' : 'default'"
+                [nzDanger]="action.tone === 'danger'" (click)="openAction(action.actionCode)">
+                {{ action.label }}
+              </button>
+            }
+          }
+        }
+      </div>
+    </header>
+
+    @if (errorMessage()) { <nz-alert nzType="error" nzShowIcon [nzMessage]="errorMessage()"></nz-alert> }
+    @if (dossier.trangThai === 'DRAFT') {
+      <nz-alert nzType="warning" nzShowIcon nzMessage="Hồ sơ ở trạng thái Khởi tạo — chưa vào quy trình."
+        nzDescription="Bấm “Gửi duyệt” để hồ sơ bắt đầu luồng phê duyệt."></nz-alert>
+    } @else if (dossier.trangThai === 'APPROVED') {
+      <nz-alert nzType="success" nzShowIcon nzMessage="Hồ sơ đã được phê duyệt hoàn tất."></nz-alert>
+    } @else if (dossier.trangThai === 'REJECTED' && rejectedStep(); as rejected) {
+      <nz-alert nzType="error" nzShowIcon [nzMessage]="'Hồ sơ bị từ chối tại bước “' + rejected.ten + '”'" [nzDescription]="rejected.yKien || ''"></nz-alert>
+    } @else if (currentStep(); as current) {
+      <nz-alert nzType="info" nzShowIcon [nzMessage]="'Đang xử lý: ' + current.ten" [nzDescription]="'Vai trò phụ trách: ' + current.vaiTro + (current.hanXuLy ? ' · Hạn xử lý: ' + current.hanXuLy : '')"></nz-alert>
+      @if (!taskKey() && !actionsLoading()) {
+        <nz-alert nzType="warning" nzShowIcon nzMessage="Không có quyền thao tác task ở bước này"
+          nzDescription="Bạn không phải người xử lý/candidate của task hiện tại, hoặc task đã được xử lý. Vào “Việc của tôi” để kiểm tra các việc đang được phân công."></nz-alert>
+      }
+    }
+    @if (dossier.trangThai === 'START_FAILED') {
+      <nz-alert nzType="error" nzShowIcon nzMessage="Không thể khởi tạo quy trình"
+        nzDescription="Lệnh gửi đã được giữ và thử lại có kiểm soát. Bạn có thể bấm “Thử gửi lại” để tạo một yêu cầu mới."></nz-alert>
+    }
+
+    <nz-card nzTitle="Quy trình xử lý" nzSize="small" class="hsd-process-card">
+      @if (dossier.quyTrinh) {
+        <div class="hsd-process-actions">
+          <button nz-button nzSize="small" (click)="openBpmn()">
+            <span nz-icon nzType="apartment"></span>Xem BPMN
+          </button>
+        </div>
+      }
+      @if (dossier.steps.length > 1) {
+        <div class="hsd-process-strip">
+          @for (step of dossier.steps; track step.buocIndex; let last = $last) {
+            <div class="hsd-process-node" [class.current]="step.trangThai === 'CURRENT'" [class.done]="step.trangThai === 'DONE'" [class.rejected]="step.trangThai === 'REJECTED'">
+              <span>{{ step.buocIndex + 1 }}</span><small>{{ step.ten }}</small>
+            </div>
+            @if (!last) { <div class="hsd-process-line" [class.done]="step.trangThai === 'DONE'"></div> }
+          }
+        </div>
+      } @else {
+        <nz-empty nzNotFoundContent="Hồ sơ chưa vào quy trình — bấm “Gửi duyệt” để bắt đầu."></nz-empty>
+      }
+    </nz-card>
+
+    @if (dossier.tomTatAi) {
+      <nz-card nzTitle="Tóm tắt AI" nzSize="small" class="hsd-ai-summary">
+        <span nz-icon nzType="robot" class="hsd-ai-summary-icon"></span>
+        <p class="hsd-ai-summary-text">{{ dossier.tomTatAi }}</p>
+      </nz-card>
+    }
+
+    <div nz-row [nzGutter]="16">
+      <div nz-col [nzXs]="24" [nzLg]="13" class="hsd-column">
+        <nz-card nzTitle="Thông tin hồ sơ">
+          <nz-descriptions nzBordered [nzColumn]="1" nzSize="small">
+            <nz-descriptions-item nzTitle="Mã hồ sơ"><code>{{ dossier.id }}</code></nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Loại hồ sơ"><nz-tag nzColor="blue">{{ loaiLabel[dossier.loai] }}</nz-tag></nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Mã nhiệm vụ"><a (click)="openMission()">{{ dossier.maDeTai }}</a></nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Tên nhiệm vụ">{{ dossier.tenDeTai }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Quy trình">{{ dossier.quyTrinh ? dossier.quyTrinh + ' · ' + dossier.quyTrinhTen : 'Chưa vào quy trình' }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Cấp xét duyệt">{{ capLabel[dossier.cap] }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Chủ nhiệm đề tài">{{ dossier.chuNhiem }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Đơn vị chủ trì">{{ dossier.donVi }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Thời gian thực hiện">{{ dossier.thoiGianThucHien || '—' }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Tổng dự toán (PL1–PL6)">{{ dossier.duToan || '—' }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Người khởi tạo">{{ dossier.nguoiKhoiTao }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Ngày tạo hồ sơ">{{ dossier.ngayTao }}</nz-descriptions-item>
+          </nz-descriptions>
+        </nz-card>
+
+        <nz-card nzTitle="Tài liệu / Phiếu" nzSize="small">
+          <div class="hsd-document-toolbar">
+            <input #documentInput type="file" hidden (change)="uploadDocument($event)" />
+            <button nz-button nzType="primary" [nzLoading]="documentUploading()"
+              (click)="chooseDocument(documentInput)">
+              <span nz-icon nzType="file-add"></span>Upload tài liệu
+            </button>
+            <small>Tối đa 20 MB/tệp · Có thể thêm ở mọi trạng thái hồ sơ</small>
+          </div>
+          @for (document of dossier.taiLieu; track document.id) {
+            <div class="hsd-document">
+              <span nz-icon [nzType]="documentIcon(document.loai)" class="hsd-document-icon"></span>
+              <div><strong>{{ document.ten }}</strong><small>{{ document.loai }} · {{ formatFileSize(document.sizeBytes) }}</small></div>
+              <button nz-button nzType="link" [disabled]="!document.hasContent"
+                [nzLoading]="documentLoadingId() === document.id" (click)="viewDocument(document)">Xem</button>
+              <button nz-button nzType="link" [disabled]="!document.hasContent"
+                [nzLoading]="documentLoadingId() === document.id" (click)="downloadDocument(document)">Tải</button>
+              <button nz-button nzType="link" nzDanger nz-popconfirm
+                nzPopconfirmTitle="Xóa tài liệu này?" nzPopconfirmOkText="Xóa" nzPopconfirmCancelText="Hủy"
+                [disabled]="documentDeletingId() !== null"
+                [nzLoading]="documentDeletingId() === document.id"
+                (nzOnConfirm)="deleteDocument(document)">Xóa</button>
+            </div>
+          } @empty { <nz-empty nzNotFoundContent="Hồ sơ chưa có tài liệu đính kèm."></nz-empty> }
+          <p class="hsd-storage-note">Tài liệu cũ chưa có nội dung tệp sẽ chỉ hiển thị metadata.</p>
+        </nz-card>
+
+        @if (dossier.hoiDongXetDuyet.length) {
+          <nz-card nzTitle="Hội đồng xét duyệt" nzSize="small">
+            @for (hoiDong of dossier.hoiDongXetDuyet; track hoiDong.id) {
+              <div class="hsd-hoidong">
+                <div class="hsd-hoidong-header">
+                  <nz-tag nzColor="blue">Cấp {{ hoiDongCapLabel[hoiDong.cap] }}</nz-tag>
+                  <small>Sinh tự động sau bước {{ hoiDong.sourceTaskDefinitionKey }} · {{ hoiDong.createdAt | date:'dd/MM/yyyy HH:mm' }}</small>
+                </div>
+                @if (hoiDong.canCuPhapLy) { <p class="hsd-hoidong-cancu"><strong>Căn cứ:</strong> {{ hoiDong.canCuPhapLy }}</p> }
+                <table class="hsd-hoidong-table">
+                  <thead><tr><th>Họ và tên</th><th>Vai trò trong Hội đồng</th></tr></thead>
+                  <tbody>
+                    @for (member of hoiDong.thanhVien; track $index) {
+                      <tr><td>{{ member.hoTen }}</td><td>{{ member.vaiTroTrongHoiDong || '—' }}</td></tr>
+                    } @empty {
+                      <tr><td colspan="2">Chưa có thành viên.</td></tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </nz-card>
+        }
+      </div>
+
+      <div nz-col [nzXs]="24" [nzLg]="11" class="hsd-column">
+        <nz-card nzTitle="Dòng thời gian phê duyệt">
+          <div class="hsd-timeline">
+            @for (step of dossier.steps; track step.buocIndex) {
+              <div class="hsd-timeline-item" [class.pending]="step.trangThai === 'PENDING'">
+                <span class="hsd-dot" [class.current]="step.trangThai === 'CURRENT'" [class.done]="step.trangThai === 'DONE'" [class.rejected]="step.trangThai === 'REJECTED'"></span>
+                <div class="hsd-step-content">
+                  <div><strong>{{ step.ten }}</strong> <nz-tag [nzColor]="stepColor[step.trangThai]">{{ stepLabel[step.trangThai] }}</nz-tag></div>
+                  <small>{{ step.vaiTro }}</small>
+                  @if (step.vaiTroCodes.length) { <div class="hsd-role-codes">{{ step.vaiTroCodes.join(', ') }}</div> }
+                  @if (step.nguoi) { <div>{{ step.nguoi }}</div> }
+                  @if (step.thoiDiem) { <small>{{ step.thoiDiem }}</small> }
+                  @if (step.hanXuLy && step.trangThai === 'CURRENT') { <div class="hsd-deadline">Hạn xử lý: {{ step.hanXuLy }}</div> }
+                  @if (step.yKien) { <div class="hsd-comment">💬 {{ step.yKien }}</div> }
+                </div>
+              </div>
+            }
+          </div>
+        </nz-card>
+      </div>
+    </div>
+  </div>
+
+  <nz-modal [nzVisible]="submitOpen()" nzTitle="Gửi duyệt hồ sơ" nzOkText="Gửi duyệt" nzCancelText="Hủy"
+    [nzOkLoading]="saving()" [nzOkDisabled]="!submitProcess()?.supported" (nzOnCancel)="submitOpen.set(false)" (nzOnOk)="submit()">
+    <ng-container *nzModalContent>
+      @if (submitProcess(); as process) {
+        <p>Hồ sơ <code>{{ dossier.id }}</code> sẽ đi vào quy trình:</p>
+        <nz-card nzSize="small"><strong>{{ process.code }} · {{ process.name }}</strong></nz-card>
+        @if (!process.supported) { <nz-alert nzType="warning" nzShowIcon nzMessage="Backend hiện mới hỗ trợ gửi duyệt RD01.01."></nz-alert> }
+      } @else { <nz-alert nzType="warning" nzShowIcon nzMessage="Loại hồ sơ này chưa có quy trình gửi duyệt được hỗ trợ."></nz-alert> }
+    </ng-container>
+  </nz-modal>
+
+  <nz-modal [nzVisible]="actionOpen()" [nzTitle]="actionTitle()" nzOkText="Xác nhận" nzCancelText="Hủy" nzWidth="720px"
+    [nzOkLoading]="saving()" [nzOkDanger]="selectedOutcome() === 'REJECT_STEP'"
+    [nzOkDisabled]="(!!selectedAction()?.requiresReason && !actionNote().trim()) || taskActionFormLoading()"
+    (nzOnCancel)="closeAction()" (nzOnOk)="applyAction()">
+    <ng-container *nzModalContent>
+      @if (currentStep(); as current) { <p>Bước hiện tại: <strong>{{ current.ten }}</strong></p> }
+      @if (selectedAction()?.formKey) {
+        @if (taskActionFormLoading()) {
+          <div class="hsd-loading"><nz-spin nzSimple></nz-spin></div>
+        } @else if (taskActionForm(); as form) {
+          <app-form-renderer #taskActionFormRenderer [schema]="form.schema"></app-form-renderer>
+        }
+      }
+      <label for="action-note">Ý kiến {{ selectedAction()?.requiresReason ? '(bắt buộc)' : '(không bắt buộc)' }}</label>
+      <textarea id="action-note" nz-input rows="4" [ngModel]="actionNote()" (ngModelChange)="actionNote.set($event)" placeholder="Nhập ý kiến xử lý..."></textarea>
+    </ng-container>
+  </nz-modal>
+
+  <nz-modal [nzVisible]="bpmnOpen()" nzTitle="Sơ đồ BPMN và bước hiện tại" nzWidth="92vw"
+    [nzFooter]="null" (nzOnCancel)="closeBpmn()">
+    <ng-container *nzModalContent>
+      @if (bpmnLoading()) {
+        <div class="hsd-bpmn-loading"><nz-spin nzSimple></nz-spin></div>
+      } @else if (bpmnError()) {
+        <nz-alert nzType="error" nzShowIcon [nzMessage]="bpmnError()!"></nz-alert>
+      } @else if (bpmnXml(); as xml) {
+        @if (currentStep(); as current) {
+          <nz-alert nzType="info" nzShowIcon
+            [nzMessage]="'Bước hiện tại: ' + current.ten"
+            [nzDescription]="'Node ' + (current.taskDefinitionKey || 'chưa xác định') + ' được tô nổi trên sơ đồ.'"></nz-alert>
+        }
+        <div class="hsd-bpmn-viewer">
+          <app-bpmn-viewer [xml]="xml"
+            [activeElementIds]="currentStep()?.taskDefinitionKey ? [currentStep()!.taskDefinitionKey!] : []"></app-bpmn-viewer>
+        </div>
+      }
+    </ng-container>
+  </nz-modal>
+
+  <nz-modal [nzVisible]="!!formAction()" [nzTitle]="formAction()?.label || 'Biểu mẫu'" nzWidth="860px"
+    [nzFooter]="null" (nzOnCancel)="closeActionForm()">
+    <ng-container *nzModalContent>
+      @if (formLoading()) {
+        <div class="hsd-loading"><nz-spin nzSimple></nz-spin></div>
+      } @else if (actionForm(); as form) {
+        <app-form-renderer [schema]="form.schema"></app-form-renderer>
+      }
+    </ng-container>
+  </nz-modal>
+} @else if (errorMessage()) {
+  <nz-alert nzType="error" nzShowIcon [nzMessage]="errorMessage()"></nz-alert>
+}

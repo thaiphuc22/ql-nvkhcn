@@ -1,0 +1,83 @@
+<div class="bvf-root">
+  @if (!rawMode()) {
+    @if (usages().length) {
+      <div class="bvf-fields">
+        @for (u of usages(); track u.name) {
+          <div class="bvf-field">
+            <label>{{ u.name }}</label>
+            <div class="bvf-hint">dùng tại: {{ usageHint(u) }}</div>
+            @switch (u.kind) {
+              @case ('boolean') {
+                <nz-switch [ngModel]="boolValue(u.name)" (ngModelChange)="setValue(u.name, $event)"></nz-switch>
+              }
+              @case ('number') {
+                <nz-input-number
+                  [ngModel]="numberValue(u.name)"
+                  (ngModelChange)="setValue(u.name, $event)"
+                  style="width: 100%"
+                ></nz-input-number>
+              }
+              @case ('enum') {
+                <nz-select
+                  [ngModel]="stringValue(u.name)"
+                  (ngModelChange)="setValue(u.name, $event)"
+                  nzAllowClear
+                  nzPlaceHolder="Chọn giá trị"
+                  style="width: 100%"
+                >
+                  @for (opt of u.enumValues; track opt) {
+                    <nz-option [nzValue]="opt" [nzLabel]="opt"></nz-option>
+                  }
+                </nz-select>
+              }
+              @default {
+                <input nz-input [ngModel]="stringValue(u.name)" (ngModelChange)="setValue(u.name, $event)" />
+              }
+            }
+          </div>
+        }
+      </div>
+
+      @if (hiddenCount() > 0 && !expanded()) {
+        <button nz-button nzType="link" nzSize="small" (click)="expandAll()">
+          Hiện tất cả biến ({{ hiddenCount() }} biến khác trong sơ đồ)
+        </button>
+      }
+
+      @if (extraEntries().length) {
+        <div class="bvf-extra">
+          <span nz-typography nzType="secondary">
+            Biến khác đã nhập (giữ nguyên, không hiện field): {{ extraEntries().length }}
+          </span>
+        </div>
+      }
+    } @else {
+      <div class="bvf-empty">
+        @if (hiddenCount() > 0) {
+          Bước này chưa xác định được biến dùng ở gateway kế tiếp.
+        } @else {
+          Không phát hiện biến nào từ điều kiện gateway trong sơ đồ.
+        }
+      </div>
+      @if (hiddenCount() > 0 && !expanded()) {
+        <button nz-button nzType="link" nzSize="small" (click)="expandAll()">
+          Hiện tất cả biến ({{ hiddenCount() }} biến khác trong sơ đồ)
+        </button>
+      }
+    }
+  } @else {
+    <textarea
+      nz-input
+      rows="6"
+      [ngModel]="rawText()"
+      (ngModelChange)="onRawTextChange($event)"
+      placeholder="{}"
+    ></textarea>
+  }
+
+  @if (!noVariablesDetected()) {
+    <button nz-button nzType="link" nzSize="small" (click)="toggleMode()">
+      {{ rawMode() ? 'Dùng form biến' : 'Nâng cao — JSON thô' }}
+    </button>
+  }
+</div>

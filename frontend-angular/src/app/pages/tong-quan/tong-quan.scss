@@ -1,0 +1,224 @@
+.tq-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tq-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+
+  h2 {
+    margin: 0 0 2px;
+  }
+}
+
+.tq-subtitle {
+  font-size: 13px;
+}
+
+.tq-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tq-date-input {
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--vht-border);
+  border-radius: var(--vht-radius-sm);
+  font-size: 13px;
+}
+
+.tq-date-sep {
+  color: var(--vht-ink-3);
+}
+
+.tq-nhom-select,
+.tq-heat-select {
+  min-width: 180px;
+}
+
+.tq-heat-select {
+  min-width: 320px;
+}
+
+.tq-alert {
+  margin: 0;
+}
+
+.tq-section-title {
+  font-weight: 600;
+  font-size: 15px;
+  margin: 4px 0 4px;
+  scroll-margin-top: 16px;
+}
+
+.tq-stats {
+  margin: 0;
+}
+
+.tq-stat-card {
+  background: var(--vht-surface);
+  border: 1px solid var(--vht-border);
+  border-radius: var(--vht-radius);
+  padding: 14px 16px;
+  height: 100%;
+}
+
+.tq-clickable {
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--vht-border-strong);
+  }
+}
+
+.tq-stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.tq-stat-label {
+  color: var(--vht-ink-2);
+  font-size: 13px;
+}
+
+.tq-charts {
+  margin: 0;
+}
+
+.tq-hint {
+  color: var(--vht-ink-2);
+  font-size: 12px;
+  margin: 0 0 8px;
+}
+
+// ---- Bảng đơn giản (thay nz-table cho các bảng chỉ-đọc trong trang này) ----
+.tq-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th,
+  td {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--vht-border);
+    text-align: left;
+  }
+
+  th {
+    color: var(--vht-ink-2);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  code {
+    font-family: var(--vht-font-mono, monospace);
+    font-size: 12px;
+  }
+}
+
+.tq-num {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.tq-ellipsis {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tq-overdue {
+  color: var(--vht-danger);
+  font-weight: 600;
+}
+
+.tq-row-clickable {
+  cursor: pointer;
+
+  &:hover td {
+    background: #f5f9ff;
+  }
+}
+
+.tq-row-warn td {
+  background: rgba(238, 0, 51, 0.04);
+}
+
+// ---- Heatmap Unit × metric ----
+.tq-unit-heatmap {
+  overflow-x: auto;
+}
+
+.tq-uh-grid {
+  display: grid;
+  gap: 4px;
+  min-width: 520px;
+}
+
+.tq-uh-unit {
+  font-size: 11px;
+  color: var(--vht-ink-2);
+  text-align: center;
+}
+
+.tq-uh-metric {
+  font-size: 12px;
+  align-self: center;
+}
+
+.tq-uh-cell {
+  height: 44px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vht-ink);
+  border: 1px solid var(--vht-border);
+}
+
+.tq-uh-cell-dark {
+  color: #fff;
+}
+
+// ---- BPMN heatmap header/legend ----
+.tq-bpmn-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tq-heat-legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tq-heat-gradient {
+  width: 120px;
+  height: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--vht-border);
+  background: linear-gradient(
+    90deg,
+    #fff1f3 0%,
+    #ffdad8 22%,
+    #ff9aa8 45%,
+    #ee0033 72%,
+    #bf0027 88%,
+    #a80022 100%
+  );
+}

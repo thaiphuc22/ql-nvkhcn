@@ -1,0 +1,367 @@
+<div class="pc-page">
+  <div class="pc-header">
+    <h2 nz-typography>Danh mục quy trình</h2>
+    <div class="pc-header-actions">
+      <button nz-button nzType="default" (click)="reload()" [nzLoading]="loading()">
+        <span nz-icon nzType="reload"></span>
+        Tải lại
+      </button>
+      <button nz-button nzType="primary" (click)="openImportModal()">
+        <span nz-icon nzType="upload"></span>
+        Nhập từ .bpmn
+      </button>
+      <button nz-button nzType="primary" (click)="createBpmn()">
+        <span nz-icon nzType="plus"></span>
+        Tạo &amp; vẽ BPMN
+      </button>
+    </div>
+  </div>
+
+  @if (errorMessage()) {
+    <nz-alert nzType="error" nzShowIcon [nzMessage]="errorMessage()" class="pc-alert"></nz-alert>
+  }
+
+  <div nz-row [nzGutter]="14" class="pc-stats">
+    <div nz-col [nzXs]="12" [nzMd]="6">
+      <div class="pc-stat-card">
+        <div class="pc-stat-value" style="color: #1677ff">{{ stats().total }}</div>
+        <div class="pc-stat-label">Tổng quy trình</div>
+      </div>
+    </div>
+    <div nz-col [nzXs]="12" [nzMd]="6">
+      <div class="pc-stat-card">
+        <div class="pc-stat-value" style="color: #17935a">{{ stats().totalVersions }}</div>
+        <div class="pc-stat-label">Tổng version đã deploy</div>
+      </div>
+    </div>
+    <div nz-col [nzXs]="12" [nzMd]="6">
+      <div class="pc-stat-card">
+        <div class="pc-stat-value" style="color: #d48806">{{ stats().drafts }}</div>
+        <div class="pc-stat-label">Bản nháp đang xử lý</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pc-filter-bar">
+    <nz-input-group nzPrefixIcon="search" class="pc-search">
+      <input
+        nz-input
+        placeholder="Tìm theo mã hoặc tên quy trình..."
+        [ngModel]="query()"
+        (ngModelChange)="query.set($event)"
+      />
+    </nz-input-group>
+    <span class="pc-count">
+      @if (activeTabIndex() === 0) {
+        {{ draftRows().length }}/{{ stats().drafts }} bản nháp
+      } @else {
+        {{ rows().length }}/{{ rawList().length }} quy trình đã deploy
+      }
+    </span>
+  </div>
+
+  <nz-tabs [nzSelectedIndex]="activeTabIndex()" (nzSelectedIndexChange)="activeTabIndex.set($event)">
+    <nz-tab [nzTitle]="draftTabTitle">
+      <ng-template #draftTabTitle>Bản nháp ({{ stats().drafts }})</ng-template>
+      <nz-table #draftTable [nzData]="draftRows()" [nzLoading]="loadingDrafts()" [nzPageSize]="20"
+        nzTableLayout="fixed" [nzScroll]="{ y: '55vh' }">
+        <thead>
+          <tr>
+            <th nzWidth="200px">Mã quy trình (BPMN)</th>
+            <th>Tên quy trình</th>
+            <th nzWidth="100px" nzAlign="center">Revision</th>
+            <th nzWidth="130px" nzAlign="center">Trạng thái</th>
+            <th nzWidth="160px">Người cập nhật</th>
+            <th nzWidth="180px">Cập nhật lúc</th>
+            <th nzWidth="180px" nzAlign="center">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of draftTable.data; track row.id) {
+            <tr>
+              <td><code>{{ row.bpmnProcessId }}</code></td>
+              <td>{{ row.name }}</td>
+              <td nzAlign="center">r{{ row.revision }}</td>
+              <td nzAlign="center">
+                <nz-tag [nzColor]="row.status === 'VALID' ? 'success' : row.status === 'INVALID' ? 'error' : 'gold'">
+                  {{ row.status }}
+                </nz-tag>
+              </td>
+              <td>{{ row.updatedBy }}</td>
+              <td>{{ row.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td nzAlign="center">
+                <div class="pc-row-actions">
+                  <button nz-button nzType="text" nzSize="small" title="Vẽ / sửa BPMN" (click)="editDraft(row)">
+                    <span nz-icon nzType="edit"></span>
+                  </button>
+                  <button nz-button nzType="text" nzSize="small" title="Mở chi tiết" (click)="openDraft(row.id)">
+                    <span nz-icon nzType="eye"></span>
+                  </button>
+                  <button nz-button nzType="text" nzSize="small" title="Chạy thử" (click)="runTestDraft(row)">
+                    <svg class="pc-icon-play" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M16.6582 9.28638C18.098 10.1862 18.8178 10.6361 19.0647 11.2122C19.2803 11.7152 19.2803 12.2847 19.0647 12.7878C18.8178 13.3638 18.098 13.8137 16.6582 14.7136L9.896 18.94C8.29805 19.9387 7.49907 20.4381 6.83973 20.385C6.26501 20.3388 5.73818 20.0469 5.3944 19.584C5 19.053 5 18.1108 5 16.2264V7.77357C5 5.88919 5 4.94701 5.3944 4.41598C5.73818 3.9531 6.26501 3.66111 6.83973 3.6149C7.49907 3.5619 8.29805 4.06126 9.896 5.05998L16.6582 9.28638Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                    </svg>
+                  </button>
+                  <button nz-button nzType="text" nzSize="small" nzDanger title="Xóa bản nháp" (click)="deleteDraft(row)">
+                    <span nz-icon nzType="delete"></span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="7"><nz-empty nzNotFoundContent="Chưa có bản nháp nào."></nz-empty></td></tr>
+          }
+        </tbody>
+      </nz-table>
+    </nz-tab>
+
+    <nz-tab [nzTitle]="deployedTabTitle">
+      <ng-template #deployedTabTitle>Đã deploy ({{ rawList().length }})</ng-template>
+      <nz-table #tbl [nzData]="rows()" [nzLoading]="loading()" [nzPageSize]="20"
+        nzTableLayout="fixed" [nzScroll]="{ y: '55vh' }">
+        <thead>
+          <tr>
+            <th nzWidth="200px">Mã quy trình (BPMN)</th>
+            <th>Tên quy trình</th>
+            <th nzWidth="110px" nzAlign="center">Phiên bản</th>
+            <th nzWidth="140px" nzAlign="center">Trạng thái</th>
+            <th nzWidth="150px" nzAlign="center">Instance đang chạy</th>
+            <th nzWidth="180px">Cập nhật lúc</th>
+            <th nzWidth="110px" nzAlign="center">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of tbl.data; track row.id) {
+            <tr>
+              <td><code>{{ row.bpmnProcessId }}</code></td>
+              <td>{{ row.name }}</td>
+              <td nzAlign="center"><strong>v{{ row.latestVersion }}</strong></td>
+              <td nzAlign="center"><nz-tag nzColor="success">{{ row.status }}</nz-tag></td>
+              <td nzAlign="center">
+                @if (loadingInstanceCounts()) {
+                  <span class="pc-instance-muted">Đang tải…</span>
+                } @else if (!instanceCountsAvailable()) {
+                  <span class="pc-instance-muted" [attr.title]="instanceCountsMessage()">—</span>
+                } @else if (runningCount(row.bpmnProcessId) === 0) {
+                  <span class="pc-instance-muted">0</span>
+                } @else {
+                  <button nz-button nzType="link" nzSize="small" (click)="openInstances(row)">
+                    <nz-tag nzColor="processing">{{ runningCount(row.bpmnProcessId) }}</nz-tag>
+                  </button>
+                }
+              </td>
+              <td>{{ row.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td nzAlign="center">
+                <button nz-button nzType="link" nzSize="small" (click)="viewDetail(row)">Xem chi tiết</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="7"><nz-empty nzNotFoundContent="Chưa có quy trình nào được deploy."></nz-empty></td></tr>
+          }
+        </tbody>
+      </nz-table>
+    </nz-tab>
+  </nz-tabs>
+</div>
+
+<nz-drawer
+  [nzVisible]="instanceDrawerOpen()"
+  [nzTitle]="'Instance đang chạy · ' + (instanceDrawerProcess()?.bpmnProcessId ?? '')"
+  [nzWidth]="760"
+  (nzOnClose)="closeInstanceDrawer()"
+>
+  <ng-container *nzDrawerContent>
+    @if (instanceDrawerProcess(); as process) {
+      <p class="pc-instance-subtitle">{{ process.name }}</p>
+    }
+    @if (instanceListMessage(); as message) {
+      <nz-alert nzType="warning" nzShowIcon [nzMessage]="message" class="pc-alert"></nz-alert>
+    }
+    <nz-table
+      #instanceTable
+      [nzData]="instanceRows()"
+      [nzLoading]="instanceDrawerLoading()"
+      [nzPageSize]="10"
+      nzSize="small"
+    >
+      <thead>
+        <tr>
+          <th nzWidth="190px">Process instance key</th>
+          <th nzWidth="140px">Mã hồ sơ</th>
+          <th>Bước hiện tại</th>
+          <th nzWidth="150px">Bắt đầu lúc</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (instance of instanceTable.data; track instance.processInstanceKey) {
+          <tr>
+            <td><code>{{ instance.processInstanceKey }}</code></td>
+            <td>{{ instance.businessId || '—' }}</td>
+            <td>
+              @for (step of instance.currentSteps; track step.elementId) {
+                <nz-tag [nzColor]="step.hasIncident ? 'error' : 'processing'">
+                  {{ step.name }}
+                </nz-tag>
+              } @empty {
+                <span class="pc-instance-muted">Không có bước nào đang chờ</span>
+              }
+              @if (instance.hasIncident) {
+                <nz-tag nzColor="error">Có sự cố</nz-tag>
+              }
+            </td>
+            <td>{{ instance.startedAt ? (instance.startedAt | date: 'dd/MM/yyyy HH:mm') : '—' }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="4">
+              <nz-empty nzNotFoundContent="Không còn instance nào đang chạy."></nz-empty>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+  </ng-container>
+</nz-drawer>
+
+<nz-drawer
+  [nzVisible]="draftDrawerOpen()"
+  nzTitle="Chi tiết bản nháp"
+  [nzWidth]="560"
+  [nzClosable]="!draftActionLoading()"
+  (nzOnClose)="closeDraftDrawer()"
+>
+  <ng-container *nzDrawerContent>
+    @if (draftDetailLoading()) {
+      <div class="pc-drawer-loading">Đang tải bản nháp...</div>
+    } @else if (draftDetail(); as draft) {
+      <nz-descriptions nzBordered [nzColumn]="1" nzSize="small">
+        <nz-descriptions-item nzTitle="Mã BPMN"><code>{{ draft.bpmnProcessId }}</code></nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Tên">{{ draft.name }}</nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Tệp">{{ draft.resourceName }}</nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Trạng thái">
+          <nz-tag [nzColor]="draft.status === 'VALID' ? 'success' : draft.status === 'INVALID' ? 'error' : 'gold'">
+            {{ draft.status }}
+          </nz-tag>
+        </nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Revision">r{{ draft.revision }}</nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Checksum"><code class="pc-checksum">{{ draft.checksumSha256 }}</code></nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Cập nhật">{{ draft.updatedBy }} · {{ draft.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</nz-descriptions-item>
+      </nz-descriptions>
+      <div class="pc-drawer-actions">
+        <button nz-button (click)="validateDraft()" [nzLoading]="draftActionLoading()">
+          <span nz-icon nzType="check-circle"></span> Kiểm tra BPMN
+        </button>
+        <button nz-button (click)="runTestDraft(draft)">
+          <span nz-icon nzType="play-circle"></span> Chạy thử BPMN
+        </button>
+        <button nz-button nzType="primary" (click)="confirmDeployDraft()" [nzLoading]="draftActionLoading()"
+          [disabled]="!canDeployDraft()" [attr.title]="canDeployDraft() ? null : 'Chỉ tài khoản quản trị được deploy trong bản demo'">
+          <span nz-icon nzType="cloud-upload"></span> Deploy
+        </button>
+      </div>
+      @if (draft.status !== 'VALID') {
+        <nz-alert nzType="warning" nzShowIcon nzMessage="Backend sẽ kiểm tra lại BPMN trước khi deploy. Nên chạy Kiểm tra BPMN trước để xem trạng thái hợp lệ."></nz-alert>
+      }
+      @if (validationIssues().length) {
+        <div class="pc-validation-warnings">
+          @for (group of validationIssueGroups(); track group.severity) {
+            <strong>{{ group.label }} ({{ group.issues.length }})</strong>
+            @if (group.issues.length) {
+              <ul class="pc-warning-list">
+                @for (issue of group.issues; track issue.code + ':' + issue.elementId + ':' + $index) {
+                  <li><code>{{ issue.code }}</code> — {{ issue.message }}
+                    @if (issue.elementName || issue.elementId) { <small>({{ issue.elementName || issue.elementId }})</small> }
+                  </li>
+                }
+              </ul>
+            }
+          }
+        </div>
+      }
+    }
+  </ng-container>
+</nz-drawer>
+
+<nz-modal
+  [nzVisible]="importModalOpen()"
+  nzTitle="Nhập quy trình từ file .bpmn"
+  [nzFooter]="importModalFooter"
+  (nzOnCancel)="closeImportModal()"
+>
+  <ng-container *nzModalContent>
+    @if (importErrors(); as err) {
+      <nz-alert nzType="error" nzShowIcon [nzMessage]="err.message" class="pc-import-alert"></nz-alert>
+      @if (err.errors.length) {
+        <ul class="pc-import-errors">
+          @for (e of err.errors; track e) {
+            <li>{{ e }}</li>
+          }
+        </ul>
+      }
+    }
+
+    @if (!selectedFile()) {
+      <nz-upload
+        nzType="drag"
+        [nzMultiple]="false"
+        [nzBeforeUpload]="beforeUpload"
+        accept=".bpmn"
+      >
+        <p class="ant-upload-drag-icon"><span nz-icon nzType="inbox"></span></p>
+        <p class="ant-upload-text">Kéo-thả hoặc bấm chọn tệp .bpmn</p>
+        <p class="ant-upload-hint" style="font-size: 12px">
+          File và metadata sẽ được lưu vào ứng dụng ở trạng thái bản nháp, chưa deploy lên Camunda.
+        </p>
+      </nz-upload>
+    } @else {
+      <div class="pc-selected-file">
+        <span nz-icon nzType="file-text"></span>
+        <span class="pc-selected-file-name">{{ selectedFile()!.name }}</span>
+        <button nz-button nzType="text" nzDanger nzSize="small" (click)="removeSelectedFile()">
+          Chọn lại
+        </button>
+      </div>
+    }
+
+    <div class="pc-draft-fields">
+      <label for="draft-process-id">Mã quy trình <span aria-hidden="true">*</span></label>
+      <input
+        id="draft-process-id"
+        nz-input
+        maxlength="255"
+        placeholder="Mã bpmn:process"
+        [ngModel]="draftProcessId()"
+        (ngModelChange)="draftProcessId.set($event)"
+      />
+      @if (selectedFile() && !draftProcessId().trim()) {
+        <small>Mã quy trình là bắt buộc.</small>
+      }
+
+      <label for="draft-name">Tên quy trình <span aria-hidden="true">*</span></label>
+      <input
+        id="draft-name"
+        nz-input
+        maxlength="512"
+        placeholder="Tên hiển thị của quy trình"
+        [ngModel]="draftName()"
+        (ngModelChange)="draftName.set($event)"
+      />
+      @if (selectedFile() && !draftName().trim()) {
+        <small>Tên quy trình là bắt buộc.</small>
+      }
+    </div>
+  </ng-container>
+</nz-modal>
+
+<ng-template #importModalFooter>
+  <button nz-button nzType="default" [disabled]="importing()" (click)="closeImportModal()">Huỷ</button>
+  <button
+    nz-button
+    nzType="primary"
+    [nzLoading]="importing()"
+    [disabled]="!canSaveDraft()"
+    (click)="saveDraft()"
+  >
+    Lưu nháp
+  </button>
+</ng-template>

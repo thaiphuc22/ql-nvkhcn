@@ -1,0 +1,39 @@
+{
+  "/api/internal-integration": {
+    "target": "http://localhost:8093",
+    "secure": false,
+    "changeOrigin": false,
+    "headers": {
+      "Authorization": "Bearer dev-ho-so-local-only"
+    }
+  },
+  "/api/my-tasks": {
+    "target": "http://localhost:8093",
+    "secure": false,
+    "changeOrigin": false,
+    "headers": {
+      "Authorization": "Bearer dev-ho-so-local-only"
+    }
+  },
+  "/api/ho-so": {
+    "target": "http://localhost:8093",
+    "secure": false,
+    "changeOrigin": false,
+    "headers": {
+      "Authorization": "Bearer dev-ho-so-local-only"
+    }
+  },
+  "/api/nhiem-vu": {
+    "target": "http://localhost:8093",
+    "secure": false,
+    "changeOrigin": false,
+    "headers": {
+      "Authorization": "Bearer dev-ho-so-local-only"
+    }
+  },
+  "/api": {
+    "target": "http://localhost:8090",
+    "secure": false,
+    "changeOrigin": false
+  }
+}

@@ -1,0 +1,919 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- RD02.02 — Xét duyệt nhiệm vụ KHCN cấp Tập đoàn. Dựng từ RD02_02_Gan_Bieu_mau.md. -->
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+id="Definitions_RD02_02" targetNamespace="http://vht.vn/qtkhcn/bpmn">
+<bpmn:collaboration id="Collaboration_RD02_02">
+<bpmn:participant id="Participant_RD02_02" name="RD02.02 — Xét duyệt NV KHCN cấp Tập đoàn" processRef="RD02_02" />
+</bpmn:collaboration>
+<bpmn:process id="RD02_02" name="Xét duyệt NV KHCN cấp Tập đoàn" isExecutable="true">
+<bpmn:extensionElements>
+<!-- Action Studio contract: every RD02.02 user task exposes the two runtime decisions.
+Keeping this beside the executable process makes scaffold/reconcile deterministic and
+removes the need for process-level policy repair migrations. -->
+<zeebe:properties>
+<zeebe:property name="qtkhcn.contractVersion" value="v3" />
+<zeebe:property name="qtkhcn.userTaskActions" value="APPROVE_STEP,REJECT_STEP" />
+</zeebe:properties>
+</bpmn:extensionElements>
+<bpmn:laneSet id="LaneSet_RD02_02">
+<bpmn:lane id="Lane_PM" name="PM / PA / NNC">
+<bpmn:flowNodeRef>Start</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T01</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T02</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>Check</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>GCheck</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>AI_Summarize</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>G03Split</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>G03Join</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T03_PM</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T08</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T11</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T16</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T22</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T25</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>G09Split</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>G09Join</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>G12Split</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>G12Join</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>G23Split</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>G23Join</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>G26Split</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>G26Join</bpmn:flowNodeRef>
+</bpmn:lane>
+<bpmn:lane id="Pool_CQ_KHCN" name="CQ_KHCN">
+<bpmn:flowNodeRef>T03_CQ_KHCN</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T09_CQ_KHCN</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T12_CQ_KHCN</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T23_CQ_KHCN</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T26_CQ_KHCN</bpmn:flowNodeRef>
+</bpmn:lane>
+<bpmn:lane id="Pool_CQ_MS" name="CQ_MS">
+<bpmn:flowNodeRef>T03_CQ_MS</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T09_CQ_MS</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T12_CQ_MS</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T23_CQ_MS</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T26_CQ_MS</bpmn:flowNodeRef>
+</bpmn:lane>
+<bpmn:lane id="Pool_CQ_TCKT" name="CQ_TCKT">
+<bpmn:flowNodeRef>T03_CQ_TCKT</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T09_CQ_TCKT</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T12_CQ_TCKT</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T23_CQ_TCKT</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T26_CQ_TCKT</bpmn:flowNodeRef>
+</bpmn:lane>
+<bpmn:lane id="Pool_CQ_NS" name="CQ_NS">
+<bpmn:flowNodeRef>T03_CQ_NS</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T09_CQ_NS</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T12_CQ_NS</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T23_CQ_NS</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T26_CQ_NS</bpmn:flowNodeRef>
+</bpmn:lane>
+<bpmn:lane id="Pool_TP_CLKHCN" name="TP_CLKHCN">
+<bpmn:flowNodeRef>T14_TP_CLKHCN</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T28_TP_CLKHCN</bpmn:flowNodeRef>
+</bpmn:lane>
+<bpmn:lane id="Pool_GD_TTMS" name="GD_TTMS">
+<bpmn:flowNodeRef>T14_GD_TTMS</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T28_GD_TTMS</bpmn:flowNodeRef>
+</bpmn:lane>
+<bpmn:lane id="Pool_TP_NS" name="TP_NS">
+<bpmn:flowNodeRef>T14_TP_NS</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T28_TP_NS</bpmn:flowNodeRef>
+</bpmn:lane>
+<bpmn:lane id="Pool_TP_TCKT" name="TP_TCKT">
+<bpmn:flowNodeRef>T14_TP_TCKT</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T28_TP_TCKT</bpmn:flowNodeRef>
+</bpmn:lane>
+<bpmn:lane id="Lane_BGD" name="BGĐ Trung tâm / BGĐ Khối">
+<bpmn:flowNodeRef>T04_GDTT</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T04_GDK</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T13_GDTT</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T13_GDK</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T27_GDTT</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T27_GDK</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>G14Split</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>G14Join</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>G28Split</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>G28Join</bpmn:flowNodeRef>
+</bpmn:lane>
+<bpmn:lane id="Lane_CQQL" name="Cơ quan QL KHCN VHT">
+<bpmn:flowNodeRef>T05</bpmn:flowNodeRef>
+</bpmn:lane>
+<bpmn:lane id="Lane_HDXD_CS" name="HĐXD cấp Cơ sở">
+<bpmn:flowNodeRef>T07</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T10</bpmn:flowNodeRef>
+</bpmn:lane>
+<bpmn:lane id="Lane_LDVHT" name="Lãnh đạo VHT / CQNV VHT">
+<bpmn:flowNodeRef>T06</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>Generate_HDXD</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T15</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T29_PTGD_CT</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T29_TGD_VHT</bpmn:flowNodeRef>
+</bpmn:lane>
+<bpmn:lane id="Lane_TD" name="CQ KHCN TĐ / HĐXD TĐ / HĐ KHCN TĐ">
+<bpmn:flowNodeRef>T17</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>G18Split</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T18A</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T18B</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>G18Join</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T19</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>Generate_HDXD_TD</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T21</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T24</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>Load_HDXD_TD</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>Tinh_DiemTB_T24</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>Rule_DanhGiaT24</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>G24</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>End_KhongThongQua</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T30</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T31</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T32</bpmn:flowNodeRef>
+</bpmn:lane>
+<bpmn:lane id="Lane_BTGD" name="Ban Tổng Giám đốc Tập đoàn">
+<bpmn:flowNodeRef>T20</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>T33</bpmn:flowNodeRef>
+<bpmn:flowNodeRef>End</bpmn:flowNodeRef>
+</bpmn:lane>
+</bpmn:laneSet>
+<bpmn:startEvent id="Start" name="Có QĐ phê duyệt chủ trương cấp TĐ">
+<bpmn:outgoing>F01</bpmn:outgoing>
+</bpmn:startEvent>
+<bpmn:userTask id="T01" name="1. Khởi tạo luồng xét duyệt cấp Tập đoàn RD02.02">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="PM" />
+<zeebe:formDefinition formKey="bm-02-01-dki-nv" />
+</bpmn:extensionElements>
+<bpmn:incoming>F01</bpmn:incoming>
+<bpmn:outgoing>F02</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T02" name="2. Xây dựng dự thảo HS đề nghị xét duyệt (HSXD dự thảo 1)">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="PM,PA,NNC" />
+<zeebe:formDefinition formKey="bm-02-02-dto-nv" />
+</bpmn:extensionElements>
+<bpmn:incoming>F02</bpmn:incoming>
+<bpmn:incoming>FCheckFail</bpmn:incoming>
+<bpmn:outgoing>F03</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:serviceTask id="Check" name="Hệ thống kiểm tra điều kiện, nội dung, thể thức và nhân sự thẩm định">
+<bpmn:extensionElements>
+<zeebe:taskDefinition type="khcn.rd0202.check-default-condition" retries="3" />
+</bpmn:extensionElements>
+<bpmn:incoming>F03</bpmn:incoming>
+<bpmn:outgoing>F04</bpmn:outgoing>
+</bpmn:serviceTask>
+<bpmn:exclusiveGateway id="GCheck" name="Hồ sơ đủ điều kiện?" default="FCheckFail">
+<bpmn:incoming>F04</bpmn:incoming>
+<bpmn:outgoing>FCheckOK</bpmn:outgoing>
+<bpmn:outgoing>FCheckFail</bpmn:outgoing>
+</bpmn:exclusiveGateway>
+<bpmn:serviceTask id="AI_Summarize" name="Hệ thống (AI Agent) tóm tắt hồ sơ">
+<bpmn:extensionElements>
+<zeebe:taskDefinition type="khcn.rd0202.summarize-dossier" retries="1" />
+</bpmn:extensionElements>
+<bpmn:incoming>FCheckOK</bpmn:incoming>
+<bpmn:outgoing>F_AISummary</bpmn:outgoing>
+</bpmn:serviceTask>
+<bpmn:parallelGateway id="G03Split" name="Phân công thẩm định song song">
+<bpmn:incoming>F_AISummary</bpmn:incoming>
+<bpmn:outgoing>F03KHCN</bpmn:outgoing>
+<bpmn:outgoing>F03MS</bpmn:outgoing>
+<bpmn:outgoing>F03TCKT</bpmn:outgoing>
+<bpmn:outgoing>F03NS</bpmn:outgoing>
+</bpmn:parallelGateway>
+<bpmn:userTask id="T03_CQ_KHCN" name="3. Thẩm định chuyên môn và hoàn chỉnh HSXD dự thảo 2">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="CQ_KHCN" />
+<zeebe:formDefinition formKey="bm-02-09-pnx-dt" />
+</bpmn:extensionElements>
+<bpmn:incoming>F03KHCN</bpmn:incoming>
+<bpmn:outgoing>F03KHCN_DONE</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T03_CQ_MS" name="3. Thẩm định chuyên môn và hoàn chỉnh HSXD dự thảo 2">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="CQ_MS" />
+<zeebe:formDefinition formKey="bm-02-09-pnx-dt" />
+</bpmn:extensionElements>
+<bpmn:incoming>F03MS</bpmn:incoming>
+<bpmn:outgoing>F03MS_DONE</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T03_CQ_TCKT" name="3. Thẩm định chuyên môn và hoàn chỉnh HSXD dự thảo 2">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="CQ_TCKT" />
+<zeebe:formDefinition formKey="bm-02-09-pnx-dt" />
+</bpmn:extensionElements>
+<bpmn:incoming>F03TCKT</bpmn:incoming>
+<bpmn:outgoing>F03TCKT_DONE</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T03_CQ_NS" name="3. Thẩm định chuyên môn và hoàn chỉnh HSXD dự thảo 2">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="CQ_NS" />
+<zeebe:formDefinition formKey="bm-02-09-pnx-dt" />
+</bpmn:extensionElements>
+<bpmn:incoming>F03NS</bpmn:incoming>
+<bpmn:outgoing>F03NS_DONE</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:parallelGateway id="G03Join" name="Hoàn tất thẩm định chuyên môn">
+<bpmn:incoming>F03KHCN_DONE</bpmn:incoming>
+<bpmn:incoming>F03MS_DONE</bpmn:incoming>
+<bpmn:incoming>F03TCKT_DONE</bpmn:incoming>
+<bpmn:incoming>F03NS_DONE</bpmn:incoming>
+<bpmn:outgoing>F05</bpmn:outgoing>
+</bpmn:parallelGateway>
+<bpmn:userTask id="T03_PM" name="3. Nhận PNX và hoàn chỉnh HSXD">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="PM" />
+<zeebe:formDefinition formKey="phieu-phe-duyet" />
+</bpmn:extensionElements>
+<bpmn:incoming>F05</bpmn:incoming>
+<bpmn:outgoing>F05B</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T04_GDTT" name="4. Ký hồ sơ dự thảo đề nghị xét duyệt">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="BGD_TT" />
+<zeebe:formDefinition formKey="phieu-phe-duyet" />
+</bpmn:extensionElements>
+<bpmn:incoming>F05B</bpmn:incoming>
+<bpmn:outgoing>F06</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T04_GDK" name="4. Ký hồ sơ dự thảo đề nghị xét duyệt">
+<bpmn:extensionElements>
+<zeebe:userTask />
+<zeebe:assignmentDefinition candidateGroups="BGD_KHOI" />
+</bpmn:extensionElements>
+<bpmn:incoming>F06</bpmn:incoming>
+<bpmn:outgoing>Flow_00mw9x8</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T05" name="5. Lập, trình QĐ thành lập HĐXD cấp Cơ sở">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="CQ_QLKHCN" />
+<zeebe:formDefinition formKey="bm-02-08-qdh-nv" />
+</bpmn:extensionElements>
+<bpmn:incoming>F06</bpmn:incoming>
+<bpmn:outgoing>F07</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T06" name="6. Phê duyệt QĐ thành lập HĐXD cấp Cơ sở">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="TGD_VHT" />
+<zeebe:formDefinition formKey="phieu-phe-duyet" />
+</bpmn:extensionElements>
+<bpmn:incoming>F07</bpmn:incoming>
+<bpmn:outgoing>F08</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:serviceTask id="Generate_HDXD" name="Hệ thống sinh Hội đồng xét duyệt cấp Cơ sở">
+<bpmn:extensionElements>
+<zeebe:taskDefinition type="khcn.rd0202.generate-hdxd-decision" retries="3" />
+</bpmn:extensionElements>
+<bpmn:incoming>F08</bpmn:incoming>
+<bpmn:outgoing>F08B</bpmn:outgoing>
+</bpmn:serviceTask>
+<bpmn:userTask id="T07" name="7. Họp HĐXD cấp Cơ sở phiên 1">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="HDXD" />
+<zeebe:formDefinition formKey="bm-02-09-pnx-dt" />
+</bpmn:extensionElements>
+<bpmn:incoming>F08B</bpmn:incoming>
+<bpmn:outgoing>F09</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T08" name="8. Hoàn thiện HSXD dự thảo 3 theo phiên 1">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="PM,PA,NNC" />
+<zeebe:formDefinition formKey="bm-02-16-bca-nv" />
+</bpmn:extensionElements>
+<bpmn:incoming>F09</bpmn:incoming>
+<bpmn:outgoing>F10</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:parallelGateway id="G09Split" name="Phân công rà soát song song">
+<bpmn:incoming>F10</bpmn:incoming>
+<bpmn:outgoing>F_T09_CQ_KHCN</bpmn:outgoing>
+<bpmn:outgoing>F_T09_CQ_MS</bpmn:outgoing>
+<bpmn:outgoing>F_T09_CQ_TCKT</bpmn:outgoing>
+<bpmn:outgoing>F_T09_CQ_NS</bpmn:outgoing>
+</bpmn:parallelGateway>
+<bpmn:userTask id="T09_CQ_KHCN" name="9. Rà soát HSXD dự thảo 3">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="CQ_KHCN" />
+<zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+</bpmn:extensionElements>
+<bpmn:incoming>F_T09_CQ_KHCN</bpmn:incoming>
+<bpmn:outgoing>F_T09_CQ_KHCN_DONE</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T09_CQ_MS" name="9. Rà soát HSXD dự thảo 3">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="CQ_MS" />
+<zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+</bpmn:extensionElements>
+<bpmn:incoming>F_T09_CQ_MS</bpmn:incoming>
+<bpmn:outgoing>F_T09_CQ_MS_DONE</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T09_CQ_TCKT" name="9. Rà soát HSXD dự thảo 3">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="CQ_TCKT" />
+<zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+</bpmn:extensionElements>
+<bpmn:incoming>F_T09_CQ_TCKT</bpmn:incoming>
+<bpmn:outgoing>F_T09_CQ_TCKT_DONE</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T09_CQ_NS" name="9. Rà soát HSXD dự thảo 3">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="CQ_NS" />
+<zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+</bpmn:extensionElements>
+<bpmn:incoming>F_T09_CQ_NS</bpmn:incoming>
+<bpmn:outgoing>F_T09_CQ_NS_DONE</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:parallelGateway id="G09Join" name="Hoàn tất rà soát dự thảo 3">
+<bpmn:incoming>F_T09_CQ_KHCN_DONE</bpmn:incoming>
+<bpmn:incoming>F_T09_CQ_MS_DONE</bpmn:incoming>
+<bpmn:incoming>F_T09_CQ_TCKT_DONE</bpmn:incoming>
+<bpmn:incoming>F_T09_CQ_NS_DONE</bpmn:incoming>
+<bpmn:outgoing>F11</bpmn:outgoing>
+</bpmn:parallelGateway>
+<bpmn:userTask id="T10" name="10. Họp HĐXD cấp Cơ sở phiên 2">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="HDXD" />
+<zeebe:formDefinition formKey="bm-02-12-pdg-dt" />
+</bpmn:extensionElements>
+<bpmn:incoming>F11</bpmn:incoming>
+<bpmn:outgoing>F12</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T11" name="11. Cập nhật và trình ký CV đề nghị xét duyệt cấp TĐ">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="PM,PA,NNC" />
+<zeebe:formDefinition formKey="bm-02-00-cv-dk-xd-nv" />
+</bpmn:extensionElements>
+<bpmn:incoming>F12</bpmn:incoming>
+<bpmn:outgoing>F13</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:parallelGateway id="G12Split" name="Phân công ký rà soát song song">
+<bpmn:incoming>F13</bpmn:incoming>
+<bpmn:outgoing>F_T12_CQ_KHCN</bpmn:outgoing>
+<bpmn:outgoing>F_T12_CQ_MS</bpmn:outgoing>
+<bpmn:outgoing>F_T12_CQ_TCKT</bpmn:outgoing>
+<bpmn:outgoing>F_T12_CQ_NS</bpmn:outgoing>
+</bpmn:parallelGateway>
+<bpmn:userTask id="T12_CQ_KHCN" name="12. Ký rà soát HSXD">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="CQ_KHCN" />
+<zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+</bpmn:extensionElements>
+<bpmn:incoming>F_T12_CQ_KHCN</bpmn:incoming>
+<bpmn:outgoing>F_T12_CQ_KHCN_DONE</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T12_CQ_MS" name="12. Ký rà soát HSXD">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="CQ_MS" />
+<zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+</bpmn:extensionElements>
+<bpmn:incoming>F_T12_CQ_MS</bpmn:incoming>
+<bpmn:outgoing>F_T12_CQ_MS_DONE</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T12_CQ_TCKT" name="12. Ký rà soát HSXD">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="CQ_TCKT" />
+<zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+</bpmn:extensionElements>
+<bpmn:incoming>F_T12_CQ_TCKT</bpmn:incoming>
+<bpmn:outgoing>F_T12_CQ_TCKT_DONE</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T12_CQ_NS" name="12. Ký rà soát HSXD">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="CQ_NS" />
+<zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+</bpmn:extensionElements>
+<bpmn:incoming>F_T12_CQ_NS</bpmn:incoming>
+<bpmn:outgoing>F_T12_CQ_NS_DONE</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:parallelGateway id="G12Join" name="Hoàn tất ký rà soát">
+<bpmn:incoming>F_T12_CQ_KHCN_DONE</bpmn:incoming>
+<bpmn:incoming>F_T12_CQ_MS_DONE</bpmn:incoming>
+<bpmn:incoming>F_T12_CQ_TCKT_DONE</bpmn:incoming>
+<bpmn:incoming>F_T12_CQ_NS_DONE</bpmn:incoming>
+<bpmn:outgoing>F14</bpmn:outgoing>
+</bpmn:parallelGateway>
+<bpmn:userTask id="T13_GDTT" name="13. Ký duyệt HSXD tại Trung tâm/Khối">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="BGD_TT" />
+<zeebe:formDefinition formKey="phieu-phe-duyet" />
+</bpmn:extensionElements>
+<bpmn:incoming>F14</bpmn:incoming>
+<bpmn:outgoing>Flow_18hoca3</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T13_GDK" name="13. Ký duyệt HSXD tại Trung tâm/Khối">
+<bpmn:extensionElements>
+<zeebe:userTask />
+<zeebe:assignmentDefinition candidateGroups="BGD_KHOI" />
+</bpmn:extensionElements>
+<bpmn:incoming>Flow_18hoca3</bpmn:incoming>
+<bpmn:outgoing>Flow_0ae21gs</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:parallelGateway id="G14Split" name="Phân công ký duyệt CV song song">
+<bpmn:incoming>F15</bpmn:incoming>
+<bpmn:outgoing>F_T14_TP_CLKHCN</bpmn:outgoing>
+<bpmn:outgoing>F_T14_GD_TTMS</bpmn:outgoing>
+<bpmn:outgoing>F_T14_TP_NS</bpmn:outgoing>
+<bpmn:outgoing>F_T14_TP_TCKT</bpmn:outgoing>
+</bpmn:parallelGateway>
+<bpmn:userTask id="T14_TP_CLKHCN" name="14. Ký duyệt CV đề nghị xét duyệt">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="TP_CLKHCN" />
+<zeebe:formDefinition formKey="phieu-phe-duyet" />
+</bpmn:extensionElements>
+<bpmn:incoming>F_T14_TP_CLKHCN</bpmn:incoming>
+<bpmn:outgoing>F_T14_TP_CLKHCN_DONE</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T14_GD_TTMS" name="14. Ký duyệt CV đề nghị xét duyệt">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="GD_TTMS" />
+<zeebe:formDefinition formKey="phieu-phe-duyet" />
+</bpmn:extensionElements>
+<bpmn:incoming>F_T14_GD_TTMS</bpmn:incoming>
+<bpmn:outgoing>F_T14_GD_TTMS_DONE</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T14_TP_NS" name="14. Ký duyệt CV đề nghị xét duyệt">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="TP_NS" />
+<zeebe:formDefinition formKey="phieu-phe-duyet" />
+</bpmn:extensionElements>
+<bpmn:incoming>F_T14_TP_NS</bpmn:incoming>
+<bpmn:outgoing>F_T14_TP_NS_DONE</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T14_TP_TCKT" name="14. Ký duyệt CV đề nghị xét duyệt">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="TP_TCKT" />
+<zeebe:formDefinition formKey="phieu-phe-duyet" />
+</bpmn:extensionElements>
+<bpmn:incoming>F_T14_TP_TCKT</bpmn:incoming>
+<bpmn:outgoing>F_T14_TP_TCKT_DONE</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:parallelGateway id="G14Join" name="Hoàn tất ký duyệt CV">
+<bpmn:incoming>F_T14_TP_CLKHCN_DONE</bpmn:incoming>
+<bpmn:incoming>F_T14_GD_TTMS_DONE</bpmn:incoming>
+<bpmn:incoming>F_T14_TP_NS_DONE</bpmn:incoming>
+<bpmn:incoming>F_T14_TP_TCKT_DONE</bpmn:incoming>
+<bpmn:outgoing>F16</bpmn:outgoing>
+</bpmn:parallelGateway>
+<bpmn:userTask id="T15" name="15. Phê duyệt CV đề nghị xét duyệt">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="PTGD_CT,TGD_VHT" />
+<zeebe:formDefinition formKey="phieu-phe-duyet" />
+</bpmn:extensionElements>
+<bpmn:incoming>F16</bpmn:incoming>
+<bpmn:outgoing>F17</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T16" name="16. Bàn giao hồ sơ đến CQ QL KHCN Tập đoàn">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="PM,PA,NNC" />
+<zeebe:formDefinition formKey="bm-02-00-cv-dk-xd-nv" />
+</bpmn:extensionElements>
+<bpmn:incoming>F17</bpmn:incoming>
+<bpmn:outgoing>F18</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T17" name="17. Kiểm tra HSXD cấp Tập đoàn">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="CQ_KHCN_TD" />
+<zeebe:formDefinition formKey="phieu-nhan-xet" />
+</bpmn:extensionElements>
+<bpmn:incoming>F18</bpmn:incoming>
+<bpmn:outgoing>F19</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:parallelGateway id="G18Split" name="Chuẩn bị thẩm định cấp TĐ">
+<bpmn:incoming>F19</bpmn:incoming>
+<bpmn:outgoing>F20A</bpmn:outgoing>
+<bpmn:outgoing>F20B</bpmn:outgoing>
+</bpmn:parallelGateway>
+<bpmn:userTask id="T18A" name="18a. Gửi CV đề nghị thẩm định HS">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="CQ_KHCN_TD" />
+<zeebe:formDefinition formKey="bm-02-00-cv-dk-xd-nv" />
+</bpmn:extensionElements>
+<bpmn:incoming>F20A</bpmn:incoming>
+<bpmn:outgoing>F21A</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T18B" name="18b. Lập, trình QĐ thành lập HĐXD Tập đoàn">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="CQ_KHCN_TD" />
+<zeebe:formDefinition formKey="bm-02-08-qdh-nv" />
+</bpmn:extensionElements>
+<bpmn:incoming>F20B</bpmn:incoming>
+<bpmn:outgoing>F21B</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:parallelGateway id="G18Join">
+<bpmn:incoming>F21A</bpmn:incoming>
+<bpmn:incoming>F21B</bpmn:incoming>
+<bpmn:outgoing>F22</bpmn:outgoing>
+</bpmn:parallelGateway>
+<bpmn:userTask id="T19" name="19. Lập PNX của các cơ quan nghiệp vụ Tập đoàn">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="CQ_KHCN_TD,CQ_TCKT_TD,CQ_DTXD_TD,CQ_TCNL_TD" />
+<zeebe:formDefinition formKey="bm-02-09-pnx-dt" />
+</bpmn:extensionElements>
+<bpmn:incoming>F22</bpmn:incoming>
+<bpmn:outgoing>F23</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T20" name="20. Phê duyệt QĐ thành lập HĐXD Tập đoàn">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="BTGD_TD" />
+<zeebe:formDefinition formKey="phieu-phe-duyet" />
+</bpmn:extensionElements>
+<bpmn:incoming>F23</bpmn:incoming>
+<bpmn:outgoing>F23B</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:serviceTask id="Generate_HDXD_TD" name="Hệ thống sinh Hội đồng xét duyệt cấp Tập đoàn">
+<bpmn:extensionElements>
+<zeebe:taskDefinition type="khcn.rd0202.generate-hdxd-decision-td" retries="3" />
+</bpmn:extensionElements>
+<bpmn:incoming>F23B</bpmn:incoming>
+<bpmn:outgoing>F24</bpmn:outgoing>
+</bpmn:serviceTask>
+<bpmn:userTask id="T21" name="21. Họp HĐXD Tập đoàn phiên 1">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="HDXD_TD" />
+<zeebe:formDefinition formKey="bm-02-15-bbh-nv" />
+</bpmn:extensionElements>
+<bpmn:incoming>F24</bpmn:incoming>
+<bpmn:outgoing>F25</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T22" name="22. Hoàn chỉnh HSXD dự thảo 4">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="PM,PA,NNC" />
+<zeebe:formDefinition formKey="bm-02-16-bca-nv" />
+</bpmn:extensionElements>
+<bpmn:incoming>F25</bpmn:incoming>
+<bpmn:outgoing>F26</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:parallelGateway id="G23Split" name="Phân công thẩm định song song">
+<bpmn:incoming>F26</bpmn:incoming>
+<bpmn:outgoing>F_T23_CQ_KHCN</bpmn:outgoing>
+<bpmn:outgoing>F_T23_CQ_MS</bpmn:outgoing>
+<bpmn:outgoing>F_T23_CQ_TCKT</bpmn:outgoing>
+<bpmn:outgoing>F_T23_CQ_NS</bpmn:outgoing>
+</bpmn:parallelGateway>
+<bpmn:userTask id="T23_CQ_KHCN" name="23. Thẩm định, rà soát HSXD dự thảo 4">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="CQ_KHCN" />
+<zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+</bpmn:extensionElements>
+<bpmn:incoming>F_T23_CQ_KHCN</bpmn:incoming>
+<bpmn:outgoing>F_T23_CQ_KHCN_DONE</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T23_CQ_MS" name="23. Thẩm định, rà soát HSXD dự thảo 4">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="CQ_MS" />
+<zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+</bpmn:extensionElements>
+<bpmn:incoming>F_T23_CQ_MS</bpmn:incoming>
+<bpmn:outgoing>F_T23_CQ_MS_DONE</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T23_CQ_TCKT" name="23. Thẩm định, rà soát HSXD dự thảo 4">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="CQ_TCKT" />
+<zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+</bpmn:extensionElements>
+<bpmn:incoming>F_T23_CQ_TCKT</bpmn:incoming>
+<bpmn:outgoing>F_T23_CQ_TCKT_DONE</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T23_CQ_NS" name="23. Thẩm định, rà soát HSXD dự thảo 4">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="CQ_NS" />
+<zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+</bpmn:extensionElements>
+<bpmn:incoming>F_T23_CQ_NS</bpmn:incoming>
+<bpmn:outgoing>F_T23_CQ_NS_DONE</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:parallelGateway id="G23Join" name="Hoàn tất thẩm định dự thảo 4">
+<bpmn:incoming>F_T23_CQ_KHCN_DONE</bpmn:incoming>
+<bpmn:incoming>F_T23_CQ_MS_DONE</bpmn:incoming>
+<bpmn:incoming>F_T23_CQ_TCKT_DONE</bpmn:incoming>
+<bpmn:incoming>F_T23_CQ_NS_DONE</bpmn:incoming>
+<bpmn:outgoing>F27</bpmn:outgoing>
+</bpmn:parallelGateway>
+<bpmn:serviceTask id="Load_HDXD_TD" name="Hệ thống nạp danh sách HĐXD Tập đoàn">
+<bpmn:extensionElements>
+<zeebe:taskDefinition type="khcn.rd0202.load-hoi-dong-td" retries="3" />
+</bpmn:extensionElements>
+<bpmn:incoming>F27</bpmn:incoming>
+<bpmn:outgoing>F27B</bpmn:outgoing>
+</bpmn:serviceTask>
+<bpmn:userTask id="T24" name="24. Họp HĐXD Tập đoàn phiên 2">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="HDXD_TD" />
+<zeebe:formDefinition formKey="bm-02-12-pdg-dt" />
+</bpmn:extensionElements>
+<bpmn:incoming>F27B</bpmn:incoming>
+<bpmn:outgoing>F27C</bpmn:outgoing>
+<bpmn:multiInstanceLoopCharacteristics>
+<bpmn:extensionElements>
+<zeebe:loopCharacteristics inputCollection="=danhSachThanhVienHDXDTD" inputElement="thanhVienHienTai" outputCollection="danhSachDiemDanhGiaT24" outputElement="=diemSo" />
+</bpmn:extensionElements>
+</bpmn:multiInstanceLoopCharacteristics>
+</bpmn:userTask>
+<bpmn:serviceTask id="Tinh_DiemTB_T24" name="Hệ thống tính điểm trung bình HĐXD phiên 2">
+<bpmn:extensionElements>
+<zeebe:taskDefinition type="khcn.rd0202.compute-diem-trung-binh-t24" retries="3" />
+</bpmn:extensionElements>
+<bpmn:incoming>F27C</bpmn:incoming>
+<bpmn:outgoing>F27D</bpmn:outgoing>
+</bpmn:serviceTask>
+<bpmn:businessRuleTask id="Rule_DanhGiaT24" name="Đánh giá điểm HĐXD phiên 2 (DMN)">
+<bpmn:extensionElements>
+<zeebe:calledDecision decisionId="ketQuaDanhGiaT24" resultVariable="ketQuaDanhGiaT24Result" />
+</bpmn:extensionElements>
+<bpmn:incoming>F27D</bpmn:incoming>
+<bpmn:outgoing>F27E</bpmn:outgoing>
+</bpmn:businessRuleTask>
+<bpmn:exclusiveGateway id="G24" name="Điểm đạt yêu cầu?" default="F_T24_KhongDat">
+<bpmn:incoming>F27E</bpmn:incoming>
+<bpmn:outgoing>F28</bpmn:outgoing>
+<bpmn:outgoing>F_T24_KhongDat</bpmn:outgoing>
+</bpmn:exclusiveGateway>
+<bpmn:endEvent id="End_KhongThongQua" name="Hồ sơ không được thông qua">
+<bpmn:incoming>F_T24_KhongDat</bpmn:incoming>
+</bpmn:endEvent>
+<bpmn:userTask id="T25" name="25. Cập nhật và trình ký HSXD dự thảo 5">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="PM,PA,NNC" />
+<zeebe:formDefinition formKey="bm-02-17-ttr-nv" />
+</bpmn:extensionElements>
+<bpmn:incoming>F28</bpmn:incoming>
+<bpmn:outgoing>F29</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:parallelGateway id="G26Split" name="Phân công thẩm định song song">
+<bpmn:incoming>F29</bpmn:incoming>
+<bpmn:outgoing>F_T26_CQ_KHCN</bpmn:outgoing>
+<bpmn:outgoing>F_T26_CQ_MS</bpmn:outgoing>
+<bpmn:outgoing>F_T26_CQ_TCKT</bpmn:outgoing>
+<bpmn:outgoing>F_T26_CQ_NS</bpmn:outgoing>
+</bpmn:parallelGateway>
+<bpmn:userTask id="T26_CQ_KHCN" name="26. Thẩm định, ký rà soát HSXD 5">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="CQ_KHCN" />
+<zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+</bpmn:extensionElements>
+<bpmn:incoming>F_T26_CQ_KHCN</bpmn:incoming>
+<bpmn:outgoing>F_T26_CQ_KHCN_DONE</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T26_CQ_MS" name="26. Thẩm định, ký rà soát HSXD 5">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="CQ_MS" />
+<zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+</bpmn:extensionElements>
+<bpmn:incoming>F_T26_CQ_MS</bpmn:incoming>
+<bpmn:outgoing>F_T26_CQ_MS_DONE</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T26_CQ_TCKT" name="26. Thẩm định, ký rà soát HSXD 5">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="CQ_TCKT" />
+<zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+</bpmn:extensionElements>
+<bpmn:incoming>F_T26_CQ_TCKT</bpmn:incoming>
+<bpmn:outgoing>F_T26_CQ_TCKT_DONE</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T26_CQ_NS" name="26. Thẩm định, ký rà soát HSXD 5">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="CQ_NS" />
+<zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+</bpmn:extensionElements>
+<bpmn:incoming>F_T26_CQ_NS</bpmn:incoming>
+<bpmn:outgoing>F_T26_CQ_NS_DONE</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:parallelGateway id="G26Join" name="Hoàn tất thẩm định dự thảo 5">
+<bpmn:incoming>F_T26_CQ_KHCN_DONE</bpmn:incoming>
+<bpmn:incoming>F_T26_CQ_MS_DONE</bpmn:incoming>
+<bpmn:incoming>F_T26_CQ_TCKT_DONE</bpmn:incoming>
+<bpmn:incoming>F_T26_CQ_NS_DONE</bpmn:incoming>
+<bpmn:outgoing>F30</bpmn:outgoing>
+</bpmn:parallelGateway>
+<bpmn:userTask id="T27_GDTT" name="27. Ký duyệt HSXD tại Trung tâm/Khối">
+<bpmn:extensionElements>
+<zeebe:userTask />
+<zeebe:assignmentDefinition candidateGroups="BGD_TT" />
+</bpmn:extensionElements>
+<bpmn:incoming>F30</bpmn:incoming>
+<bpmn:outgoing>Flow_1hjf0y8</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T27_GDK" name="27. Ký duyệt HSXD tại Trung tâm/Khối">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="BGD_KHOI" />
+<zeebe:formDefinition formKey="phieu-phe-duyet" />
+</bpmn:extensionElements>
+<bpmn:incoming>Flow_1hjf0y8</bpmn:incoming>
+<bpmn:outgoing>F31</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:parallelGateway id="G28Split" name="Phân công ký duyệt song song">
+<bpmn:incoming>F31</bpmn:incoming>
+<bpmn:outgoing>F_T28_TP_CLKHCN</bpmn:outgoing>
+<bpmn:outgoing>F_T28_GD_TTMS</bpmn:outgoing>
+<bpmn:outgoing>F_T28_TP_NS</bpmn:outgoing>
+<bpmn:outgoing>F_T28_TP_TCKT</bpmn:outgoing>
+</bpmn:parallelGateway>
+<bpmn:userTask id="T28_TP_CLKHCN" name="28. Ký duyệt HSXD tại các cơ quan nghiệp vụ VHT">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="TP_CLKHCN" />
+<zeebe:formDefinition formKey="phieu-phe-duyet" />
+</bpmn:extensionElements>
+<bpmn:incoming>F_T28_TP_CLKHCN</bpmn:incoming>
+<bpmn:outgoing>F_T28_TP_CLKHCN_DONE</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T28_GD_TTMS" name="28. Ký duyệt HSXD tại các cơ quan nghiệp vụ VHT">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="GD_TTMS" />
+<zeebe:formDefinition formKey="phieu-phe-duyet" />
+</bpmn:extensionElements>
+<bpmn:incoming>F_T28_GD_TTMS</bpmn:incoming>
+<bpmn:outgoing>F_T28_GD_TTMS_DONE</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T28_TP_NS" name="28. Ký duyệt HSXD tại các cơ quan nghiệp vụ VHT">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="TP_NS" />
+<zeebe:formDefinition formKey="phieu-phe-duyet" />
+</bpmn:extensionElements>
+<bpmn:incoming>F_T28_TP_NS</bpmn:incoming>
+<bpmn:outgoing>F_T28_TP_NS_DONE</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T28_TP_TCKT" name="28. Ký duyệt HSXD tại các cơ quan nghiệp vụ VHT">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="TP_TCKT" />
+<zeebe:formDefinition formKey="phieu-phe-duyet" />
+</bpmn:extensionElements>
+<bpmn:incoming>F_T28_TP_TCKT</bpmn:incoming>
+<bpmn:outgoing>F_T28_TP_TCKT_DONE</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:parallelGateway id="G28Join" name="Hoàn tất ký duyệt">
+<bpmn:incoming>F_T28_TP_CLKHCN_DONE</bpmn:incoming>
+<bpmn:incoming>F_T28_GD_TTMS_DONE</bpmn:incoming>
+<bpmn:incoming>F_T28_TP_NS_DONE</bpmn:incoming>
+<bpmn:incoming>F_T28_TP_TCKT_DONE</bpmn:incoming>
+<bpmn:outgoing>F32</bpmn:outgoing>
+</bpmn:parallelGateway>
+<bpmn:userTask id="T29_PTGD_CT" name="29. Phê duyệt HSXD tại VHT">
+<bpmn:extensionElements>
+<zeebe:userTask />
+<zeebe:assignmentDefinition candidateGroups="PTGD_CT" />
+</bpmn:extensionElements>
+<bpmn:incoming>F32</bpmn:incoming>
+<bpmn:outgoing>Flow_0tvm6l8</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T29_TGD_VHT" name="29. Phê duyệt HSXD tại VHT">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="TGD_VHT" />
+<zeebe:formDefinition formKey="phieu-phe-duyet" />
+</bpmn:extensionElements>
+<bpmn:incoming>Flow_0tvm6l8</bpmn:incoming>
+<bpmn:outgoing>F33</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T30" name="30. Lập, trình Báo cáo thông qua HSXD">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="CQ_KHCN_TD" />
+<zeebe:formDefinition formKey="bm-02-18-bct-nv" />
+</bpmn:extensionElements>
+<bpmn:incoming>F33</bpmn:incoming>
+<bpmn:outgoing>F34</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T31" name="31. HĐ KHCN TĐ phê duyệt thông qua HSXD">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="HDKHCN_TD" />
+<zeebe:formDefinition formKey="phieu-phe-duyet" />
+</bpmn:extensionElements>
+<bpmn:incoming>F34</bpmn:incoming>
+<bpmn:outgoing>F35</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T32" name="32. Lập, trình QĐ phê duyệt và QĐ giao nhiệm vụ">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="CQ_KHCN_TD" />
+<zeebe:formDefinition formKey="bm-02-19-qdi-nv" />
+</bpmn:extensionElements>
+<bpmn:incoming>F35</bpmn:incoming>
+<bpmn:outgoing>F36</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:userTask id="T33" name="33. Phê duyệt QĐ mở mới và QĐ giao nhiệm vụ">
+<bpmn:extensionElements>
+<zeebe:assignmentDefinition candidateGroups="BTGD_TD" />
+<zeebe:formDefinition formKey="phieu-phe-duyet" />
+</bpmn:extensionElements>
+<bpmn:incoming>F36</bpmn:incoming>
+<bpmn:outgoing>F37</bpmn:outgoing>
+</bpmn:userTask>
+<bpmn:endEvent id="End" name="QĐ phê duyệt nhiệm vụ KHCN cấp Tập đoàn">
+<bpmn:incoming>F37</bpmn:incoming>
+</bpmn:endEvent>
+<bpmn:sequenceFlow id="F01" sourceRef="Start" targetRef="T01"/>
+<bpmn:sequenceFlow id="F02" sourceRef="T01" targetRef="T02"/>
+<bpmn:sequenceFlow id="F03" sourceRef="T02" targetRef="Check"/>
+<bpmn:sequenceFlow id="F04" sourceRef="Check" targetRef="GCheck"/>
+<bpmn:sequenceFlow id="FCheckOK" name="Đạt" sourceRef="GCheck" targetRef="AI_Summarize">
+<bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=dieuKienMacDinhDat = true</bpmn:conditionExpression>
+</bpmn:sequenceFlow>
+<bpmn:sequenceFlow id="FCheckFail" name="Chưa đạt — hoàn thiện lại" sourceRef="GCheck" targetRef="T02"/>
+<bpmn:sequenceFlow id="F_AISummary" sourceRef="AI_Summarize" targetRef="G03Split"/>
+<bpmn:sequenceFlow id="F03KHCN" sourceRef="G03Split" targetRef="T03_CQ_KHCN"/>
+<bpmn:sequenceFlow id="F03MS" sourceRef="G03Split" targetRef="T03_CQ_MS"/>
+<bpmn:sequenceFlow id="F03TCKT" sourceRef="G03Split" targetRef="T03_CQ_TCKT"/>
+<bpmn:sequenceFlow id="F03NS" sourceRef="G03Split" targetRef="T03_CQ_NS"/>
+<bpmn:sequenceFlow id="F03KHCN_DONE" sourceRef="T03_CQ_KHCN" targetRef="G03Join"/>
+<bpmn:sequenceFlow id="F03MS_DONE" sourceRef="T03_CQ_MS" targetRef="G03Join"/>
+<bpmn:sequenceFlow id="F03TCKT_DONE" sourceRef="T03_CQ_TCKT" targetRef="G03Join"/>
+<bpmn:sequenceFlow id="F03NS_DONE" sourceRef="T03_CQ_NS" targetRef="G03Join"/>
+<bpmn:sequenceFlow id="F05" sourceRef="G03Join" targetRef="T03_PM"/>
+<bpmn:sequenceFlow id="F05B" sourceRef="T03_PM" targetRef="T04_GDTT"/>
+<bpmn:sequenceFlow id="F06" sourceRef="T04_GDTT" targetRef="T04_GDK"/>
+<bpmn:sequenceFlow id="Flow_00mw9x8" sourceRef="T04_GDK" targetRef="T05"/>
+<bpmn:sequenceFlow id="F07" sourceRef="T05" targetRef="T06"/>
+<bpmn:sequenceFlow id="F08" sourceRef="T06" targetRef="Generate_HDXD"/>
+<bpmn:sequenceFlow id="F08B" sourceRef="Generate_HDXD" targetRef="T07"/>
+<bpmn:sequenceFlow id="F09" sourceRef="T07" targetRef="T08"/>
+<bpmn:sequenceFlow id="F10" sourceRef="T08" targetRef="G09Split"/>
+<bpmn:sequenceFlow id="F11" sourceRef="G09Join" targetRef="T10"/>
+<bpmn:sequenceFlow id="F12" sourceRef="T10" targetRef="T11"/>
+<bpmn:sequenceFlow id="F13" sourceRef="T11" targetRef="G12Split"/>
+<bpmn:sequenceFlow id="F14" sourceRef="G12Join" targetRef="T13_GDTT"/>
+<bpmn:sequenceFlow id="Flow_18hoca3" sourceRef="T13_GDTT" targetRef="T13_GDK"/>
+<bpmn:sequenceFlow id="Flow_0ae21gs" sourceRef="T13_GDK" targetRef="G14Split"/>
+<bpmn:sequenceFlow id="F16" sourceRef="G14Join" targetRef="T15"/>
+<bpmn:sequenceFlow id="F17" sourceRef="T15" targetRef="T16"/>
+<bpmn:sequenceFlow id="F18" sourceRef="T16" targetRef="T17"/>
+<bpmn:sequenceFlow id="F19" sourceRef="T17" targetRef="G18Split"/>
+<bpmn:sequenceFlow id="F20A" sourceRef="G18Split" targetRef="T18A"/>
+<bpmn:sequenceFlow id="F20B" sourceRef="G18Split" targetRef="T18B"/>
+<bpmn:sequenceFlow id="F21A" sourceRef="T18A" targetRef="G18Join"/>
+<bpmn:sequenceFlow id="F21B" sourceRef="T18B" targetRef="G18Join"/>
+<bpmn:sequenceFlow id="F22" sourceRef="G18Join" targetRef="T19"/>
+<bpmn:sequenceFlow id="F23" sourceRef="T19" targetRef="T20"/>
+<bpmn:sequenceFlow id="F23B" sourceRef="T20" targetRef="Generate_HDXD_TD"/>
+<bpmn:sequenceFlow id="F24" sourceRef="Generate_HDXD_TD" targetRef="T21"/>
+<bpmn:sequenceFlow id="F25" sourceRef="T21" targetRef="T22"/>
+<bpmn:sequenceFlow id="F26" sourceRef="T22" targetRef="G23Split"/>
+<bpmn:sequenceFlow id="F27" sourceRef="G23Join" targetRef="Load_HDXD_TD"/>
+<bpmn:sequenceFlow id="F27B" sourceRef="Load_HDXD_TD" targetRef="T24"/>
+<bpmn:sequenceFlow id="F27C" sourceRef="T24" targetRef="Tinh_DiemTB_T24"/>
+<bpmn:sequenceFlow id="F27D" sourceRef="Tinh_DiemTB_T24" targetRef="Rule_DanhGiaT24"/>
+<bpmn:sequenceFlow id="F27E" sourceRef="Rule_DanhGiaT24" targetRef="G24"/>
+<bpmn:sequenceFlow id="F28" name="Đạt" sourceRef="G24" targetRef="T25">
+<bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=ketQuaDanhGiaT24Result = "DAT"</bpmn:conditionExpression>
+</bpmn:sequenceFlow>
+<bpmn:sequenceFlow id="F_T24_KhongDat" name="Không đạt" sourceRef="G24" targetRef="End_KhongThongQua"/>
+<bpmn:sequenceFlow id="F29" sourceRef="T25" targetRef="G26Split"/>
+<bpmn:sequenceFlow id="F30" sourceRef="G26Join" targetRef="T27_GDTT"/>
+<bpmn:sequenceFlow id="Flow_1hjf0y8" sourceRef="T27_GDTT" targetRef="T27_GDK"/>
+<bpmn:sequenceFlow id="F31" sourceRef="T27_GDK" targetRef="G28Split"/>
+<bpmn:sequenceFlow id="F32" sourceRef="G28Join" targetRef="T29_PTGD_CT"/>
+<bpmn:sequenceFlow id="Flow_0tvm6l8" sourceRef="T29_PTGD_CT" targetRef="T29_TGD_VHT"/>
+<bpmn:sequenceFlow id="F33" sourceRef="T29_TGD_VHT" targetRef="T30"/>
+<bpmn:sequenceFlow id="F34" sourceRef="T30" targetRef="T31"/>
+<bpmn:sequenceFlow id="F35" sourceRef="T31" targetRef="T32"/>
+<bpmn:sequenceFlow id="F36" sourceRef="T32" targetRef="T33"/>
+<bpmn:sequenceFlow id="F37" sourceRef="T33" targetRef="End"/>
+<bpmn:sequenceFlow id="F_T09_CQ_KHCN" sourceRef="G09Split" targetRef="T09_CQ_KHCN"/>
+<bpmn:sequenceFlow id="F_T09_CQ_KHCN_DONE" sourceRef="T09_CQ_KHCN" targetRef="G09Join"/>
+<bpmn:sequenceFlow id="F_T09_CQ_MS" sourceRef="G09Split" targetRef="T09_CQ_MS"/>
+<bpmn:sequenceFlow id="F_T09_CQ_MS_DONE" sourceRef="T09_CQ_MS" targetRef="G09Join"/>
+<bpmn:sequenceFlow id="F_T09_CQ_TCKT" sourceRef="G09Split" targetRef="T09_CQ_TCKT"/>
+<bpmn:sequenceFlow id="F_T09_CQ_TCKT_DONE" sourceRef="T09_CQ_TCKT" targetRef="G09Join"/>
+<bpmn:sequenceFlow id="F_T09_CQ_NS" sourceRef="G09Split" targetRef="T09_CQ_NS"/>
+<bpmn:sequenceFlow id="F_T09_CQ_NS_DONE" sourceRef="T09_CQ_NS" targetRef="G09Join"/>
+<bpmn:sequenceFlow id="F_T12_CQ_KHCN" sourceRef="G12Split" targetRef="T12_CQ_KHCN"/>
+<bpmn:sequenceFlow id="F_T12_CQ_KHCN_DONE" sourceRef="T12_CQ_KHCN" targetRef="G12Join"/>
+<bpmn:sequenceFlow id="F_T12_CQ_MS" sourceRef="G12Split" targetRef="T12_CQ_MS"/>
+<bpmn:sequenceFlow id="F_T12_CQ_MS_DONE" sourceRef="T12_CQ_MS" targetRef="G12Join"/>
+<bpmn:sequenceFlow id="F_T12_CQ_TCKT" sourceRef="G12Split" targetRef="T12_CQ_TCKT"/>
+<bpmn:sequenceFlow id="F_T12_CQ_TCKT_DONE" sourceRef="T12_CQ_TCKT" targetRef="G12Join"/>
+<bpmn:sequenceFlow id="F_T12_CQ_NS" sourceRef="G12Split" targetRef="T12_CQ_NS"/>
+<bpmn:sequenceFlow id="F_T12_CQ_NS_DONE" sourceRef="T12_CQ_NS" targetRef="G12Join"/>
+<bpmn:sequenceFlow id="F_T14_TP_CLKHCN" sourceRef="G14Split" targetRef="T14_TP_CLKHCN"/>
+<bpmn:sequenceFlow id="F_T14_TP_CLKHCN_DONE" sourceRef="T14_TP_CLKHCN" targetRef="G14Join"/>
+<bpmn:sequenceFlow id="F_T14_GD_TTMS" sourceRef="G14Split" targetRef="T14_GD_TTMS"/>
+<bpmn:sequenceFlow id="F_T14_GD_TTMS_DONE" sourceRef="T14_GD_TTMS" targetRef="G14Join"/>
+<bpmn:sequenceFlow id="F_T14_TP_NS" sourceRef="G14Split" targetRef="T14_TP_NS"/>
+<bpmn:sequenceFlow id="F_T14_TP_NS_DONE" sourceRef="T14_TP_NS" targetRef="G14Join"/>
+<bpmn:sequenceFlow id="F_T14_TP_TCKT" sourceRef="G14Split" targetRef="T14_TP_TCKT"/>
+<bpmn:sequenceFlow id="F_T14_TP_TCKT_DONE" sourceRef="T14_TP_TCKT" targetRef="G14Join"/>
+<bpmn:sequenceFlow id="F_T23_CQ_KHCN" sourceRef="G23Split" targetRef="T23_CQ_KHCN"/>
+<bpmn:sequenceFlow id="F_T23_CQ_KHCN_DONE" sourceRef="T23_CQ_KHCN" targetRef="G23Join"/>
+<bpmn:sequenceFlow id="F_T23_CQ_MS" sourceRef="G23Split" targetRef="T23_CQ_MS"/>
+<bpmn:sequenceFlow id="F_T23_CQ_MS_DONE" sourceRef="T23_CQ_MS" targetRef="G23Join"/>
+<bpmn:sequenceFlow id="F_T23_CQ_TCKT" sourceRef="G23Split" targetRef="T23_CQ_TCKT"/>
+<bpmn:sequenceFlow id="F_T23_CQ_TCKT_DONE" sourceRef="T23_CQ_TCKT" targetRef="G23Join"/>
+<bpmn:sequenceFlow id="F_T23_CQ_NS" sourceRef="G23Split" targetRef="T23_CQ_NS"/>
+<bpmn:sequenceFlow id="F_T23_CQ_NS_DONE" sourceRef="T23_CQ_NS" targetRef="G23Join"/>
+<bpmn:sequenceFlow id="F_T26_CQ_KHCN" sourceRef="G26Split" targetRef="T26_CQ_KHCN"/>
+<bpmn:sequenceFlow id="F_T26_CQ_KHCN_DONE" sourceRef="T26_CQ_KHCN" targetRef="G26Join"/>
+<bpmn:sequenceFlow id="F_T26_CQ_MS" sourceRef="G26Split" targetRef="T26_CQ_MS"/>
+<bpmn:sequenceFlow id="F_T26_CQ_MS_DONE" sourceRef="T26_CQ_MS" targetRef="G26Join"/>
+<bpmn:sequenceFlow id="F_T26_CQ_TCKT" sourceRef="G26Split" targetRef="T26_CQ_TCKT"/>
+<bpmn:sequenceFlow id="F_T26_CQ_TCKT_DONE" sourceRef="T26_CQ_TCKT" targetRef="G26Join"/>
+<bpmn:sequenceFlow id="F_T26_CQ_NS" sourceRef="G26Split" targetRef="T26_CQ_NS"/>
+<bpmn:sequenceFlow id="F_T26_CQ_NS_DONE" sourceRef="T26_CQ_NS" targetRef="G26Join"/>
+<bpmn:sequenceFlow id="F_T28_TP_CLKHCN" sourceRef="G28Split" targetRef="T28_TP_CLKHCN"/>
+<bpmn:sequenceFlow id="F_T28_TP_CLKHCN_DONE" sourceRef="T28_TP_CLKHCN" targetRef="G28Join"/>
+<bpmn:sequenceFlow id="F_T28_GD_TTMS" sourceRef="G28Split" targetRef="T28_GD_TTMS"/>
+<bpmn:sequenceFlow id="F_T28_GD_TTMS_DONE" sourceRef="T28_GD_TTMS" targetRef="G28Join"/>
+<bpmn:sequenceFlow id="F_T28_TP_NS" sourceRef="G28Split" targetRef="T28_TP_NS"/>
+<bpmn:sequenceFlow id="F_T28_TP_NS_DONE" sourceRef="T28_TP_NS" targetRef="G28Join"/>
+<bpmn:sequenceFlow id="F_T28_TP_TCKT" sourceRef="G28Split" targetRef="T28_TP_TCKT"/>
+<bpmn:sequenceFlow id="F_T28_TP_TCKT_DONE" sourceRef="T28_TP_TCKT" targetRef="G28Join"/>
+</bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,412 @@
+# Business Requirements Document — Phần mềm Quản trị Khoa học Công nghệ
+
+> Tài liệu được tái cấu trúc theo template IIBA BABOK v3
+>> Các thông tin chưa có nguồn được ghi rõ `TBD` hoặc `Cần xác nhận`; tài liệu không tự suy diễn giá trị.
+
+---
+
+## Document Control
+
+| Field | Value |
+| --- | --- |
+| Document ID | BRD-2026-001 |
+| Version | 1.0-draft |
+| Status | Draft — |
+| Owner | TBD  |
+| Sponsor | TBD — đại diện có thẩm quyền của Tổng Công ty Công nghiệp Công nghệ cao Viettel |
+| Customer | Tổng Công ty Công nghiệp Công nghệ cao Viettel (VHT) |
+| Product | Phần mềm Quản trị Khoa học Công nghệ |
+| Created | 2026-07-17 |
+| Last Updated | 2026-07-17 |
+
+### Change Log
+
+| Version | Date | Author | Changes |
+| --- | --- | --- | --- |
+| 1.0-draft | 2026-07-17 | Business Analyst | |
+
+---
+
+## 1. Executive Summary
+
+Dự án xây dựng Phần mềm Quản trị Khoa học Công nghệ nhằm số hóa toàn trình vòng đời nhiệm vụ khoa học công nghệ của VHT, từ xét duyệt chủ trương, xét duyệt nhiệm vụ, theo dõi thực hiện đến nghiệm thu, quyết toán và lưu trữ. Giải pháp phục vụ toàn bộ nhiệm vụ khoa học công nghệ và các Khối, Phòng ban, Trung tâm trực thuộc VHT, đồng thời hỗ trợ sáu nhóm người dùng nghiệp vụ với thẩm quyền khác nhau. Giá trị kỳ vọng là giảm xử lý thủ công, không bỏ sót người ký, quản lý tập trung hồ sơ và cung cấp số liệu quản trị có truy vết. Phạm vi cơ sở gồm 20 năng lực nền tảng và bộ cấu hình chuẩn cho các nghiệp vụ Pha 1; `CAP-21` Trợ lý AI là đề xuất tùy chọn, chưa thuộc ranh giới nghiệm thu cho đến khi nội dung A7 được phê duyệt. 
+
+---
+
+## 2. Background & Context (BACCM)
+
+### 2.1 Change
+
+VHT chuyển từ cách vận hành có quy trình cài đặt cố định, hồ sơ và tài liệu phân tán, dữ liệu luân chuyển thủ công sang một nền tảng quản trị tập trung có quy trình cấu hình được. Mỗi hồ sơ nhiệm vụ được quản lý xuyên suốt nhiều giai đoạn; thay đổi trình tự, người thực hiện hoặc điều kiện rẽ nhánh được thực hiện thông qua phiên bản quy trình thay vì sửa mã nguồn ứng dụng.
+
+### 2.2 Need
+
+
+1. Giảm phụ thuộc vào quy trình cứng phải sửa và cài đặt lại khi thay đổi.
+2. Điều phối ma trận phê duyệt lớn, theo dõi đầy đủ người đã ký và chưa ký.
+3. Giảm luân chuyển dữ liệu thủ công giữa hệ thống KHCN và các phần mềm liên quan.
+4. Cung cấp đăng nhập một lần thay cho nhiều tài khoản rời rạc.
+5. Quản lý tập trung hồ sơ, biểu mẫu, báo cáo, biên bản và văn bản pháp lý.
+6. Cung cấp bức tranh quản trị tổng thể và cảnh báo dựa trên dữ liệu có truy vết.
+
+### 2.3 Context
+
+- Phạm vi tổ chức: toàn bộ nhiệm vụ khoa học công nghệ và toàn bộ Khối, Phòng ban, Trung tâm trực thuộc VHT.
+- Phạm vi nghiệp vụ: `RD01` đến `RD10`, tổng cộng 28 luồng con; phân pha chi tiết tại Appendix B.
+- Cấp Tập đoàn không trực tiếp thao tác trên phần mềm; nhân sự VHT nhập liệu thay theo ngành dọc và phải giữ bằng chứng văn bản gốc.
+- Dữ liệu thực hiện đến từ PM QLNS, PM MS, SAP, PM QLTS, PM PLM; dữ liệu sản phẩm có thể liên quan CRM; RD08 có ràng buộc với kho lưu trữ tài liệu.
+- Hệ thống xử lý dữ liệu cá nhân và nhật ký người dùng nên phải tuân thủ các quy định của pháp luật hiện hành và quy định nội bộ được VHT cung cấp.
+- Hình thức triển khai Camunda8 đang giả định là Self-Managed
+
+### 2.4 Solution
+
+Giải pháp mức business gồm: quản lý quy trình động và phiên bản; hồ sơ và biểu mẫu điện tử; danh sách việc, trình ký, hội đồng và bằng chứng thẩm định; tích hợp dữ liệu chạy nền; cảnh báo và dashboard; SSO, phân quyền và audit. Quy trình quyết định “khi nào, ai, bước nào”; lớp hồ sơ và biểu mẫu quyết định “nội dung, dữ liệu, màn hình”. Chi tiết kỹ thuật, API, schema dữ liệu và cấu hình hạ tầng thuộc HLD/LLD, không thuộc BRD này.
+
+### 2.5 Stakeholder & Value
+
+Người dùng nghiệp vụ, cơ quan quản lý, hội đồng và lãnh đạo nhận được một nguồn dữ liệu thống nhất, hồ sơ có truy vết và danh sách việc theo đúng vai trò. Value được đo bằng thời gian xử lý, số trường hợp bỏ sót người ký, tỷ lệ sử dụng biểu mẫu điện tử và độ trễ dữ liệu báo cáo; các số liệu nền chưa có phải được chốt trước khi baseline BRD.
+
+---
+
+## 3. Business Objectives
+
+| # | Objective | KPI / Success Metric | Deadline |
+| --- | --- | --- | --- |
+| O1 | Số hóa toàn trình quản trị nhiệm vụ KHCN từ chủ trương đến quyết toán | 100% luồng thuộc phạm vi Pha 1 có cấu hình chuẩn v1.0 và pass UAT; tỷ lệ biểu mẫu điền trực tiếp trên hệ thống: mục tiêu TBD | Mốc go-live Pha 1|
+| O2 | Tự động hóa giám sát và nâng cao hiệu quả điều hành | Số hồ sơ bỏ sót người ký hoặc quá hạn mà không có cảnh báo = 0; thời gian xử lý trung bình giảm theo tỷ lệ TBD so với baseline | TBD |
+| O3 | Quản lý tài sản KHCN hình thành từ nhiệm vụ trên môi trường số | Quản lý và truy xuất được sản phẩm, công nghệ lõi, bài báo, sáng chế thuộc phạm vi đã duyệt; tỷ lệ hồ sơ đầy đủ: TBD | Theo pha RD07/RD08 — TBD |
+| O4 | Cung cấp bức tranh tổng thể hỗ trợ ra quyết định | Dữ liệu cột mốc quản trị cập nhật tức thời; độ trễ dữ liệu tích hợp/dashboard đề xuất ≤ 5 phút, chờ workshop NFR xác nhận | Sau khi các kết nối tương ứng được nghiệm thu — TBD |
+
+> O1–O4 kế thừa mục tiêu trong quy trình đã ban hành. Các KPI ghi `TBD` không được dùng làm điều kiện nghiệm thu cho đến khi VHT xác nhận baseline, target và kỳ đo.
+
+---
+
+## 4. Stakeholders Matrix
+
+| Role | Name / Group | Responsibility | Influence | Interest |
+| --- | --- | --- | --- | --- |
+| Sponsor | TBD — đại diện có thẩm quyền VHT | Phê duyệt phạm vi, ngân sách, quyết định cuối | High | High |
+| Product Owner | TBD — đại diện Phòng Chiến lược KHCN | Ưu tiên backlog, xác nhận nghiệp vụ và UAT | High | High |
+| Business Analyst | TBD | Quản lý yêu cầu, câu hỏi mở và traceability | Medium | High |
+| Tech Lead / Solution Architect | TBD | Đánh giá khả thi, HLD/LLD và ranh giới tích hợp | High | Medium |
+| QA Lead | TBD | Chiến lược kiểm thử, UAT evidence và quality gate | Medium | Medium |
+| Nhân sự khởi tạo, xây dựng | Chủ nhiệm đề tài, trợ lý đề tài, người nghiên cứu | Khởi tạo, xây dựng, trình và cập nhật hồ sơ | Medium | High |
+| Nhân sự rà soát, thẩm định | Chuyên quản CLKHCN, TCKT, Mua sắm, Nhân sự | Xây dựng, thẩm định, trình ký và nhập liệu thay khi được phân công | High | High |
+| Cơ quan nghiệp vụ VHT | Trưởng phòng CLKHCN, TCKT, Nhân sự; Giám đốc TT Mua sắm | Kiểm soát và ký duyệt hồ sơ | High | High |
+| Hội đồng KHCN VHT | Thành viên theo quyết định, lĩnh vực và giai đoạn | Thẩm định và ký duyệt | High | High |
+| Hội đồng xét duyệt/nghiệm thu | Thành viên theo quyết định của từng nhiệm vụ | Thẩm định, ký phiếu, ký biên bản | High | High |
+| Ban Tổng Giám đốc VHT | Tổng Giám đốc, Phó Tổng Giám đốc phụ trách | Phê duyệt, xem và xuất báo cáo | High | Medium |
+| Compliance / An toàn thông tin | TBD | Xác nhận dữ liệu cá nhân, phân loại thông tin, lưu trữ và AI | High | Medium |
+| Đội vận hành các hệ liên quan | PM QLNS, PM MS, SAP, PM QLTS, PM PLM, CRM, Storage | Cung cấp dữ liệu và hợp đồng tích hợp | Medium | Medium |
+
+**Mendelow:** Sponsor, Product Owner, cơ quan nghiệp vụ và Compliance thuộc nhóm manage closely; đội tích hợp và QA thuộc nhóm keep satisfied/informed; end-user nghiệp vụ cần được tham gia UAT thường xuyên.
+
+---
+
+## 5. Scope
+
+### 5.1 In-Scope
+
+- ✅ 20 năng lực nền tảng `CAP-01` đến `CAP-20` tương ứng `BR-001` đến `BR-020`.
+- ✅ Bộ cấu hình chuẩn phiên bản 1.0 cho các nghiệp vụ Pha 1: `RD01`, `RD02`, `RD03.06`, `RD05`, `RD06`, `RD08`, `RD10`.
+- ✅ Hồ sơ và biểu mẫu điện tử xuyên suốt; danh sách việc; trình ký; phiếu nhận xét; hội đồng; phiên họp; nhập liệu thay; ủy quyền; audit và SSO/RBAC.
+- ✅ Khung năng lực nền cho `CAP-14` đến `CAP-18` tại Pha 1 bằng cấu hình mẫu và dữ liệu nhập tay/mô phỏng, chờ VHT chấp thuận A6.
+- ✅ Dữ liệu cột mốc quản trị do Phần mềm QLKHCN sở hữu; dữ liệu tiến độ thực hiện từ hệ ngoài chỉ dùng hiển thị, giám sát và cảnh báo.
+
+### 5.2 Out-of-Scope / Deferred
+
+- ❌ Nghiệp vụ nội bộ của PM QLNS, PM MS, SAP, PM QLTS, PM PLM và CRM; hệ thống QLKHCN không thay thế các phần mềm này.
+- ❌ Thao tác trực tiếp của người dùng cấp Tập đoàn; các kết quả cấp Tập đoàn được nhân sự VHT nhập thay theo văn bản gốc.
+- ❌ API contract, schema CSDL, biến BPMN/DMN, sizing hạ tầng và thiết kế triển khai chi tiết; thuộc HLD/LLD.
+- ❌ `CAP-21` Trợ lý AI trong baseline hiện tại; đây là phạm vi Could/Pha tùy chọn, chỉ được đưa vào sau khi A7 được phê duyệt.
+- ❌ Nghiệm thu đầy đủ dữ liệu thật cho `RD03.01`–`RD03.05`, `RD04`, `RD07`, `RD09` trước khi các nội dung Pha 2 và kết nối liên quan hoàn thành.
+
+### 5.3 Boundaries / Interfaces
+
+- Phần mềm QLKHCN ↔ PM QLNS: nhân sự tham gia và trạng thái công việc.
+- Phần mềm QLKHCN ↔ PM MS: tờ trình, gói thầu, hợp đồng và tiến độ mua sắm.
+- Phần mềm QLKHCN ↔ SAP: dự toán, chi phí thực hiện và kinh phí còn lại.
+- Phần mềm QLKHCN ↔ PM QLTS: vật tư linh kiện, công cụ dụng cụ và tài sản cố định.
+- Phần mềm QLKHCN ↔ PM PLM: tiến độ triển khai và sản phẩm.
+- Phần mềm QLKHCN ↔ CRM: thông tin thương mại hóa/doanh thu sản phẩm nếu RD07 được phê duyệt chi tiết.
+- Phần mềm QLKHCN ↔ Storage/DMS: lưu trữ tài liệu; ranh giới hệ ngoài hay kho nội bộ chờ B5.
+- Người dùng ↔ SSO/IAM: đăng nhập một lần, vai trò và phạm vi dữ liệu.
+
+---
+
+## 6. Business Requirements
+
+> Ghi chú: Mỗi requirement diễn đạt ở mức tổng quát. `CAP-ID` là mã năng lực truy vết sang HLD và Functional Scope List; chi tiết chức năng thuộc FRD/FSL.
+
+| ID | CAP-ID | Description | Priority | Rationale | Source |
+| --- | --- | --- | --- | --- | --- |
+| `BR-001` | `CAP-01` | Hệ thống PHẢI cho phép quản lý các luồng nghiệp vụ dưới dạng cấu hình có thể thay đổi trình tự bước, vai trò thực hiện và điều kiện rẽ nhánh mà không sửa mã nguồn ứng dụng. | M | Đáp ứng O1 và giảm phụ thuộc quy trình cứng. | Quy trình To-Be; pain point 1 |
+| `BR-002` | `CAP-02` | Hệ thống PHẢI kiểm tra sự kiện kết thúc và điều kiện ràng buộc trước khi cho phép khởi tạo giai đoạn nghiệp vụ kế tiếp. | M | Ngăn hồ sơ chuyển giai đoạn khi chưa đủ căn cứ. | Quy trình RD01–RD06 |
+| `BR-003` | `CAP-03` | Hệ thống PHẢI quản lý phiên bản quy trình với mã hiệu, ngày hiệu lực, ngày hết hiệu lực, lần ban hành, lịch sử sửa đổi và chuỗi phê duyệt. | M | Bảo đảm thay đổi có kiểm soát và truy vết. | Mô hình văn bản VHT |
+| `BR-004` | `CAP-04` | Hệ thống PHẢI quản lý hồ sơ điện tử xuyên suốt, tích lũy dữ liệu và tài liệu qua các giai đoạn mà không làm mất lịch sử. | M | Tạo một hồ sơ thống nhất từ chủ trương đến quyết toán. | O1; phạm vi áp dụng |
+| `BR-005` | `CAP-05` | Hệ thống PHẢI quản lý danh mục biểu mẫu điện tử và gắn đúng biểu mẫu với từng bước quy trình để người dùng nhập trực tiếp trên hệ thống. | M | Giảm file rời và chuẩn hóa dữ liệu. | Phạm vi biểu mẫu trong quy trình |
+| `BR-006` | `CAP-06` | Hệ thống PHẢI lưu trữ và cho phép tra cứu hồ sơ, tài liệu, báo cáo, quyết định và văn bản pháp lý theo quyền. | M | Bảo toàn bằng chứng và phục vụ RD10. | RD10 |
+| `BR-007` | `CAP-07` | Hệ thống PHẢI hiển thị cho mỗi người dùng đúng danh sách công việc đang chờ họ xử lý theo vai trò và phạm vi dữ liệu. | M | Không bỏ sót việc và không lộ việc của vai trò khác. | Pain point 2 |
+| `BR-008` | `CAP-08` | Hệ thống PHẢI điều phối chuỗi trình ký và phê duyệt nhiều cấp, phân biệt ký duyệt, phê duyệt, từ chối và trả bổ sung. | M | Phản ánh đúng thẩm quyền kiểm soát và quyết định. | Bảng tác nhân RD01–RD06 |
+| `BR-009` | `CAP-09` | Hệ thống PHẢI cho phép lập, ký và lưu phiếu nhận xét/phiếu đánh giá theo biểu mẫu làm bằng chứng thẩm định. | M | Chuẩn hóa ý kiến thay cho bình luận tự do. | Quy trình hội đồng |
+| `BR-010` | `CAP-10` | Hệ thống PHẢI quản lý hội đồng theo Quyết định thành lập cho cả trục lĩnh vực/giai đoạn và trục từng nhiệm vụ. | M | Hai loại hội đồng có vòng đời và thẩm quyền khác nhau. | Quy trình RD01, RD02, RD05 |
+| `BR-011` | `CAP-11` | Hệ thống PHẢI quản lý nhiều phiên họp của một nhiệm vụ và lưu biên bản được ký cho từng phiên. | M | Bảo đảm bằng chứng họp và lịch sử thẩm định. | Quy trình hội đồng |
+| `BR-012` | `CAP-12` | Hệ thống PHẢI hỗ trợ nhân sự VHT nhập liệu thay cho cấp Tập đoàn và lưu rõ người quyết định thật, người nhập, nội dung nhập và văn bản gốc. | M | Cấp Tập đoàn không đăng nhập nhưng kết quả vẫn phải chứng minh được. | Quy định tác nhân cấp Tập đoàn |
+| `BR-013` | `CAP-13` | Hệ thống PHẢI hỗ trợ ủy quyền có truy vết theo người ủy quyền, người nhận, thời hạn và phạm vi được VHT phê duyệt. | M | Bảo đảm xử lý liên tục nhưng không mất dấu thẩm quyền. | B8 — cần xác nhận chi tiết |
+| `BR-014` | `CAP-14` | Hệ thống PHẢI hỗ trợ các quy trình điều chỉnh, tạm dừng, tiếp tục và dừng nhiệm vụ theo loại thay đổi và cấp phê duyệt. | M | RD04 có 10 luồng và ảnh hưởng trực tiếp vòng đời nhiệm vụ. | RD04; nghiệm thu mức B tại Pha 1 |
+| `BR-015` | `CAP-15` | Hệ thống PHẢI trao đổi dữ liệu với các phần mềm liên quan theo cơ chế nền, có trạng thái đồng bộ và không buộc người dùng chờ hoàn tất tích hợp. | M | Giảm luân chuyển thủ công và tách lỗi tích hợp khỏi User Task. | RD03; pain point 3 |
+| `BR-016` | `CAP-16` | Hệ thống PHẢI tổng hợp bức tranh thực hiện từng nhiệm vụ theo sáu chiều, phân biệt dữ liệu cột mốc sở hữu nội bộ và dữ liệu tiến độ đọc từ hệ ngoài. | M | Hỗ trợ giám sát mà không để lỗi đồng bộ làm kẹt hồ sơ. | RD03; O2/O4 |
+| `BR-017` | `CAP-17` | Hệ thống PHẢI cảnh báo chậm xử lý, chậm/vượt tiến độ và vượt dự toán theo ngưỡng, đối tượng nhận và quy tắc được VHT cấu hình. | M | Chủ động phát hiện rủi ro vận hành. | Khảo sát 13/07/2026; B6 |
+| `BR-018` | `CAP-18` | Hệ thống PHẢI cung cấp báo cáo ba tầng gồm chỉ số tổng thể, phân tích cơ cấu/danh mục và giám sát chi tiết theo nhiệm vụ. | M | Đáp ứng O4 và nhu cầu chỉ huy dựa trên dữ liệu. | O4; RD09 |
+| `BR-019` | `CAP-19` | Hệ thống PHẢI lưu audit bất biến về người thực hiện, thời điểm, hành động, phiên bản quy trình, nhập thay và ủy quyền. | M | Bảo đảm truy vết và giá trị chứng minh. | Yêu cầu nền tảng |
+| `BR-020` | `CAP-20` | Hệ thống PHẢI cung cấp SSO và phân quyền tập trung theo sáu nhóm người dùng, vai trò và phạm vi dữ liệu. | M | Giảm tài khoản phân mảnh và ngăn truy cập trái quyền. | Pain point 4; bảng tác nhân |
+| `BR-021` | `CAP-21` | Hệ thống CÓ THỂ cung cấp Trợ lý AI để gợi ý nội dung, soát xét checklist và cảnh báo rủi ro; AI chỉ gợi ý, người có thẩm quyền quyết định, dữ liệu không được gửi ra dịch vụ ngoài phạm vi được VHT chấp thuận. | C — conditional | Tạo giá trị tăng thêm sau khi dữ liệu/checklist ổn định; không thuộc baseline hiện tại. |  A7 |
+
+### MoSCoW Distribution
+
+| Priority | Count | % | Ghi chú |
+| --- | --- | --- | --- |
+| Must | 20 | 100% baseline | `BR-001` đến `BR-020` thuộc baseline đề xuất |
+| Should | 0 | 0% | Chưa có nguồn để hạ bất kỳ năng lực baseline nào xuống Should |
+| Could | 1 | Ngoài baseline | `BR-021` chỉ vào phạm vi khi A7 được phê duyệt |
+| Won’t this baseline | 0 | 0% | Các nghiệp vụ Pha 2 là deferred theo pha, không bị loại khỏi product scope |
+| **Total baseline** | **20** | **100%** | Không tính `BR-021` |
+
+> Priority là đề xuất từ ranh giới nghiệm thu của BRD cũ: 20 năng lực đều được yêu cầu kiểm chứng ở Pha 1 theo mức A hoặc B. VHT phải xác nhận MoSCoW trước khi baseline.
+
+---
+
+## 7. Constraints & Assumptions
+
+### 7.1 Constraints
+
+| ID | Constraint | Status / Source |
+| --- | --- | --- |
+| `CON-001` | Cấp Tập đoàn không trực tiếp đăng nhập; tác nghiệp được thực hiện qua nhân sự VHT theo ngành dọc và văn bản giấy. | Có nguồn trong quy trình đã ban hành |
+| `CON-002` | Mã quy trình `RDxx.yy` và mã biểu mẫu của VHT phải được dùng nguyên văn sau khi khách xác nhận lỗi nguồn. | Có nguồn; D1–D6 cần xác nhận |
+| `CON-003` | Nghiệp vụ Pha 1 và Pha 2 tuân theo phân pha tại Appendix B; thay đổi phân pha ảnh hưởng effort và nghiệm thu. | Có nguồn trong quy trình |
+| `CON-004` | Xử lý dữ liệu cá nhân phải tuân thủ Nghị định 13/2023/NĐ-CP và quy định nội bộ của VHT. | Bắt buộc pháp lý; chi tiết C5 |
+| `CON-005` | Thời hạn và chuẩn lưu trữ hồ sơ RD10 phải theo quy định hiện hành và quy định VHT. | Ngưỡng lưu trữ TBD tại C5 |
+| `CON-006` | Budget chưa được cung cấp; tài liệu này không giả định trần ngân sách. | TBD — Sponsor xác nhận |
+| `CON-007` | Timeline/go-live chưa được cung cấp; không dùng ngày giả định làm cam kết. | TBD — Sponsor/PO xác nhận |
+| `CON-008` | Hình thức triển khai on-premise và yêu cầu phân loại thông tin phải được VHT xác nhận trước HLD baseline. | C1/C2/C4 |
+
+### 7.2 Assumptions
+
+| ID | Assumption | Impact if False | Confirmation |
+| --- | --- | --- | --- |
+| `ASM-001` | Ký duyệt hiện được hiểu là xác nhận điện tử, chưa bao gồm ký số theo chuẩn pháp lý. | Phải bổ sung hạ tầng chứng thư số, thay đổi effort và timeline. | A2 |
+| `ASM-002` | Phần mềm triển khai trên hạ tầng VHT. | Phương án hạ tầng, bản quyền và vận hành thay đổi. | C1 |
+| `ASM-003` | Hồ sơ tiếp tục chạy theo phiên bản quy trình có hiệu lực tại thời điểm khởi tạo. | Cần migration process instance và kiểm soát rủi ro cao hơn. | B1 |
+| `ASM-004` | Người có thẩm quyền xác nhận nội dung đề tài hoàn thành; hệ thống chỉ gợi ý từ dữ liệu tích hợp. | Dữ liệu hệ ngoài có thể điều khiển cột mốc và làm kẹt hồ sơ. | B2 |
+| `ASM-005` | Sáu khó khăn As-Is phản ánh đúng và đủ bối cảnh. | Có thể bỏ sót business need hoặc ưu tiên sai giải pháp. | B7 |
+| `ASM-006` | Điều chỉnh vượt chủ trương phải quay lại RD01 hoặc một luồng được VHT phê duyệt. | Thiếu luồng nghiệp vụ và sai phạm vi RD04. | B3 |
+| `ASM-007` | Storage/DMS là hệ riêng cần tích hợp. | Nếu là kho nội bộ, phạm vi connector và kiến trúc giảm. | B5 |
+| `ASM-008` | `CAP-14` đến `CAP-18` được nghiệm thu mức năng lực nền tại Pha 1 bằng dữ liệu thật/mô phỏng theo từng tiêu chí. | Phải kéo nội dung Pha 2 lên Pha 1 hoặc đổi ranh giới nghiệm thu. | A6 |
+| `ASM-009` | `CAP-21` là pha tùy chọn, không tính trong effort và nghiệm thu baseline. | Hạ tầng, dữ liệu kiểm thử, governance và effort Pha 1 thay đổi. | A7 |
+
+---
+
+## 8. Risks & Mitigations
+
+| ID | Risk | Probability | Impact | Mitigation |
+| --- | --- | --- | --- | --- |
+| `R-001` | Mức độ VHT tự điều chỉnh quy trình chưa được chốt giữa công cụ chuyên dụng và phân hệ Admin nghiệp vụ. | TBD | High | Chốt A1 trước ước lượng và thiết kế chi tiết. |
+| `R-002` | RD08 và RD10 thuộc Pha 1 nhưng tài liệu quy trình hiện quá mỏng. | TBD | High | Yêu cầu quy trình chi tiết hoặc thu hẹp cam kết tại A4/A5. |
+| `R-003` | RD03.06 thuộc Pha 1 nhưng dữ liệu tiến độ chủ yếu đến từ kết nối Pha 2. | TBD | High | Chốt A3: nhập tay, mô phỏng hoặc kéo một phần tích hợp lên Pha 1. |
+| `R-004` | Hai bên hiểu khác nhau về nghiệm thu mức A/B cho `CAP-14` đến `CAP-18`. | TBD | High | Phê duyệt A6 và Appendix C trước ký baseline. |
+| `R-005` | Sáu pain point và kiến trúc mục tiêu chưa được xác nhận bằng văn bản. | TBD | High | Chốt B7 và C4 trong workshop lượt 1. |
+| `R-006` | Thiếu baseline/target KPI làm cho success criteria không thể đo khách quan. | High | High | Sponsor/PO cung cấp baseline, target, kỳ đo và nguồn đo trước BRD Approved. |
+| `R-007` | Đưa AI vào phạm vi khi checklist, dữ liệu kiểm thử và ngưỡng chất lượng chưa ổn định. | TBD | High | Giữ `BR-021` ngoài baseline; chỉ pilot sau A7 và áp dụng `AI-AC-01` đến `AI-AC-07`. |
+| `R-008` | AI hoặc feedback làm lộ dữ liệu ngoài quyền hoặc bị tái sử dụng không qua phê duyệt. | TBD | High | Lọc quyền tại Core Backend; on-premise; audit người/máy; cấm tự học trực tuyến. |
+| `R-009` | Quy tắc hội đồng, ủy quyền, cảnh báo và lưu trữ chưa đủ chi tiết. | TBD | High | Chốt B4, B6, B8 và C5; cập nhật FRD/Business Rules trước build. |
+
+> Probability để `TBD` vì BRD cũ không cung cấp bằng chứng định lượng hoặc thang đánh giá xác suất.
+
+---
+
+## 9. Success Criteria
+
+Dự án được xem là đạt baseline khi đồng thời thỏa mãn các điều kiện sau:
+
+- ✅ `BR-001` đến `BR-020` có Functional Requirement/Functional Scope tương ứng, không có orphan requirement và pass UAT theo mức nghiệm thu đã phê duyệt.
+- ✅ Bộ cấu hình chuẩn v1.0 cho `RD01`, `RD02`, `RD03.06`, `RD05`, `RD06`, `RD08`, `RD10` chạy được trên hệ thống.
+- ✅ Số hồ sơ bỏ sót người ký hoặc quá hạn mà không có cảnh báo bằng 0 trong kỳ đo do VHT xác nhận.
+- ✅ Dữ liệu cột mốc quản trị được cập nhật tức thời sau quyết định của người có thẩm quyền.
+- ✅ Dashboard hiển thị đúng số nhiệm vụ theo cột mốc; độ trễ dữ liệu tích hợp đáp ứng ngưỡng NFR được VHT phê duyệt.
+- ✅ Mọi thao tác ký, duyệt, nhập thay và ủy quyền truy vết được người, thời điểm, phiên bản và bằng chứng liên quan.
+- ✅ Không có lỗi Critical mở tại thời điểm nghiệm thu; định nghĩa severity và thời gian theo dõi sau go-live phải được QA Lead/PO chốt.
+- ✅ KPI O1–O4 có baseline, target, nguồn đo, kỳ đo và owner trước khi BRD chuyển trạng thái Approved.
+- ✅ `BR-021` chỉ được claim thành công khi A7 được duyệt và toàn bộ `AI-AC-01` đến `AI-AC-07` trong Appendix C đạt.
+
+---
+
+## 10. Traceability Matrix
+
+| BR-ID | Capability / FR Reference | NFR-ID(s) | Test Case / Acceptance Reference | Status |
+| --- | --- | --- | --- | --- |
+| `BR-001` | `CAP-01`; FSL theo `CAP-01` | TBD tại FRD/SRS | `AC-CAP-01` | Todo |
+| `BR-002` | `CAP-02`; FSL theo `CAP-02` | TBD tại FRD/SRS | `AC-CAP-02` | Todo |
+| `BR-003` | `CAP-03`; FSL theo `CAP-03` | TBD tại FRD/SRS | `AC-CAP-03` | Todo |
+| `BR-004` | `CAP-04`; FSL theo `CAP-04` | NFR lưu trữ — TBD | `AC-CAP-04` | Todo |
+| `BR-005` | `CAP-05`; FSL theo `CAP-05` | TBD tại FRD/SRS | `AC-CAP-05` | Todo |
+| `BR-006` | `CAP-06`; FSL theo `CAP-06` | NFR-007 / retention TBD | `AC-CAP-06` | Todo |
+| `BR-007` | `CAP-07`; FSL theo `CAP-07` | NFR security — TBD | `AC-CAP-07` | Todo |
+| `BR-008` | `CAP-08`; FSL theo `CAP-08` | TBD tại FRD/SRS | `AC-CAP-08` | Todo |
+| `BR-009` | `CAP-09`; FSL theo `CAP-09` | TBD tại FRD/SRS | `AC-CAP-09` | Todo |
+| `BR-010` | `CAP-10`; FSL theo `CAP-10` | TBD tại FRD/SRS | `AC-CAP-10` | Todo |
+| `BR-011` | `CAP-11`; FSL theo `CAP-11` | TBD tại FRD/SRS | `AC-CAP-11` | Todo |
+| `BR-012` | `CAP-12`; FSL theo `CAP-12` | NFR audit/security — TBD | `AC-CAP-12` | Todo |
+| `BR-013` | `CAP-13`; FSL theo `CAP-13` | NFR security — TBD | `AC-CAP-13` | Todo — B8 |
+| `BR-014` | `CAP-14`; FSL theo `CAP-14` | TBD tại FRD/SRS | `AC-CAP-14` | Todo — mức B |
+| `BR-015` | `CAP-15`; FSL theo `CAP-15` | NFR-002 / ngưỡng TBD | `AC-CAP-15` | Todo — mức B |
+| `BR-016` | `CAP-16`; FSL theo `CAP-16` | NFR data freshness — TBD | `AC-CAP-16` | Todo — mức B |
+| `BR-017` | `CAP-17`; FSL theo `CAP-17` | NFR threshold — TBD | `AC-CAP-17` | Todo — B6/mức B |
+| `BR-018` | `CAP-18`; FSL theo `CAP-18` | NFR-001 / ngưỡng TBD | `AC-CAP-18` | Todo — mức B |
+| `BR-019` | `CAP-19`; FSL theo `CAP-19` | NFR audit/security — TBD | `AC-CAP-19` | Todo |
+| `BR-020` | `CAP-20`; FSL theo `CAP-20` | NFR security/privacy — TBD | `AC-CAP-20` | Todo |
+| `BR-021` | `CAP-21`; `REQ-064`–`REQ-068`; FSL `AIA-*` | `NFR-008`–`NFR-012` | `AI-AC-01`–`AI-AC-07` | Deferred — A7 |
+
+> Ghi chú: Catalogue FR/TC chi tiết chưa tồn tại trong nguồn. Dùng `TBD` thay vì tạo mã FR/Test Case giả; cập nhật matrix khi FRD, SRS và test catalogue được phê duyệt.
+
+---
+
+## 11. Approval
+
+| Role | Name | Signature | Date |
+| --- | --- | --- | --- |
+| Sponsor | TBD | | |
+| Product Owner | TBD | | |
+| Business Analyst | TBD | | |
+| Solution Architect / Tech Lead | TBD | | |
+| QA Lead | TBD | | |
+| Compliance / An toàn thông tin | TBD | | |
+
+---
+
+## 12. Glossary
+
+| Term | Definition |
+| --- | --- |
+| NV KHCN | Nhiệm vụ khoa học công nghệ, được quản lý xuyên suốt từ chủ trương đến quyết toán. |
+| BRD | Business Requirements Document — tài liệu yêu cầu nghiệp vụ. |
+| BACCM | Business Analysis Core Concept Model: Change, Need, Solution, Stakeholder, Value, Context. |
+| Luồng nghiệp vụ | Trình tự bước, vai trò và điều kiện mà một hồ sơ phải đi qua. |
+| Quy trình động | Quy trình được cấu hình và quản lý phiên bản độc lập với mã nguồn ứng dụng. |
+| Hồ sơ điện tử | Tập dữ liệu và tài liệu tích lũy xuyên suốt vòng đời một nhiệm vụ. |
+| Cột mốc quản trị | Giai đoạn quản trị ổn định của nhiệm vụ, do Phần mềm QLKHCN sở hữu. |
+| Tiến độ thực hiện | Dữ liệu tiến độ, nhân sự, chi phí, mua sắm, tài sản và sản phẩm chủ yếu đến từ hệ ngoài. |
+| User Task | Bước quy trình cần người có thẩm quyền thao tác. |
+| SSO/IAM | Đăng nhập một lần và quản lý định danh/phân quyền tập trung. |
+| MoSCoW | Must, Should, Could, Won’t — phương pháp ưu tiên yêu cầu. |
+| Human-in-the-loop | AI chỉ đưa ra gợi ý; con người xác nhận, chỉnh sửa hoặc bác bỏ và chịu trách nhiệm quyết định. |
+| UAT | User Acceptance Testing — kiểm thử chấp nhận của người dùng nghiệp vụ. |
+
+---
+
+## Appendix
+
+### Appendix A. Tài liệu tham chiếu
+
+| Ref | Tài liệu | Phiên bản / trạng thái | Mục đích sử dụng |
+| --- | --- | --- | --- |
+| REF-01 | Quy trình Tổng thể luồng nghiệp vụ của khách hàng | Đã ban hành; mã hiệu đầy đủ TBD | Nguồn của các luồng RD01–RD10 và nhóm người dùng. |
+
+### Appendix B. Danh mục nghiệp vụ và phạm vi theo pha
+
+| Mã | Tên nghiệp vụ | Số luồng con | Pha |
+| --- | --- | --- | --- |
+| `RD01` | Xét duyệt Chủ trương | 2: cấp cơ sở, cấp Tập đoàn | Pha 1 |
+| `RD02` | Xét duyệt Nhiệm vụ Khoa học Công nghệ | 2: cấp cơ sở, cấp Tập đoàn | Pha 1 |
+| `RD03` | Thực hiện Nhiệm vụ Khoa học Công nghệ | 6, tách theo phần mềm liên quan: Quản lý nhân sự, Mua sắm, SAP, Quản lý tài sản, PLM và báo cáo định kỳ | Pha 2; riêng `RD03.06` thuộc Pha 1 |
+| `RD04` | Điều chỉnh Nhiệm vụ Khoa học Công nghệ | 10, tách theo loại điều chỉnh và cấp | Pha 2 |
+| `RD05` | Nghiệm thu Nhiệm vụ Khoa học Công nghệ | 2 | Pha 1 |
+| `RD06` | Quyết toán Nhiệm vụ Khoa học Công nghệ | 2 | Pha 1 |
+| `RD07` | Quản lý Danh mục dịch vụ, sản phẩm nghiên cứu | 1 | Pha 2 |
+| `RD08` | Quản lý sở hữu trí tuệ | 1 | Pha 1 |
+| `RD09` | Quản lý, tổng hợp thông tin, tức báo cáo tổng hợp | 1 | Pha 2 |
+| `RD10` | Quản lý, lưu trữ hồ sơ, tài liệu, văn bản pháp lý | 1 | Pha 1 |
+
+Tổng cộng 28 luồng nghiệp vụ con. Phạm vi Pha 1 gồm `RD01`, `RD02`, `RD03.06`, `RD05`, `RD06`, `RD08` và `RD10`.
+
+### Appendix C. Tiêu chí nghiệm thu theo năng lực
+
+#### C.1 Năng lực nền tảng
+
+| Mã tiêu chí | Năng lực | Mức | Tiêu chí nghiệm thu kiểm chứng được trên hệ thống |
+| --- | --- | --- | --- |
+| `AC-CAP-01` | `CAP-01` | A | Thay đổi trình tự bước, người thực hiện hoặc điều kiện rẽ nhánh của một luồng Pha 1 bằng công cụ khai báo, không sửa mã nguồn. |
+| `AC-CAP-02` | `CAP-02` | A | Hồ sơ không khởi tạo được giai đoạn sau khi thiếu điều kiện ràng buộc; ví dụ, chưa có quyết định phê duyệt chủ trương thì không mở được xét duyệt nhiệm vụ. |
+| `AC-CAP-03` | `CAP-03` | A | Hai phiên bản của cùng một quy trình tồn tại song song; hồ sơ khởi tạo trước ngày hiệu lực bản mới chạy tiếp theo bản cũ; lịch sử sửa đổi tra cứu được. |
+| `AC-CAP-04` | `CAP-04` | A | Hồ sơ tích lũy qua ít nhất hai giai đoạn liên tiếp không mất dữ liệu; xuất được hồ sơ ra tệp. |
+| `AC-CAP-05` | `CAP-05` | A | Mỗi bước của luồng Pha 1 gắn đúng biểu mẫu; người dùng điền trực tiếp trên hệ thống; dữ liệu điền lưu vào hồ sơ. |
+| `AC-CAP-06` | `CAP-06` | A | Tài liệu, quyết định của hồ sơ đã kết thúc tra cứu được trong kho lưu trữ. |
+| `AC-CAP-07` | `CAP-07` | A | Người dùng đăng nhập thấy đúng các bước đang chờ mình xử lý; không thấy việc của vai trò khác. |
+| `AC-CAP-08` | `CAP-08` | A | Chuỗi ký chạy đủ các cấp của một luồng Pha 1; tra cứu được ai đã ký, ai chưa; từ chối trả hồ sơ về đúng bước. |
+| `AC-CAP-09` | `CAP-09` | A | Phiếu nhận xét, phiếu đánh giá lập theo biểu mẫu, gắn vào hồ sơ và kết xuất được. |
+| `AC-CAP-10` | `CAP-10` | A | Lập được hội đồng theo Quyết định thành lập cho cả hai trục: theo lĩnh vực và giai đoạn, và theo từng nhiệm vụ; thay đổi thành phần theo Quyết định mới. |
+| `AC-CAP-11` | `CAP-11` | A | Một nhiệm vụ trải qua ít nhất hai phiên họp, mỗi phiên có biên bản được ký. |
+| `AC-CAP-12` | `CAP-12` | A | Bản ghi nhập thay hiển thị đủ ba thông tin: người quyết định thuộc cấp Tập đoàn, người nhập thuộc Tổng Công ty và văn bản giấy tham chiếu. |
+| `AC-CAP-13` | `CAP-13` | A | Người được ủy quyền thực hiện được bước của người ủy quyền; nhật ký ghi rõ theo ủy quyền nào. |
+| `AC-CAP-14` | `CAP-14` | B | Luồng tạm dừng và luồng dừng mẫu chạy được trên bộ cột mốc; nhiệm vụ tạm dừng quay lại thực hiện được. |
+| `AC-CAP-15` | `CAP-15` | B | Một kết nối mẫu với kho lưu trữ tài liệu chạy tự động; khung kết nối sẵn sàng cho năm phần mềm còn lại. |
+| `AC-CAP-16` | `CAP-16` | B | Màn hình bức tranh thực hiện hiển thị đủ sáu chiều; chiều cột mốc quản trị dùng dữ liệu thật, năm chiều còn lại dùng dữ liệu nhập tay hoặc mô phỏng. |
+| `AC-CAP-17` | `CAP-17` | B | Cảnh báo chậm xử lý trên luồng nghiệp vụ chạy với dữ liệu thật; cảnh báo tiến độ và dự toán chạy với dữ liệu mô phỏng. |
+| `AC-CAP-18` | `CAP-18` | B | Hai tầng chỉ số tổng thể và phân tích cơ cấu đếm đúng số nhiệm vụ theo cột mốc bằng dữ liệu thật; tầng giám sát chi tiết hiển thị với dữ liệu như `CAP-16`. |
+| `AC-CAP-19` | `CAP-19` | A | Mọi thao tác ký, duyệt, nhập thay tra cứu được: ai, lúc nào, trên phiên bản quy trình nào, thay mặt ai. |
+| `AC-CAP-20` | `CAP-20` | A | Một tài khoản đăng nhập một lần dùng được toàn hệ thống; quyền đúng theo vai trò của sáu nhóm người dùng; người ngoài vai trò không truy cập được hồ sơ. |
+
+Mức A được nghiệm thu đầy đủ tại Pha 1. Mức B được nghiệm thu năng lực nền tại Pha 1 bằng cấu hình mẫu và dữ liệu nhập tay hoặc mô phỏng, sau đó nghiệm thu đầy đủ cùng nội dung Pha 2. Nguyên tắc này cần được phê duyệt tại quyết định mở `A6`.
+
+#### C.2 Năng lực AI Agent có điều kiện
+
+| Mã | Tiêu chí nghiệm thu có điều kiện |
+| --- | --- |
+| `AI-AC-01` | Trên luồng thí điểm đã thống nhất, hệ thống thực hiện được các yêu cầu `REQ-064` đến `REQ-068` thuộc phạm vi được chọn và không tự hoàn tất User Task, đổi cột mốc hoặc ghi đè dữ liệu nghiệp vụ. |
+| `AI-AC-02` | Mỗi kết quả soát xét hoặc cảnh báo hiển thị được tiêu chí, trạng thái, lý do và căn cứ hoặc tài liệu tham chiếu; truy ngược được phiên bản checklist/skill và mô hình đã sử dụng. |
+| `AI-AC-03` | Kiểm thử phân quyền chứng minh AI không đọc hoặc đưa vào câu trả lời hồ sơ, tài liệu ngoài quyền của người đang thao tác. |
+| `AI-AC-04` | Người dùng xác nhận, chỉnh sửa hoặc bác bỏ được kết quả; nhật ký lưu cả kết quả AI ban đầu và quyết định cuối cùng của người dùng. |
+| `AI-AC-05` | Khi dịch vụ AI lỗi, quá thời gian hoặc không đủ căn cứ, hệ thống thông báo rõ và quy trình nghiệp vụ vẫn tiếp tục theo cách không dùng AI. |
+| `AI-AC-06` | Mô hình và các thành phần xử lý AI chạy trên hạ tầng được khách hàng chấp thuận; kiểm tra triển khai xác nhận dữ liệu hồ sơ không được gửi tới dịch vụ AI bên ngoài. |
+| `AI-AC-07` | Chất lượng gợi ý đạt ngưỡng do khách hàng chốt trên bộ dữ liệu kiểm thử đã được phê duyệt; chỉ số, ngưỡng và người đánh giá phải được ghi trong biên bản phạm vi thí điểm trước khi phát triển. |
+
+`CAP-21` chỉ được đưa vào baseline sau khi khách hàng chấp thuận `A7`, chọn luồng thí điểm, phê duyệt bộ dữ liệu kiểm thử và chốt ngưỡng chất lượng.
+
+### Appendix D. Danh sách quyết định và câu hỏi còn mở
+
+| ID | Nội dung cần quyết định / xác nhận | Mức ảnh hưởng |
+| --- | --- | --- |
+| `A1` | Mức độ khách hàng tự điều chỉnh quy trình. | Phạm vi và chi phí |
+| `A2` | Ký duyệt trên hệ thống là ký số hay xác nhận điện tử. | Phạm vi và chi phí |
+| `A3` | Cách cung cấp dữ liệu cho báo cáo định kỳ `RD03.06` trong Pha 1 khi năm luồng kết nối thuộc Pha 2. | Phạm vi và chi phí |
+| `A4` | Quy trình chi tiết cho `RD08` và `RD10`. | Phạm vi và chi phí |
+| `A5` | Nội dung quản lý của danh sách quy trình và quy định trong `RD10`. | Phạm vi và chi phí |
+| `A6` | Nguyên tắc nghiệm thu hai mức đối với các năng lực phụ thuộc Pha 2. | Phạm vi và nghiệm thu |
+| `A7` | Phạm vi thí điểm AI Agent (`CAP-21`). | Phạm vi, chi phí và nghiệm thu |
+| `B1` | Cách xử lý hồ sơ dở dang khi ban hành phiên bản quy trình mới. | Quy tắc nghiệp vụ |
+| `B2` | Vai trò xác nhận các nội dung đề tài đã hoàn thành. | Quy tắc nghiệp vụ |
+| `B3` | Cách xử lý trường hợp điều chỉnh vượt chủ trương. | Quy tắc nghiệp vụ |
+| `B4` | Quy tắc xác định phiên họp hội đồng hợp lệ. | Quy tắc nghiệp vụ |
+| `B5` | Kho lưu trữ tài liệu được sử dụng và cơ chế kết nối. | Tích hợp |
+| `B6` | Ngưỡng cảnh báo nghiệp vụ. | Quy tắc nghiệp vụ |
+| `B7` | Xác nhận sáu khó khăn hiện tại nêu trong BRD cũ. | Nhu cầu nghiệp vụ |
+| `B8` | Phạm vi, thời hạn và giới hạn của ủy quyền. | Quy tắc nghiệp vụ |
+| `B9` | Nguồn dữ liệu kế hoạch năm và cách đưa vào hệ thống. | Dữ liệu / tích hợp |
+| `C1` | Hình thức và hạ tầng triển khai. | Phi chức năng |
+| `C2` | Yêu cầu bảo mật và phân loại thông tin. | Phi chức năng |
+| `C3` | Khối lượng nhiệm vụ, người dùng và tăng trưởng dữ liệu. | Phi chức năng |
+| `C4` | Xác nhận định hướng kiến trúc kỹ thuật. | Phi chức năng |
+| `C5` | Dữ liệu cá nhân và thời hạn lưu trữ hồ sơ. | Tuân thủ |
+| `D1` | Tên hai luồng con của `RD06` có phải là luồng quyết toán. | Chất lượng tài liệu nguồn |
+| `D2` | `RD05.02` có phải là nghiệm thu cấp Tập đoàn. | Chất lượng tài liệu nguồn |
+| `D3` | `RD03.04` có phải là quản trị tài sản. | Chất lượng tài liệu nguồn |
+| `D4` | Số thứ tự của `RD03.05` và `RD03.06`. | Chất lượng tài liệu nguồn |
+| `D5` | Bổ sung sự kiện bắt đầu, kết thúc và điều kiện ràng buộc cho mười luồng `RD04`. | Chất lượng tài liệu nguồn |
+| `D6` | Mã hiệu đầy đủ của Quy trình Tổng thể luồng nghiệp vụ. | Chất lượng tài liệu nguồn |
+
+### Appendix E. Nguyên tắc quản lý phiên bản tiếp theo
+
+- Không thay `TBD` bằng giả định không có nguồn hoặc chưa được bên có thẩm quyền xác nhận.
+- Sau mỗi buổi làm việc, cập nhật Change Log, trạng thái các quyết định mở và Traceability Matrix trong cùng một phiên bản tài liệu.
+- Khi có FRD/SRS và test catalogue, thay các ô `TBD` trong cột Functional Requirement, NFR và Test Case bằng mã truy vết chính thức.
+- Chỉ chuyển trạng thái tài liệu sang Approved khi các vai trò tại mục 11 hoàn tất phê duyệt và các quyết định nhóm A đã được chốt.

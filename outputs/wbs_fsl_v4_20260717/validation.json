@@ -1,0 +1,12 @@
+﻿{
+    "output":  "C:\\Users\\phuctd7\\ql-nvkhcn\\outputs\\wbs_fsl_v4_20260717\\wbs_khcn_fsl_v4_v1.0.xlsx",
+    "source":  "C:\\Users\\phuctd7\\ql-nvkhcn\\outputs\\functional-scope-list\\VHT_Functional_Scope_List_v4.xlsx",
+    "sourceFeatureCount":  453,
+    "uniqueFeatureIds":  453,
+    "subsystems":  19,
+    "moduleWorkPackages":  62,
+    "openQuestions":  27,
+    "formulaErrors":  [
+
+                      ]
+}

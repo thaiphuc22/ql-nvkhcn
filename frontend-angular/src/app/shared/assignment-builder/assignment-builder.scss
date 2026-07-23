@@ -1,0 +1,34 @@
+.asgb-mode {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.asgb-mode-help {
+  font-size: 12px;
+}
+.asgb-empty {
+  margin-bottom: 8px;
+}
+.asgb-row {
+  margin-bottom: 8px;
+}
+.asgb-row-line {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.asgb-type {
+  width: 210px;
+}
+.asgb-value {
+  min-width: 260px;
+  flex: 1;
+}
+.asgb-issue {
+  margin-top: 4px;
+  padding-left: 218px;
+  font-size: 12px;
+}

@@ -1,0 +1,52 @@
+<div class="be-page">
+  <header class="be-header">
+    <div>
+      <button nz-button nzType="link" class="be-back" (click)="back()">← Danh mục quy trình</button>
+      <h2>{{ draft() ? 'Vẽ / sửa BPMN' : 'Tạo & vẽ BPMN' }}</h2>
+      <span class="be-subtitle">Sơ đồ được lưu thành bản nháp; chỉ deploy từ danh mục sau khi kiểm tra.</span>
+    </div>
+    <div class="be-actions">
+      @if (draft(); as current) {
+        <nz-tag [nzColor]="current.status === 'VALID' ? 'success' : current.status === 'INVALID' ? 'error' : 'gold'">
+          {{ current.status }} · r{{ current.revision }}
+        </nz-tag>
+      }
+      <button nz-button (click)="exportBpmn()" [disabled]="!canSave()">
+        <span nz-icon nzType="download"></span> Kết xuất .bpmn
+      </button>
+      <button nz-button (click)="validate()" [nzLoading]="validating()" [disabled]="!canSave()">
+        <span nz-icon nzType="check-circle"></span> Kiểm tra BPMN
+      </button>
+      <button nz-button nzType="primary" (click)="save()" [nzLoading]="saving()" [disabled]="!canSave() || !dirty()">
+        <span nz-icon nzType="save"></span> Lưu nháp
+      </button>
+    </div>
+  </header>
+
+  @if (errorMessage()) { <nz-alert nzType="error" nzShowIcon [nzMessage]="errorMessage()" class="be-alert"></nz-alert> }
+  @if (validationIssues().length) {
+    <app-bpmn-lint-results [issues]="validationIssues()" (issueSelected)="focusIssue($event)" />
+  }
+
+  <section class="be-metadata">
+    <label>Mã quy trình (BPMN) <span>*</span>
+      <input nz-input maxlength="255" [ngModel]="processId()" (ngModelChange)="processId.set($event); metadataChanged()" placeholder="Ví dụ: Process_RD0202" />
+      @if (!processIdValid()) { <small>Bắt đầu bằng chữ hoặc dấu gạch dưới; chỉ dùng chữ, số, dấu chấm, gạch ngang và gạch dưới.</small> }
+    </label>
+    <label>Tên quy trình <span>*</span>
+      <input nz-input maxlength="512" [ngModel]="processName()" (ngModelChange)="processName.set($event); metadataChanged()" placeholder="Tên hiển thị" />
+    </label>
+  </section>
+
+  <section class="be-editor">
+    @if (loading()) {
+      <div class="be-loading"><nz-spin nzTip="Đang tải bản nháp..."></nz-spin></div>
+    } @else if (initialXml(); as xml) {
+      <app-bpmn-modeler
+        [xml]="xml"
+        (readyChange)="editorReady.set($event)"
+        (dirtyChange)="editorDirtyChanged($event)"
+      ></app-bpmn-modeler>
+    }
+  </section>
+</div>

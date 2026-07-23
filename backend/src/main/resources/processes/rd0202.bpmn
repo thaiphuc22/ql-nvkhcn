@@ -1,0 +1,1880 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_RD02_02" targetNamespace="http://vht.vn/qtkhcn/bpmn" exporter="Camunda Web Modeler" exporterVersion="44dd7c5" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+  <bpmn:collaboration id="Collaboration_RD02_02" name="RD02_02">
+    <bpmn:participant id="Participant_RD02_02" name="RD02.02 — Xét duyệt NV KHCN cấp Tập đoàn" processRef="RD02_02" />
+  </bpmn:collaboration>
+  <bpmn:process id="RD02_02" name="Xét duyệt NV KHCN cấp Tập đoàn" isExecutable="true">
+    <bpmn:extensionElements>
+      <zeebe:properties>
+        <zeebe:property name="qtkhcn.contractVersion" value="v3" />
+        <zeebe:property name="qtkhcn.userTaskActions" value="APPROVE_STEP,REJECT_STEP" />
+      </zeebe:properties>
+    </bpmn:extensionElements>
+    <bpmn:laneSet id="LaneSet_RD02_02">
+      <bpmn:lane id="Pool_CQ_KHCN" name="CQ_KHCN" />
+      <bpmn:lane id="Pool_CQ_MS" name="CQ_MS" />
+      <bpmn:lane id="Pool_CQ_TCKT" name="CQ_TCKT" />
+      <bpmn:lane id="Pool_CQ_NS" name="CQ_NS" />
+      <bpmn:lane id="Lane_PTGD_VHT" name="Phó Tổng Giám đốc VHT">
+        <bpmn:flowNodeRef>T29_PTGD_CT</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Pool_TP_CLKHCN" name="TP_CLKHCN">
+        <bpmn:flowNodeRef>T14_TP_CLKHCN</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T28_TP_CLKHCN</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Pool_GD_TTMS" name="GD_TTMS">
+        <bpmn:flowNodeRef>T14_GD_TTMS</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T28_GD_TTMS</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Pool_TP_NS" name="TP_NS">
+        <bpmn:flowNodeRef>T14_TP_NS</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T28_TP_NS</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Pool_TP_TCKT" name="TP_TCKT">
+        <bpmn:flowNodeRef>T14_TP_TCKT</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T28_TP_TCKT</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_LDVHT" name="Tổng Giám đốc VHT">
+        <bpmn:flowNodeRef>T06</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Generate_HDXD</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_0jwr6d0</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T29_TGD_VHT</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_TD" name="CQ KHCN TĐ / HĐXD TĐ / HĐ KHCN TĐ">
+        <bpmn:flowNodeRef>T17</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G18Split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T18A</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T18B</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G18Join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T19</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T21</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Load_HDXD_TD</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T24</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Tinh_DiemTB_T24</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Rule_DanhGiaT24</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G24</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T30</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T31</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T32</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T15</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_BTGD" name="Ban Tổng Giám đốc Tập đoàn">
+        <bpmn:flowNodeRef>T20</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Generate_HDXD_TD</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_KhongThongQua</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T33</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_PGDK" name="Phó Giám đốc khối">
+        <bpmn:flowNodeRef>T04_GDK</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T13_GDK</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_CQKHCN" name="Cơ quan  KHCN">
+        <bpmn:flowNodeRef>T05</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_HDXD_CS" name="HĐXD cấp Cơ sở">
+        <bpmn:flowNodeRef>T07</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T10</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_GDTT" name="Giám đốc Trung tâm">
+        <bpmn:flowNodeRef>T04_GDTT</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T13_GDTT</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T27_GDK</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_CQ_NS" name="Chuyên hướng Nhân sự">
+        <bpmn:flowNodeRef>T09_CQ_NS</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T12_CQ_NS</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T23_CQ_NS</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T27_GDTT</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T03_CQ_NS</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T26_CQ_NS</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_CH_TCKT" name="Chuyên hướng TCKT">
+        <bpmn:flowNodeRef>T03_CQ_TCKT</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T09_CQ_TCKT</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T12_CQ_TCKT</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T26_CQ_TCKT</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T23_CQ_TCKT</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_CH_MS" name="Chuyên quản Mua sắm">
+        <bpmn:flowNodeRef>T09_CQ_MS</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T12_CQ_MS</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T23_CQ_MS</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T03_CQ_MS</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T26_CQ_MS</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_PM" name="PM / PA / NNC">
+        <bpmn:flowNodeRef>Start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T01</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T02</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>GCheck</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>AI_Summarize</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G03Split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G03Join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T08</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G09Split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G09Join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T11</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G12Split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G12Join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T16</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T22</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G23Split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G23Join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T25</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G26Split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G26Join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T03_PM</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_CH_KHCN" name="Chuyên hướng KHCN">
+        <bpmn:flowNodeRef>T03_CQ_KHCN</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G14Split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G14Join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G28Split</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G28Join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T12_CQ_KHCN</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T09_CQ_KHCN</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T23_CQ_KHCN</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T26_CQ_KHCN</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_PTGD_PTKHOI" name="PTGD phụ trách Khôi" />
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start" name="Có QĐ phê duyệt chủ trương cấp TĐ">
+      <bpmn:outgoing>F01</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="T01" name="1. Khởi tạo luồng xét duyệt cấp Tập đoàn RD02.02">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="PM" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F01</bpmn:incoming>
+      <bpmn:outgoing>F02</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T02" name="2. Xây dựng dự thảo HS đề nghị xét duyệt (HSXD dự thảo 1)">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="PM,PA,NNC" />
+        <zeebe:formDefinition formKey="bm-02-01-dki-nv" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F02</bpmn:incoming>
+      <bpmn:incoming>FCheckFail</bpmn:incoming>
+      <bpmn:outgoing>F03</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Check" name="Hệ thống kiểm tra điều kiện, nội dung, thể thức và nhân sự thẩm định">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="khcn.rd0202.check-default-condition" retries="3" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F03</bpmn:incoming>
+      <bpmn:outgoing>F04</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="GCheck" name="Hồ sơ đủ điều kiện?" default="FCheckFail">
+      <bpmn:incoming>F04</bpmn:incoming>
+      <bpmn:outgoing>FCheckOK</bpmn:outgoing>
+      <bpmn:outgoing>FCheckFail</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="AI_Summarize" name="Hệ thống (AI Agent) tóm tắt hồ sơ">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="khcn.rd0202.summarize-dossier" retries="1" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>FCheckOK</bpmn:incoming>
+      <bpmn:outgoing>F_AISummary</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:parallelGateway id="G03Split" name="Phân công thẩm định song song">
+      <bpmn:incoming>F_AISummary</bpmn:incoming>
+      <bpmn:outgoing>F03KHCN</bpmn:outgoing>
+      <bpmn:outgoing>F03MS</bpmn:outgoing>
+      <bpmn:outgoing>F03TCKT</bpmn:outgoing>
+      <bpmn:outgoing>F03NS</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:userTask id="T03_CQ_KHCN" name="3. Thẩm định chuyên môn và hoàn chỉnh HSXD dự thảo 2">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="CQ_KHCN" />
+        <zeebe:formDefinition formKey="bm-02-09-pnx-dt" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F03KHCN</bpmn:incoming>
+      <bpmn:outgoing>F03KHCN_DONE</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:parallelGateway id="G03Join" name="Hoàn tất thẩm định chuyên môn">
+      <bpmn:incoming>F03KHCN_DONE</bpmn:incoming>
+      <bpmn:incoming>F03MS_DONE</bpmn:incoming>
+      <bpmn:incoming>F03TCKT_DONE</bpmn:incoming>
+      <bpmn:incoming>F03NS_DONE</bpmn:incoming>
+      <bpmn:outgoing>F05</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:userTask id="T08" name="8. Hoàn thiện HSXD dự thảo 3 theo phiên 1">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="PM,PA,NNC" />
+        <zeebe:formDefinition formKey="bm-02-16-bca-nv" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F09</bpmn:incoming>
+      <bpmn:outgoing>F10</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:parallelGateway id="G09Split" name="Phân công rà soát song song">
+      <bpmn:incoming>F10</bpmn:incoming>
+      <bpmn:outgoing>F_T09_CQ_KHCN</bpmn:outgoing>
+      <bpmn:outgoing>F_T09_CQ_MS</bpmn:outgoing>
+      <bpmn:outgoing>F_T09_CQ_TCKT</bpmn:outgoing>
+      <bpmn:outgoing>F_T09_CQ_NS</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:parallelGateway id="G09Join" name="Hoàn tất rà soát dự thảo 3">
+      <bpmn:incoming>F_T09_CQ_KHCN_DONE</bpmn:incoming>
+      <bpmn:incoming>F_T09_CQ_MS_DONE</bpmn:incoming>
+      <bpmn:incoming>F_T09_CQ_TCKT_DONE</bpmn:incoming>
+      <bpmn:incoming>F_T09_CQ_NS_DONE</bpmn:incoming>
+      <bpmn:outgoing>F11</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:userTask id="T11" name="11. Cập nhật và trình ký CV đề nghị xét duyệt cấp TĐ">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="PM,PA,NNC" />
+        <zeebe:formDefinition formKey="bm-02-00-cv-dk-xd-nv" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F12</bpmn:incoming>
+      <bpmn:outgoing>F13</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:parallelGateway id="G12Split" name="Phân công ký rà soát song song">
+      <bpmn:incoming>F13</bpmn:incoming>
+      <bpmn:outgoing>F_T12_CQ_KHCN</bpmn:outgoing>
+      <bpmn:outgoing>F_T12_CQ_MS</bpmn:outgoing>
+      <bpmn:outgoing>F_T12_CQ_TCKT</bpmn:outgoing>
+      <bpmn:outgoing>F_T12_CQ_NS</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:parallelGateway id="G12Join" name="Hoàn tất ký rà soát">
+      <bpmn:incoming>F_T12_CQ_KHCN_DONE</bpmn:incoming>
+      <bpmn:incoming>F_T12_CQ_MS_DONE</bpmn:incoming>
+      <bpmn:incoming>F_T12_CQ_TCKT_DONE</bpmn:incoming>
+      <bpmn:incoming>F_T12_CQ_NS_DONE</bpmn:incoming>
+      <bpmn:outgoing>F14</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:parallelGateway id="G14Split" name="Phân công ký duyệt CV song song">
+      <bpmn:incoming>Flow_0ae21gs</bpmn:incoming>
+      <bpmn:outgoing>F_T14_TP_CLKHCN</bpmn:outgoing>
+      <bpmn:outgoing>F_T14_GD_TTMS</bpmn:outgoing>
+      <bpmn:outgoing>F_T14_TP_NS</bpmn:outgoing>
+      <bpmn:outgoing>F_T14_TP_TCKT</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:parallelGateway id="G14Join" name="Hoàn tất ký duyệt CV">
+      <bpmn:incoming>F_T14_TP_CLKHCN_DONE</bpmn:incoming>
+      <bpmn:incoming>F_T14_GD_TTMS_DONE</bpmn:incoming>
+      <bpmn:incoming>F_T14_TP_NS_DONE</bpmn:incoming>
+      <bpmn:incoming>F_T14_TP_TCKT_DONE</bpmn:incoming>
+      <bpmn:outgoing>F16</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:userTask id="T16" name="16. Bàn giao hồ sơ đến CQ QL KHCN Tập đoàn">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="PM,PA,NNC" />
+        <zeebe:formDefinition formKey="bm-02-00-cv-dk-xd-nv" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F17</bpmn:incoming>
+      <bpmn:outgoing>F18</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T22" name="22. Hoàn chỉnh HSXD dự thảo 4">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="PM,PA,NNC" />
+        <zeebe:formDefinition formKey="bm-02-16-bca-nv" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F25</bpmn:incoming>
+      <bpmn:outgoing>F26</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:parallelGateway id="G23Split" name="Phân công thẩm định song song">
+      <bpmn:incoming>F26</bpmn:incoming>
+      <bpmn:outgoing>F_T23_CQ_KHCN</bpmn:outgoing>
+      <bpmn:outgoing>F_T23_CQ_MS</bpmn:outgoing>
+      <bpmn:outgoing>F_T23_CQ_TCKT</bpmn:outgoing>
+      <bpmn:outgoing>F_T23_CQ_NS</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:parallelGateway id="G23Join" name="Hoàn tất thẩm định dự thảo 4">
+      <bpmn:incoming>F_T23_CQ_KHCN_DONE</bpmn:incoming>
+      <bpmn:incoming>F_T23_CQ_MS_DONE</bpmn:incoming>
+      <bpmn:incoming>F_T23_CQ_TCKT_DONE</bpmn:incoming>
+      <bpmn:incoming>F_T23_CQ_NS_DONE</bpmn:incoming>
+      <bpmn:outgoing>F27</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:userTask id="T25" name="25. Cập nhật và trình ký HSXD dự thảo 5">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="PM,PA,NNC" />
+        <zeebe:formDefinition formKey="bm-02-17-ttr-nv" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F28</bpmn:incoming>
+      <bpmn:outgoing>F29</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:parallelGateway id="G26Split" name="Phân công thẩm định song song">
+      <bpmn:incoming>F29</bpmn:incoming>
+      <bpmn:outgoing>F_T26_CQ_KHCN</bpmn:outgoing>
+      <bpmn:outgoing>F_T26_CQ_MS</bpmn:outgoing>
+      <bpmn:outgoing>F_T26_CQ_TCKT</bpmn:outgoing>
+      <bpmn:outgoing>F_T26_CQ_NS</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:parallelGateway id="G26Join" name="Hoàn tất thẩm định dự thảo 5">
+      <bpmn:incoming>F_T26_CQ_KHCN_DONE</bpmn:incoming>
+      <bpmn:incoming>F_T26_CQ_MS_DONE</bpmn:incoming>
+      <bpmn:incoming>F_T26_CQ_TCKT_DONE</bpmn:incoming>
+      <bpmn:incoming>F_T26_CQ_NS_DONE</bpmn:incoming>
+      <bpmn:outgoing>F30</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:parallelGateway id="G28Split" name="Phân công ký duyệt song song">
+      <bpmn:incoming>F31</bpmn:incoming>
+      <bpmn:outgoing>F_T28_TP_CLKHCN</bpmn:outgoing>
+      <bpmn:outgoing>F_T28_GD_TTMS</bpmn:outgoing>
+      <bpmn:outgoing>F_T28_TP_NS</bpmn:outgoing>
+      <bpmn:outgoing>F_T28_TP_TCKT</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:parallelGateway id="G28Join" name="Hoàn tất ký duyệt">
+      <bpmn:incoming>F_T28_TP_CLKHCN_DONE</bpmn:incoming>
+      <bpmn:incoming>F_T28_GD_TTMS_DONE</bpmn:incoming>
+      <bpmn:incoming>F_T28_TP_NS_DONE</bpmn:incoming>
+      <bpmn:incoming>F_T28_TP_TCKT_DONE</bpmn:incoming>
+      <bpmn:outgoing>F32</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:userTask id="T03_PM" name="3. Nhận PNX và hoàn chỉnh HSXD">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="PM" />
+        <zeebe:formDefinition formKey="phieu-phe-duyet" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F05</bpmn:incoming>
+      <bpmn:outgoing>F05B</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T03_CQ_TCKT" name="3. Thẩm định chuyên môn và hoàn chỉnh HSXD dự thảo 2">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="CQ_TCKT" />
+        <zeebe:formDefinition formKey="bm-02-09-pnx-dt" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F03TCKT</bpmn:incoming>
+      <bpmn:outgoing>F03TCKT_DONE</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T04_GDTT" name="4. Ký hồ sơ dự thảo đề nghị xét duyệt">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="BGD_TT" />
+        <zeebe:formDefinition formKey="phieu-phe-duyet" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F05B</bpmn:incoming>
+      <bpmn:outgoing>F06</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T05" name="5. Lập, trình QĐ thành lập HĐXD cấp Cơ sở">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="CQ_QLKHCN" />
+        <zeebe:formDefinition formKey="bm-02-08-qdh-nv" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_00mw9x8</bpmn:incoming>
+      <bpmn:outgoing>F07</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T07" name="7. Họp HĐXD cấp Cơ sở phiên 1">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="HDXD" />
+        <zeebe:formDefinition formKey="bm-02-09-pnx-dt" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F08B</bpmn:incoming>
+      <bpmn:outgoing>F09</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T10" name="10. Họp HĐXD cấp Cơ sở phiên 2">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="HDXD" />
+        <zeebe:formDefinition formKey="bm-02-12-pdg-dt" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F11</bpmn:incoming>
+      <bpmn:outgoing>F12</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T04_GDK" name="4. Ký hồ sơ dự thảo đề nghị xét duyệt">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+        <zeebe:assignmentDefinition candidateGroups="BGD_KHOI" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F06</bpmn:incoming>
+      <bpmn:outgoing>Flow_00mw9x8</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T09_CQ_MS" name="9. Rà soát HSXD dự thảo 3">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="CQ_MS" />
+        <zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F_T09_CQ_MS</bpmn:incoming>
+      <bpmn:outgoing>F_T09_CQ_MS_DONE</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T09_CQ_TCKT" name="9. Rà soát HSXD dự thảo 3">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="CQ_TCKT" />
+        <zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F_T09_CQ_TCKT</bpmn:incoming>
+      <bpmn:outgoing>F_T09_CQ_TCKT_DONE</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T09_CQ_NS" name="9. Rà soát HSXD dự thảo 3">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="CQ_NS" />
+        <zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F_T09_CQ_NS</bpmn:incoming>
+      <bpmn:outgoing>F_T09_CQ_NS_DONE</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T12_CQ_TCKT" name="12. Ký rà soát HSXD">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="CQ_TCKT" />
+        <zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F_T12_CQ_TCKT</bpmn:incoming>
+      <bpmn:outgoing>F_T12_CQ_TCKT_DONE</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T12_CQ_NS" name="12. Ký rà soát HSXD">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="CQ_NS" />
+        <zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F_T12_CQ_NS</bpmn:incoming>
+      <bpmn:outgoing>F_T12_CQ_NS_DONE</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T12_CQ_MS" name="12. Ký rà soát HSXD">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="CQ_MS" />
+        <zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F_T12_CQ_MS</bpmn:incoming>
+      <bpmn:outgoing>F_T12_CQ_MS_DONE</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T12_CQ_KHCN" name="12. Ký rà soát HSXD">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="CQ_KHCN" />
+        <zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F_T12_CQ_KHCN</bpmn:incoming>
+      <bpmn:outgoing>F_T12_CQ_KHCN_DONE</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T13_GDTT" name="13. Ký duyệt HSXD tại Trung tâm/Khối">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="BGD_TT" />
+        <zeebe:formDefinition formKey="phieu-phe-duyet" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F14</bpmn:incoming>
+      <bpmn:outgoing>Flow_18hoca3</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T13_GDK" name="13. Ký duyệt HSXD tại Trung tâm/Khối">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+        <zeebe:assignmentDefinition candidateGroups="BGD_KHOI" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_18hoca3</bpmn:incoming>
+      <bpmn:outgoing>Flow_0ae21gs</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T06" name="6. Phê duyệt QĐ thành lập HĐXD cấp Cơ sở">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="TGD_VHT" />
+        <zeebe:formDefinition formKey="phieu-phe-duyet" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F07</bpmn:incoming>
+      <bpmn:outgoing>F08</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Generate_HDXD" name="Hệ thống sinh Hội đồng xét duyệt cấp Cơ sở">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="khcn.rd0202.generate-hdxd-decision" retries="3" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F08</bpmn:incoming>
+      <bpmn:outgoing>F08B</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="T14_TP_CLKHCN" name="14. Ký duyệt CV đề nghị xét duyệt">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="TP_CLKHCN" />
+        <zeebe:formDefinition formKey="phieu-phe-duyet" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F_T14_TP_CLKHCN</bpmn:incoming>
+      <bpmn:outgoing>F_T14_TP_CLKHCN_DONE</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T14_GD_TTMS" name="14. Ký duyệt CV đề nghị xét duyệt">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="GD_TTMS" />
+        <zeebe:formDefinition formKey="phieu-phe-duyet" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F_T14_GD_TTMS</bpmn:incoming>
+      <bpmn:outgoing>F_T14_GD_TTMS_DONE</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T14_TP_NS" name="14. Ký duyệt CV đề nghị xét duyệt">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="TP_NS" />
+        <zeebe:formDefinition formKey="phieu-phe-duyet" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F_T14_TP_NS</bpmn:incoming>
+      <bpmn:outgoing>F_T14_TP_NS_DONE</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T14_TP_TCKT" name="14. Ký duyệt CV đề nghị xét duyệt">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="TP_TCKT" />
+        <zeebe:formDefinition formKey="phieu-phe-duyet" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F_T14_TP_TCKT</bpmn:incoming>
+      <bpmn:outgoing>F_T14_TP_TCKT_DONE</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T17" name="17. Kiểm tra HSXD cấp Tập đoàn">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="CQ_KHCN_TD" />
+        <zeebe:formDefinition formKey="phieu-nhan-xet" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F18</bpmn:incoming>
+      <bpmn:outgoing>F19</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:parallelGateway id="G18Split" name="Chuẩn bị thẩm định cấp TĐ">
+      <bpmn:incoming>F19</bpmn:incoming>
+      <bpmn:outgoing>F20A</bpmn:outgoing>
+      <bpmn:outgoing>F20B</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:userTask id="T18A" name="18a. Gửi CV đề nghị thẩm định HS">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="CQ_KHCN_TD" />
+        <zeebe:formDefinition formKey="bm-02-00-cv-dk-xd-nv" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F20A</bpmn:incoming>
+      <bpmn:outgoing>F21A</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T18B" name="18b. Lập, trình QĐ thành lập HĐXD Tập đoàn">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="CQ_KHCN_TD" />
+        <zeebe:formDefinition formKey="bm-02-08-qdh-nv" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F20B</bpmn:incoming>
+      <bpmn:outgoing>F21B</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:parallelGateway id="G18Join">
+      <bpmn:incoming>F21A</bpmn:incoming>
+      <bpmn:incoming>F21B</bpmn:incoming>
+      <bpmn:outgoing>F22</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:userTask id="T19" name="19. Lập PNX của các cơ quan nghiệp vụ Tập đoàn">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="CQ_KHCN_TD,CQ_TCKT_TD,CQ_DTXD_TD,CQ_TCNL_TD" />
+        <zeebe:formDefinition formKey="bm-02-09-pnx-dt" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F22</bpmn:incoming>
+      <bpmn:outgoing>F23</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T20" name="20. Phê duyệt QĐ thành lập HĐXD Tập đoàn">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="BTGD_TD" />
+        <zeebe:formDefinition formKey="phieu-phe-duyet" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F23</bpmn:incoming>
+      <bpmn:outgoing>F23B</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Generate_HDXD_TD" name="Hệ thống sinh Hội đồng xét duyệt cấp Tập đoàn">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="khcn.rd0202.generate-hdxd-decision-td" retries="3" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F23B</bpmn:incoming>
+      <bpmn:outgoing>F24</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="T21" name="21. Họp HĐXD Tập đoàn phiên 1">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="HDXD_TD" />
+        <zeebe:formDefinition formKey="bm-02-15-bbh-nv" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F24</bpmn:incoming>
+      <bpmn:outgoing>F25</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Load_HDXD_TD" name="Hệ thống nạp danh sách HĐXD Tập đoàn">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="khcn.rd0202.load-hoi-dong-td" retries="3" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F27</bpmn:incoming>
+      <bpmn:outgoing>F27B</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="T24" name="24. Họp HĐXD Tập đoàn phiên 2">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="HDXD_TD" />
+        <zeebe:formDefinition formKey="bm-02-12-pdg-dt" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F27B</bpmn:incoming>
+      <bpmn:outgoing>F27C</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=danhSachThanhVienHDXDTD" inputElement="thanhVienHienTai" outputCollection="danhSachDiemDanhGiaT24" outputElement="=diemSo" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Tinh_DiemTB_T24" name="Hệ thống tính điểm trung bình HĐXD phiên 2">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="khcn.rd0202.compute-diem-trung-binh-t24" retries="3" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F27C</bpmn:incoming>
+      <bpmn:outgoing>F27D</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:businessRuleTask id="Rule_DanhGiaT24" name="Đánh giá điểm HĐXD phiên 2 (DMN)">
+      <bpmn:extensionElements>
+        <zeebe:calledDecision decisionId="ketQuaDanhGiaT24" resultVariable="ketQuaDanhGiaT24Result" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F27D</bpmn:incoming>
+      <bpmn:outgoing>F27E</bpmn:outgoing>
+    </bpmn:businessRuleTask>
+    <bpmn:exclusiveGateway id="G24" name="Điểm đạt yêu cầu?" default="F_T24_KhongDat">
+      <bpmn:incoming>F27E</bpmn:incoming>
+      <bpmn:outgoing>F28</bpmn:outgoing>
+      <bpmn:outgoing>F_T24_KhongDat</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="End_KhongThongQua" name="Hồ sơ không được thông qua">
+      <bpmn:incoming>F_T24_KhongDat</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:userTask id="T30" name="30. Lập, trình Báo cáo thông qua HSXD">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="CQ_KHCN_TD" />
+        <zeebe:formDefinition formKey="bm-02-18-bct-nv" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F33</bpmn:incoming>
+      <bpmn:outgoing>F34</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T31" name="31. HĐ KHCN TĐ phê duyệt thông qua HSXD">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="HDKHCN_TD" />
+        <zeebe:formDefinition formKey="phieu-phe-duyet" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F34</bpmn:incoming>
+      <bpmn:outgoing>F35</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T32" name="32. Lập, trình QĐ phê duyệt và QĐ giao nhiệm vụ">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="CQ_KHCN_TD" />
+        <zeebe:formDefinition formKey="bm-02-19-qdi-nv" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F35</bpmn:incoming>
+      <bpmn:outgoing>F36</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T33" name="33. Phê duyệt QĐ mở mới và QĐ giao nhiệm vụ">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="BTGD_TD" />
+        <zeebe:formDefinition formKey="phieu-phe-duyet" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F36</bpmn:incoming>
+      <bpmn:outgoing>F37</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="End" name="QĐ phê duyệt nhiệm vụ KHCN cấp Tập đoàn">
+      <bpmn:incoming>F37</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:userTask id="T15" name="15. Phê duyệt CV đề nghị xét duyệt">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="TGD_VHT" />
+        <zeebe:formDefinition formKey="phieu-phe-duyet" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_140tj6z</bpmn:incoming>
+      <bpmn:outgoing>F17</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Activity_0jwr6d0" name="15. Phê duyệt CV đề nghị xét duyệt">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+        <zeebe:assignmentDefinition candidateGroups="PTGD_CT" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F16</bpmn:incoming>
+      <bpmn:outgoing>Flow_140tj6z</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T23_CQ_MS" name="23. Thẩm định, rà soát HSXD dự thảo 4">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="CQ_MS" />
+        <zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F_T23_CQ_MS</bpmn:incoming>
+      <bpmn:outgoing>F_T23_CQ_MS_DONE</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T23_CQ_NS" name="23. Thẩm định, rà soát HSXD dự thảo 4">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="CQ_NS" />
+        <zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F_T23_CQ_NS</bpmn:incoming>
+      <bpmn:outgoing>F_T23_CQ_NS_DONE</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T26_CQ_TCKT" name="26. Thẩm định, ký rà soát HSXD 5">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="CQ_TCKT" />
+        <zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F_T26_CQ_TCKT</bpmn:incoming>
+      <bpmn:outgoing>F_T26_CQ_TCKT_DONE</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T27_GDTT" name="27. Ký duyệt HSXD tại Trung tâm/Khối">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+        <zeebe:assignmentDefinition candidateGroups="BGD_TT" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F30</bpmn:incoming>
+      <bpmn:outgoing>Flow_1hjf0y8</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T27_GDK" name="27. Ký duyệt HSXD tại Trung tâm/Khối">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="BGD_KHOI" />
+        <zeebe:formDefinition formKey="phieu-phe-duyet" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1hjf0y8</bpmn:incoming>
+      <bpmn:outgoing>F31</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T29_TGD_VHT" name="29. Phê duyệt HSXD tại VHT">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="TGD_VHT" />
+        <zeebe:formDefinition formKey="phieu-phe-duyet" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0tvm6l8</bpmn:incoming>
+      <bpmn:outgoing>F33</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="F01" sourceRef="Start" targetRef="T01" />
+    <bpmn:sequenceFlow id="F02" sourceRef="T01" targetRef="T02" />
+    <bpmn:sequenceFlow id="FCheckFail" name="Chưa đạt — hoàn thiện lại" sourceRef="GCheck" targetRef="T02" />
+    <bpmn:sequenceFlow id="F03" sourceRef="T02" targetRef="Check" />
+    <bpmn:sequenceFlow id="F04" sourceRef="Check" targetRef="GCheck" />
+    <bpmn:sequenceFlow id="FCheckOK" name="Đạt" sourceRef="GCheck" targetRef="AI_Summarize">
+      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=dieuKienMacDinhDat = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F_AISummary" sourceRef="AI_Summarize" targetRef="G03Split" />
+    <bpmn:sequenceFlow id="F03KHCN" sourceRef="G03Split" targetRef="T03_CQ_KHCN" />
+    <bpmn:sequenceFlow id="F03MS" sourceRef="G03Split" targetRef="T03_CQ_MS" />
+    <bpmn:sequenceFlow id="F03TCKT" sourceRef="G03Split" targetRef="T03_CQ_TCKT" />
+    <bpmn:sequenceFlow id="F03NS" sourceRef="G03Split" targetRef="T03_CQ_NS" />
+    <bpmn:sequenceFlow id="F03KHCN_DONE" sourceRef="T03_CQ_KHCN" targetRef="G03Join" />
+    <bpmn:sequenceFlow id="F03MS_DONE" sourceRef="T03_CQ_MS" targetRef="G03Join" />
+    <bpmn:sequenceFlow id="F03TCKT_DONE" sourceRef="T03_CQ_TCKT" targetRef="G03Join" />
+    <bpmn:sequenceFlow id="F03NS_DONE" sourceRef="T03_CQ_NS" targetRef="G03Join" />
+    <bpmn:sequenceFlow id="F05" sourceRef="G03Join" targetRef="T03_PM" />
+    <bpmn:sequenceFlow id="F09" sourceRef="T07" targetRef="T08" />
+    <bpmn:sequenceFlow id="F10" sourceRef="T08" targetRef="G09Split" />
+    <bpmn:sequenceFlow id="F_T09_CQ_KHCN" sourceRef="G09Split" targetRef="T09_CQ_KHCN" />
+    <bpmn:sequenceFlow id="F_T09_CQ_MS" sourceRef="G09Split" targetRef="T09_CQ_MS" />
+    <bpmn:sequenceFlow id="F_T09_CQ_TCKT" sourceRef="G09Split" targetRef="T09_CQ_TCKT" />
+    <bpmn:sequenceFlow id="F_T09_CQ_NS" sourceRef="G09Split" targetRef="T09_CQ_NS" />
+    <bpmn:sequenceFlow id="F_T09_CQ_KHCN_DONE" sourceRef="T09_CQ_KHCN" targetRef="G09Join" />
+    <bpmn:sequenceFlow id="F_T09_CQ_MS_DONE" sourceRef="T09_CQ_MS" targetRef="G09Join" />
+    <bpmn:sequenceFlow id="F_T09_CQ_TCKT_DONE" sourceRef="T09_CQ_TCKT" targetRef="G09Join" />
+    <bpmn:sequenceFlow id="F_T09_CQ_NS_DONE" sourceRef="T09_CQ_NS" targetRef="G09Join" />
+    <bpmn:sequenceFlow id="F11" sourceRef="G09Join" targetRef="T10" />
+    <bpmn:sequenceFlow id="F12" sourceRef="T10" targetRef="T11" />
+    <bpmn:sequenceFlow id="F13" sourceRef="T11" targetRef="G12Split" />
+    <bpmn:sequenceFlow id="F_T12_CQ_KHCN" sourceRef="G12Split" targetRef="T12_CQ_KHCN" />
+    <bpmn:sequenceFlow id="F_T12_CQ_MS" sourceRef="G12Split" targetRef="T12_CQ_MS" />
+    <bpmn:sequenceFlow id="F_T12_CQ_TCKT" sourceRef="G12Split" targetRef="T12_CQ_TCKT" />
+    <bpmn:sequenceFlow id="F_T12_CQ_NS" sourceRef="G12Split" targetRef="T12_CQ_NS" />
+    <bpmn:sequenceFlow id="F_T12_CQ_KHCN_DONE" sourceRef="T12_CQ_KHCN" targetRef="G12Join" />
+    <bpmn:sequenceFlow id="F_T12_CQ_MS_DONE" sourceRef="T12_CQ_MS" targetRef="G12Join" />
+    <bpmn:sequenceFlow id="F_T12_CQ_TCKT_DONE" sourceRef="T12_CQ_TCKT" targetRef="G12Join" />
+    <bpmn:sequenceFlow id="F_T12_CQ_NS_DONE" sourceRef="T12_CQ_NS" targetRef="G12Join" />
+    <bpmn:sequenceFlow id="F14" sourceRef="G12Join" targetRef="T13_GDTT" />
+    <bpmn:sequenceFlow id="Flow_0ae21gs" sourceRef="T13_GDK" targetRef="G14Split" />
+    <bpmn:sequenceFlow id="F_T14_TP_CLKHCN" sourceRef="G14Split" targetRef="T14_TP_CLKHCN" />
+    <bpmn:sequenceFlow id="F_T14_GD_TTMS" sourceRef="G14Split" targetRef="T14_GD_TTMS" />
+    <bpmn:sequenceFlow id="F_T14_TP_NS" sourceRef="G14Split" targetRef="T14_TP_NS" />
+    <bpmn:sequenceFlow id="F_T14_TP_TCKT" sourceRef="G14Split" targetRef="T14_TP_TCKT" />
+    <bpmn:sequenceFlow id="F_T14_TP_CLKHCN_DONE" sourceRef="T14_TP_CLKHCN" targetRef="G14Join" />
+    <bpmn:sequenceFlow id="F_T14_GD_TTMS_DONE" sourceRef="T14_GD_TTMS" targetRef="G14Join" />
+    <bpmn:sequenceFlow id="F_T14_TP_NS_DONE" sourceRef="T14_TP_NS" targetRef="G14Join" />
+    <bpmn:sequenceFlow id="F_T14_TP_TCKT_DONE" sourceRef="T14_TP_TCKT" targetRef="G14Join" />
+    <bpmn:sequenceFlow id="F16" sourceRef="G14Join" targetRef="Activity_0jwr6d0" />
+    <bpmn:sequenceFlow id="F17" sourceRef="T15" targetRef="T16" />
+    <bpmn:sequenceFlow id="F18" sourceRef="T16" targetRef="T17" />
+    <bpmn:sequenceFlow id="F25" sourceRef="T21" targetRef="T22" />
+    <bpmn:sequenceFlow id="F26" sourceRef="T22" targetRef="G23Split" />
+    <bpmn:sequenceFlow id="F_T23_CQ_KHCN" sourceRef="G23Split" targetRef="T23_CQ_KHCN" />
+    <bpmn:sequenceFlow id="F_T23_CQ_MS" sourceRef="G23Split" targetRef="T23_CQ_MS" />
+    <bpmn:sequenceFlow id="F_T23_CQ_TCKT" sourceRef="G23Split" targetRef="T23_CQ_TCKT" />
+    <bpmn:sequenceFlow id="F_T23_CQ_NS" sourceRef="G23Split" targetRef="T23_CQ_NS" />
+    <bpmn:sequenceFlow id="F_T23_CQ_KHCN_DONE" sourceRef="T23_CQ_KHCN" targetRef="G23Join" />
+    <bpmn:sequenceFlow id="F_T23_CQ_MS_DONE" sourceRef="T23_CQ_MS" targetRef="G23Join" />
+    <bpmn:sequenceFlow id="F_T23_CQ_TCKT_DONE" sourceRef="T23_CQ_TCKT" targetRef="G23Join" />
+    <bpmn:sequenceFlow id="F_T23_CQ_NS_DONE" sourceRef="T23_CQ_NS" targetRef="G23Join" />
+    <bpmn:sequenceFlow id="F27" sourceRef="G23Join" targetRef="Load_HDXD_TD" />
+    <bpmn:sequenceFlow id="F28" name="Đạt" sourceRef="G24" targetRef="T25">
+      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=ketQuaDanhGiaT24Result = "DAT"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="F29" sourceRef="T25" targetRef="G26Split" />
+    <bpmn:sequenceFlow id="F_T26_CQ_KHCN" sourceRef="G26Split" targetRef="T26_CQ_KHCN" />
+    <bpmn:sequenceFlow id="F_T26_CQ_MS" sourceRef="G26Split" targetRef="T26_CQ_MS" />
+    <bpmn:sequenceFlow id="F_T26_CQ_TCKT" sourceRef="G26Split" targetRef="T26_CQ_TCKT" />
+    <bpmn:sequenceFlow id="F_T26_CQ_NS" sourceRef="G26Split" targetRef="T26_CQ_NS" />
+    <bpmn:sequenceFlow id="F_T26_CQ_KHCN_DONE" sourceRef="T26_CQ_KHCN" targetRef="G26Join" />
+    <bpmn:sequenceFlow id="F_T26_CQ_MS_DONE" sourceRef="T26_CQ_MS" targetRef="G26Join" />
+    <bpmn:sequenceFlow id="F_T26_CQ_TCKT_DONE" sourceRef="T26_CQ_TCKT" targetRef="G26Join" />
+    <bpmn:sequenceFlow id="F_T26_CQ_NS_DONE" sourceRef="T26_CQ_NS" targetRef="G26Join" />
+    <bpmn:sequenceFlow id="F30" sourceRef="G26Join" targetRef="T27_GDTT" />
+    <bpmn:sequenceFlow id="F31" sourceRef="T27_GDK" targetRef="G28Split" />
+    <bpmn:sequenceFlow id="F_T28_TP_CLKHCN" sourceRef="G28Split" targetRef="T28_TP_CLKHCN" />
+    <bpmn:sequenceFlow id="F_T28_GD_TTMS" sourceRef="G28Split" targetRef="T28_GD_TTMS" />
+    <bpmn:sequenceFlow id="F_T28_TP_NS" sourceRef="G28Split" targetRef="T28_TP_NS" />
+    <bpmn:sequenceFlow id="F_T28_TP_TCKT" sourceRef="G28Split" targetRef="T28_TP_TCKT" />
+    <bpmn:sequenceFlow id="F_T28_TP_CLKHCN_DONE" sourceRef="T28_TP_CLKHCN" targetRef="G28Join" />
+    <bpmn:sequenceFlow id="F_T28_GD_TTMS_DONE" sourceRef="T28_GD_TTMS" targetRef="G28Join" />
+    <bpmn:sequenceFlow id="F_T28_TP_NS_DONE" sourceRef="T28_TP_NS" targetRef="G28Join" />
+    <bpmn:sequenceFlow id="F_T28_TP_TCKT_DONE" sourceRef="T28_TP_TCKT" targetRef="G28Join" />
+    <bpmn:sequenceFlow id="F32" sourceRef="G28Join" targetRef="T29_PTGD_CT" />
+    <bpmn:sequenceFlow id="F05B" sourceRef="T03_PM" targetRef="T04_GDTT" />
+    <bpmn:sequenceFlow id="F06" sourceRef="T04_GDTT" targetRef="T04_GDK" />
+    <bpmn:sequenceFlow id="Flow_00mw9x8" sourceRef="T04_GDK" targetRef="T05" />
+    <bpmn:sequenceFlow id="F07" sourceRef="T05" targetRef="T06" />
+    <bpmn:sequenceFlow id="F08B" sourceRef="Generate_HDXD" targetRef="T07" />
+    <bpmn:sequenceFlow id="Flow_18hoca3" sourceRef="T13_GDTT" targetRef="T13_GDK" />
+    <bpmn:sequenceFlow id="F08" sourceRef="T06" targetRef="Generate_HDXD" />
+    <bpmn:sequenceFlow id="F19" sourceRef="T17" targetRef="G18Split" />
+    <bpmn:sequenceFlow id="F20A" sourceRef="G18Split" targetRef="T18A" />
+    <bpmn:sequenceFlow id="F20B" sourceRef="G18Split" targetRef="T18B" />
+    <bpmn:sequenceFlow id="F21A" sourceRef="T18A" targetRef="G18Join" />
+    <bpmn:sequenceFlow id="F21B" sourceRef="T18B" targetRef="G18Join" />
+    <bpmn:sequenceFlow id="F22" sourceRef="G18Join" targetRef="T19" />
+    <bpmn:sequenceFlow id="F23" sourceRef="T19" targetRef="T20" />
+    <bpmn:sequenceFlow id="F23B" sourceRef="T20" targetRef="Generate_HDXD_TD" />
+    <bpmn:sequenceFlow id="F24" sourceRef="Generate_HDXD_TD" targetRef="T21" />
+    <bpmn:sequenceFlow id="F27B" sourceRef="Load_HDXD_TD" targetRef="T24" />
+    <bpmn:sequenceFlow id="F27C" sourceRef="T24" targetRef="Tinh_DiemTB_T24" />
+    <bpmn:sequenceFlow id="F27D" sourceRef="Tinh_DiemTB_T24" targetRef="Rule_DanhGiaT24" />
+    <bpmn:sequenceFlow id="F27E" sourceRef="Rule_DanhGiaT24" targetRef="G24" />
+    <bpmn:sequenceFlow id="F_T24_KhongDat" name="Không đạt" sourceRef="G24" targetRef="End_KhongThongQua" />
+    <bpmn:sequenceFlow id="F33" sourceRef="T29_TGD_VHT" targetRef="T30" />
+    <bpmn:sequenceFlow id="F34" sourceRef="T30" targetRef="T31" />
+    <bpmn:sequenceFlow id="F35" sourceRef="T31" targetRef="T32" />
+    <bpmn:sequenceFlow id="F36" sourceRef="T32" targetRef="T33" />
+    <bpmn:sequenceFlow id="F37" sourceRef="T33" targetRef="End" />
+    <bpmn:sequenceFlow id="Flow_140tj6z" sourceRef="Activity_0jwr6d0" targetRef="T15" />
+    <bpmn:sequenceFlow id="Flow_1hjf0y8" sourceRef="T27_GDTT" targetRef="T27_GDK" />
+    <bpmn:sequenceFlow id="Flow_0tvm6l8" sourceRef="T29_PTGD_CT" targetRef="T29_TGD_VHT" />
+    <bpmn:userTask id="T03_CQ_NS" name="3. Thẩm định chuyên môn và hoàn chỉnh HSXD dự thảo 2">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="CQ_NS" />
+        <zeebe:formDefinition formKey="bm-02-09-pnx-dt" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F03NS</bpmn:incoming>
+      <bpmn:outgoing>F03NS_DONE</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T03_CQ_MS" name="3. Thẩm định chuyên môn và hoàn chỉnh HSXD dự thảo 2">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="CQ_MS" />
+        <zeebe:formDefinition formKey="bm-02-09-pnx-dt" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F03MS</bpmn:incoming>
+      <bpmn:outgoing>F03MS_DONE</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T09_CQ_KHCN" name="9. Rà soát HSXD dự thảo 3">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="CQ_KHCN" />
+        <zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F_T09_CQ_KHCN</bpmn:incoming>
+      <bpmn:outgoing>F_T09_CQ_KHCN_DONE</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T23_CQ_KHCN" name="23. Thẩm định, rà soát HSXD dự thảo 4">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="CQ_KHCN" />
+        <zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F_T23_CQ_KHCN</bpmn:incoming>
+      <bpmn:outgoing>F_T23_CQ_KHCN_DONE</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T23_CQ_TCKT" name="23. Thẩm định, rà soát HSXD dự thảo 4">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="CQ_TCKT" />
+        <zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F_T23_CQ_TCKT</bpmn:incoming>
+      <bpmn:outgoing>F_T23_CQ_TCKT_DONE</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T26_CQ_KHCN" name="26. Thẩm định, ký rà soát HSXD 5">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="CQ_KHCN" />
+        <zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F_T26_CQ_KHCN</bpmn:incoming>
+      <bpmn:outgoing>F_T26_CQ_KHCN_DONE</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T26_CQ_MS" name="26. Thẩm định, ký rà soát HSXD 5">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="CQ_MS" />
+        <zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F_T26_CQ_MS</bpmn:incoming>
+      <bpmn:outgoing>F_T26_CQ_MS_DONE</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T26_CQ_NS" name="26. Thẩm định, ký rà soát HSXD 5">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="CQ_NS" />
+        <zeebe:formDefinition formKey="phieu-dat-chua-dat" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F_T26_CQ_NS</bpmn:incoming>
+      <bpmn:outgoing>F_T26_CQ_NS_DONE</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T29_PTGD_CT" name="29. Phê duyệt HSXD tại VHT">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+        <zeebe:assignmentDefinition candidateGroups="PTGD_CT" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F32</bpmn:incoming>
+      <bpmn:outgoing>Flow_0tvm6l8</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T28_TP_CLKHCN" name="28. Ký duyệt HSXD tại các cơ quan nghiệp vụ VHT">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="TP_CLKHCN" />
+        <zeebe:formDefinition formKey="phieu-phe-duyet" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F_T28_TP_CLKHCN</bpmn:incoming>
+      <bpmn:outgoing>F_T28_TP_CLKHCN_DONE</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T28_GD_TTMS" name="28. Ký duyệt HSXD tại các cơ quan nghiệp vụ VHT">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="GD_TTMS" />
+        <zeebe:formDefinition formKey="phieu-phe-duyet" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F_T28_GD_TTMS</bpmn:incoming>
+      <bpmn:outgoing>F_T28_GD_TTMS_DONE</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T28_TP_NS" name="28. Ký duyệt HSXD tại các cơ quan nghiệp vụ VHT">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="TP_NS" />
+        <zeebe:formDefinition formKey="phieu-phe-duyet" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F_T28_TP_NS</bpmn:incoming>
+      <bpmn:outgoing>F_T28_TP_NS_DONE</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T28_TP_TCKT" name="28. Ký duyệt HSXD tại các cơ quan nghiệp vụ VHT">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="TP_TCKT" />
+        <zeebe:formDefinition formKey="phieu-phe-duyet" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>F_T28_TP_TCKT</bpmn:incoming>
+      <bpmn:outgoing>F_T28_TP_TCKT_DONE</bpmn:outgoing>
+    </bpmn:userTask>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_RD02_02">
+    <bpmndi:BPMNPlane id="Plane_RD02_02" bpmnElement="Collaboration_RD02_02">
+      <bpmndi:BPMNShape id="Shape_Participant" bpmnElement="Participant_RD02_02" isHorizontal="true">
+        <dc:Bounds x="150" y="100" width="8450" height="2880" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_1muzv4g_di" bpmnElement="Lane_PTGD_PTKHOI" isHorizontal="true">
+        <dc:Bounds x="180" y="1560" width="8420" height="180" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Lane_BGD" bpmnElement="Lane_CH_KHCN" isHorizontal="true">
+        <dc:Bounds x="180" y="260" width="8420" height="160" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Lane_PM" bpmnElement="Lane_PM" isHorizontal="true">
+        <dc:Bounds x="180" y="100" width="8420" height="160" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_1y6q5xx_di" bpmnElement="Lane_CH_MS" isHorizontal="true">
+        <dc:Bounds x="180" y="420" width="8420" height="120" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_0s14p1z_di" bpmnElement="Lane_CH_TCKT" isHorizontal="true">
+        <dc:Bounds x="180" y="540" width="8420" height="120" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_17l4inc_di" bpmnElement="Lane_CQ_NS" isHorizontal="true">
+        <dc:Bounds x="180" y="660" width="8420" height="120" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_1kkauwz_di" bpmnElement="Lane_GDTT" isHorizontal="true">
+        <dc:Bounds x="180" y="780" width="8420" height="120" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Lane_HDXD_CS" bpmnElement="Lane_HDXD_CS" isHorizontal="true">
+        <dc:Bounds x="180" y="1340" width="8420" height="220" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Lane_CQQL" bpmnElement="Lane_CQKHCN" isHorizontal="true">
+        <dc:Bounds x="180" y="1180" width="8420" height="160" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_15xv10x_di" bpmnElement="Lane_PGDK" isHorizontal="true">
+        <dc:Bounds x="180" y="900" width="8420" height="120" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Lane_BTGD" bpmnElement="Lane_BTGD" isHorizontal="true">
+        <dc:Bounds x="180" y="2180" width="8420" height="160" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Lane_TD" bpmnElement="Lane_TD" isHorizontal="true">
+        <dc:Bounds x="180" y="2020" width="8420" height="160" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Lane_LDVHT" bpmnElement="Lane_LDVHT" isHorizontal="true">
+        <dc:Bounds x="180" y="1860" width="8420" height="160" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Lane_TP_TCKT" bpmnElement="Pool_TP_TCKT" isHorizontal="true">
+        <dc:Bounds x="180" y="2820" width="8420" height="160" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Lane_TP_NS" bpmnElement="Pool_TP_NS" isHorizontal="true">
+        <dc:Bounds x="180" y="2660" width="8420" height="160" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Lane_GD_TTMS" bpmnElement="Pool_GD_TTMS" isHorizontal="true">
+        <dc:Bounds x="180" y="2500" width="8420" height="160" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Lane_TP_CLKHCN" bpmnElement="Pool_TP_CLKHCN" isHorizontal="true">
+        <dc:Bounds x="180" y="2340" width="8420" height="160" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_0556pq0_di" bpmnElement="Lane_PTGD_VHT" isHorizontal="true">
+        <dc:Bounds x="180" y="1740" width="8420" height="120" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Start" bpmnElement="Start">
+        <dc:Bounds x="230" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="206" y="198" width="85" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T01" bpmnElement="T01">
+        <dc:Bounds x="390" y="140" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T02" bpmnElement="T02">
+        <dc:Bounds x="550" y="140" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Check" bpmnElement="Check">
+        <dc:Bounds x="710" y="140" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_GCheck" bpmnElement="GCheck" isMarkerVisible="true">
+        <dc:Bounds x="870" y="155" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="861" y="205" width="69" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_AI_Summarize" bpmnElement="AI_Summarize">
+        <dc:Bounds x="930" y="160" width="35" height="40" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_G03Split" bpmnElement="G03Split" isMarkerVisible="true">
+        <dc:Bounds x="970" y="155" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="954" y="118" width="81" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T03_CQ_KHCN" bpmnElement="T03_CQ_KHCN">
+        <dc:Bounds x="1050" y="280" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_G03Join" bpmnElement="G03Join" isMarkerVisible="true">
+        <dc:Bounds x="1220" y="155" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1203" y="118" width="84" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T08" bpmnElement="T08">
+        <dc:Bounds x="1830" y="140" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_G09Split" bpmnElement="G09Split" isMarkerVisible="true">
+        <dc:Bounds x="1990" y="155" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1977" y="118" width="75" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_G09Join" bpmnElement="G09Join" isMarkerVisible="true">
+        <dc:Bounds x="2310" y="155" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2295" y="118" width="79" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T11" bpmnElement="T11">
+        <dc:Bounds x="2630" y="140" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_G12Split" bpmnElement="G12Split" isMarkerVisible="true">
+        <dc:Bounds x="2790" y="155" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2775" y="118" width="80" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_G12Join" bpmnElement="G12Join" isMarkerVisible="true">
+        <dc:Bounds x="3110" y="155" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="3100" y="118" width="69" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_G14Split" bpmnElement="G14Split" isMarkerVisible="true">
+        <dc:Bounds x="3430" y="315" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="3418" y="265" width="73" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_G14Join" bpmnElement="G14Join" isMarkerVisible="true">
+        <dc:Bounds x="3750" y="315" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="3732" y="278" width="86" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T16" bpmnElement="T16">
+        <dc:Bounds x="4070" y="140" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T22" bpmnElement="T22">
+        <dc:Bounds x="5510" y="140" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_G23Split" bpmnElement="G23Split" isMarkerVisible="true">
+        <dc:Bounds x="5670" y="155" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="5654" y="118" width="81" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_G23Join" bpmnElement="G23Join" isMarkerVisible="true">
+        <dc:Bounds x="5990" y="155" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="5979" y="118" width="71" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T25" bpmnElement="T25">
+        <dc:Bounds x="6310" y="140" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_G26Split" bpmnElement="G26Split" isMarkerVisible="true">
+        <dc:Bounds x="6470" y="155" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="6454" y="118" width="81" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_G26Join" bpmnElement="G26Join" isMarkerVisible="true">
+        <dc:Bounds x="6790" y="155" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="6779" y="118" width="71" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_G28Split" bpmnElement="G28Split" isMarkerVisible="true">
+        <dc:Bounds x="7110" y="315" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="7094" y="278" width="81" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_G28Join" bpmnElement="G28Join" isMarkerVisible="true">
+        <dc:Bounds x="7430" y="315" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="7412" y="291" width="86" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T03_PM" bpmnElement="T03_PM">
+        <dc:Bounds x="1350" y="140" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T03_CQ_TCKT" bpmnElement="T03_CQ_TCKT">
+        <dc:Bounds x="1050" y="570" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T04" bpmnElement="T04_GDTT">
+        <dc:Bounds x="1350" y="800" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T05" bpmnElement="T05">
+        <dc:Bounds x="1350" y="1220" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T07" bpmnElement="T07">
+        <dc:Bounds x="1670" y="1380" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T10" bpmnElement="T10">
+        <dc:Bounds x="2470" y="1380" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_18ayezv_di" bpmnElement="T04_GDK">
+        <dc:Bounds x="1360" y="930" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T09_CQ_MS" bpmnElement="T09_CQ_MS">
+        <dc:Bounds x="2110" y="450" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T09_CQ_TCKT" bpmnElement="T09_CQ_TCKT">
+        <dc:Bounds x="2100" y="570" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T09_CQ_NS" bpmnElement="T09_CQ_NS">
+        <dc:Bounds x="2100" y="690" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T12_CQ_TCKT" bpmnElement="T12_CQ_TCKT">
+        <dc:Bounds x="2910" y="570" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T12_CQ_NS" bpmnElement="T12_CQ_NS">
+        <dc:Bounds x="2910" y="690" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T12_CQ_MS" bpmnElement="T12_CQ_MS">
+        <dc:Bounds x="2910" y="440" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T12_CQ_KHCN" bpmnElement="T12_CQ_KHCN">
+        <dc:Bounds x="2910" y="280" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T13" bpmnElement="T13_GDTT">
+        <dc:Bounds x="3220" y="800" width="120" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1k1ntie_di" bpmnElement="T13_GDK">
+        <dc:Bounds x="3230" y="930" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T06" bpmnElement="T06">
+        <dc:Bounds x="1510" y="1900" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Generate_HDXD" bpmnElement="Generate_HDXD">
+        <dc:Bounds x="1670" y="1900" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T14_TP_CLKHCN" bpmnElement="T14_TP_CLKHCN">
+        <dc:Bounds x="3590" y="2380" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T14_GD_TTMS" bpmnElement="T14_GD_TTMS">
+        <dc:Bounds x="3590" y="2540" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T14_TP_NS" bpmnElement="T14_TP_NS">
+        <dc:Bounds x="3590" y="2700" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T14_TP_TCKT" bpmnElement="T14_TP_TCKT">
+        <dc:Bounds x="3590" y="2860" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T17" bpmnElement="T17">
+        <dc:Bounds x="4230" y="2060" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_G18Split" bpmnElement="G18Split" isMarkerVisible="true">
+        <dc:Bounds x="4390" y="2075" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="4379" y="2125" width="72" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T18A" bpmnElement="T18A">
+        <dc:Bounds x="4550" y="2060" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T18B" bpmnElement="T18B">
+        <dc:Bounds x="4710" y="2060" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_G18Join" bpmnElement="G18Join" isMarkerVisible="true">
+        <dc:Bounds x="4870" y="2075" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T19" bpmnElement="T19">
+        <dc:Bounds x="5030" y="2060" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T20" bpmnElement="T20">
+        <dc:Bounds x="5190" y="2220" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Generate_HDXD_TD" bpmnElement="Generate_HDXD_TD">
+        <dc:Bounds x="5350" y="2220" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T21" bpmnElement="T21">
+        <dc:Bounds x="5350" y="2060" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Load_HDXD_TD" bpmnElement="Load_HDXD_TD">
+        <dc:Bounds x="6150" y="2060" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T24" bpmnElement="T24">
+        <dc:Bounds x="6310" y="2060" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Tinh_DiemTB_T24" bpmnElement="Tinh_DiemTB_T24">
+        <dc:Bounds x="6470" y="2060" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Rule_DanhGiaT24" bpmnElement="Rule_DanhGiaT24">
+        <dc:Bounds x="6630" y="2060" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_G24" bpmnElement="G24" isMarkerVisible="true">
+        <dc:Bounds x="6810" y="2075" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="6870" y="2087" width="65" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End_KhongThongQua" bpmnElement="End_KhongThongQua">
+        <dc:Bounds x="6817" y="2200" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="6796" y="2236" width="79" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T30" bpmnElement="T30">
+        <dc:Bounds x="7750" y="2060" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T31" bpmnElement="T31">
+        <dc:Bounds x="7910" y="2060" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T32" bpmnElement="T32">
+        <dc:Bounds x="8070" y="2060" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T33" bpmnElement="T33">
+        <dc:Bounds x="8230" y="2220" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_End" bpmnElement="End">
+        <dc:Bounds x="8390" y="2242" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="8369" y="2278" width="79" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T15" bpmnElement="T15">
+        <dc:Bounds x="3910" y="2020" width="120" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0jwr6d0_di" bpmnElement="Activity_0jwr6d0">
+        <dc:Bounds x="3800" y="1900" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T23_CQ_MS" bpmnElement="T23_CQ_MS">
+        <dc:Bounds x="5800" y="450" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T23_CQ_NS" bpmnElement="T23_CQ_NS">
+        <dc:Bounds x="5800" y="680" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T26_CQ_TCKT" bpmnElement="T26_CQ_TCKT">
+        <dc:Bounds x="6610" y="570" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1qc2st3_di" bpmnElement="T27_GDTT">
+        <dc:Bounds x="6860" y="680" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T27" bpmnElement="T27_GDK">
+        <dc:Bounds x="6850" y="800" width="120" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T29" bpmnElement="T29_TGD_VHT">
+        <dc:Bounds x="7520" y="1900" width="120" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T03_CQ_NS" bpmnElement="T03_CQ_NS">
+        <dc:Bounds x="1060" y="690" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T03_CQ_MS" bpmnElement="T03_CQ_MS">
+        <dc:Bounds x="1050" y="440" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T09_CQ_KHCN" bpmnElement="T09_CQ_KHCN">
+        <dc:Bounds x="2110" y="290" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T23_CQ_KHCN" bpmnElement="T23_CQ_KHCN">
+        <dc:Bounds x="5800" y="300" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T23_CQ_TCKT" bpmnElement="T23_CQ_TCKT">
+        <dc:Bounds x="5800" y="560" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T26_CQ_KHCN" bpmnElement="T26_CQ_KHCN">
+        <dc:Bounds x="6600" y="300" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T26_CQ_MS" bpmnElement="T26_CQ_MS">
+        <dc:Bounds x="6610" y="440" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T26_CQ_NS" bpmnElement="T26_CQ_NS">
+        <dc:Bounds x="6610" y="680" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0z8ytea_di" bpmnElement="T29_PTGD_CT">
+        <dc:Bounds x="7530" y="1760" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T28_TP_CLKHCN" bpmnElement="T28_TP_CLKHCN">
+        <dc:Bounds x="7240" y="2380" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T28_GD_TTMS" bpmnElement="T28_GD_TTMS">
+        <dc:Bounds x="7240" y="2540" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T28_TP_NS" bpmnElement="T28_TP_NS">
+        <dc:Bounds x="7240" y="2700" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_T28_TP_TCKT" bpmnElement="T28_TP_TCKT">
+        <dc:Bounds x="7240" y="2860" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_F01" bpmnElement="F01">
+        <di:waypoint x="266" y="180" />
+        <di:waypoint x="390" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F02" bpmnElement="F02">
+        <di:waypoint x="510" y="180" />
+        <di:waypoint x="550" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_FCheckFail" bpmnElement="FCheckFail">
+        <di:waypoint x="895" y="155" />
+        <di:waypoint x="895" y="110" />
+        <di:waypoint x="610" y="110" />
+        <di:waypoint x="610" y="140" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="709" y="85" width="88" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F03" bpmnElement="F03">
+        <di:waypoint x="670" y="180" />
+        <di:waypoint x="710" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F04" bpmnElement="F04">
+        <di:waypoint x="830" y="180" />
+        <di:waypoint x="870" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_FCheckOK" bpmnElement="FCheckOK">
+        <di:waypoint x="920" y="180" />
+        <di:waypoint x="930" y="180" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="912" y="160" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_AISummary" bpmnElement="F_AISummary">
+        <di:waypoint x="965" y="180" />
+        <di:waypoint x="970" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F03KHCN" bpmnElement="F03KHCN">
+        <di:waypoint x="995" y="205" />
+        <di:waypoint x="995" y="320" />
+        <di:waypoint x="1050" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F03MS" bpmnElement="F03MS">
+        <di:waypoint x="995" y="205" />
+        <di:waypoint x="995" y="480" />
+        <di:waypoint x="1050" y="480" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F03TCKT" bpmnElement="F03TCKT">
+        <di:waypoint x="995" y="205" />
+        <di:waypoint x="995" y="610" />
+        <di:waypoint x="1050" y="610" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F03NS" bpmnElement="F03NS">
+        <di:waypoint x="995" y="205" />
+        <di:waypoint x="995" y="730" />
+        <di:waypoint x="1060" y="730" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F03KHCN_DONE" bpmnElement="F03KHCN_DONE">
+        <di:waypoint x="1190" y="320" />
+        <di:waypoint x="1245" y="320" />
+        <di:waypoint x="1245" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F03MS_DONE" bpmnElement="F03MS_DONE">
+        <di:waypoint x="1190" y="480" />
+        <di:waypoint x="1245" y="480" />
+        <di:waypoint x="1245" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F03TCKT_DONE" bpmnElement="F03TCKT_DONE">
+        <di:waypoint x="1190" y="610" />
+        <di:waypoint x="1245" y="610" />
+        <di:waypoint x="1245" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F03NS_DONE" bpmnElement="F03NS_DONE">
+        <di:waypoint x="1200" y="730" />
+        <di:waypoint x="1245" y="730" />
+        <di:waypoint x="1245" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F05" bpmnElement="F05">
+        <di:waypoint x="1270" y="180" />
+        <di:waypoint x="1350" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F09" bpmnElement="F09">
+        <di:waypoint x="1730" y="1380" />
+        <di:waypoint x="1740" y="180" />
+        <di:waypoint x="1830" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F10" bpmnElement="F10">
+        <di:waypoint x="1950" y="180" />
+        <di:waypoint x="1990" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T09_CQ_KHCN" bpmnElement="F_T09_CQ_KHCN">
+        <di:waypoint x="2015" y="205" />
+        <di:waypoint x="2015" y="330" />
+        <di:waypoint x="2110" y="330" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T09_CQ_MS" bpmnElement="F_T09_CQ_MS">
+        <di:waypoint x="2015" y="205" />
+        <di:waypoint x="2015" y="490" />
+        <di:waypoint x="2110" y="490" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T09_CQ_TCKT" bpmnElement="F_T09_CQ_TCKT">
+        <di:waypoint x="2015" y="205" />
+        <di:waypoint x="2015" y="610" />
+        <di:waypoint x="2100" y="610" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T09_CQ_NS" bpmnElement="F_T09_CQ_NS">
+        <di:waypoint x="2015" y="205" />
+        <di:waypoint x="2015" y="730" />
+        <di:waypoint x="2100" y="730" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T09_CQ_KHCN_DONE" bpmnElement="F_T09_CQ_KHCN_DONE">
+        <di:waypoint x="2250" y="330" />
+        <di:waypoint x="2335" y="330" />
+        <di:waypoint x="2335" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T09_CQ_MS_DONE" bpmnElement="F_T09_CQ_MS_DONE">
+        <di:waypoint x="2250" y="490" />
+        <di:waypoint x="2335" y="490" />
+        <di:waypoint x="2335" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T09_CQ_TCKT_DONE" bpmnElement="F_T09_CQ_TCKT_DONE">
+        <di:waypoint x="2240" y="610" />
+        <di:waypoint x="2335" y="610" />
+        <di:waypoint x="2335" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T09_CQ_NS_DONE" bpmnElement="F_T09_CQ_NS_DONE">
+        <di:waypoint x="2240" y="730" />
+        <di:waypoint x="2335" y="730" />
+        <di:waypoint x="2335" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F11" bpmnElement="F11">
+        <di:waypoint x="2360" y="180" />
+        <di:waypoint x="2420" y="180" />
+        <di:waypoint x="2420" y="1420" />
+        <di:waypoint x="2470" y="1420" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F12" bpmnElement="F12">
+        <di:waypoint x="2540" y="1380" />
+        <di:waypoint x="2540" y="180" />
+        <di:waypoint x="2630" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F13" bpmnElement="F13">
+        <di:waypoint x="2750" y="180" />
+        <di:waypoint x="2790" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T12_CQ_KHCN" bpmnElement="F_T12_CQ_KHCN">
+        <di:waypoint x="2815" y="205" />
+        <di:waypoint x="2815" y="320" />
+        <di:waypoint x="2910" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T12_CQ_MS" bpmnElement="F_T12_CQ_MS">
+        <di:waypoint x="2815" y="205" />
+        <di:waypoint x="2815" y="480" />
+        <di:waypoint x="2910" y="480" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T12_CQ_TCKT" bpmnElement="F_T12_CQ_TCKT">
+        <di:waypoint x="2815" y="205" />
+        <di:waypoint x="2815" y="610" />
+        <di:waypoint x="2910" y="610" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T12_CQ_NS" bpmnElement="F_T12_CQ_NS">
+        <di:waypoint x="2815" y="205" />
+        <di:waypoint x="2815" y="730" />
+        <di:waypoint x="2910" y="730" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T12_CQ_KHCN_DONE" bpmnElement="F_T12_CQ_KHCN_DONE">
+        <di:waypoint x="3050" y="320" />
+        <di:waypoint x="3135" y="320" />
+        <di:waypoint x="3135" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T12_CQ_MS_DONE" bpmnElement="F_T12_CQ_MS_DONE">
+        <di:waypoint x="3050" y="480" />
+        <di:waypoint x="3135" y="480" />
+        <di:waypoint x="3135" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T12_CQ_TCKT_DONE" bpmnElement="F_T12_CQ_TCKT_DONE">
+        <di:waypoint x="3050" y="610" />
+        <di:waypoint x="3135" y="610" />
+        <di:waypoint x="3135" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T12_CQ_NS_DONE" bpmnElement="F_T12_CQ_NS_DONE">
+        <di:waypoint x="3050" y="730" />
+        <di:waypoint x="3135" y="730" />
+        <di:waypoint x="3135" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F14" bpmnElement="F14">
+        <di:waypoint x="3160" y="180" />
+        <di:waypoint x="3280" y="180" />
+        <di:waypoint x="3280" y="800" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0ae21gs_di" bpmnElement="Flow_0ae21gs">
+        <di:waypoint x="3330" y="970" />
+        <di:waypoint x="3380" y="970" />
+        <di:waypoint x="3380" y="340" />
+        <di:waypoint x="3430" y="340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T14_TP_CLKHCN" bpmnElement="F_T14_TP_CLKHCN">
+        <di:waypoint x="3455" y="365" />
+        <di:waypoint x="3455" y="2420" />
+        <di:waypoint x="3590" y="2420" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T14_GD_TTMS" bpmnElement="F_T14_GD_TTMS">
+        <di:waypoint x="3455" y="365" />
+        <di:waypoint x="3455" y="2580" />
+        <di:waypoint x="3590" y="2580" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T14_TP_NS" bpmnElement="F_T14_TP_NS">
+        <di:waypoint x="3455" y="365" />
+        <di:waypoint x="3455" y="2740" />
+        <di:waypoint x="3590" y="2740" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T14_TP_TCKT" bpmnElement="F_T14_TP_TCKT">
+        <di:waypoint x="3455" y="365" />
+        <di:waypoint x="3455" y="2900" />
+        <di:waypoint x="3590" y="2900" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T14_TP_CLKHCN_DONE" bpmnElement="F_T14_TP_CLKHCN_DONE">
+        <di:waypoint x="3730" y="2420" />
+        <di:waypoint x="3775" y="2420" />
+        <di:waypoint x="3775" y="365" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T14_GD_TTMS_DONE" bpmnElement="F_T14_GD_TTMS_DONE">
+        <di:waypoint x="3730" y="2580" />
+        <di:waypoint x="3775" y="2580" />
+        <di:waypoint x="3775" y="365" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T14_TP_NS_DONE" bpmnElement="F_T14_TP_NS_DONE">
+        <di:waypoint x="3730" y="2740" />
+        <di:waypoint x="3775" y="2740" />
+        <di:waypoint x="3775" y="365" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T14_TP_TCKT_DONE" bpmnElement="F_T14_TP_TCKT_DONE">
+        <di:waypoint x="3730" y="2900" />
+        <di:waypoint x="3775" y="2900" />
+        <di:waypoint x="3775" y="365" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F16" bpmnElement="F16">
+        <di:waypoint x="3800" y="340" />
+        <di:waypoint x="3850" y="340" />
+        <di:waypoint x="3850" y="1900" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F17" bpmnElement="F17">
+        <di:waypoint x="3990" y="2020" />
+        <di:waypoint x="3990" y="180" />
+        <di:waypoint x="4070" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F18" bpmnElement="F18">
+        <di:waypoint x="4190" y="180" />
+        <di:waypoint x="4290" y="180" />
+        <di:waypoint x="4290" y="2060" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F25" bpmnElement="F25">
+        <di:waypoint x="5410" y="2060" />
+        <di:waypoint x="5410" y="180" />
+        <di:waypoint x="5510" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F26" bpmnElement="F26">
+        <di:waypoint x="5630" y="180" />
+        <di:waypoint x="5670" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T23_CQ_KHCN" bpmnElement="F_T23_CQ_KHCN">
+        <di:waypoint x="5695" y="205" />
+        <di:waypoint x="5695" y="340" />
+        <di:waypoint x="5800" y="340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T23_CQ_MS" bpmnElement="F_T23_CQ_MS">
+        <di:waypoint x="5695" y="205" />
+        <di:waypoint x="5695" y="490" />
+        <di:waypoint x="5800" y="490" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T23_CQ_TCKT" bpmnElement="F_T23_CQ_TCKT">
+        <di:waypoint x="5695" y="205" />
+        <di:waypoint x="5695" y="600" />
+        <di:waypoint x="5800" y="600" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T23_CQ_NS" bpmnElement="F_T23_CQ_NS">
+        <di:waypoint x="5695" y="205" />
+        <di:waypoint x="5695" y="720" />
+        <di:waypoint x="5800" y="720" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T23_CQ_KHCN_DONE" bpmnElement="F_T23_CQ_KHCN_DONE">
+        <di:waypoint x="5940" y="340" />
+        <di:waypoint x="6015" y="340" />
+        <di:waypoint x="6015" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T23_CQ_MS_DONE" bpmnElement="F_T23_CQ_MS_DONE">
+        <di:waypoint x="5940" y="490" />
+        <di:waypoint x="6015" y="490" />
+        <di:waypoint x="6015" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T23_CQ_TCKT_DONE" bpmnElement="F_T23_CQ_TCKT_DONE">
+        <di:waypoint x="5940" y="600" />
+        <di:waypoint x="6015" y="600" />
+        <di:waypoint x="6015" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T23_CQ_NS_DONE" bpmnElement="F_T23_CQ_NS_DONE">
+        <di:waypoint x="5940" y="720" />
+        <di:waypoint x="6015" y="720" />
+        <di:waypoint x="6015" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F27" bpmnElement="F27">
+        <di:waypoint x="6040" y="180" />
+        <di:waypoint x="6080" y="180" />
+        <di:waypoint x="6080" y="2100" />
+        <di:waypoint x="6150" y="2100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F28" bpmnElement="F28">
+        <di:waypoint x="6835" y="2075" />
+        <di:waypoint x="6835" y="1970" />
+        <di:waypoint x="6400" y="1970" />
+        <di:waypoint x="6400" y="220" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="6383" y="1061" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F29" bpmnElement="F29">
+        <di:waypoint x="6430" y="180" />
+        <di:waypoint x="6470" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T26_CQ_KHCN" bpmnElement="F_T26_CQ_KHCN">
+        <di:waypoint x="6520" y="180" />
+        <di:waypoint x="6560" y="180" />
+        <di:waypoint x="6560" y="340" />
+        <di:waypoint x="6600" y="340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T26_CQ_MS" bpmnElement="F_T26_CQ_MS">
+        <di:waypoint x="6495" y="205" />
+        <di:waypoint x="6495" y="480" />
+        <di:waypoint x="6610" y="480" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T26_CQ_TCKT" bpmnElement="F_T26_CQ_TCKT">
+        <di:waypoint x="6495" y="205" />
+        <di:waypoint x="6495" y="610" />
+        <di:waypoint x="6610" y="610" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T26_CQ_NS" bpmnElement="F_T26_CQ_NS">
+        <di:waypoint x="6495" y="205" />
+        <di:waypoint x="6495" y="720" />
+        <di:waypoint x="6610" y="720" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T26_CQ_KHCN_DONE" bpmnElement="F_T26_CQ_KHCN_DONE">
+        <di:waypoint x="6740" y="340" />
+        <di:waypoint x="6815" y="340" />
+        <di:waypoint x="6815" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T26_CQ_MS_DONE" bpmnElement="F_T26_CQ_MS_DONE">
+        <di:waypoint x="6750" y="480" />
+        <di:waypoint x="6815" y="480" />
+        <di:waypoint x="6815" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T26_CQ_TCKT_DONE" bpmnElement="F_T26_CQ_TCKT_DONE">
+        <di:waypoint x="6750" y="610" />
+        <di:waypoint x="6815" y="610" />
+        <di:waypoint x="6815" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T26_CQ_NS_DONE" bpmnElement="F_T26_CQ_NS_DONE">
+        <di:waypoint x="6750" y="720" />
+        <di:waypoint x="6815" y="720" />
+        <di:waypoint x="6815" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F30" bpmnElement="F30">
+        <di:waypoint x="6840" y="180" />
+        <di:waypoint x="6910" y="180" />
+        <di:waypoint x="6910" y="680" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F31" bpmnElement="F31">
+        <di:waypoint x="6970" y="840" />
+        <di:waypoint x="7070" y="840" />
+        <di:waypoint x="7070" y="340" />
+        <di:waypoint x="7110" y="340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T28_TP_CLKHCN" bpmnElement="F_T28_TP_CLKHCN">
+        <di:waypoint x="7135" y="365" />
+        <di:waypoint x="7135" y="2420" />
+        <di:waypoint x="7240" y="2420" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T28_GD_TTMS" bpmnElement="F_T28_GD_TTMS">
+        <di:waypoint x="7135" y="365" />
+        <di:waypoint x="7135" y="2580" />
+        <di:waypoint x="7240" y="2580" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T28_TP_NS" bpmnElement="F_T28_TP_NS">
+        <di:waypoint x="7135" y="365" />
+        <di:waypoint x="7135" y="2740" />
+        <di:waypoint x="7240" y="2740" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T28_TP_TCKT" bpmnElement="F_T28_TP_TCKT">
+        <di:waypoint x="7135" y="365" />
+        <di:waypoint x="7135" y="2900" />
+        <di:waypoint x="7240" y="2900" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T28_TP_CLKHCN_DONE" bpmnElement="F_T28_TP_CLKHCN_DONE">
+        <di:waypoint x="7380" y="2420" />
+        <di:waypoint x="7455" y="2420" />
+        <di:waypoint x="7455" y="365" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T28_GD_TTMS_DONE" bpmnElement="F_T28_GD_TTMS_DONE">
+        <di:waypoint x="7380" y="2580" />
+        <di:waypoint x="7455" y="2580" />
+        <di:waypoint x="7455" y="365" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T28_TP_NS_DONE" bpmnElement="F_T28_TP_NS_DONE">
+        <di:waypoint x="7380" y="2740" />
+        <di:waypoint x="7455" y="2740" />
+        <di:waypoint x="7455" y="365" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T28_TP_TCKT_DONE" bpmnElement="F_T28_TP_TCKT_DONE">
+        <di:waypoint x="7380" y="2900" />
+        <di:waypoint x="7455" y="2900" />
+        <di:waypoint x="7455" y="365" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F32" bpmnElement="F32">
+        <di:waypoint x="7480" y="340" />
+        <di:waypoint x="7580" y="340" />
+        <di:waypoint x="7580" y="1760" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F05B" bpmnElement="F05B">
+        <di:waypoint x="1410" y="220" />
+        <di:waypoint x="1410" y="800" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F06" bpmnElement="F06">
+        <di:waypoint x="1410" y="880" />
+        <di:waypoint x="1410" y="930" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_00mw9x8_di" bpmnElement="Flow_00mw9x8">
+        <di:waypoint x="1410" y="1010" />
+        <di:waypoint x="1410" y="1220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F07" bpmnElement="F07">
+        <di:waypoint x="1410" y="1300" />
+        <di:waypoint x="1410" y="1940" />
+        <di:waypoint x="1510" y="1940" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F08B" bpmnElement="F08B">
+        <di:waypoint x="1740" y="1900" />
+        <di:waypoint x="1740" y="1460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_18hoca3_di" bpmnElement="Flow_18hoca3">
+        <di:waypoint x="3280" y="880" />
+        <di:waypoint x="3280" y="930" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F08" bpmnElement="F08">
+        <di:waypoint x="1630" y="1940" />
+        <di:waypoint x="1670" y="1940" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F19" bpmnElement="F19">
+        <di:waypoint x="4350" y="2100" />
+        <di:waypoint x="4390" y="2100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F20A" bpmnElement="F20A">
+        <di:waypoint x="4440" y="2100" />
+        <di:waypoint x="4550" y="2100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F20B" bpmnElement="F20B">
+        <di:waypoint x="4415" y="2075" />
+        <di:waypoint x="4415" y="2030" />
+        <di:waypoint x="4770" y="2030" />
+        <di:waypoint x="4770" y="2060" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F21A" bpmnElement="F21A">
+        <di:waypoint x="4610" y="2140" />
+        <di:waypoint x="4610" y="2170" />
+        <di:waypoint x="4895" y="2170" />
+        <di:waypoint x="4895" y="2125" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F21B" bpmnElement="F21B">
+        <di:waypoint x="4830" y="2100" />
+        <di:waypoint x="4870" y="2100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F22" bpmnElement="F22">
+        <di:waypoint x="4920" y="2100" />
+        <di:waypoint x="5030" y="2100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F23" bpmnElement="F23">
+        <di:waypoint x="5150" y="2100" />
+        <di:waypoint x="5170" y="2100" />
+        <di:waypoint x="5170" y="2260" />
+        <di:waypoint x="5190" y="2260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F23B" bpmnElement="F23B">
+        <di:waypoint x="5310" y="2260" />
+        <di:waypoint x="5350" y="2260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F24" bpmnElement="F24">
+        <di:waypoint x="5410" y="2220" />
+        <di:waypoint x="5410" y="2140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F27B" bpmnElement="F27B">
+        <di:waypoint x="6270" y="2100" />
+        <di:waypoint x="6310" y="2100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F27C" bpmnElement="F27C">
+        <di:waypoint x="6430" y="2100" />
+        <di:waypoint x="6470" y="2100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F27D" bpmnElement="F27D">
+        <di:waypoint x="6590" y="2100" />
+        <di:waypoint x="6630" y="2100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F27E" bpmnElement="F27E">
+        <di:waypoint x="6750" y="2100" />
+        <di:waypoint x="6810" y="2100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F_T24_KhongDat" bpmnElement="F_T24_KhongDat">
+        <di:waypoint x="6835" y="2125" />
+        <di:waypoint x="6835" y="2200" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="6825" y="2153" width="51" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F33" bpmnElement="F33">
+        <di:waypoint x="7580" y="1980" />
+        <di:waypoint x="7580" y="2100" />
+        <di:waypoint x="7750" y="2100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F34" bpmnElement="F34">
+        <di:waypoint x="7870" y="2100" />
+        <di:waypoint x="7910" y="2100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F35" bpmnElement="F35">
+        <di:waypoint x="8030" y="2100" />
+        <di:waypoint x="8070" y="2100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F36" bpmnElement="F36">
+        <di:waypoint x="8130" y="2140" />
+        <di:waypoint x="8130" y="2260" />
+        <di:waypoint x="8230" y="2260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_F37" bpmnElement="F37">
+        <di:waypoint x="8350" y="2260" />
+        <di:waypoint x="8390" y="2260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_140tj6z_di" bpmnElement="Flow_140tj6z">
+        <di:waypoint x="3850" y="1980" />
+        <di:waypoint x="3850" y="2060" />
+        <di:waypoint x="3910" y="2060" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1hjf0y8_di" bpmnElement="Flow_1hjf0y8">
+        <di:waypoint x="6910" y="760" />
+        <di:waypoint x="6910" y="800" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0tvm6l8_di" bpmnElement="Flow_0tvm6l8">
+        <di:waypoint x="7580" y="1840" />
+        <di:waypoint x="7580" y="1900" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
+

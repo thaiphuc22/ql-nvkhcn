@@ -1,0 +1,122 @@
+<div class="fl-page">
+  <div class="fl-header">
+    <h2>
+      <span nz-icon nzType="form" class="fl-header-icon"></span>
+      Thư viện biểu mẫu (eForm)
+    </h2>
+    <button nz-button nzType="primary" (click)="openCreate()">
+      <span nz-icon nzType="plus"></span>
+      Tạo biểu mẫu
+    </button>
+  </div>
+
+  <div nz-row [nzGutter]="12" class="fl-stats">
+    <div nz-col [nzXs]="24" [nzSm]="8">
+      <div class="fl-stat-card">
+        <div class="fl-stat-value">{{ list().length }}</div>
+        <div class="fl-stat-label">Tổng biểu mẫu</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fl-card">
+    <nz-table #table [nzData]="list()" [nzLoading]="loading()" nzSize="middle" [nzShowPagination]="list().length > 10">
+      <thead>
+        <tr>
+          <th>Biểu mẫu</th>
+          <th nzWidth="170px">Mã (formKey)</th>
+          <th nzWidth="120px">Loại</th>
+          <th nzWidth="100px" nzAlign="center">Số trường</th>
+          <th nzWidth="220px">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of table.data; track r.key) {
+          <tr>
+            <td>
+              <div class="fl-form-name">{{ r.ten }}</div>
+              <div class="fl-form-desc">{{ r.moTa }}</div>
+            </td>
+            <td><code>{{ r.key }}</code></td>
+            <td>{{ r.loai ?? '—' }}</td>
+            <td nzAlign="center">{{ countFields(r.schema) }}</td>
+            <td>
+              <button nz-button nzSize="small" nz-tooltip nzTooltipTitle="Xem trước" (click)="preview.set(r)">
+                <span nz-icon nzType="eye"></span>
+              </button>
+              <button nz-button nzSize="small" nz-tooltip nzTooltipTitle="Thiết kế trường (designer)" (click)="openDesigner(r)">
+                <span nz-icon nzType="edit"></span>
+                Thiết kế
+              </button>
+              <button
+                nz-button
+                nzSize="small"
+                nzDanger
+                nz-tooltip
+                nzTooltipTitle="Xoá"
+                nz-popconfirm
+                nzPopconfirmTitle="Xoá biểu mẫu này? Thao tác này không thể hoàn tác."
+                nzOkText="Xoá"
+                nzCancelText="Huỷ"
+                (nzOnConfirm)="removeForm(r)"
+              >
+                <span nz-icon nzType="delete"></span>
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+  </div>
+
+  <!-- Tạo biểu mẫu -->
+  <nz-modal
+    [nzVisible]="createOpen()"
+    nzTitle="Tạo biểu mẫu mới"
+    nzOkText="Tạo & mở designer"
+    nzCancelText="Huỷ"
+    [nzOkLoading]="creating()"
+    (nzOnOk)="submitCreate()"
+    (nzOnCancel)="createOpen.set(false)"
+  >
+    <ng-container *nzModalContent>
+      <div class="fl-form">
+        <label>Tên biểu mẫu <span class="fl-required">*</span></label>
+        <input nz-input placeholder="VD: Phiếu đánh giá tiến độ" [ngModel]="formTen()" (ngModelChange)="formTen.set($event)" />
+        <label>Mã (formKey)</label>
+        <input
+          nz-input
+          placeholder="tự sinh, vd: phieu-danh-gia-tien-do"
+          [ngModel]="formKey()"
+          (ngModelChange)="formKey.set($event)"
+        />
+        <label>Loại</label>
+        <nz-select nzAllowClear placeholder="Chọn loại" [ngModel]="formLoai()" (ngModelChange)="formLoai.set($event)">
+          @for (l of loaiOptions; track l) {
+            <nz-option [nzLabel]="l" [nzValue]="l"></nz-option>
+          }
+        </nz-select>
+        <label>Mô tả</label>
+        <textarea nz-input rows="2" placeholder="Mô tả ngắn mục đích biểu mẫu" [ngModel]="formMoTa()" (ngModelChange)="formMoTa.set($event)"></textarea>
+      </div>
+    </ng-container>
+  </nz-modal>
+
+  <!-- Xem trước -->
+  <nz-modal
+    [nzVisible]="!!preview()"
+    [nzTitle]="'Xem trước — ' + (preview()?.ten ?? '')"
+    [nzWidth]="640"
+    [nzFooter]="flPreviewFooter"
+    (nzOnCancel)="preview.set(null)"
+  >
+    <ng-container *nzModalContent>
+      @if (preview(); as p) {
+        <app-form-renderer [schema]="p.schema"></app-form-renderer>
+      }
+    </ng-container>
+  </nz-modal>
+  <ng-template #flPreviewFooter>
+    <button nz-button (click)="preview.set(null)">Đóng</button>
+  </ng-template>
+</div>
