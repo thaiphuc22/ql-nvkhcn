@@ -1,0 +1,437 @@
+{
+  "$schema": "https://schemas.tokens.studio.com/component.schema.json",
+  "meta": {
+    "name": "QTKHCN Component Library",
+    "version": "1.0.0",
+    "description": "25+ components for QTKHCN application",
+    "created": "2026-07-23"
+  },
+  "components": [
+    {
+      "name": "Button/Primary",
+      "description": "Primary CTA button - red brand color",
+      "category": "Button",
+      "props": {
+        "background": "#ee0033",
+        "color": "#ffffff",
+        "height": "36px",
+        "padding": "16px",
+        "borderRadius": "8px",
+        "fontFamily": "Inter, system-ui, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif",
+        "fontSize": "14px",
+        "fontWeight": "500"
+      },
+      "states": {
+        "default": { "background": "#ee0033" },
+        "hover": { "background": "#d4002e" },
+        "active": { "background": "#c00029" },
+        "disabled": { "opacity": "0.5", "cursor": "not-allowed" },
+        "loading": { "background": "#ee0033", "opacity": "0.8" }
+      },
+      "variants": {
+        "small": { "height": "28px", "fontSize": "12px", "padding": "8px 12px" },
+        "default": { "height": "36px", "fontSize": "14px", "padding": "16px" },
+        "large": { "height": "40px", "fontSize": "14px", "padding": "20px" }
+      }
+    },
+    {
+      "name": "Button/Default",
+      "description": "Secondary button with border",
+      "category": "Button",
+      "props": {
+        "background": "#ffffff",
+        "color": "#1c1c1c",
+        "border": "1px solid #e6e9ee",
+        "height": "36px",
+        "padding": "16px",
+        "borderRadius": "8px",
+        "fontFamily": "Inter, system-ui, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif",
+        "fontSize": "14px",
+        "fontWeight": "500"
+      },
+      "states": {
+        "default": { "background": "#ffffff", "border": "1px solid #e6e9ee" },
+        "hover": { "background": "#f5f3f3", "border": "1px solid #c7cfda" },
+        "active": { "background": "#e6e9ee" },
+        "disabled": { "opacity": "0.5" }
+      }
+    },
+    {
+      "name": "Button/Danger",
+      "description": "Destructive action button",
+      "category": "Button",
+      "props": {
+        "background": "#ba1a1a",
+        "color": "#ffffff",
+        "height": "36px",
+        "borderRadius": "8px"
+      },
+      "states": {
+        "default": { "background": "#ba1a1a" },
+        "hover": { "background": "#a80017" }
+      }
+    },
+    {
+      "name": "Button/Text",
+      "description": "Text-only button",
+      "category": "Button",
+      "props": {
+        "background": "transparent",
+        "color": "#ee0033",
+        "padding": "4px 8px",
+        "fontWeight": "500"
+      },
+      "states": {
+        "default": { "color": "#ee0033" },
+        "hover": { "textDecoration": "underline" }
+      }
+    },
+    {
+      "name": "Card/Standard",
+      "description": "Standard card container",
+      "category": "Card",
+      "props": {
+        "background": "#ffffff",
+        "border": "1px solid #e6e9ee",
+        "borderRadius": "8px",
+        "headerPadding": "16px",
+        "bodyPadding": "24px"
+      },
+      "states": {
+        "default": { "boxShadow": "none" },
+        "hover": { "boxShadow": "0 4px 12px rgba(0,0,0,0.08)", "transform": "translateY(-2px)" }
+      }
+    },
+    {
+      "name": "Card/Stat",
+      "description": "Small stat display card",
+      "category": "Card",
+      "props": {
+        "background": "#ffffff",
+        "border": "1px solid #e6e9ee",
+        "borderRadius": "8px",
+        "padding": "16px",
+        "valueFontSize": "28px",
+        "valueFontWeight": "700",
+        "labelFontSize": "12px",
+        "labelColor": "#5e3f3e"
+      },
+      "variants": {
+        "default": { "valueColor": "#1c1c1c" },
+        "brand": { "valueColor": "#ee0033" },
+        "info": { "valueColor": "#1677ff" },
+        "success": { "valueColor": "#006e0d" },
+        "muted": { "valueColor": "#8c8c8c" }
+      }
+    },
+    {
+      "name": "Input/Text",
+      "description": "Text input field",
+      "category": "Form",
+      "props": {
+        "height": "36px",
+        "border": "1px solid #e6e9ee",
+        "borderRadius": "8px",
+        "padding": "8px 12px",
+        "background": "#ffffff",
+        "fontSize": "14px",
+        "color": "#1c1c1c"
+      },
+      "states": {
+        "default": { "border": "1px solid #e6e9ee" },
+        "focus": { "border": "#ee0033", "boxShadow": "0 0 0 2px rgba(238,0,51,0.1)" },
+        "error": { "border": "#ba1a1a" },
+        "disabled": { "background": "#f5f3f3", "opacity": "0.6" }
+      }
+    },
+    {
+      "name": "Input/Select",
+      "description": "Dropdown select field",
+      "category": "Form",
+      "props": {
+        "height": "36px",
+        "border": "1px solid #e6e9ee",
+        "borderRadius": "8px",
+        "padding": "8px 12px",
+        "chevronColor": "#5e3f3e"
+      },
+      "states": {
+        "default": { "border": "1px solid #e6e9ee" },
+        "focus": { "border": "#ee0033" },
+        "open": { "boxShadow": "0 4px 12px rgba(0,0,0,0.1)" }
+      }
+    },
+    {
+      "name": "Input/Checkbox",
+      "description": "Checkbox control",
+      "category": "Form",
+      "props": {
+        "size": "16px",
+        "border": "1px solid #c7cfda",
+        "borderRadius": "4px",
+        "checkedBackground": "#ee0033",
+        "checkColor": "#ffffff"
+      },
+      "states": {
+        "unchecked": { "border": "1px solid #c7cfda", "background": "transparent" },
+        "checked": { "border": "#ee0033", "background": "#ee0033" },
+        "disabled": { "opacity": "0.5" }
+      }
+    },
+    {
+      "name": "Tag/Status",
+      "description": "Status indicator tag",
+      "category": "Tag",
+      "props": {
+        "padding": "2px 8px",
+        "borderRadius": "6px",
+        "fontSize": "12px",
+        "fontWeight": "500"
+      },
+      "variants": {
+        "new": { "background": "#e6f4ff", "color": "#1677ff" },
+        "processing": { "background": "#fff1f3", "color": "#ee0033" },
+        "completed": { "background": "#f6ffed", "color": "#006e0d" },
+        "rejected": { "background": "#fff2f0", "color": "#ba1a1a" },
+        "pending": { "background": "#fff7e6", "color": "#daa520" }
+      }
+    },
+    {
+      "name": "Tag/Role",
+      "description": "Committee member role tag",
+      "category": "Tag",
+      "props": {
+        "padding": "2px 8px",
+        "borderRadius": "6px",
+        "fontSize": "12px",
+        "fontWeight": "500"
+      },
+      "variants": {
+        "CHU_TICH": { "background": "#fff1f3", "color": "#ee0033" },
+        "PHAN_BIEN_1": { "background": "#fff7e6", "color": "#daa520" },
+        "PHAN_BIEN_2": { "background": "#fff7e6", "color": "#daa520" },
+        "UY_VIEN": { "background": "#e6f4ff", "color": "#1677ff" },
+        "THU_KY_KH": { "background": "#f6ffed", "color": "#006e0d" }
+      }
+    },
+    {
+      "name": "Tag/Count",
+      "description": "Notification count badge",
+      "category": "Tag",
+      "props": {
+        "minWidth": "20px",
+        "height": "20px",
+        "borderRadius": "10px",
+        "background": "#ee0033",
+        "color": "#ffffff",
+        "fontSize": "12px",
+        "fontWeight": "600",
+        "padding": "0 6px"
+      }
+    },
+    {
+      "name": "Table/Standard",
+      "description": "Data table",
+      "category": "Table",
+      "props": {
+        "headerBackground": "#f5f3f3",
+        "headerFontSize": "14px",
+        "headerFontWeight": "600",
+        "headerColor": "#1c1c1c",
+        "headerPadding": "12px 16px",
+        "rowBackground": "#ffffff",
+        "rowHover": "#fbf9f9",
+        "rowPadding": "12px 16px",
+        "rowBorder": "1px solid #e6e9ee",
+        "borderRadius": "8px"
+      }
+    },
+    {
+      "name": "Navigation/Sidebar",
+      "description": "Application sidebar navigation",
+      "category": "Navigation",
+      "props": {
+        "width": "230px",
+        "collapsedWidth": "80px",
+        "background": "#1c1c1c",
+        "headerHeight": "82px",
+        "itemHeight": "40px",
+        "itemPadding": "12px 16px",
+        "itemColor": "rgba(255,255,255,0.78)",
+        "itemHoverBg": "rgba(255,255,255,0.10)"
+      },
+      "states": {
+        "itemDefault": { "background": "transparent", "color": "rgba(255,255,255,0.78)" },
+        "itemHover": { "background": "rgba(255,255,255,0.10)", "color": "#ffffff" },
+        "itemSelected": { "background": "#ee0033", "color": "#ffffff" }
+      }
+    },
+    {
+      "name": "Navigation/Breadcrumb",
+      "description": "Breadcrumb navigation",
+      "category": "Navigation",
+      "props": {
+        "separator": "/",
+        "separatorColor": "#d4a5a3",
+        "parentColor": "#bf0027",
+        "parentHoverColor": "#ee0033",
+        "currentColor": "#ee0033",
+        "fontSize": "14px"
+      }
+    },
+    {
+      "name": "Navigation/PageHeader",
+      "description": "Page header with title and actions",
+      "category": "Navigation",
+      "props": {
+        "iconSize": "24px",
+        "iconColor": "#ee0033",
+        "titleFontSize": "24px",
+        "titleFontWeight": "700",
+        "titleColor": "#1c1c1c",
+        "padding": "24px",
+        "borderBottom": "1px solid #e6e9ee"
+      }
+    },
+    {
+      "name": "Modal/Standard",
+      "description": "Dialog modal",
+      "category": "Modal",
+      "props": {
+        "width": "560px",
+        "borderRadius": "12px",
+        "headerPadding": "16px 24px",
+        "bodyPadding": "24px",
+        "footerPadding": "16px 24px",
+        "overlayBackground": "rgba(0, 0, 0, 0.45)",
+        "boxShadow": "0 8px 24px rgba(0,0,0,0.15)"
+      },
+      "variants": {
+        "small": { "width": "400px" },
+        "default": { "width": "560px" },
+        "large": { "width": "800px" }
+      }
+    },
+    {
+      "name": "Modal/Drawer",
+      "description": "Slide-in side panel",
+      "category": "Modal",
+      "props": {
+        "width": "480px",
+        "position": "right",
+        "background": "#ffffff",
+        "overlayBackground": "rgba(0, 0, 0, 0.45)",
+        "shadow": "-6px 0 16px rgba(0,0,0,0.1)"
+      },
+      "variants": {
+        "small": { "width": "360px" },
+        "default": { "width": "480px" },
+        "large": { "width": "640px" }
+      }
+    },
+    {
+      "name": "Feedback/Alert",
+      "description": "Alert message",
+      "category": "Feedback",
+      "props": {
+        "padding": "12px 16px",
+        "borderRadius": "8px",
+        "borderLeft": "4px",
+        "fontSize": "14px"
+      },
+      "variants": {
+        "info": { "background": "#e6f4ff", "borderColor": "#1677ff", "color": "#1677ff" },
+        "success": { "background": "#f6ffed", "borderColor": "#006e0d", "color": "#006e0d" },
+        "warning": { "background": "#fff7e6", "borderColor": "#daa520", "color": "#daa520" },
+        "error": { "background": "#fff2f0", "borderColor": "#ba1a1a", "color": "#ba1a1a" }
+      }
+    },
+    {
+      "name": "Feedback/Spinner",
+      "description": "Loading spinner",
+      "category": "Feedback",
+      "props": {
+        "size": "40px",
+        "color": "#ee0033",
+        "strokeWidth": "3px"
+      },
+      "variants": {
+        "inline": { "size": "24px" },
+        "page": { "size": "40px" }
+      }
+    },
+    {
+      "name": "Feedback/Empty",
+      "description": "Empty state display",
+      "category": "Feedback",
+      "props": {
+        "iconSize": "48px",
+        "iconColor": "#8593a3",
+        "titleFontSize": "16px",
+        "titleFontWeight": "600",
+        "titleColor": "#1c1c1c",
+        "descriptionFontSize": "14px",
+        "descriptionColor": "#5e3f3e"
+      }
+    },
+    {
+      "name": "Feedback/Tooltip",
+      "description": "Tooltip on hover",
+      "category": "Feedback",
+      "props": {
+        "background": "#1c1c1c",
+        "color": "#ffffff",
+        "padding": "6px 8px",
+        "borderRadius": "6px",
+        "fontSize": "12px",
+        "maxWidth": "250px"
+      }
+    },
+    {
+      "name": "Avatar",
+      "description": "User avatar with initials",
+      "category": "Layout",
+      "props": {
+        "background": "#ffdad8",
+        "color": "#bf0027",
+        "fontWeight": "700",
+        "borderRadius": "50%"
+      },
+      "variants": {
+        "small": { "size": "32px", "fontSize": "14px" },
+        "default": { "size": "40px", "fontSize": "16px" },
+        "large": { "size": "64px", "fontSize": "24px" }
+      }
+    },
+    {
+      "name": "Progress",
+      "description": "Progress bar",
+      "category": "Feedback",
+      "props": {
+        "trackColor": "#e6e9ee",
+        "fillColor": "#ee0033",
+        "height": "8px",
+        "borderRadius": "4px"
+      },
+      "variants": {
+        "small": { "height": "4px" },
+        "default": { "height": "8px" }
+      }
+    },
+    {
+      "name": "Badge",
+      "description": "Status badge indicator",
+      "category": "Feedback",
+      "props": {
+        "dotSize": "8px",
+        "dotColor": "#ee0033"
+      },
+      "variants": {
+        "success": { "dotColor": "#006e0d" },
+        "warning": { "dotColor": "#daa520" },
+        "error": { "dotColor": "#ba1a1a" },
+        "processing": { "dotColor": "#ee0033" }
+      }
+    }
+  ]
+}

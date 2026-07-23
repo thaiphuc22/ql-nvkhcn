@@ -1,0 +1,190 @@
+/* QTKHCN Design System - CSS Custom Properties
+ * VHT Military Red
+ * Last Updated: 2026-07-23
+ *
+ * Import into Figma: Copy these variables and paste into Figma's CSS Variables panel
+ * Or use as reference to create Figma color styles
+ */
+
+:root {
+  /* ============================================
+   * BRAND COLORS
+   * ============================================ */
+
+  /* Primary - CTA / Brand Actions */
+  --color-primary: #ee0033;
+  --color-primary-hover: #d4002e;
+  --color-primary-active: #c00029;
+
+  /* Primary Container - Light backgrounds */
+  --color-primary-050: #fff1f3;
+  --color-primary-100: #ffdad8;
+
+  /* Chrome - Sidebar / Dark Headers */
+  --color-chrome: #bf0027;
+  --color-chrome-dark: #a80022;
+
+  /* ============================================
+   * STATUS COLORS
+   * ============================================ */
+
+  --color-success: #006e0d;
+  --color-success-bg: #f6ffed;
+
+  --color-warning: #daa520;
+  --color-warning-bg: #fff7e6;
+
+  --color-danger: #ba1a1a;
+  --color-danger-bg: #fff2f0;
+
+  --color-info: #1677ff;
+  --color-info-bg: #e6f4ff;
+
+  /* ============================================
+   * SURFACE COLORS
+   * ============================================ */
+
+  --color-background: #fbf9f9;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f5f3f3;
+  --color-surface-raised: #ffffff;
+
+  /* ============================================
+   * TEXT COLORS
+   * ============================================ */
+
+  --color-text-primary: #1c1c1c;
+  --color-text-secondary: #5e3f3e;
+  --color-text-disabled: #8593a3;
+  --color-text-white: #ffffff;
+
+  /* ============================================
+   * BORDER COLORS
+   * ============================================ */
+
+  --color-border: #e6e9ee;
+  --color-border-strong: #c7cfda;
+  --color-outline: #e8bcba;
+
+  /* ============================================
+   * DARK MODE / SIDEBAR
+   * ============================================ */
+
+  --color-dark-bg: #0f1722;
+  --color-dark-border: #1d2937;
+  --color-sidebar-bg: #1c1c1c;
+  --color-sidebar-text: rgba(255, 255, 255, 0.78);
+  --color-sidebar-text-hover: #ffffff;
+  --color-sidebar-selected: #ee0033;
+
+  /* ============================================
+   * TYPOGRAPHY
+   * ============================================ */
+
+  --font-family: 'Inter', system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-family-mono: 'IBM Plex Mono', 'Cascadia Mono', Consolas, monospace;
+
+  /* Font Sizes */
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-base: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 20px;
+  --font-size-3xl: 24px;
+  --font-size-4xl: 28px;
+
+  /* Font Weights */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Line Heights */
+  --line-height-tight: 1.2;
+  --line-height-snug: 1.3;
+  --line-height-normal: 1.4;
+  --line-height-relaxed: 1.5;
+
+  /* ============================================
+   * SPACING
+   * ============================================ */
+
+  --spacing-0: 0px;
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-10: 40px;
+
+  /* ============================================
+   * BORDER RADIUS
+   * ============================================ */
+
+  --radius-none: 0px;
+  --radius-sm: 6px;
+  --radius-base: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  /* ============================================
+   * SHADOWS
+   * ============================================ */
+
+  --shadow-none: none;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-base: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 6px 16px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 8px 24px rgba(0, 0, 0, 0.15);
+
+  /* ============================================
+   * SIZING
+   * ============================================ */
+
+  /* Sidebar */
+  --sidebar-width: 230px;
+  --sidebar-collapsed-width: 80px;
+  --sidebar-header-height: 82px;
+
+  /* Header */
+  --header-height: 60px;
+
+  /* Buttons */
+  --button-height-small: 28px;
+  --button-height-default: 36px;
+  --button-height-large: 40px;
+
+  /* Inputs */
+  --input-height: 36px;
+
+  /* Avatar */
+  --avatar-small: 32px;
+  --avatar-default: 40px;
+  --avatar-large: 64px;
+
+  /* ============================================
+   * TRANSITIONS
+   * ============================================ */
+
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
+
+  /* ============================================
+   * Z-INDEX
+   * ============================================ */
+
+  --z-dropdown: 1050;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-sidebar: 100;
+  --z-header: 20;
+}

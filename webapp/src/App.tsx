@@ -75,6 +75,7 @@ const ServiceTaskConfig = lazy(() => import("./pages/ServiceTaskConfig"));
 const TroGiup = lazy(() => import("./pages/TroGiup"));
 const SubsystemList = lazy(() => import("./pages/SubsystemList"));
 const PhanHePage = lazy(() => import("./pages/PhanHePage"));
+const CouncilCommittee = lazy(() => import("./pages/CouncilCommittee"));
 import SubsystemSwitcher from "./components/SubsystemSwitcher";
 import { useDossiers } from "./store/DossierContext";
 import { useBreadcrumb } from "./store/BreadcrumbContext";
@@ -112,6 +113,7 @@ const ROUTE_BY_KEY: Record<string, string> = {
   nguoidung: "/phan-he/PH2/nguoi-dung",
   phanquyen: "/phan-he/PH2/phan-quyen",
   giamsat: "/giam-sat",
+  hoidong: "/hoi-dong",
   tichhop: "/tich-hop",
   nhatky: "/nhat-ky",
   luat: "/quan-ly-luat",
@@ -223,6 +225,8 @@ export default function App() {
                   ? "worklist"
                   : location.pathname.startsWith("/giam-sat")
                     ? "giamsat"
+                    : location.pathname.startsWith("/hoi-dong")
+                    ? "hoidong"
                     : location.pathname.startsWith("/tich-hop")
                       ? "tichhop"
                       : location.pathname.startsWith("/nhat-ky")
@@ -276,6 +280,7 @@ export default function App() {
     nguoidung: "Quản trị người dùng",
     phanquyen: "Phân quyền",
     giamsat: "Giám sát tiến trình luồng",
+    hoidong: "Hội đồng xét duyệt",
     tichhop: "Trạng thái Tích hợp",
     nhatky: "Nhật ký",
     luat: "Ma trận quyết định",
@@ -347,6 +352,11 @@ export default function App() {
                       key: "giamsat",
                       icon: <ThunderboltOutlined />,
                       label: "Giám sát tiến trình",
+                    },
+                    {
+                      key: "hoidong",
+                      icon: <TeamOutlined />,
+                      label: "Hội đồng xét duyệt",
                     },
                     {
                       key: "tichhop",
@@ -865,6 +875,8 @@ export default function App() {
                   )
                 }
               />
+              <Route path="/hoi-dong" element={<CouncilCommittee />} />
+              <Route path="/hoi-dong/:id" element={<CouncilCommittee />} />
               <Route
                 path="/tich-hop"
                 element={

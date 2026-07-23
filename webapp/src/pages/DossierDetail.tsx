@@ -1,6 +1,7 @@
 import {
   lazy,
   Suspense,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -25,6 +26,7 @@ import {
   Select,
   Space,
   Spin,
+  Table,
   Tag,
   Timeline,
   Tooltip,
@@ -52,12 +54,18 @@ import {
   SendOutlined,
   SolutionOutlined,
   SwapOutlined,
-} from "@ant-design/icons";
+  TeamOutlined,
+  } from "@ant-design/icons";
 import {
   LOAI_TO_NHOM,
   type DossierStep,
   type StepStatus,
 } from "../data/dossiers";
+import {
+  seedHoiDong,
+  taoHoiDongMacDinh,
+  type HoiDong,
+} from "../data/hoiDong";
 import {
   resolveApprovers,
   resolveGroups,
@@ -339,7 +347,32 @@ export default function DossierDetail() {
   // Luật Ma trận phê duyệt (store CHUNG) — sửa ở /ma-tran-phe-duyet lan tới đây (Slice G).
   const { rules: amRules } = useApprovalMatrix();
 
-  const d = getById(decodeURIComponent(id));
+  // ===== HỘI ĐỒNG (HĐXD) =====
+  // State: danh sách HĐ cho hồ sơ này
+  const [hoidongs, setHoidongs] = useState<HoiDong[]>([]);
+
+  // Compute dossier early so useEffect hooks can reference it
+  const d = useMemo(() => getById(decodeURIComponent(id)), [id]);
+
+  // Init: load existing HĐ từ seed khi dossier thay đổi
+  useEffect(() => {
+    if (!d) return;
+    const existing = seedHoiDong.filter((h) => h.maHoSo === d.id);
+    if (existing.length > 0) setHoidongs(existing);
+  }, [d]);
+
+  // Auto-create: khi buocHienTai === 7 hoặc 10, tự động thành lập HĐ
+  useEffect(() => {
+    if (!d) return;
+    if (d.buocHienTai !== 7 && d.buocHienTai !== 10) return;
+    const phiEn: 1 | 2 = d.buocHienTai === 7 ? 1 : 2;
+    const alreadyExists = hoidongs.some(
+      (h) => h.maHoSo === d.id && h.phiEn === phiEn
+    );
+    if (alreadyExists) return;
+    const newHD = taoHoiDongMacDinh(d.id, d.maNV, d.nv.ten, phiEn);
+    setHoidongs((prev) => [...prev, newHD]);
+  }, [d?.buocHienTai, d?.id, d?.maNV, d?.nv.ten, hoidongs]);
   const docTemplates = useMemo(() => (d ? templatesFor(d) : []), [d]);
   const builtDoc = useMemo(
     () => (docTpl && d ? docTpl.build(d) : null),
@@ -1191,6 +1224,113 @@ export default function DossierDetail() {
               )}
             />
           </Card>
+
+          {/* Hội đồng Xét duyệt — auto-created khi buocHienTai === 7 hoặc 10 */}
+          {hoidongs.length > 0 && (
+            <Card
+              title={
+                <Space>
+                  <TeamOutlined style={{ color: "#1890ff" }} />
+                  Hội đồng Xét duyệt
+                </Space>
+              }
+              size="small"
+              style={{ marginBottom: 16 }}
+            >
+              <List
+                dataSource={hoidongs}
+                renderItem={(hd) => (
+                  <List.Item
+                    actions={[
+                      <Button key="view" type="link" size="small">
+                        Chi tiết
+                      </Button>,
+                    ]}
+                  >
+                    <List.Item.Meta
+                      avatar={
+                        <Avatar
+                          icon={<TeamOutlined />}
+                          style={{ backgroundColor: "#1890ff" }}
+                        />
+                      }
+                      title={`${hd.id} — Phiên ${hd.phiEn}`}
+                      description={
+                        <Space direction="vertical" size={2}>
+                          <Text type="secondary">
+                            Ngày thành lập: {hd.ngayThanhLap}
+                          </Text>
+                          <Space>
+                            <Tag color={
+                              hd.trangThai === "daKetThuc" ? "green" :
+                              hd.trangThai === "dangHop" ? "blue" :
+                              hd.trangThai === "sapLap" ? "orange" : "red"
+                            }>
+                              {hd.trangThai === "daKetThuc" ? "Đã kết thúc" :
+                               hd.trangThai === "dangHop" ? "Đang họp" :
+                               hd.trangThai === "sapLap" ? "Sắp họp" : "Hủy bỏ"}
+                            </Tag>
+                            <Text type="secondary">• {hd.thanhVien.length} thành viên</Text>
+                          </Space>
+                        </Space>
+                      }
+                    />
+                  </List.Item>
+                )}
+              />
+              {/* Bảng thành viên của HĐ đầu tiên */}
+              {hoidongs[0] && (
+                <Table
+                  title={() => (
+                    <Text strong>Danh sách thành viên</Text>
+                  )}
+                  dataSource={hoidongs[0].thanhVien}
+                  rowKey="maTV"
+                  size="small"
+                  pagination={false}
+                  columns={[
+                    {
+                      title: "Họ tên",
+                      dataIndex: "hoTen",
+                      key: "hoTen",
+                      render: (v: string) => <Text>{v}</Text>,
+                    },
+                    {
+                      title: "Vai trò",
+                      dataIndex: "vaiTro",
+                      key: "vaiTro",
+                      render: (v: string) => {
+                        const colorMap: Record<string, string> = {
+                          CHU_TICH: "red",
+                          PHAN_BIEN_1: "orange",
+                          PHAN_BIEN_2: "gold",
+                          UY_VIEN: "blue",
+                          THU_KY_KH: "green",
+                        };
+                        const labelMap: Record<string, string> = {
+                          CHU_TICH: "Chủ tịch",
+                          PHAN_BIEN_1: "Phản biện 1",
+                          PHAN_BIEN_2: "Phản biện 2",
+                          UY_VIEN: "Ủy viên",
+                          THU_KY_KH: "Thư ký KH",
+                        };
+                        return (
+                          <Tag color={colorMap[v] ?? "default"}>
+                            {labelMap[v] ?? v}
+                          </Tag>
+                        );
+                      },
+                    },
+                    {
+                      title: "Đơn vị",
+                      dataIndex: "donVi",
+                      key: "donVi",
+                    },
+                  ]}
+                />
+              )}
+            </Card>
+          )}
 
           <Card
             title={

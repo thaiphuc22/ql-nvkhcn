@@ -1,0 +1,45 @@
+name: Jira Daily Update
+
+on:
+  schedule:
+    # 01:00 UTC = 08:00 ICT
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+    inputs:
+      action_mode:
+        description: "comment | transition | fields | combination (e.g. comment,transition)"
+        required: false
+        default: "comment"
+      dry_run:
+        description: "true/false"
+        required: false
+        default: "true"
+
+permissions:
+  contents: read
+
+jobs:
+  jira-update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Run daily Jira updater
+        env:
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          JIRA_JQL: ${{ secrets.JIRA_JQL }}
+          JIRA_MAX_ISSUES: ${{ secrets.JIRA_MAX_ISSUES }}
+          JIRA_ACTION_MODE: ${{ github.event.inputs.action_mode || secrets.JIRA_ACTION_MODE }}
+          JIRA_COMMENT_TEMPLATE: ${{ secrets.JIRA_COMMENT_TEMPLATE }}
+          JIRA_TRANSITION_ID: ${{ secrets.JIRA_TRANSITION_ID }}
+          JIRA_FIELDS_JSON: ${{ secrets.JIRA_FIELDS_JSON }}
+          JIRA_DRY_RUN: ${{ github.event.inputs.dry_run || secrets.JIRA_DRY_RUN }}
+        run: node scripts/jira-daily-update.mjs

@@ -1,0 +1,295 @@
+{
+  "$schema": "https://schemas.tokens.studio.com/screens.schema.json",
+  "meta": {
+    "name": "QTKHCN Screen Specifications",
+    "version": "1.0.0",
+    "description": "Screen layouts and specifications for QTKHCN application",
+    "created": "2026-07-23",
+    "screenshots": "https://thaiphuc22.github.io/ql-nvkhcn"
+  },
+  "screens": [
+    {
+      "name": "Subsystem List",
+      "path": "/danh-sach-phan-he",
+      "description": "Landing page showing all subsystems (PH1, PH2, PH3, PH4) as cards",
+      "category": "Main",
+      "components": [
+        "Page with no sidebar",
+        "Centered content with subsystem cards in grid",
+        "Each card: logo box with color + subsystem name + description + arrow"
+      ],
+      "layout": {
+        "type": "centered",
+        "maxWidth": "1200px",
+        "cardGrid": "2 columns on desktop, 1 on mobile"
+      }
+    },
+    {
+      "name": "Dashboard",
+      "path": "/tong-quan",
+      "description": "Main dashboard with stats, charts, and recent items",
+      "category": "PH1",
+      "components": [
+        "Header with breadcrumb + user menu",
+        "Stats row (4 cards): Total dossiers, Processing, Completed, Rejected",
+        "Two-column layout:",
+        "  - Left: Top 10 processor chart (horizontal bar)",
+        "  - Right: Active processes list",
+        "Recent dossiers table"
+      ],
+      "layout": {
+        "type": "sidebar+content",
+        "sidebar": "230px fixed",
+        "statsRow": "4 columns: xs=12 sm=6 lg=3",
+        "twoColumn": "16/8 split on lg breakpoint"
+      }
+    },
+    {
+      "name": "Dossier List",
+      "path": "/ho-so",
+      "description": "List of all dossiers with filters and search",
+      "category": "PH1",
+      "components": [
+        "Page header with title + 'Create' button",
+        "Filter bar (optional)",
+        "Table with columns: ID, Tên đề tài, Loại, Cấp, Trạng thái, Bước hiện tại, Thao tác",
+        "Pagination"
+      ],
+      "layout": {
+        "type": "sidebar+content",
+        "table": "full width with horizontal scroll on mobile"
+      }
+    },
+    {
+      "name": "Dossier Detail",
+      "path": "/ho-so/:id",
+      "description": "Detailed view of a single dossier with tabs and actions",
+      "category": "PH1",
+      "components": [
+        "Page header: back button, title, action buttons (Edit, Delete)",
+        "Two-column layout:",
+        "  LEFT (2/3):",
+        "    - Info Card: key-value pairs (Mã, Tên, Lĩnh vực, Chủ nhiệm, etc.)",
+        "    - Process Card: BPMN diagram showing current step",
+        "    - Documents Card: list of documents with View/Download buttons",
+        "    - Committee Card (conditional): auto-created when step 7 or 10",
+        "  RIGHT (1/3):",
+        "    - Summary Card: status, dates, owner",
+        "    - Quick Actions Card: buttons for workflow actions"
+      ],
+      "layout": {
+        "type": "sidebar+content",
+        "twoColumn": "16/8 split",
+        "leftColumn": "Card stack with 16px gap",
+        "rightColumn": "Card stack"
+      }
+    },
+    {
+      "name": "Form Library",
+      "path": "/phan-he/PH3/bieu-mau",
+      "description": "List of all form templates (eForms) with usage stats",
+      "category": "PH3",
+      "components": [
+        "Page header: icon (FormOutlined red), title, Create button",
+        "Breadcrumb: Hệ thống QTKHCN / Thư viện biểu mẫu",
+        "Stats row (4 cards): Total forms, Bound, Unbound, Configured steps",
+        "Table columns: Tên biểu mẫu, Mã (formKey), Loại, Số trường, Đang dùng, Thao tác",
+        "Actions per row: Preview (eye), Design (edit), Delete (trash)",
+        "Modal for create: Form fields (Tên, Mã, Loại, Mô tả)"
+      ],
+      "layout": {
+        "type": "sidebar+content",
+        "statsRow": "4 columns: xs=12 sm=6 lg=3",
+        "table": "full width"
+      }
+    },
+    {
+      "name": "Form Designer",
+      "path": "/phan-he/PH3/bieu-mau/:key/thiet-ke",
+      "description": "Drag-and-drop form builder with component palette and properties panel",
+      "category": "PH3",
+      "components": [
+        "Page header: back button, breadcrumb, title with code, Cancel/Save buttons",
+        "Three-panel layout:",
+        "  LEFT PANEL (240px): Component palette",
+        "    - Grouped by type: Text, Number, Selection, Date, etc.",
+        "    - Each component shows icon + label",
+        "  CENTER: Canvas/Preview area",
+        "    - Drop zone for components",
+        "    - Real-time form preview",
+        "  RIGHT PANEL (280px): Properties panel",
+        "    - Shows selected component properties",
+        "    - Label, Key, Required, Placeholder, etc."
+      ],
+      "layout": {
+        "type": "fullscreen",
+        "threeColumn": "240px | flex | 280px",
+        "height": "calc(100vh - 112px)",
+        "panels": "flexible with drag handles"
+      }
+    },
+    {
+      "name": "Process Catalog",
+      "path": "/quy-trinh",
+      "description": "List of BPMN process definitions",
+      "category": "Admin",
+      "components": [
+        "Page header: title + Create button",
+        "Filter/search bar",
+        "Table: Process name, Version, Status, Steps count, Actions",
+        "Row actions: View, Edit, Delete"
+      ],
+      "layout": {
+        "type": "sidebar+content",
+        "table": "full width"
+      }
+    },
+    {
+      "name": "Process Detail",
+      "path": "/quy-trinh/:ma",
+      "description": "BPMN process viewer and configuration",
+      "category": "Admin",
+      "components": [
+        "Page header: process name, version badge, Edit button",
+        "Tab bar: BPMN Diagram, Configuration, Versions",
+        "BPMN Diagram tab:",
+        "  - Toolbar: zoom, fit, recenter",
+        "  - Canvas: rendered BPMN with swimlanes and tasks",
+        "  - Click task to see properties"
+      ],
+      "layout": {
+        "type": "sidebar+content",
+        "tabBar": "horizontal tabs below header",
+        "canvas": "flex, takes remaining space"
+      }
+    },
+    {
+      "name": "Council Committee List",
+      "path": "/hoi-dong",
+      "description": "List of all review committees (Hội đồng xét duyệt)",
+      "category": "Admin",
+      "components": [
+        "Page header: TeamOutlined icon, title, Create button",
+        "Two-column layout:",
+        "  LEFT: List of councils as cards",
+        "    - Card shows: Council ID, Phiên, Ngày, Trạng thái, Thành viên count",
+        "    - Click to select and show details",
+        "  RIGHT: Council detail panel",
+        "    - Info: ID, Tên đề tài, Phiên, Ngày thành lập, Trạ thái",
+        "    - Stats: total members by role",
+        "    - Members table: Họ tên, Vai trò (color-coded), Đơn vị"
+      ],
+      "layout": {
+        "type": "sidebar+content",
+        "twoColumn": "8/16 split",
+        "cardList": "scrollable",
+        "detailPanel": "sticky"
+      }
+    },
+    {
+      "name": "Approval Matrix",
+      "path": "/ma-tran-phe-duyet",
+      "description": "Approval matrix configuration grid",
+      "category": "Admin",
+      "components": [
+        "Page header: title + Help button",
+        "Matrix grid:",
+        "  - Rows: Steps/positions",
+        "  - Columns: Roles (Chủ tịch, Phản biện, etc.)",
+        "  - Cells: Approver names or empty",
+        "Legend for role colors",
+        "Edit mode: click cell to assign/remove approver"
+      ],
+      "layout": {
+        "type": "sidebar+content",
+        "matrix": "responsive grid with sticky headers"
+      }
+    },
+    {
+      "name": "Process Monitor",
+      "path": "/giam-sat",
+      "description": "Real-time process monitoring with BPMN visualization",
+      "category": "Admin",
+      "components": [
+        "Page header: title + filter controls",
+        "Process selector dropdown",
+        "BPMN diagram showing:",
+        "  - Current active instances highlighted",
+        "  - Token positions shown on diagram",
+        "  - Completed steps in green, current in red, pending in gray",
+        "Side panel: Instance list with status"
+      ],
+      "layout": {
+        "type": "sidebar+content",
+        "diagram": "60% width",
+        "instanceList": "40% width"
+      }
+    },
+    {
+      "name": "User Management",
+      "path": "/phan-he/PH2/nguoi-dung",
+      "description": "User list and role assignment",
+      "category": "PH2",
+      "components": [
+        "Page header: title + Add User button",
+        "Table: Avatar+Name, Email, Đơn vị, Vai trò, Trạng thái, Actions",
+        "Row actions: Edit, Deactivate, Delete",
+        "Modal for add/edit user"
+      ],
+      "layout": {
+        "type": "sidebar+content",
+        "table": "full width with role tags"
+      }
+    },
+    {
+      "name": "Org Structure",
+      "path": "/phan-he/PH2/co-cau-to-chuc",
+      "description": "Organizational hierarchy tree",
+      "category": "PH2",
+      "components": [
+        "Page header: title + Add Unit button",
+        "Tree view: hierarchical display of departments",
+        "Each node: department name, unit code, member count",
+        "Expand/collapse handles",
+        "Actions: Add child, Edit, Delete"
+      ],
+      "layout": {
+        "type": "sidebar+content",
+        "tree": "indented list with expand icons"
+      }
+    }
+  ],
+  "commonComponents": {
+    "Sidebar": {
+      "width": 230,
+      "collapsedWidth": 80,
+      "headerHeight": 82,
+      "items": [
+        { "key": "dashboard", "icon": "DashboardOutlined", "label": "Tổng quan" },
+        { "key": "worklist", "icon": "CarryOutOutlined", "label": "Việc của tôi", "badge": true },
+        { "key": "nvkhcn", "icon": "ExperimentOutlined", "label": "Quản trị KHCN", "children": ["Danh sách NV KHCN", "Danh sách Hồ sơ"] },
+        { "key": "quytrinh", "icon": "PartitionOutlined", "label": "Quản trị quy trình", "children": ["Quản lý quy trình", "Ma trận quyết định", "Ma trận phê duyệt"] },
+        { "key": "giamsat", "icon": "ThunderboltOutlined", "label": "Giám sát tiến trình" },
+        { "key": "hoidong", "icon": "TeamOutlined", "label": "Hội đồng xét duyệt" },
+        { "key": "tichhop", "icon": "ApiOutlined", "label": "Tích hợp" },
+        { "key": "nhatky", "icon": "HistoryOutlined", "label": "Nhật ký" }
+      ]
+    },
+    "Header": {
+      "height": 60,
+      "elements": [
+        "Menu toggle (hamburger/collapse icon)",
+        "Breadcrumb navigation",
+        "Backend demo link (optional)",
+        "Subsystem switcher",
+        "User dropdown (avatar + name + role)"
+      ]
+    },
+    "PageHeader": {
+      "icon": "24px, #ee0033 color",
+      "title": "24px, 700 weight",
+      "breadcrumb": "14px",
+      "actions": "right-aligned buttons"
+    }
+  }
+}
