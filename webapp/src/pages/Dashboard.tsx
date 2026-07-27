@@ -1,13 +1,15 @@
-import { useMemo, useState, useEffect, lazy, Suspense, type ReactNode } from 'react'
+import { useMemo, useState, useEffect, lazy, Suspense, type CSSProperties, type ReactNode } from 'react'
 import {
   Alert,
   Card,
   Col,
   DatePicker,
+  Progress,
   Row,
   Segmented,
   Select,
   Space,
+  Switch,
   Table,
   Tag,
   Typography,
@@ -18,6 +20,14 @@ import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
 import { useNavigate } from 'react-router-dom'
 import {
+  ArrowDownOutlined,
+  ArrowUpOutlined,
+  AlertOutlined,
+  ClockCircleOutlined,
+  CheckCircleOutlined,
+  ThunderboltOutlined,
+} from '@ant-design/icons'
+import {
   BarChart,
   Bar,
   XAxis,
@@ -25,21 +35,22 @@ import {
   CartesianGrid,
   Tooltip as RTooltip,
   ResponsiveContainer,
+  LineChart,
+  Line,
+  Legend,
   Cell,
 } from 'recharts'
-import { PageHeader, StatCard } from '../components/ui'
 import HelpButton from '../components/HelpButton'
 import {
   getOptimizeSnapshot,
   getBpmnHeat,
   heatClass,
-  STATUS_COLOR,
-  STATUS_LABEL,
   BPMN_HEAT_PROCESS_OPTIONS,
   type AnalyticsPeriod,
   type BpmnHeatProcessMa,
-  type TopHandler,
-  type UnitPerf,
+  type BranchAnalysisRow,
+  type GroupSlice,
+  type OutlierInstance,
 } from '../data/optimizeAnalytics'
 import { NHOM, seedProcesses } from '../data/processes'
 import { RED, RED_CHROME, SUCCESS, DANGER, WARNING } from '../theme'
@@ -47,28 +58,25 @@ import { seedHoSo, joinDossiers, type Dossier } from '../data/dossiers'
 import { getNhiemVu } from '../data/nhiemVu'
 
 const { RangePicker } = DatePicker
-
-type PeriodMode = AnalyticsPeriod | 'range'
-
+const { Text, Paragraph, Title } = Typography
 const BpmnViewer = lazy(() => import('../components/BpmnViewer'))
 
-const { Text, Paragraph } = Typography
+type PeriodMode = AnalyticsPeriod | 'range'
+type TrendGrain = 'day' | 'week'
+type GroupBy = 'department' | 'caseType' | 'product'
 
-/** Hồ sơ đang vượt SLA — bước hiện tại quá hạn so với hanXuLy. */
-export interface SlaOverdueItem {
+interface SlaOverdueItem {
   id: string
   maNV: string
   tenDeTai: string
   step: string
-  /** Số ngày quá hạn (dương = quá hạn). */
   overdueDays: number
   nguoi: string
   cap: string
 }
 
-/** Compute SLA-overdue dossiers từ seed. Hạn xử lý tính từ hanXuLy. */
 function computeSlaOverdue(dossiers: Dossier[], now: Dayjs): SlaOverdueItem[] {
-  const items: SlaOverdueItem[] = dossiers
+  return dossiers
     .filter((d) => d.trangThai === 'processing')
     .map((d): SlaOverdueItem | null => {
       const currentStep = d.steps.find((s) => s.trangThai === 'current')
@@ -88,81 +96,123 @@ function computeSlaOverdue(dossiers: Dossier[], now: Dayjs): SlaOverdueItem[] {
       }
     })
     .filter((x): x is SlaOverdueItem => x !== null)
-  return items.sort((a, b) => b.overdueDays - a.overdueDays)
+    .sort((a, b) => b.overdueDays - a.overdueDays)
 }
 
-const CHART_H = 260
-
-function SectionTitle({ children }: { children: ReactNode }) {
+function Delta({ value, unit = '', invert = false }: { value: number; unit?: string; invert?: boolean }) {
+  const good = invert ? value <= 0 : value >= 0
+  const color = good ? SUCCESS : DANGER
+  const Icon = value >= 0 ? ArrowUpOutlined : ArrowDownOutlined
   return (
-    <Text strong style={{ fontSize: 15, display: 'block', margin: '4px 0 12px' }}>
-      {children}
+    <Text style={{ color, fontSize: 12 }}>
+      <Icon /> {value > 0 ? '+' : ''}
+      {value}
+      {unit} so với kỳ trước
     </Text>
   )
 }
 
-/** Heatmap Unit × metric (SLA % / cycle days) — CSS grid, không phụ thuộc chart lib. */
-function UnitMetricHeatmap({
-  units,
-  rows,
+function ManagerCard({
+  question,
+  title,
+  extra,
+  children,
+  dark,
 }: {
-  units: string[]
-  rows: { metric: string; values: number[] }[]
+  question: string
+  title: ReactNode
+  extra?: ReactNode
+  children: ReactNode
+  dark: boolean
 }) {
-  const maxByMetric = rows.map((r) => Math.max(...r.values, 1))
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: `140px repeat(${units.length}, minmax(88px, 1fr))`,
-          gap: 4,
-          minWidth: 520,
-        }}
-      >
-        <div />
-        {units.map((u) => (
-          <Text key={u} type="secondary" style={{ fontSize: 11, textAlign: 'center' }}>
-            {u}
+    <Card
+      size="small"
+      title={
+        <div>
+          <div style={{ fontWeight: 600 }}>{title}</div>
+          <Text type="secondary" style={{ fontSize: 12, fontWeight: 400 }}>
+            {question}
           </Text>
-        ))}
-        {rows.map((row, ri) => (
-          <div key={row.metric} style={{ display: 'contents' }}>
-            <Text style={{ fontSize: 12, alignSelf: 'center' }}>{row.metric}</Text>
-            {row.values.map((v, ci) => {
-              const t = v / maxByMetric[ri]
-              const bg = `rgba(238, 0, 51, ${0.08 + t * 0.65})`
-              return (
-                <Tooltip key={`${ri}-${ci}`} title={`${units[ci]} · ${row.metric}: ${v}`}>
-                  <div
-                    style={{
-                      height: 44,
-                      borderRadius: 6,
-                      background: bg,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: t > 0.55 ? '#fff' : '#1c1c1c',
-                      border: '1px solid var(--vht-border, #e8bcba)',
-                    }}
-                  >
-                    {v}
-                  </div>
-                </Tooltip>
-              )
-            })}
+        </div>
+      }
+      extra={extra}
+      styles={{
+        body: { paddingTop: 12 },
+        header: {
+          background: dark ? 'rgba(255,255,255,0.03)' : undefined,
+        },
+      }}
+      style={{
+        height: '100%',
+        background: dark ? '#1a1a1a' : '#fff',
+        borderColor: dark ? '#333' : undefined,
+      }}
+    >
+      {children}
+    </Card>
+  )
+}
+
+function KpiHero({
+  title,
+  value,
+  suffix,
+  color,
+  delta,
+  question,
+  onClick,
+  dark,
+  icon,
+}: {
+  title: string
+  value: number | string
+  suffix?: string
+  color: string
+  delta?: ReactNode
+  question: string
+  onClick?: () => void
+  dark: boolean
+  icon: ReactNode
+}) {
+  return (
+    <Card
+      size="small"
+      onClick={onClick}
+      hoverable={!!onClick}
+      style={{
+        height: '100%',
+        cursor: onClick ? 'pointer' : 'default',
+        borderLeft: `4px solid ${color}`,
+        background: dark ? '#1a1a1a' : '#fff',
+        borderColor: dark ? '#333' : undefined,
+      }}
+    >
+      <Space align="start" style={{ width: '100%', justifyContent: 'space-between' }}>
+        <div>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {title}
+          </Text>
+          <div style={{ fontSize: 32, fontWeight: 700, lineHeight: 1.15, color, margin: '4px 0' }}>
+            {value}
+            {suffix ? <span style={{ fontSize: 16, marginLeft: 4 }}>{suffix}</span> : null}
           </div>
-        ))}
-      </div>
-    </div>
+          {delta}
+          <div style={{ marginTop: 6 }}>
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              {question}
+            </Text>
+          </div>
+        </div>
+        <div style={{ fontSize: 22, color, opacity: 0.85 }}>{icon}</div>
+      </Space>
+    </Card>
   )
 }
 
 /**
- * Dashboard lãnh đạo — mock Camunda Optimize aggregates.
- * Route: `/tong-quan`. Dữ liệu thật chờ F1 + Optimize API.
+ * Manager Dashboard — Camunda Optimize (mock).
+ * 4 hàng: KPI → Trends → Analysis → Detail. Góc nhìn lãnh đạo vận hành.
  */
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -172,10 +222,14 @@ export default function Dashboard() {
     dayjs('2026-06-30'),
   ])
   const [processGroup, setProcessGroup] = useState<string | undefined>()
+  const [processVersion, setProcessVersion] = useState<string | undefined>()
+  const [department, setDepartment] = useState<string | undefined>()
   const [heatProcess, setHeatProcess] = useState<BpmnHeatProcessMa>('RD01.01')
+  const [trendGrain, setTrendGrain] = useState<TrendGrain>('week')
+  const [groupBy, setGroupBy] = useState<GroupBy>('department')
+  const [dark, setDark] = useState(false)
 
   const today = dayjs('2026-07-21')
-
   const period: AnalyticsPeriod = periodMode === 'quarter' ? 'quarter' : 'month'
   const snap = useMemo(() => getOptimizeSnapshot(period), [period])
 
@@ -192,7 +246,6 @@ export default function Dashboard() {
     return all.filter((o) => o.ma.startsWith(processGroup))
   }, [processGroup])
 
-  // Khi đổi nhóm: nếu quy trình đang chọn không thuộc nhóm → chọn mục đầu.
   useEffect(() => {
     if (heatProcessOptions.length && !heatProcessOptions.some((o) => o.ma === heatProcess)) {
       setHeatProcess(heatProcessOptions[0].ma)
@@ -204,61 +257,18 @@ export default function Dashboard() {
     () => seedProcesses.find((p) => p.ma === heatProcess)?.bpmnXml,
     [heatProcess],
   )
-  const heatProcessLabel = useMemo(
-    () => BPMN_HEAT_PROCESS_OPTIONS.find((o) => o.ma === heatProcess)?.ten ?? heatProcess,
-    [heatProcess],
-  )
 
-  const totalInPeriod =
+  const totalInstances =
     snap.kpi.byStatus.processing +
     snap.kpi.byStatus.approved +
     snap.kpi.byStatus.rejected +
     snap.kpi.byStatus.cancelled
 
-  const statusChart = useMemo(
-    () =>
-      (Object.keys(STATUS_LABEL) as (keyof typeof STATUS_LABEL)[]).map((k) => ({
-        name: STATUS_LABEL[k],
-        value: snap.kpi.byStatus[k],
-        fill: STATUS_COLOR[k],
-      })),
-    [snap],
-  )
+  const trendData = trendGrain === 'day' ? snap.trendDaily : snap.trendWeekly
 
-  const capBudgetChart = useMemo(
-    () =>
-      snap.byCapBudget.map((x) => ({
-        name: `${x.cap}\n${x.budgetBand}`,
-        short: `${x.cap} · ${x.budgetBand}`,
-        count: x.count,
-      })),
-    [snap],
-  )
-
-  // Danh sách HS (dùng cho SLA overdue).
   const allDossiers = useMemo(() => joinDossiers(seedHoSo, getNhiemVu), [])
+  const slaOverdueItems = useMemo(() => computeSlaOverdue(allDossiers, today), [allDossiers, today])
 
-  // SLA overdue: HS đang xử lý mà bước hiện tại đã quá hạn.
-  // Resolve handler name through topHandlers so the "Người/Vai trò xử lý" column shows actual names.
-  const slaOverdueItems = useMemo(() => {
-    const items = computeSlaOverdue(allDossiers, today)
-    // Build lookup: handler name → resolved name from topHandlers
-    const nameByHandler = new Map(snap.topHandlers.map((h) => [h.name, h.name]))
-    return items.map((item) => {
-      // Try exact match first
-      let resolved = nameByHandler.get(item.nguoi)
-      if (!resolved) {
-        // Try prefix match: "TS. Hoàng Đức Anh" matches handler "TS. Hoàng Đức Anh"
-        const handler = snap.topHandlers.find((h) =>
-          item.nguoi && (h.name === item.nguoi || h.name.startsWith(item.nguoi.split(' ').slice(0, 2).join(' ')))
-        )
-        resolved = handler?.name ?? item.nguoi
-      }
-      return { ...item, nguoi: resolved }
-    })
-  }, [allDossiers, today, snap.topHandlers])
-
-  
   const heatMarkers = useMemo(() => {
     const m: Record<string, string> = {}
     bpmnHeat.forEach((c) => {
@@ -267,423 +277,519 @@ export default function Dashboard() {
     return m
   }, [bpmnHeat])
 
-  const heatUnits = useMemo(
-    () => [...new Set(snap.unitMetricHeat.map((x) => x.unit))],
-    [snap],
-  )
-  const heatRows = useMemo(() => {
-    const metrics = [...new Set(snap.unitMetricHeat.map((x) => x.metric))]
-    return metrics.map((metric) => ({
-      metric,
-      values: heatUnits.map(
-        (u) => snap.unitMetricHeat.find((x) => x.unit === u && x.metric === metric)?.value ?? 0,
-      ),
-    }))
-  }, [snap, heatUnits])
+  const groupSlices: GroupSlice[] = useMemo(() => {
+    if (groupBy === 'caseType') return snap.byCaseType
+    if (groupBy === 'product') return snap.byProduct
+    return snap.byDepartment
+  }, [groupBy, snap])
 
-  const unitCols: ColumnsType<UnitPerf> = [
+  const filteredGroups = useMemo(() => {
+    if (!department) return groupSlices
+    return groupSlices.filter((g) => g.label.includes(department) || g.key === department)
+  }, [groupSlices, department])
+
+  const departments = useMemo(() => snap.byDepartment.map((d) => d.label), [snap])
+
+  const versionOptions = useMemo(() => {
+    const procs = processGroup
+      ? seedProcesses.filter((p) => p.nhom === processGroup)
+      : seedProcesses.filter((p) => ['RD01', 'RD02', 'RD05'].includes(p.nhom))
+    const vers = new Set<string>()
+    procs.forEach((p) => p.versions.forEach((v) => vers.add(v.v)))
+    return [...vers].sort()
+  }, [processGroup])
+
+  const branchCols: ColumnsType<BranchAnalysisRow> = [
+    { title: 'Điểm rẽ', dataIndex: 'gateway', width: 150 },
+    { title: 'Nhánh', dataIndex: 'branch' },
     {
-      title: 'Đơn vị',
-      dataIndex: 'unit',
-      render: (v, r) => (
-        <Space>
-          <span>{v}</span>
-          {r.overThreshold && <Tag color="error">Vượt SLA</Tag>}
-        </Space>
-      ),
-    },
-    { title: 'Cycle TB (ngày)', dataIndex: 'avgCycleDays', width: 130, align: 'right' },
-    { title: 'Hoàn thành', dataIndex: 'completed', width: 110, align: 'right' },
-    {
-      title: 'Quá hạn %',
-      dataIndex: 'overdueRate',
-      width: 110,
+      title: 'Tỷ lệ',
+      dataIndex: 'rate',
+      width: 80,
       align: 'right',
-      render: (v: number, r) => (
-        <Text style={{ color: r.overThreshold ? DANGER : undefined, fontWeight: r.overThreshold ? 600 : 400 }}>
-          {v}%
-        </Text>
-      ),
+      render: (v: number) => `${v}%`,
     },
-  ]
-
-  const topCols: ColumnsType<TopHandler> = [
-    { title: '#', width: 48, render: (_v, _r, i) => i + 1 },
-    { title: 'Người / nhóm', dataIndex: 'name' },
-    { title: 'Role', dataIndex: 'roleOrGroup', width: 110, render: (v) => <Text code>{v}</Text> },
-    { title: 'HS hoàn thành', dataIndex: 'completed', width: 120, align: 'right' },
-    { title: 'Cycle TB', dataIndex: 'avgCycleDays', width: 100, align: 'right', render: (v) => `${v}n` },
-  ]
-
-  // Columns for SLA overdue table.
-  const slaOverdueCols: ColumnsType<SlaOverdueItem> = [
-    { title: 'Mã HS', dataIndex: 'id', width: 130, render: (v) => <Text code>{v}</Text> },
-    { title: 'Mã NV', dataIndex: 'maNV', width: 110, render: (v) => <Text code>{v}</Text> },
-    { title: 'Tên đề tài', dataIndex: 'tenDeTai', ellipsis: true },
-    { title: 'Bước hiện tại', dataIndex: 'step', ellipsis: true },
+    { title: 'Số lượt', dataIndex: 'count', width: 80, align: 'right' },
     {
-      title: 'Trễ (ngày)',
-      dataIndex: 'overdueDays',
-      width: 100,
+      title: 'Cycle TB',
+      dataIndex: 'avgDays',
+      width: 90,
       align: 'right',
       render: (v: number) => (
-        <Text style={{ color: DANGER, fontWeight: 600 }}>{v} ngày</Text>
+        <Text style={{ color: v >= 22 ? DANGER : undefined, fontWeight: v >= 22 ? 600 : 400 }}>{v}n</Text>
       ),
     },
-    { title: 'Người / vai trò xử lý', dataIndex: 'nguoi', ellipsis: true },
+    {
+      title: 'Fail/Rework',
+      dataIndex: 'failRate',
+      width: 100,
+      align: 'right',
+      render: (v: number) =>
+        v > 0 ? <Tag color={v >= 50 ? 'error' : 'warning'}>{v}%</Tag> : <Tag color="success">0%</Tag>,
+    },
+  ]
+
+  const outlierCols: ColumnsType<OutlierInstance> = [
+    { title: 'Hồ sơ', dataIndex: 'maHoSo', width: 120, render: (v) => <Text code>{v}</Text> },
+    { title: 'Quy trình', dataIndex: 'process', width: 90 },
+    { title: 'Bước', dataIndex: 'step', ellipsis: true },
+    {
+      title: 'Thời lượng',
+      dataIndex: 'durationDays',
+      width: 100,
+      align: 'right',
+      render: (v: number, r) => (
+        <Tooltip title={`SLA ${r.slaDays} ngày`}>
+          <Text style={{ color: DANGER, fontWeight: 700 }}>{v}n</Text>
+        </Tooltip>
+      ),
+    },
+    { title: 'Đơn vị', dataIndex: 'department', width: 120 },
+    { title: 'Loại HS', dataIndex: 'caseType', width: 100 },
+  ]
+
+  const slaCols: ColumnsType<SlaOverdueItem> = [
+    { title: 'Mã HS', dataIndex: 'id', width: 120, render: (v) => <Text code>{v}</Text> },
+    { title: 'Đề tài', dataIndex: 'tenDeTai', ellipsis: true },
+    { title: 'Bước', dataIndex: 'step', ellipsis: true },
+    {
+      title: 'Trễ',
+      dataIndex: 'overdueDays',
+      width: 90,
+      align: 'right',
+      render: (v: number) => <Text style={{ color: DANGER, fontWeight: 700 }}>{v} ngày</Text>,
+    },
+    { title: 'Xử lý bởi', dataIndex: 'nguoi', ellipsis: true },
     { title: 'Cấp', dataIndex: 'cap', width: 90 },
   ]
 
+  const pageBg: CSSProperties = {
+    background: dark ? '#0f0f0f' : 'transparent',
+    margin: dark ? '-18px -20px' : undefined,
+    padding: dark ? '18px 20px' : undefined,
+    minHeight: dark ? '100%' : undefined,
+    color: dark ? '#f0f0f0' : undefined,
+  }
+
+  const stickyBar: CSSProperties = {
+    position: 'sticky',
+    top: 0,
+    zIndex: 20,
+    background: dark ? 'rgba(15,15,15,0.92)' : 'rgba(251,249,249,0.92)',
+    backdropFilter: 'blur(10px)',
+    borderBottom: `1px solid ${dark ? '#333' : 'var(--vht-border, #e6e9ee)'}`,
+    padding: '12px 0 14px',
+    marginBottom: 16,
+  }
+
   return (
-    <div>
-      <PageHeader
-        title="Tổng quan Optimize"
-        style={{ marginBottom: 0 }}
-        code={
-          <Text type="secondary">
-            Tổng hợp đa quy trình (mock Camunda Optimize) — kỳ {periodLabel}
-            {processGroup ? ` · nhóm ${processGroup}` : ''}. Dùng cho lãnh đạo theo dõi năng lực xử
-            lý.
-          </Text>
-        }
-        extra={
-          <Space wrap size={[8, 8]}>
-            <Segmented
-              value={periodMode}
-              onChange={(v) => setPeriodMode(v as PeriodMode)}
-              options={[
-                { label: 'Tháng', value: 'month' },
-                { label: 'Quý', value: 'quarter' },
-                { label: 'Khoảng thời gian', value: 'range' },
-              ]}
-            />
-            {periodMode === 'range' && (
-              <RangePicker
-                value={dateRange}
-                onChange={(v) => setDateRange(v as [Dayjs, Dayjs] | null)}
-                format="DD/MM/YYYY"
-                allowClear={false}
+    <div style={pageBg} className={dark ? 'mgr-dash-dark' : undefined}>
+      <div style={stickyBar}>
+        <Row justify="space-between" align="middle" gutter={[12, 12]}>
+          <Col>
+            <Title level={3} style={{ margin: 0, color: dark ? '#fff' : undefined }}>
+              Manager Dashboard — Optimize
+            </Title>
+            <Text type="secondary">
+              Sức khỏe quy trình · kỳ {periodLabel}
+              {processGroup ? ` · ${processGroup}` : ''}
+              {processVersion ? ` · v${processVersion}` : ''}
+              {department ? ` · ${department}` : ''}
+            </Text>
+          </Col>
+          <Col>
+            <Space wrap size={[8, 8]}>
+              <Segmented
+                value={periodMode}
+                onChange={(v) => setPeriodMode(v as PeriodMode)}
+                options={[
+                  { label: 'Tháng', value: 'month' },
+                  { label: 'Quý', value: 'quarter' },
+                  { label: 'Khoảng', value: 'range' },
+                ]}
               />
-            )}
-            <Select
-              allowClear
-              placeholder="Nhóm quy trình"
-              value={processGroup}
-              onChange={(v) => setProcessGroup(v)}
-              style={{ minWidth: 180 }}
-              options={Object.entries(NHOM).map(([k, ten]) => ({
-                value: k,
-                label: `${k} — ${ten}`,
-              }))}
-            />
-            <HelpButton section="dashboard" />
-          </Space>
-        }
-      />
+              {periodMode === 'range' && (
+                <RangePicker
+                  value={dateRange}
+                  onChange={(v) => setDateRange(v as [Dayjs, Dayjs] | null)}
+                  format="DD/MM/YYYY"
+                  allowClear={false}
+                />
+              )}
+              <Select
+                allowClear
+                placeholder="Nhóm quy trình"
+                value={processGroup}
+                onChange={setProcessGroup}
+                style={{ minWidth: 160 }}
+                options={Object.entries(NHOM).map(([k, ten]) => ({ value: k, label: `${k} — ${ten}` }))}
+              />
+              <Select
+                allowClear
+                placeholder="Process version"
+                value={processVersion}
+                onChange={setProcessVersion}
+                style={{ minWidth: 130 }}
+                options={versionOptions.map((v) => ({ value: v, label: `v${v}` }))}
+              />
+              <Select
+                allowClear
+                placeholder="Phòng ban"
+                value={department}
+                onChange={setDepartment}
+                style={{ minWidth: 150 }}
+                options={departments.map((d) => ({ value: d, label: d }))}
+              />
+              <Space size={6}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Dark
+                </Text>
+                <Switch checked={dark} onChange={setDark} size="small" />
+              </Space>
+              <HelpButton section="dashboard" />
+            </Space>
+          </Col>
+        </Row>
+      </div>
 
       <Alert
         type="info"
         showIcon
-        style={{ margin: '14px 0 18px' }}
-        message="Frontend mock — chưa nối Camunda Optimize / Operate"
-        description="Số liệu seed mô phỏng báo cáo Optimize. Khi Foundation 1 sẵn sàng sẽ thay bằng API Optimize (report + heatmap BPMN thật)."
+        style={{ marginBottom: 16 }}
+        message="Mock Camunda Optimize — góc nhìn lãnh đạo vận hành"
+        description="Mỗi widget trả lời một câu hỏi quản lý. Click KPI/bảng để drill-down. Khi F1 sẵn sàng sẽ nối Optimize API."
       />
 
-      {/* KPI tổng hợp */}
-      <SectionTitle>1. Tổng hợp từ tất cả quy trình</SectionTitle>
-      <Row gutter={[12, 12]} style={{ marginBottom: 8 }}>
-        <Col xs={12} sm={8} md={4}>
-          <StatCard
-            title="Tổng HS trong kỳ"
-            value={totalInPeriod}
+      {/* ── 1. KPI tổng quan ── */}
+      <Text strong style={{ display: 'block', marginBottom: 10, fontSize: 13, letterSpacing: 0.4 }}>
+        1 · SỨC KHỎE TỔNG QUAN
+      </Text>
+      <Row gutter={[14, 14]} style={{ marginBottom: 22 }}>
+        <Col xs={24} sm={12} xl={6}>
+          <KpiHero
+            title="Total Process Instances"
+            value={totalInstances}
             color={RED_CHROME}
-            style={{ cursor: 'pointer' }}
+            question="Quy trình đang xử lý bao nhiêu hồ sơ?"
+            delta={<Delta value={snap.kpi.deltaInstancesPct} unit="%" />}
+            icon={<ThunderboltOutlined />}
+            dark={dark}
             onClick={() => navigate('/ho-so')}
           />
         </Col>
-        <Col xs={12} sm={8} md={4}>
-          <StatCard
-            title="Đang xử lý"
-            value={snap.kpi.byStatus.processing}
-            color="#1677ff"
-            style={{ cursor: 'pointer' }}
-            onClick={() => navigate('/ho-so?status=processing')}
+        <Col xs={24} sm={12} xl={6}>
+          <KpiHero
+            title="Active Incidents"
+            value={snap.kpi.openIncidents}
+            color={snap.kpi.openIncidents ? DANGER : SUCCESS}
+            question="Có sự cố kỹ thuật cần can thiệp ngay?"
+            delta={<Delta value={snap.kpi.deltaIncidents} invert />}
+            icon={<AlertOutlined />}
+            dark={dark}
+            onClick={() => navigate('/giam-sat')}
           />
         </Col>
-        <Col xs={12} sm={8} md={4}>
-          <StatCard
-            title="Đã phê duyệt"
-            value={snap.kpi.byStatus.approved}
-            color={SUCCESS}
-            style={{ cursor: 'pointer' }}
-            onClick={() => navigate('/ho-so?status=approved')}
-          />
-        </Col>
-        <Col xs={12} sm={8} md={4}>
-          <StatCard
-            title="Bị từ chối"
-            value={snap.kpi.byStatus.rejected}
-            color={DANGER}
-            style={{ cursor: 'pointer' }}
-            onClick={() => navigate('/ho-so?status=rejected')}
-          />
-        </Col>
-        <Col xs={12} sm={8} md={4}>
-          <StatCard
-            title="Hủy"
-            value={snap.kpi.byStatus.cancelled}
-            color="#8593a3"
-            style={{ cursor: 'pointer' }}
-            onClick={() => navigate('/ho-so?status=cancelled')}
-          />
-        </Col>
-        <Col xs={12} sm={8} md={4}>
-          <StatCard title="Cycle TB (ngày)" value={snap.kpi.avgCycleDays} color={RED} />
-        </Col>
-      </Row>
-      <Row gutter={[12, 12]} style={{ marginBottom: 18 }}>
-        <Col xs={12} md={8}>
-          <StatCard
-            title="Instance đang chạy"
-            value={snap.kpi.runningInstances}
-            color="#1677ff"
-            style={{ cursor: 'pointer' }}
-            onClick={() => navigate('/ho-so?status=processing')}
-          />
-        </Col>
-        <Col xs={12} md={8}>
-          <StatCard
-            title="Quá hạn SLA"
-            value={snap.kpi.overdueSla}
-            color={snap.kpi.overdueSla ? DANGER : '#8593a3'}
-            style={{ cursor: 'pointer' }}
+        <Col xs={24} sm={12} xl={6}>
+          <KpiHero
+            title="SLA Compliance"
+            value={snap.kpi.slaCompliancePct}
+            suffix="%"
+            color={snap.kpi.slaCompliancePct >= 85 ? SUCCESS : WARNING}
+            question="Quy trình có đang ổn không?"
+            delta={<Delta value={snap.kpi.deltaSlaPct} unit="đ" />}
+            icon={<CheckCircleOutlined />}
+            dark={dark}
             onClick={() => navigate('/ho-so?sla=overdue')}
           />
+          <Progress
+            percent={snap.kpi.slaCompliancePct}
+            showInfo={false}
+            strokeColor={snap.kpi.slaCompliancePct >= 85 ? SUCCESS : WARNING}
+            size="small"
+            style={{ marginTop: -4, padding: '0 12px 8px' }}
+          />
         </Col>
-        <Col xs={12} md={8}>
-          <StatCard
-            title="Incident kỹ thuật mở"
-            value={snap.kpi.openIncidents}
-            color={snap.kpi.openIncidents ? WARNING : '#8593a3'}
-            style={{ cursor: 'pointer' }}
-            onClick={() => navigate('/ho-so?status=processing')}
+        <Col xs={24} sm={12} xl={6}>
+          <KpiHero
+            title="Average Process Duration"
+            value={snap.kpi.avgCycleDays}
+            suffix="ngày"
+            color={RED}
+            question="Chu kỳ xử lý có đang kéo dài?"
+            delta={<Delta value={snap.kpi.deltaDurationDays} unit="n" invert />}
+            icon={<ClockCircleOutlined />}
+            dark={dark}
           />
         </Col>
       </Row>
 
-      <Row gutter={[14, 14]} style={{ marginBottom: 8 }}>
-        <Col xs={24} lg={10}>
-          <Card title="Hồ sơ theo trạng thái" size="small">
-            <ResponsiveContainer width="100%" height={CHART_H}>
-              <BarChart data={statusChart} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+      {/* ── 2. Xu hướng ── */}
+      <Text strong style={{ display: 'block', marginBottom: 10, fontSize: 13, letterSpacing: 0.4 }}>
+        2 · XU HƯỚNG
+      </Text>
+      <div style={{ marginBottom: 8 }}>
+        <Segmented
+          size="small"
+          value={trendGrain}
+          onChange={(v) => setTrendGrain(v as TrendGrain)}
+          options={[
+            { label: 'Theo ngày', value: 'day' },
+            { label: 'Theo tuần', value: 'week' },
+          ]}
+        />
+      </div>
+      <Row gutter={[14, 14]} style={{ marginBottom: 22 }}>
+        <Col xs={24} lg={8}>
+          <ManagerCard
+            dark={dark}
+            title="Volume theo thời gian"
+            question="Khối lượng hồ sơ đang tăng hay giảm?"
+          >
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={trendData}>
+                <CartesianGrid strokeDasharray="3 3" stroke={dark ? '#333' : '#f0f0f0'} />
+                <XAxis dataKey="label" tick={{ fontSize: 11, fill: dark ? '#aaa' : undefined }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: dark ? '#aaa' : undefined }} />
                 <RTooltip />
-                <Bar dataKey="value" name="Số HS" radius={[4, 4, 0, 0]}>
-                  {statusChart.map((e) => (
-                    <Cell key={e.name} fill={e.fill} />
-                  ))}
-                </Bar>
+                <Bar dataKey="volume" name="Số HS" fill={RED_CHROME} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          </Card>
+          </ManagerCard>
         </Col>
-        <Col xs={24} lg={14}>
-          <Card title="Phân bố theo cấp × dải ngân sách" size="small">
-            <ResponsiveContainer width="100%" height={CHART_H}>
-              <BarChart data={capBudgetChart} margin={{ top: 8, right: 8, left: 0, bottom: 32 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="short" tick={{ fontSize: 10 }} interval={0} angle={-18} textAnchor="end" height={50} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+        <Col xs={24} lg={8}>
+          <ManagerCard
+            dark={dark}
+            title="Duration trend"
+            question="Thời gian xử lý có đang xấu đi?"
+          >
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={trendData}>
+                <CartesianGrid strokeDasharray="3 3" stroke={dark ? '#333' : '#f0f0f0'} />
+                <XAxis dataKey="label" tick={{ fontSize: 11, fill: dark ? '#aaa' : undefined }} />
+                <YAxis unit="n" tick={{ fontSize: 11, fill: dark ? '#aaa' : undefined }} />
                 <RTooltip />
-                <Bar dataKey="count" name="Hồ sơ" fill={RED_CHROME} radius={[4, 4, 0, 0]} />
-              </BarChart>
+                <Line
+                  type="monotone"
+                  dataKey="durationDays"
+                  name="Cycle TB (ngày)"
+                  stroke={RED}
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
+              </LineChart>
             </ResponsiveContainer>
-          </Card>
+          </ManagerCard>
+        </Col>
+        <Col xs={24} lg={8}>
+          <ManagerCard
+            dark={dark}
+            title="Incident trend"
+            question="Sự cố đang nhiều lên không?"
+          >
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={trendData}>
+                <CartesianGrid strokeDasharray="3 3" stroke={dark ? '#333' : '#f0f0f0'} />
+                <XAxis dataKey="label" tick={{ fontSize: 11, fill: dark ? '#aaa' : undefined }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: dark ? '#aaa' : undefined }} />
+                <RTooltip />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="incidents"
+                  name="Incident mở"
+                  stroke={DANGER}
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </ManagerCard>
         </Col>
       </Row>
 
-      <Row gutter={[14, 14]} style={{ marginBottom: 18 }}>
-        <Col xs={24} lg={12}>
-          <Card title="Số HS đang nằm ở mỗi bước chính" size="small">
-            <ResponsiveContainer width="100%" height={CHART_H}>
-              <BarChart
-                layout="vertical"
-                data={snap.stepLoad}
-                margin={{ top: 8, right: 16, left: 8, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
-                <YAxis type="category" dataKey="step" width={120} tick={{ fontSize: 11 }} />
-                <RTooltip />
-                <Bar dataKey="count" name="Đang mở" fill="#1677ff" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-        </Col>
-        <Col xs={24} lg={12}>
-          <Card title="Top 5 bước cycle time dài nhất" size="small">
-            <ResponsiveContainer width="100%" height={CHART_H}>
-              <BarChart
-                layout="vertical"
-                data={snap.topSlowSteps}
-                margin={{ top: 8, right: 16, left: 8, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis type="number" tick={{ fontSize: 11 }} unit="n" />
-                <YAxis type="category" dataKey="step" width={120} tick={{ fontSize: 11 }} />
-                <RTooltip formatter={(v: number) => [`${v} ngày`, 'TB']} />
-                <Bar dataKey="avgDays" name="Ngày TB" fill={RED} radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Hồ sơ vượt SLA */}
-      <SectionTitle>2. Hồ sơ đang vượt SLA</SectionTitle>
-      <Row gutter={[14, 14]} style={{ marginBottom: 18 }}>
-        <Col xs={24} lg={24}>
-          <Card
-            title={`Danh sách HS vượt SLA (${slaOverdueItems.length})`}
-            size="small"
+      {/* ── 3. Phân tích tắc nghẽn ── */}
+      <Text strong style={{ display: 'block', marginBottom: 10, fontSize: 13, letterSpacing: 0.4 }}>
+        3 · ĐIỂM NGHẼN & NHÁNH RỦI RO
+      </Text>
+      <Row gutter={[14, 14]} style={{ marginBottom: 22 }}>
+        <Col xs={24} xl={12}>
+          <ManagerCard
+            dark={dark}
+            title="BPMN Heatmap"
+            question="Đang tắc ở đâu trên sơ đồ quy trình?"
             extra={
-              slaOverdueItems.length > 0 && (
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  Cột trễ = số ngày quá hạn so với hạn xử lý bước hiện tại
-                </Text>
-              )
+              <Select
+                value={heatProcess}
+                onChange={(v) => setHeatProcess(v as BpmnHeatProcessMa)}
+                style={{ minWidth: 220 }}
+                options={heatProcessOptions.map((o) => ({
+                  value: o.ma,
+                  label: `${o.ma}`,
+                }))}
+              />
+            }
+          >
+            <Space size={8} style={{ marginBottom: 8 }}>
+              <Text type="secondary" style={{ fontSize: 11 }}>
+                Thấp
+              </Text>
+              <div
+                style={{
+                  width: 100,
+                  height: 10,
+                  borderRadius: 5,
+                  background:
+                    'linear-gradient(90deg, #fff1f3, #ffdad8, #ff9aa8, #ee0033, #bf0027, #a80022)',
+                }}
+              />
+              <Text type="secondary" style={{ fontSize: 11 }}>
+                Cao
+              </Text>
+            </Space>
+            <Suspense fallback={<Text type="secondary">Đang tải BPMN…</Text>}>
+              {heatXml ? (
+                <BpmnViewer key={heatProcess} xml={heatXml} height="320px" heatMarkers={heatMarkers} />
+              ) : (
+                <Text type="secondary">Chưa có BPMN mock.</Text>
+              )}
+            </Suspense>
+          </ManagerCard>
+        </Col>
+        <Col xs={24} xl={12}>
+          <Row gutter={[14, 14]}>
+            <Col span={24}>
+              <ManagerCard
+                dark={dark}
+                title="Top Long-Running Tasks"
+                question="Bước nào kéo dài cycle time nhất?"
+              >
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart layout="vertical" data={snap.topSlowSteps} margin={{ left: 8, right: 12 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={dark ? '#333' : '#f0f0f0'} />
+                    <XAxis type="number" unit="n" tick={{ fontSize: 11, fill: dark ? '#aaa' : undefined }} />
+                    <YAxis
+                      type="category"
+                      dataKey="step"
+                      width={120}
+                      tick={{ fontSize: 11, fill: dark ? '#aaa' : undefined }}
+                    />
+                    <RTooltip />
+                    <Bar dataKey="avgDays" name="Ngày TB" radius={[0, 4, 4, 0]}>
+                      {snap.topSlowSteps.map((s) => (
+                        <Cell key={s.step} fill={s.avgDays >= 10 ? DANGER : s.avgDays >= 7 ? WARNING : RED_CHROME} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </ManagerCard>
+            </Col>
+            <Col span={24}>
+              <ManagerCard
+                dark={dark}
+                title="Branch Analysis"
+                question="Nhánh nào gây chậm hoặc fail?"
+              >
+                <Table<BranchAnalysisRow>
+                  size="small"
+                  pagination={false}
+                  rowKey={(r) => `${r.gateway}-${r.branch}`}
+                  columns={branchCols}
+                  dataSource={snap.branchAnalysis}
+                  scroll={{ y: 180 }}
+                />
+              </ManagerCard>
+            </Col>
+          </Row>
+        </Col>
+      </Row>
+
+      {/* ── 4. Chi tiết hành động ── */}
+      <Text strong style={{ display: 'block', marginBottom: 10, fontSize: 13, letterSpacing: 0.4 }}>
+        4 · CASE CẦN XỬ LÝ & PHÂN NHÓM
+      </Text>
+      <Row gutter={[14, 14]}>
+        <Col xs={24} xl={12}>
+          <ManagerCard
+            dark={dark}
+            title={`Cases quá SLA (${slaOverdueItems.length})`}
+            question="Case nào cần xử lý ngay?"
+            extra={
+              <a onClick={() => navigate('/ho-so?sla=overdue')}>Xem tất cả</a>
             }
           >
             {slaOverdueItems.length === 0 ? (
-              <Text type="secondary">Không có hồ sơ vượt SLA trong kỳ.</Text>
+              <Text type="secondary">Không có hồ sơ vượt SLA.</Text>
             ) : (
               <Table<SlaOverdueItem>
-                rowKey="id"
                 size="small"
-                pagination={{ pageSize: 8 }}
-                columns={slaOverdueCols}
+                pagination={{ pageSize: 5 }}
+                rowKey="id"
+                columns={slaCols}
                 dataSource={slaOverdueItems}
-                onRow={(record) => ({
+                onRow={(r) => ({
                   style: { cursor: 'pointer' },
-                  onClick: () => navigate(`/ho-so/${record.id}`),
+                  onClick: () => navigate(`/ho-so/${r.id}`),
                 })}
               />
             )}
-          </Card>
+          </ManagerCard>
         </Col>
-      </Row>
-
-      {/* Năng lực đơn vị */}
-      <SectionTitle>3. Năng lực xử lý theo đơn vị / role</SectionTitle>
-      <Row gutter={[14, 14]} style={{ marginBottom: 18 }}>
-        <Col xs={24} lg={12}>
-          <Card title="Cycle time & quá hạn theo đơn vị" size="small">
-            <Paragraph type="secondary" style={{ fontSize: 12, marginTop: 0 }}>
-              Highlight đơn vị vượt ngưỡng SLA nội bộ (Hội đồng, Ban TGĐ trong kỳ demo).
-            </Paragraph>
-            <Table<UnitPerf>
-              rowKey="unit"
+        <Col xs={24} xl={12}>
+          <ManagerCard
+            dark={dark}
+            title="Outlier instances"
+            question="Instance nào bất thường (kéo dài quá SLA)?"
+            extra={<a onClick={() => navigate('/giam-sat')}>Giám sát</a>}
+          >
+            <Table<OutlierInstance>
               size="small"
               pagination={false}
-              columns={unitCols}
-              dataSource={snap.unitPerf}
-              rowClassName={(r) => (r.overThreshold ? 'vht-row-warn' : '')}
+              rowKey="instanceKey"
+              columns={outlierCols}
+              dataSource={snap.outliers}
+              onRow={(r) => ({
+                style: { cursor: 'pointer' },
+                onClick: () => navigate(`/ho-so/${r.maHoSo}`),
+              })}
             />
-          </Card>
-        </Col>
-        <Col xs={24} lg={12}>
-          <Card title="Top 10 người/nhóm xử lý nhiều HS nhất" size="small">
-            <Table<TopHandler>
-              rowKey={(r) => `${r.name}-${r.roleOrGroup}`}
-              size="small"
-              pagination={false}
-              columns={topCols}
-              dataSource={snap.topHandlers}
-            />
-          </Card>
+          </ManagerCard>
         </Col>
         <Col span={24}>
-          <Card title="Heatmap Unit × SLA / cycle time" size="small">
-            <UnitMetricHeatmap units={heatUnits} rows={heatRows} />
-          </Card>
+          <ManagerCard
+            dark={dark}
+            title="Phân nhóm theo đơn vị / loại HS / sản phẩm"
+            question="Đội nào cần can thiệp?"
+            extra={
+              <Segmented
+                size="small"
+                value={groupBy}
+                onChange={(v) => setGroupBy(v as GroupBy)}
+                options={[
+                  { label: 'Phòng ban', value: 'department' },
+                  { label: 'Loại HS', value: 'caseType' },
+                  { label: 'Sản phẩm', value: 'product' },
+                ]}
+              />
+            }
+          >
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={filteredGroups}>
+                <CartesianGrid strokeDasharray="3 3" stroke={dark ? '#333' : '#f0f0f0'} />
+                <XAxis dataKey="label" tick={{ fontSize: 11, fill: dark ? '#aaa' : undefined }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: dark ? '#aaa' : undefined }} />
+                <RTooltip />
+                <Legend />
+                <Bar dataKey="count" name="Số HS" fill={RED_CHROME} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="overdue" name="Quá hạn" fill={DANGER} radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+            <Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 0, marginTop: 8 }}>
+              Highlight: đơn vị có tỷ lệ quá hạn cao (Hội đồng KHCN, Ban TGĐ) cần ưu tiên hỗ trợ tài
+              nguyên / nới SLA / rút bước.
+            </Paragraph>
+          </ManagerCard>
         </Col>
       </Row>
-
-      {/* BPMN heatmap */}
-      <SectionTitle>4. Heatmap BPMN (Optimize)</SectionTitle>
-      <Card
-        title={
-          <Space wrap size={12}>
-            <span>Cường độ theo số HS đang mở + cycle time bước</span>
-            <Select
-              value={heatProcess}
-              onChange={(v) => setHeatProcess(v as BpmnHeatProcessMa)}
-              style={{ minWidth: 320 }}
-              options={heatProcessOptions.map((o) => ({
-                value: o.ma,
-                label: `${o.ma} — ${o.ten}`,
-              }))}
-              aria-label="Chọn quy trình heatmap"
-            />
-          </Space>
-        }
-        size="small"
-        extra={
-          <Space size={10} align="center">
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              Thấp
-            </Text>
-            <div
-              title="Thang màu VHT (rose → brand red → chrome)"
-              style={{
-                width: 120,
-                height: 12,
-                borderRadius: 6,
-                border: '1px solid var(--vht-border, #e6e9ee)',
-                background:
-                  'linear-gradient(90deg, #fff1f3 0%, #ffdad8 22%, #ff9aa8 45%, #ee0033 72%, #bf0027 88%, #a80022 100%)',
-              }}
-            />
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              Cao
-            </Text>
-          </Space>
-        }
-      >
-        <Paragraph type="secondary" style={{ marginTop: 0, fontSize: 12 }}>
-          {heatProcess} · {heatProcessLabel} — glow kiểu Optimize, palette đỏ VHT (không dùng phổ cầu
-          vồng).
-        </Paragraph>
-        <Suspense fallback={<Text type="secondary">Đang tải sơ đồ BPMN…</Text>}>
-          {heatXml ? (
-            <BpmnViewer key={heatProcess} xml={heatXml} height="420px" heatMarkers={heatMarkers} />
-          ) : (
-            <Text type="secondary">Quy trình chưa có BPMN mock.</Text>
-          )}
-        </Suspense>
-        <Table
-          style={{ marginTop: 12 }}
-          size="small"
-          pagination={false}
-          rowKey="elementId"
-          dataSource={[...bpmnHeat].sort((a, b) => b.intensity - a.intensity)}
-          columns={[
-            { title: 'Node', dataIndex: 'elementId', width: 130, render: (v) => <Text code>{v}</Text> },
-            { title: 'Bước', dataIndex: 'label' },
-            { title: 'HS mở', dataIndex: 'openCount', width: 90, align: 'right' },
-            { title: 'Cycle TB', dataIndex: 'avgCycleDays', width: 100, align: 'right', render: (v) => `${v}n` },
-            {
-              title: 'Cường độ',
-              dataIndex: 'intensity',
-              width: 100,
-              align: 'right',
-              render: (v: number) => `${Math.round(v * 100)}%`,
-            },
-          ]}
-        />
-      </Card>
     </div>
   )
 }

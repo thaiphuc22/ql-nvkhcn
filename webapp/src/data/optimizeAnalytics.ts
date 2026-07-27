@@ -17,6 +17,51 @@ export interface PeriodKpi {
   openIncidents: number
   /** Overall cycle time: nộp → quyết định cuối (ngày). */
   avgCycleDays: number
+  /** % instance hoàn thành đúng SLA trong kỳ. */
+  slaCompliancePct: number
+  /** Delta so với kỳ trước (điểm phần trăm / ngày). */
+  deltaInstancesPct: number
+  deltaIncidents: number
+  deltaSlaPct: number
+  deltaDurationDays: number
+}
+
+export interface TrendPoint {
+  label: string
+  volume: number
+  durationDays: number
+  incidents: number
+}
+
+export interface BranchAnalysisRow {
+  gateway: string
+  branch: string
+  rate: number
+  count: number
+  /** avg cycle days when taking this branch */
+  avgDays: number
+  /** fail or rework rate on this branch */
+  failRate: number
+}
+
+export interface OutlierInstance {
+  instanceKey: string
+  maHoSo: string
+  process: string
+  step: string
+  durationDays: number
+  slaDays: number
+  department: string
+  caseType: string
+  product: string
+}
+
+export interface GroupSlice {
+  key: string
+  label: string
+  count: number
+  overdue: number
+  avgDays: number
 }
 
 export interface CapBudgetSlice {
@@ -108,6 +153,14 @@ export interface OptimizeSnapshot {
   stepLoad: StepLoad[]
   topSlowSteps: StepCycle[]
   backlogTrend: BacklogPoint[]
+  /** Volume / duration / incident theo ngày hoặc tuần. */
+  trendDaily: TrendPoint[]
+  trendWeekly: TrendPoint[]
+  branchAnalysis: BranchAnalysisRow[]
+  outliers: OutlierInstance[]
+  byDepartment: GroupSlice[]
+  byCaseType: GroupSlice[]
+  byProduct: GroupSlice[]
   slaByCap: SlaByCap[]
   outcomesByRd: OutcomeRate[]
   outcomesByBudget: OutcomeRate[]
@@ -176,6 +229,11 @@ const MONTH: OptimizeSnapshot = {
     overdueSla: 9,
     openIncidents: 3,
     avgCycleDays: 18.4,
+    slaCompliancePct: 86.2,
+    deltaInstancesPct: 4.8,
+    deltaIncidents: -1,
+    deltaSlaPct: -1.4,
+    deltaDurationDays: 0.6,
   },
   byCapBudget: [
     { cap: 'Cơ sở', budgetBand: '< 5 tỷ', count: 28 },
@@ -207,6 +265,96 @@ const MONTH: OptimizeSnapshot = {
     { label: 'T4', open: 58 },
     { label: 'T5', open: 61 },
     { label: 'T6', open: 48 },
+  ],
+  trendDaily: [
+    { label: '01/06', volume: 4, durationDays: 17.2, incidents: 0 },
+    { label: '05/06', volume: 6, durationDays: 18.0, incidents: 1 },
+    { label: '10/06', volume: 5, durationDays: 19.1, incidents: 0 },
+    { label: '15/06', volume: 8, durationDays: 18.8, incidents: 2 },
+    { label: '20/06', volume: 7, durationDays: 17.5, incidents: 0 },
+    { label: '25/06', volume: 9, durationDays: 18.9, incidents: 1 },
+    { label: '30/06', volume: 5, durationDays: 18.4, incidents: 0 },
+  ],
+  trendWeekly: [
+    { label: 'Tuần 1', volume: 22, durationDays: 17.8, incidents: 1 },
+    { label: 'Tuần 2', volume: 28, durationDays: 18.6, incidents: 2 },
+    { label: 'Tuần 3', volume: 31, durationDays: 19.2, incidents: 3 },
+    { label: 'Tuần 4', volume: 45, durationDays: 18.4, incidents: 1 },
+  ],
+  branchAnalysis: [
+    { gateway: 'Sau thẩm định HĐ', branch: 'Đồng ý', rate: 61, count: 41, avgDays: 16.2, failRate: 0 },
+    { gateway: 'Sau thẩm định HĐ', branch: 'Yêu cầu điều chỉnh', rate: 29, count: 20, avgDays: 24.8, failRate: 12 },
+    { gateway: 'Sau thẩm định HĐ', branch: 'Từ chối', rate: 10, count: 7, avgDays: 12.0, failRate: 100 },
+    { gateway: 'Sau ký TT/Khối', branch: 'Đồng ý', rate: 78, count: 62, avgDays: 14.5, failRate: 0 },
+    { gateway: 'Sau ký TT/Khối', branch: 'Yêu cầu điều chỉnh', rate: 18, count: 14, avgDays: 21.3, failRate: 8 },
+    { gateway: 'Sau ký TT/Khối', branch: 'Từ chối', rate: 4, count: 3, avgDays: 9.0, failRate: 100 },
+    { gateway: 'Sau TGĐ', branch: 'Đồng ý', rate: 72, count: 39, avgDays: 17.1, failRate: 0 },
+    { gateway: 'Sau TGĐ', branch: 'Yêu cầu điều chỉnh', rate: 22, count: 12, avgDays: 26.4, failRate: 15 },
+    { gateway: 'Sau TGĐ', branch: 'Từ chối', rate: 6, count: 3, avgDays: 11.2, failRate: 100 },
+  ],
+  outliers: [
+    {
+      instanceKey: '2251799813688901',
+      maHoSo: 'HS-2026-025',
+      process: 'RD02.01',
+      step: 'Chuyên quản thẩm định',
+      durationDays: 41,
+      slaDays: 20,
+      department: 'CQ QLKHCN',
+      caseType: 'Xét duyệt',
+      product: 'Đề tài R&D',
+    },
+    {
+      instanceKey: '2251799813685284',
+      maHoSo: 'HS-2026-018',
+      process: 'RD01.01',
+      step: 'Hội đồng KHCN phê duyệt',
+      durationDays: 36,
+      slaDays: 25,
+      department: 'Hội đồng KHCN',
+      caseType: 'Chủ trương',
+      product: 'Đề tài R&D',
+    },
+    {
+      instanceKey: '2251799813690112',
+      maHoSo: 'HS-2026-035',
+      process: 'RD05.01',
+      step: 'Hội đồng Nghiệm thu',
+      durationDays: 33,
+      slaDays: 22,
+      department: 'Hội đồng KHCN',
+      caseType: 'Nghiệm thu',
+      product: 'Sản phẩm mẫu',
+    },
+    {
+      instanceKey: '2251799813691455',
+      maHoSo: 'HS-2026-027',
+      process: 'RD01.01',
+      step: 'Ký duyệt cấp TT/Khối',
+      durationDays: 29,
+      slaDays: 15,
+      department: 'BGĐ TT/Khối',
+      caseType: 'Chủ trương',
+      product: 'Đề tài R&D',
+    },
+  ],
+  byDepartment: [
+    { key: 'hd', label: 'Hội đồng KHCN', count: 28, overdue: 9, avgDays: 12.1 },
+    { key: 'cq', label: 'CQ QLKHCN', count: 34, overdue: 6, avgDays: 6.8 },
+    { key: 'cs', label: 'CQ KHCN Cơ sở', count: 38, overdue: 4, avgDays: 5.2 },
+    { key: 'tgd', label: 'Ban TGĐ', count: 18, overdue: 4, avgDays: 7.9 },
+    { key: 'bgd', label: 'BGĐ TT/Khối', count: 41, overdue: 3, avgDays: 4.0 },
+  ],
+  byCaseType: [
+    { key: 'ct', label: 'Chủ trương', count: 42, overdue: 8, avgDays: 18.4 },
+    { key: 'xd', label: 'Xét duyệt', count: 36, overdue: 7, avgDays: 21.6 },
+    { key: 'nt', label: 'Nghiệm thu', count: 24, overdue: 3, avgDays: 15.2 },
+    { key: 'qt', label: 'Quyết toán', count: 14, overdue: 2, avgDays: 12.8 },
+  ],
+  byProduct: [
+    { key: 'rd', label: 'Đề tài R&D', count: 68, overdue: 12, avgDays: 19.1 },
+    { key: 'sp', label: 'Sản phẩm mẫu', count: 28, overdue: 5, avgDays: 16.4 },
+    { key: 'da', label: 'Dự án ứng dụng', count: 20, overdue: 3, avgDays: 14.2 },
   ],
   slaByCap: [
     { cap: 'Cơ sở', lateRate: 14, total: 58, late: 8 },
@@ -307,11 +455,21 @@ const QUARTER: OptimizeSnapshot = {
     overdueSla: 9,
     openIncidents: 3,
     avgCycleDays: 19.7,
+    slaCompliancePct: 84.1,
+    deltaInstancesPct: 6.2,
+    deltaIncidents: 0,
+    deltaSlaPct: -2.1,
+    deltaDurationDays: 1.1,
   },
   backlogTrend: [
     { label: 'T4', open: 44 },
     { label: 'T5', open: 51 },
     { label: 'T6', open: 48 },
+  ],
+  trendWeekly: [
+    { label: 'T4', volume: 38, durationDays: 18.2, incidents: 2 },
+    { label: 'T5', volume: 44, durationDays: 19.5, incidents: 3 },
+    { label: 'T6', volume: 42, durationDays: 19.7, incidents: 3 },
   ],
   reworkLoops: [
     { times: 0, dossiers: 198 },
