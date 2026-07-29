@@ -153,9 +153,9 @@ export const PERMISSION_DEFINITIONS: PermissionDefinition[] = [
 ]
 
 export const FEATURE_DEFINITIONS: FeatureDefinition[] = [
-  { code: 'DASHBOARD', name: 'Tổng quan', group: 'Workspace', description: 'Trang tổng quan hệ thống.' },
+  { code: 'DASHBOARD', name: 'Tổng quan', group: 'Workspace', description: 'Trang tổng quan hệ thống. Sub-views: DASHBOARD_EXECUTIVE_VIEW, DASHBOARD_PORTFOLIO_VIEW, DASHBOARD_MISSION_VIEW, DASHBOARD_PROCESS_VIEW, DASHBOARD_WORKLOAD_VIEW, DASHBOARD_COUNCIL_VIEW, DASHBOARD_FINANCE_VIEW, DASHBOARD_RESOURCE_VIEW, DASHBOARD_RISK_VIEW, DASHBOARD_INTEGRATION_VIEW, DASHBOARD_ADOPTION_VIEW, DASHBOARD_EXPORT (mock gate: features/dashboard/shared/dashboardPermissions.ts).' },
   { code: 'WORKLIST', name: 'Việc của tôi', group: 'Workspace', description: 'Danh sách task cần xử lý.' },
-  { code: 'MISSION', name: 'Nhiệm vụ KHCN', group: 'Core', description: 'Quản lý master Nhiệm vụ KHCN.' },
+  { code: 'MISSION', name: 'Nhiệm vụ KHCN', group: 'Core', description: 'Quản lý master Nhiệm vụ KHCN. Mở rộng: Sản phẩm nghiên cứu, SHTT, Công bố khoa học, Công nghệ lõi (xem data/sanPhamKhcn.ts → SAN_PHAM_KHCN_PERMISSIONS).' },
   { code: 'DOSSIER', name: 'Hồ sơ KHCN', group: 'Core', description: 'Quản lý hồ sơ và vòng đời xử lý.' },
   { code: 'PROCESS', name: 'Quy trình', group: 'Configuration', description: 'Danh mục và phiên bản quy trình BPMN.' },
   { code: 'FORM', name: 'Biểu mẫu', group: 'Configuration', description: 'Thư viện biểu mẫu gắn vào task.' },

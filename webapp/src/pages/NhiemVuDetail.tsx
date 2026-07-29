@@ -150,6 +150,7 @@ export default function NhiemVuDetail() {
             title={`Hồ sơ thuộc nhiệm vụ (${hoSo.length})`}
             size="small"
             extra={<Text type="secondary" style={{ fontSize: 12 }}>1 nhiệm vụ có nhiều hồ sơ theo giai đoạn</Text>}
+            style={{ marginBottom: 16 }}
           >
             <Paragraph type="secondary" style={{ fontSize: 12, marginTop: 0 }}>
               Bấm một hồ sơ để xem chi tiết + timeline phê duyệt.
@@ -162,6 +163,17 @@ export default function NhiemVuDetail() {
               onRowClick={(r) => navigate(`/ho-so/${encodeURIComponent(r.id)}`)}
               emptyText="Nhiệm vụ chưa có hồ sơ nào."
             />
+          </Card>
+          <Card title="Sản phẩm & kết quả KHCN" size="small">
+            <Paragraph type="secondary" style={{ fontSize: 12, marginTop: 0 }}>
+              Quản lý đầu ra gắn nhiệm vụ: sản phẩm nghiên cứu, SHTT, công bố và công nghệ lõi.
+            </Paragraph>
+            <Space wrap>
+              <Button onClick={() => navigate('/san-pham-nghien-cuu')}>Sản phẩm nghiên cứu</Button>
+              <Button onClick={() => navigate('/so-huu-tri-tue')}>Sở hữu trí tuệ</Button>
+              <Button onClick={() => navigate('/cong-bo-khoa-hoc')}>Công bố khoa học</Button>
+              <Button onClick={() => navigate('/cong-nghe-loi')}>Công nghệ lõi</Button>
+            </Space>
           </Card>
         </Col>
       </Row>

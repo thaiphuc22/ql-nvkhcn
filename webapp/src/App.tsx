@@ -36,6 +36,9 @@ import {
   ApartmentOutlined,
   TeamOutlined,
   BookOutlined,
+  FileProtectOutlined,
+  ReadOutlined,
+  RocketOutlined,
 } from "@ant-design/icons";
 import {
   Routes,
@@ -45,7 +48,8 @@ import {
   useLocation,
   Link,
 } from "react-router-dom";
-import Dashboard from "./pages/Dashboard";
+import { dashboardRouteNodes, DASHBOARD_MENU } from "./features/dashboard/DashboardRoutes";
+import { canViewDashboard } from "./features/dashboard/shared/dashboardPermissions";
 import Login from "./pages/Login";
 import { openAppRoute } from "./utils/navigation";
 
@@ -76,6 +80,10 @@ const TroGiup = lazy(() => import("./pages/TroGiup"));
 const SubsystemList = lazy(() => import("./pages/SubsystemList"));
 const PhanHePage = lazy(() => import("./pages/PhanHePage"));
 const CouncilCommittee = lazy(() => import("./pages/CouncilCommittee"));
+const SanPhamNghienCuuList = lazy(() => import("./pages/san-pham-khcn/SanPhamNghienCuuList"));
+const HoSoSHTTList = lazy(() => import("./pages/san-pham-khcn/HoSoSHTTList"));
+const CongBoKhoaHocList = lazy(() => import("./pages/san-pham-khcn/CongBoKhoaHocList"));
+const CongNgheLoiList = lazy(() => import("./pages/san-pham-khcn/CongNgheLoiList"));
 import SubsystemSwitcher from "./components/SubsystemSwitcher";
 import { useDossiers } from "./store/DossierContext";
 import { useBreadcrumb } from "./store/BreadcrumbContext";
@@ -102,13 +110,27 @@ type BackendDemoLink = {
 };
 
 const ROUTE_BY_KEY: Record<string, string> = {
-  dashboard: "/tong-quan",
+  dashboard: "/dashboard/tong-quan",
+  "dash-tong-quan": "/dashboard/tong-quan",
+  "dash-danh-muc": "/dashboard/danh-muc-nhiem-vu",
+  "dash-quy-trinh": "/dashboard/quy-trinh-sla",
+  "dash-tai-xu-ly": "/dashboard/tai-xu-ly",
+  "dash-hoi-dong": "/dashboard/hoi-dong",
+  "dash-kinh-phi": "/dashboard/kinh-phi",
+  "dash-nguon-luc": "/dashboard/nguon-luc",
+  "dash-rui-ro": "/dashboard/rui-ro",
+  "dash-tich-hop": "/dashboard/tich-hop-du-lieu",
+  "dash-su-dung": "/dashboard/muc-do-su-dung",
   worklist: "/viec-cua-toi",
   quytrinh: "/quy-trinh",
   bieumau: "/phan-he/PH3/bieu-mau",
   nvkhcn: "/nhiem-vu",
   "nhiem-vu": "/nhiem-vu",
   "ho-so": "/ho-so",
+  "san-pham-nc": "/san-pham-nghien-cuu",
+  "ho-so-shtt": "/so-huu-tri-tue",
+  "cong-bo-kh": "/cong-bo-khoa-hoc",
+  "cong-nghe-loi": "/cong-nghe-loi",
   donvi: "/phan-he/PH2/co-cau-to-chuc",
   nguoidung: "/phan-he/PH2/nguoi-dung",
   phanquyen: "/phan-he/PH2/phan-quyen",
@@ -219,56 +241,80 @@ export default function App() {
             ? "ph3-tongquan"
             : location.pathname.startsWith("/phan-he/PH3/bieu-mau")
               ? "ph3-bieumau"
-              : location.pathname.startsWith("/tong-quan")
-                ? "dashboard"
-                : location.pathname.startsWith("/viec-cua-toi")
-                  ? "worklist"
-                  : location.pathname.startsWith("/giam-sat")
-                    ? "giamsat"
-                    : location.pathname.startsWith("/hoi-dong")
-                    ? "hoidong"
-                    : location.pathname.startsWith("/tich-hop")
-                      ? "tichhop"
-                      : location.pathname.startsWith("/nhat-ky")
-                        ? "nhatky"
-                        : location.pathname.startsWith("/quy-trinh")
-                          ? "quytrinh"
-                          : location.pathname.startsWith("/quan-ly-luat")
-                            ? "luat"
-                            : location.pathname.startsWith("/ma-tran-phe-duyet")
-                              ? "matran"
-                              : location.pathname.startsWith(
-                                    "/cau-hinh-hanh-dong",
-                                  )
-                                ? "hanhdong"
+              : location.pathname.startsWith("/dashboard")
+                ? (DASHBOARD_MENU.find((m) => location.pathname.startsWith(m.path))?.key ?? "dash-tong-quan")
+                : location.pathname.startsWith("/tong-quan")
+                  ? "dash-tong-quan"
+                  : location.pathname.startsWith("/viec-cua-toi")
+                    ? "worklist"
+                    : location.pathname.startsWith("/giam-sat")
+                      ? "giamsat"
+                      : location.pathname.startsWith("/hoi-dong")
+                      ? "hoidong"
+                      : location.pathname.startsWith("/tich-hop")
+                        ? "tichhop"
+                        : location.pathname.startsWith("/nhat-ky")
+                          ? "nhatky"
+                          : location.pathname.startsWith("/quy-trinh")
+                            ? "quytrinh"
+                            : location.pathname.startsWith("/quan-ly-luat")
+                              ? "luat"
+                              : location.pathname.startsWith("/ma-tran-phe-duyet")
+                                ? "matran"
                                 : location.pathname.startsWith(
-                                      "/cau-hinh-service-task",
+                                      "/cau-hinh-hanh-dong",
                                     )
-                                  ? "servicetask"
-                                  : location.pathname.startsWith("/ho-so")
-                                    ? "ho-so"
-                                    : location.pathname.startsWith("/nhiem-vu")
-                                      ? "nhiem-vu"
-                                      : location.pathname.startsWith(
-                                            "/tro-giup",
-                                          )
-                                        ? "trogiup"
-                                        : location.pathname.startsWith(
-                                              "/danh-sach-phan-he",
-                                            )
-                                          ? "danh-sach-phan-he"
-                                          : location.pathname.startsWith(
-                                                "/phan-he/",
-                                              )
-                                            ? "danh-sach-phan-he"
-                                            : "quytrinh";
+                                  ? "hanhdong"
+                                  : location.pathname.startsWith(
+                                        "/cau-hinh-service-task",
+                                      )
+                                    ? "servicetask"
+                                    : location.pathname.startsWith("/ho-so")
+                                      ? "ho-so"
+                                      : location.pathname.startsWith("/san-pham-nghien-cuu")
+                                        ? "san-pham-nc"
+                                        : location.pathname.startsWith("/so-huu-tri-tue")
+                                          ? "ho-so-shtt"
+                                          : location.pathname.startsWith("/cong-bo-khoa-hoc")
+                                            ? "cong-bo-kh"
+                                            : location.pathname.startsWith("/cong-nghe-loi")
+                                              ? "cong-nghe-loi"
+                                              : location.pathname.startsWith("/nhiem-vu")
+                                                ? "nhiem-vu"
+                                                : location.pathname.startsWith(
+                                                      "/tro-giup",
+                                                    )
+                                                  ? "trogiup"
+                                                  : location.pathname.startsWith(
+                                                        "/danh-sach-phan-he",
+                                                      )
+                                                    ? "danh-sach-phan-he"
+                                                    : location.pathname.startsWith(
+                                                          "/phan-he/",
+                                                        )
+                                                      ? "danh-sach-phan-he"
+                                                      : "quytrinh";
 
   const SECTION_TITLE: Record<string, string> = {
-    dashboard: "Tổng quan",
+    dashboard: "Dashboard",
+    "dash-tong-quan": "Tổng quan điều hành",
+    "dash-danh-muc": "Danh mục nhiệm vụ",
+    "dash-quy-trinh": "Quy trình & SLA",
+    "dash-tai-xu-ly": "Tải xử lý",
+    "dash-hoi-dong": "Hội đồng",
+    "dash-kinh-phi": "Kinh phí",
+    "dash-nguon-luc": "Nguồn lực",
+    "dash-rui-ro": "Rủi ro",
+    "dash-tich-hop": "Tích hợp dữ liệu",
+    "dash-su-dung": "Mức độ sử dụng",
     worklist: "Việc của tôi",
     nvkhcn: "Quản trị KHCN",
     "nhiem-vu": "Quản trị KHCN",
     "ho-so": "Quản trị KHCN",
+    "san-pham-nc": "Sản phẩm nghiên cứu",
+    "ho-so-shtt": "Sở hữu trí tuệ",
+    "cong-bo-kh": "Công bố khoa học",
+    "cong-nghe-loi": "Công nghệ lõi",
     "ph2-tongquan": "Tổng quan",
     "ph2-donvi": "Quản trị đơn vị",
     "ph2-nguoidung": "Quản trị người dùng",
@@ -302,8 +348,19 @@ export default function App() {
     key: `${i}-${c.label}`,
   }));
 
+  const dashboardMenuChildren = DASHBOARD_MENU.filter((item) =>
+    canViewDashboard(user, item.permission),
+  ).map((item) => ({ key: item.key, icon: null, label: item.label }));
+
   const menuItems: any[] = [
-    { key: "dashboard", icon: <DashboardOutlined />, label: "Tổng quan" },
+    {
+      key: "dashboard",
+      icon: <DashboardOutlined />,
+      label: "Dashboard",
+      children: dashboardMenuChildren.length
+        ? dashboardMenuChildren
+        : [{ key: "dash-tong-quan", icon: null, label: "Tổng quan điều hành" }],
+    },
     {
       key: "worklist",
       icon: <CarryOutOutlined />,
@@ -328,6 +385,10 @@ export default function App() {
       children: [
         { key: "nhiem-vu", icon: null, label: "Danh sách NV KHCN" },
         { key: "ho-so", icon: null, label: "Danh sách Hồ sơ KHCN" },
+        { key: "san-pham-nc", icon: <ExperimentOutlined />, label: "Sản phẩm nghiên cứu" },
+        { key: "ho-so-shtt", icon: <FileProtectOutlined />, label: "Sở hữu trí tuệ" },
+        { key: "cong-bo-kh", icon: <ReadOutlined />, label: "Công bố khoa học" },
+        { key: "cong-nghe-loi", icon: <RocketOutlined />, label: "Công nghệ lõi" },
       ],
     },
     ...(!isChuNhiemDeTai
@@ -777,7 +838,8 @@ export default function App() {
                 path="/"
                 element={<Navigate to="/danh-sach-phan-he" replace />}
               />
-              <Route path="/tong-quan" element={<Dashboard />} />
+              <Route path="/tong-quan" element={<Navigate to="/dashboard/tong-quan" replace />} />
+              {dashboardRouteNodes}
               <Route path="/viec-cua-toi" element={<Worklist />} />
               <Route
                 path="/quy-trinh"
@@ -835,6 +897,10 @@ export default function App() {
               <Route path="/ho-so" element={<DossierList />} />
               <Route path="/ho-so/tao-moi" element={<DossierCreate />} />
               <Route path="/ho-so/:id" element={<DossierDetail />} />
+              <Route path="/san-pham-nghien-cuu" element={<SanPhamNghienCuuList />} />
+              <Route path="/so-huu-tri-tue" element={<HoSoSHTTList />} />
+              <Route path="/cong-bo-khoa-hoc" element={<CongBoKhoaHocList />} />
+              <Route path="/cong-nghe-loi" element={<CongNgheLoiList />} />
               <Route
                 path="/phan-he/PH2/co-cau-to-chuc"
                 element={
