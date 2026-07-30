@@ -46,6 +46,9 @@ qtkhcn:
     base-url: ${QTKHCN_WORKFLOW_BASE_URL:http://127.0.0.1:8090}
     service-token: ${QTKHCN_WORKFLOW_SERVICE_TOKEN:}
     projection-reconcile-ms: ${QTKHCN_WORKFLOW_PROJECTION_RECONCILE_MS:5000}
+  identity:
+    base-url: ${QTKHCN_IDENTITY_BASE_URL:http://127.0.0.1:8095}
+    service-token: ${QTKHCN_IDENTITY_SERVICE_TOKEN:}
   outbox:
     dispatch-ms: ${QTKHCN_OUTBOX_DISPATCH_MS:1000}
 

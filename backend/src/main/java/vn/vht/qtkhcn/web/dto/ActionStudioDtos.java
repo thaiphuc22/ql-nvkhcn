@@ -88,7 +88,14 @@ public final class ActionStudioDtos {
             List<RouteBranchResponse> branches) {
     }
 
-    public record RouteBranchResponse(String outcome, String label, String target, String kind) {
+    /**
+     * @param variable tên biến Zeebe mà nhánh này rẽ theo, đọc từ conditionExpression
+     *                 ({@code = ketQuaThamDinh = "dong_y"} → {@code ketQuaThamDinh}). {@code null} khi
+     *                 nhánh không phải dạng "biến = chuỗi" — khi đó hệ thống KHÔNG suy ra biến điều
+     *                 khiển cho nhánh đó thay vì đoán bừa.
+     */
+    public record RouteBranchResponse(String outcome, String label, String target, String kind,
+            String variable) {
     }
 
     public record SimulationRequest(@NotBlank String surface, @NotBlank String processCode,

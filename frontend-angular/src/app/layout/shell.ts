@@ -75,6 +75,10 @@ export class Shell {
         takeUntilDestroyed(),
       )
       .subscribe(() => this.currentUrl.set(this.router.url));
+
+    // Nạp role/permission thật từ identity-service (D22) — phủ cả đăng nhập mới lẫn phiên khôi
+    // phục từ localStorage, vì Shell luôn mount sau khi qua authGuard. Xem AuthService.refreshCurrentUser().
+    this.auth.refreshCurrentUser();
   }
 
   toggleCollapsed(): void {

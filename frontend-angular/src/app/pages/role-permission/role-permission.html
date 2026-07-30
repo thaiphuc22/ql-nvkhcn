@@ -1,0 +1,253 @@
+<div class="rp-page">
+  <div class="rp-header">
+    <h2>
+      <span nz-icon nzType="safety-certificate" class="rp-header-icon"></span>
+      Phân quyền
+    </h2>
+  </div>
+
+  <nz-tabs [nzSelectedIndex]="activeTabIndex()" (nzSelectedIndexChange)="onTabChange($event)">
+    <nz-tab nzTitle="Vai trò">
+      @if (rolesError(); as err) {
+        <div class="rp-error">{{ err }}</div>
+      }
+      <div class="rp-tab-actions">
+        <button nz-button nzType="primary" (click)="openCreateRole()">
+          <span nz-icon nzType="plus"></span>
+          Thêm vai trò
+        </button>
+      </div>
+      <div class="rp-card">
+        <nz-table #roleTable [nzData]="roles()" [nzLoading]="rolesLoading()" nzSize="middle" [nzShowPagination]="roles().length > 10">
+          <thead>
+            <tr>
+              <th nzWidth="160px">Mã</th>
+              <th>Tên vai trò</th>
+              <th nzWidth="120px">Loại</th>
+              <th nzWidth="100px" nzAlign="center">Số quyền</th>
+              <th nzWidth="110px">Trạng thái</th>
+              <th nzWidth="140px">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of roleTable.data; track r.id) {
+              <tr>
+                <td><code>{{ r.code }}</code></td>
+                <td>{{ r.name }}</td>
+                <td>{{ r.kind }}</td>
+                <td nzAlign="center">{{ r.permissionCodes.length }}</td>
+                <td>
+                  @if (r.active) {
+                    <nz-tag nzColor="success">Hoạt động</nz-tag>
+                  } @else {
+                    <nz-tag>Ngừng</nz-tag>
+                  }
+                </td>
+                <td>
+                  <button nz-button nzSize="small" nz-tooltip nzTooltipTitle="Sửa" (click)="openEditRole(r)">
+                    <span nz-icon nzType="edit"></span>
+                  </button>
+                  <button
+                    nz-button
+                    nzSize="small"
+                    nzDanger
+                    nz-tooltip
+                    nzTooltipTitle="Xoá"
+                    nz-popconfirm
+                    nzPopconfirmTitle="Xoá vai trò này? Thao tác này không thể hoàn tác."
+                    nzOkText="Xoá"
+                    nzCancelText="Huỷ"
+                    (nzOnConfirm)="removeRole(r)"
+                  >
+                    <span nz-icon nzType="delete"></span>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      </div>
+    </nz-tab>
+
+    <nz-tab nzTitle="Quyền">
+      @if (permissionsError(); as err) {
+        <div class="rp-error">{{ err }}</div>
+      }
+      <div class="rp-tab-actions">
+        <button nz-button nzType="primary" (click)="openCreatePermission()">
+          <span nz-icon nzType="plus"></span>
+          Thêm quyền
+        </button>
+      </div>
+      <div class="rp-card">
+        <nz-table
+          #permissionTable
+          [nzData]="permissions()"
+          [nzLoading]="permissionsLoading()"
+          nzSize="middle"
+          [nzShowPagination]="permissions().length > 10"
+        >
+          <thead>
+            <tr>
+              <th nzWidth="200px">Mã</th>
+              <th>Tên quyền</th>
+              <th>Mô tả</th>
+              <th nzWidth="110px">Trạng thái</th>
+              <th nzWidth="140px">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of permissionTable.data; track p.id) {
+              <tr>
+                <td><code>{{ p.code }}</code></td>
+                <td>{{ p.name }}</td>
+                <td>{{ p.description || '—' }}</td>
+                <td>
+                  @if (p.active) {
+                    <nz-tag nzColor="success">Hoạt động</nz-tag>
+                  } @else {
+                    <nz-tag>Ngừng</nz-tag>
+                  }
+                </td>
+                <td>
+                  <button nz-button nzSize="small" nz-tooltip nzTooltipTitle="Sửa" (click)="openEditPermission(p)">
+                    <span nz-icon nzType="edit"></span>
+                  </button>
+                  <button
+                    nz-button
+                    nzSize="small"
+                    nzDanger
+                    nz-tooltip
+                    nzTooltipTitle="Xoá"
+                    nz-popconfirm
+                    nzPopconfirmTitle="Xoá quyền này? Thao tác này không thể hoàn tác."
+                    nzOkText="Xoá"
+                    nzCancelText="Huỷ"
+                    (nzOnConfirm)="removePermission(p)"
+                  >
+                    <span nz-icon nzType="delete"></span>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      </div>
+    </nz-tab>
+
+    <nz-tab nzTitle="Nhật ký">
+      @if (auditLogError(); as err) {
+        <div class="rp-error">{{ err }}</div>
+      }
+      <div class="rp-card">
+        <nz-table #auditTable [nzData]="auditLog()" [nzLoading]="auditLogLoading()" nzSize="middle" [nzPageSize]="20">
+          <thead>
+            <tr>
+              <th nzWidth="170px">Thời điểm</th>
+              <th nzWidth="180px">Sự kiện</th>
+              <th>Đối tượng</th>
+              <th>Chi tiết</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (a of auditTable.data; track a.id) {
+              <tr>
+                <td>{{ a.occurredAt | date: 'dd/MM/yyyy HH:mm:ss' }}</td>
+                <td><nz-tag>{{ a.eventType }}</nz-tag></td>
+                <td>{{ a.entityType }} — {{ a.entityId }}</td>
+                <td>{{ a.details || '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      </div>
+    </nz-tab>
+  </nz-tabs>
+
+  <nz-modal
+    [nzVisible]="roleModalOpen()"
+    [nzTitle]="editingRole() ? 'Sửa vai trò' : 'Thêm vai trò'"
+    [nzWidth]="760"
+    nzOkText="Lưu"
+    nzCancelText="Huỷ"
+    [nzOkLoading]="roleSaving()"
+    (nzOnOk)="submitRole()"
+    (nzOnCancel)="closeRoleModal()"
+  >
+    <ng-container *nzModalContent>
+      <div class="rp-form">
+        <label>Mã vai trò <span class="rp-required">*</span></label>
+        <input nz-input placeholder="VD: PM" [ngModel]="roleFormCode()" (ngModelChange)="roleFormCode.set($event)" />
+        <label>Tên vai trò <span class="rp-required">*</span></label>
+        <input nz-input placeholder="VD: Chủ nhiệm đề tài" [ngModel]="roleFormName()" (ngModelChange)="roleFormName.set($event)" />
+        <label>Loại</label>
+        <nz-select [ngModel]="roleFormKind()" (ngModelChange)="roleFormKind.set($event)">
+          @for (k of roleKindOptions; track k) {
+            <nz-option [nzLabel]="k" [nzValue]="k"></nz-option>
+          }
+        </nz-select>
+        <label>Ma trận quyền theo tính năng</label>
+        <div class="rp-matrix-wrap">
+          <table class="rp-matrix">
+            <thead>
+              <tr>
+                <th class="rp-matrix-feature">Tính năng</th>
+                @for (p of permissions(); track p.code) {
+                  <th class="rp-matrix-perm" [nz-tooltip]="p.name">{{ p.code }}</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (f of features(); track f.code) {
+                <tr>
+                  <td class="rp-matrix-feature">
+                    <span class="rp-matrix-feature-name">{{ f.name }}</span>
+                    <span class="rp-matrix-feature-group">{{ f.group }}</span>
+                  </td>
+                  @for (p of permissions(); track p.code) {
+                    <td class="rp-matrix-perm" nzAlign="center">
+                      <label
+                        nz-checkbox
+                        [ngModel]="isMatrixChecked(f.code, p.code)"
+                        (ngModelChange)="toggleMatrixCell(f.code, p.code)"
+                      ></label>
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <label class="rp-switch-row">
+          <span>Hoạt động</span>
+          <nz-switch [ngModel]="roleFormActive()" (ngModelChange)="roleFormActive.set($event)"></nz-switch>
+        </label>
+      </div>
+    </ng-container>
+  </nz-modal>
+
+  <nz-modal
+    [nzVisible]="permissionModalOpen()"
+    [nzTitle]="editingPermission() ? 'Sửa quyền' : 'Thêm quyền'"
+    nzOkText="Lưu"
+    nzCancelText="Huỷ"
+    [nzOkLoading]="permissionSaving()"
+    (nzOnOk)="submitPermission()"
+    (nzOnCancel)="closePermissionModal()"
+  >
+    <ng-container *nzModalContent>
+      <div class="rp-form">
+        <label>Mã quyền <span class="rp-required">*</span></label>
+        <input nz-input placeholder="VD: SUBMIT_DOSSIER" [ngModel]="permissionFormCode()" (ngModelChange)="permissionFormCode.set($event)" />
+        <label>Tên quyền <span class="rp-required">*</span></label>
+        <input nz-input [ngModel]="permissionFormName()" (ngModelChange)="permissionFormName.set($event)" />
+        <label>Mô tả</label>
+        <textarea nz-input rows="2" [ngModel]="permissionFormDescription()" (ngModelChange)="permissionFormDescription.set($event)"></textarea>
+        <label class="rp-switch-row">
+          <span>Hoạt động</span>
+          <nz-switch [ngModel]="permissionFormActive()" (ngModelChange)="permissionFormActive.set($event)"></nz-switch>
+        </label>
+      </div>
+    </ng-container>
+  </nz-modal>
+</div>

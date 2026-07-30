@@ -22,6 +22,8 @@ import vn.vht.qtkhcn.domain.ProcessDefinitionCatalog;
 import vn.vht.qtkhcn.domain.ProcessDefinitionVersion;
 import vn.vht.qtkhcn.repository.ProcessDefinitionCatalogRepository;
 import vn.vht.qtkhcn.repository.ProcessDefinitionVersionRepository;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ProcessRoutingResponse;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ProcessStepResponse;
 
 class ProcessDefinitionServiceTest {
 
@@ -29,6 +31,8 @@ class ProcessDefinitionServiceTest {
     private CamundaDeploymentService deploymentService;
     private ProcessDefinitionCatalogRepository catalogRepository;
     private ProcessDefinitionVersionRepository versionRepository;
+    private DeployedBpmnRoutingReader routingReader;
+    private org.springframework.context.ApplicationEventPublisher events;
     private ProcessDefinitionService service;
 
     @BeforeEach
@@ -37,7 +41,10 @@ class ProcessDefinitionServiceTest {
         deploymentService = mock(CamundaDeploymentService.class);
         catalogRepository = mock(ProcessDefinitionCatalogRepository.class);
         versionRepository = mock(ProcessDefinitionVersionRepository.class);
-        service = new ProcessDefinitionService(validator, deploymentService, catalogRepository, versionRepository);
+        routingReader = mock(DeployedBpmnRoutingReader.class);
+        events = mock(org.springframework.context.ApplicationEventPublisher.class);
+        service = new ProcessDefinitionService(validator, deploymentService, catalogRepository, versionRepository,
+                routingReader, events);
         when(catalogRepository.save(any(ProcessDefinitionCatalog.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         when(versionRepository.save(any(ProcessDefinitionVersion.class)))
@@ -113,6 +120,59 @@ class ProcessDefinitionServiceTest {
     }
 
     @Test
+    void selectableCountsUserTasksFromTheDeployedBpmnAndSkipsCatalogsWithoutAVersion() {
+        ProcessDefinitionCatalog withVersion = catalog("quy_trinh_moi");
+        ProcessDefinitionCatalog withoutVersion = catalog("chua_deploy");
+        when(catalogRepository.findAllByOrderByBpmnProcessIdAsc())
+                .thenReturn(List.of(withVersion, withoutVersion));
+        when(versionRepository.findFirstByCatalogIdOrderByCamundaVersionDesc(withVersion.getId()))
+                .thenReturn(Optional.of(version(7)));
+        when(versionRepository.findFirstByCatalogIdOrderByCamundaVersionDesc(withoutVersion.getId()))
+                .thenReturn(Optional.empty());
+        when(routingReader.processes()).thenReturn(List.of(new ProcessRoutingResponse("quy_trinh_moi", "Demo",
+                List.of(step("T01"), step("T02")))));
+
+        var selectable = service.selectable();
+
+        assertEquals(1, selectable.size());
+        assertEquals("quy_trinh_moi", selectable.getFirst().bpmnProcessId());
+        assertEquals(7, selectable.getFirst().latestVersion());
+        assertEquals(2, selectable.getFirst().userTaskCount());
+    }
+
+    /** Quy trình không có userTask nào vẫn được liệt kê (user chọn tự do), chỉ báo count = 0. */
+    @Test
+    void selectableStillListsAProcessTheRoutingReaderKnowsNothingAbout() {
+        ProcessDefinitionCatalog catalog = catalog("khong_co_user_task");
+        when(catalogRepository.findAllByOrderByBpmnProcessIdAsc()).thenReturn(List.of(catalog));
+        when(versionRepository.findFirstByCatalogIdOrderByCamundaVersionDesc(catalog.getId()))
+                .thenReturn(Optional.of(version(1)));
+        when(routingReader.processes()).thenReturn(List.of());
+
+        var selectable = service.selectable();
+
+        assertEquals(1, selectable.size());
+        assertEquals(0, selectable.getFirst().userTaskCount());
+    }
+
+    /**
+     * Sự kiện này là thứ khiến quy trình vừa deploy có sẵn luật hiển thị nút (xem
+     * {@link DeployedProcessPolicyScaffolder}). Phát trong transaction deploy, xử lý sau khi commit.
+     */
+    @Test
+    void deployingAProcessAnnouncesItSoActionPoliciesCanBeScaffolded() {
+        var file = file();
+        var validated = validated();
+        when(validator.validate(file)).thenReturn(validated);
+        when(deploymentService.deploy(validated.bytes(), validated.resourceName()))
+                .thenReturn(new CamundaDeploymentService.DeploymentResult(22L, "demo", 1, 33L, "demo.bpmn"));
+
+        service.importBpmn(file, "tester");
+
+        verify(events).publishEvent(new ProcessDeployedEvent("demo", "tester"));
+    }
+
+    @Test
     void normalizeActorDecodesUtf8HeaderWithoutLosingVietnameseName() {
         assertEquals("Nguyễn Văn An",
                 ProcessDefinitionService.normalizeActor("UTF-8''Nguy%E1%BB%85n%20V%C4%83n%20An"));
@@ -125,6 +185,17 @@ class ProcessDefinitionServiceTest {
     private static ValidatedBpmn validated() {
         byte[] bytes = "xml".getBytes(StandardCharsets.UTF_8);
         return new ValidatedBpmn(bytes, "xml", "demo.bpmn", "demo", "Demo", "a".repeat(64), List.of());
+    }
+
+    private static ProcessDefinitionVersion version(int camundaVersion) {
+        ProcessDefinitionVersion version = new ProcessDefinitionVersion();
+        version.setId(UUID.randomUUID());
+        version.setCamundaVersion(camundaVersion);
+        return version;
+    }
+
+    private static ProcessStepResponse step(String key) {
+        return new ProcessStepResponse(key, key, "PM", null, List.of());
     }
 
     private static ProcessDefinitionCatalog catalog(String processId) {

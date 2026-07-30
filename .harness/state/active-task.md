@@ -1,5 +1,392 @@
 # Active Task
 
+## ★ DONE — Angular PH2: ma trận role×feature×permission + data-scope catalog + app entitlement admin — 2026-07-29 (owner Claude)
+
+Theo yêu cầu trực tiếp của user ("Bạn làm FE và ghép lại BE giúp tôi", dẫn nguyên văn tóm tắt của một
+phiên Codex song song đã hoàn tất Phase 1+2 backend cùng ngày — xem đầu file này, mục "Identity Service /
+Phân hệ 2 Backend"). Khảo sát trước khi làm cho thấy phần FE Bước 5–6 (mục DONE ngay dưới) đã ghép
+Organization/Role/User/Permission/Audit-log/effective-permissions, nhưng **3 mặt cắt backend mới của
+Phase 2 — `role_feature_permissions` (ma trận), `data_scope_types` (catalog FK), `apps`/`user_apps`
+(catalog + gán theo user) — chưa có FE nào gọi tới**: `identity.ts` vẫn thiếu `FeatureResponse`/
+`MatrixEntry*`/`DataScopeResponse`/`AppResponse`/`UserApps*`, `RoleResponse.matrix` chưa được đọc,
+`EffectivePermissionsResponse` thiếu `featurePermissions`/`assignments`/`apps`, và `newDataScope` ở
+`user-management` vẫn là ô nhập tay tự do (đã lệch khỏi FK `data_scope_types` mới thêm ở V2).
+
+**Đã làm:**
+1. `core/models/identity.ts`: thêm `FeatureResponse`, `MatrixEntryRequest/Response`, `DataScopeResponse`,
+   `AppResponse`, `UserAppsRequest/Response`, `EffectiveAssignmentResponse`; `RoleRequest/Response` thêm
+   `matrix`; `EffectivePermissionsResponse` thêm `featurePermissions`/`assignments`/`apps` — khớp 1:1
+   `IdentityDtos` hiện tại (đọc trực tiếp từ source, không đoán).
+2. 3 service mới: `feature.service.ts`, `data-scope.service.ts`, `app.service.ts`
+   (`AppCatalogService`, tránh trùng tên với `app.ts` gốc). `user.service.ts` thêm `apps()`/`replaceApps()`
+   gọi `GET`/`PUT /api/users/{id}/apps`.
+3. `role-permission.ts/.html`: modal "Sửa/Thêm vai trò" đổi multi-select quyền phẳng cũ thành **ma trận
+   tính năng × quyền** (bảng checkbox, sticky header/cột đầu, scroll trong modal rộng 760px) — mỗi tính
+   năng (nạp từ `GET /api/features`, gồm cả `GENERAL` — bucket tương thích ngược cho quyền phẳng cũ) là
+   một hàng, mỗi quyền là một cột. Submit gửi `RoleRequest.matrix` (mỗi feature có tick → 1
+   `MatrixEntryRequest{featureCode, permissionCodes, enabled:true}`); backend
+   (`IdentityService.setMatrix`) ưu tiên `matrix` khi có, nên `permissionCodes` gửi kèm chỉ còn mang tính
+   hiển thị/tương thích. **Chưa làm:** UI tick "enabled=false" riêng (giữ quyền nhưng tắt) — form chỉ biểu
+   diễn tick/không-tick, đủ cho CRUD chính; trường hợp tắt-không-xoá là biên hiếm, để sau nếu cần.
+4. `user-management.ts/.html`: drawer "Phân quyền" tách 2 tab — **"Vai trò"** (nội dung cũ, chỉ đổi ô nhập
+   tay `dataScope` thành `nz-select` nạp từ `GET /api/data-scopes`, mặc định không chọn trước vì `'OWN'`
+   cũ không còn là code hợp lệ theo FK mới `OWN_MISSION/OWN_DEPARTMENT/OWN_CENTER/ALL`) và **"Ứng dụng"**
+   (mới — checkbox theo `GET /api/apps`, tick/bỏ tick rồi bấm "Lưu ứng dụng" gọi
+   `PUT /api/users/{id}/apps`). **Cố ý KHÔNG đụng `AuthService`/`Shell.refreshCurrentUser()`**: D19 vẫn
+   giữ entitlement App runtime từ `DemoUser.apps` tĩnh (quyết định tường minh của phiên Bước 5–6 ngay
+   dưới) — tab "Ứng dụng" mới chỉ là **quản trị catalog `user_apps` ở backend**, chưa phải nguồn thật cho
+   App switcher; cần hỏi lại user trước khi đổi nguồn đó.
+5. `proxy.conf.json` + `infra/demo-tunnel/Caddyfile`: thêm route `/api/features`, `/api/data-scopes`,
+   `/api/apps` trỏ 8095 (dev-key), theo đúng mẫu route identity đã có.
+
+**Runtime — bẫy phát hiện: identity-service đang chạy (PID 2148 từ phiên Bước 5–6) build TRƯỚC khi
+Phase 2 (V2 migration + `/api/features|data-scopes|apps`) được thêm vào — gọi 3 endpoint mới trả 404,
+`GET /api/roles` không có field `matrix`.** Đã: dừng PID 2148, `mvn -o test` **9/9 PASS**
+(`IdentityServiceHttpContractTest` 5, `IdentityServiceIntegrationTest` 4 — bao gồm cả test Phase 2),
+`mvn -o -DskipTests package`, khởi động lại PID mới **29456** (giữ nguyên
+`QTKHCN_IDENTITY_SERVICE_TOKEN=dev-identity-local-only` để backend 8090 (PID 1640)/ho-so-service 8093
+(PID 26496) không bị lệch token — cả hai vẫn UP, không phải restart). Flyway tự áp `V2` thành công. Xác
+minh trực tiếp qua HTTP thật: `/api/features` trả 13 tính năng (gồm `GENERAL` legacy), `/api/data-scopes`
+trả 4 scope, `/api/apps` trả 3 app (`qlnvkhcn`/`quytrinh`/`he-thong` — đúng 3 App của D19),
+`/api/roles` nay có `matrix`, `/api/effective-permissions/pm@example.com` trả đủ
+`featurePermissions`/`assignments`/`apps`.
+
+**Verify:** Angular `ng build --configuration production` **GREEN** (chỉ warning budget/CommonJS có sẵn,
+không phải mới); full suite **216/218 PASS** (2 fail `nav-items.spec.ts` **pre-existing**, không đổi số
+so với lần chạy trước — xác nhận không có regression). identity-service `mvn -o test` **9/9 PASS**.
+**Chưa làm:** click-through Playwright thật — một phiên khác đang giữ instance browser MCP dùng chung
+(`Browser is already in use`) nên không giành quyền; runtime đã xác minh bằng HTTP trực tiếp thay thế,
+nhưng chưa xem UI ma trận/tab Ứng dụng render thật trên trình duyệt. `role-permission`/`user-management`
+vẫn chưa có `.spec.ts` riêng (cùng tình trạng trước khi làm lát này, không phải hồi quy). `caddy run` thật
+ngoài sửa file cấu hình chưa chạy lại.
+
+---
+
+## ★ DONE — Angular Phân hệ 2 (Bước 5–6) + vá gap auth identity-service — 2026-07-29 (owner Claude)
+
+Theo yêu cầu trực tiếp của user "Bạn code FE và ghép BE giúp tôi", tiếp nối Bước 5–6 của
+`docs/research/identity-service-phan-he-2-plan-2026-07-29.md` (Codex đã hoàn tất Bước 1–4 + runtime, xem 2
+mục DONE ngay dưới — một phiên Codex song song đã tự hoàn tất phần runtime bring-up gần như đồng thời với
+phiên này, xem ghi chú PID bên dưới).
+
+**Gap phát hiện khi khảo sát trước khi làm FE:** `IdentityController` (`/api/organizations`, `/api/roles`,
+`/api/permissions`, `/api/users`, `/api/users/{id}/role-assignments`, `/api/audit-log`) hoàn toàn không có
+auth — `InternalServiceTokenFilter` chỉ chặn `/internal/*`. Đã vá bằng cách mirror nguyên mẫu
+`backend/.../security/DevApiKeyFilter.java` sang `services/identity-service/.../security/DevApiKeyFilter.java`
+(cùng header `X-QTKHCN-Dev-Key`, cùng property `qtkhcn.dev-api-key`, default `dev-local-only` dùng chung với
+2 service kia). Thêm 1 endpoint public mới `GET /api/effective-permissions/{identity}` (gọi lại
+`IdentityService.effective()` có sẵn) — bản "public, chặn bằng dev-key" song song với
+`/internal/users/{identity}/effective-permissions` (bản "service-to-service, chặn bằng bearer token") — để
+Angular gọi được từ trình duyệt mà không lộ service-token. Test mới `IdentityServiceHttpContractTest` (4
+case, dùng `RestTestClient` — Spring Boot 4/Spring Framework 7 thay `TestRestTemplate` bằng
+`org.springframework.test.web.servlet.client.RestTestClient`, xác nhận bằng `javap`/tra jar thật, không đoán).
+
+**Runtime:** database `qtkhcn_identity` đã có sẵn từ trước (không cần tạo tay). Để triển khai filter mới,
+dừng sạch 3 tiến trình đang chạy (khi bắt đầu phiên: 8090 PID 26580, 8093 PID 18976, 8095 PID 28448 — đúng
+PID mà mục Codex ngay dưới ghi lại, xác nhận đây là runtime Codex vừa dựng), package lại `identity-service`
+với filter mới, khởi động lại cả 3 với token tường minh nhất quán do phiên này chọn
+(`QTKHCN_WORKFLOW_SERVICE_TOKEN=dev-workflow-local-only`, `QTKHCN_HO_SO_SERVICE_TOKEN=dev-ho-so-local-only`,
+`QTKHCN_IDENTITY_SERVICE_TOKEN=dev-identity-local-only`). PID mới sau restart: 8090→1640, 8093→26496,
+8095→2148 (số hiển thị qua `Get-NetTCPConnection`; tiến trình được spawn qua MSYS bash nên PID job-control
+`$!` không khớp PID Windows thật, không phải bằng chứng process khác). Smoke HTTP thật xuyên suốt:
+identity-service `/api/*` (dev-key) và `/internal/*` (bearer) đều đúng; `backend`
+`/api/process-definitions*` OK; `ho-so-service` `/api/my-tasks` trả đúng `candidateGroups` cho
+`pm@example.com` (`["NNC","PA","PM"]`, khớp seed).
+
+**Angular Bước 5 — 3 trang PH2 CRUD thật thay `PlaceholderPage`:**
+`core/models/identity.ts` (mirror `IdentityDtos`), 5 service mới (`organization/permission/role/user/
+audit-log.service.ts`, theo đúng convention `ProcessDefinitionService` — HttpClient tương đối qua
+`API_BASE_URL`, không base URL tuyệt đối). 3 trang: `pages/org-management` (bảng phẳng, KHÔNG làm cây
+`nz-tree` đợt này), `pages/user-management` (bảng + drawer "Phân quyền" xem/gán/thu hồi role-assignment),
+`pages/role-permission` (3 tab: Vai trò CRUD + multi-select quyền / Quyền CRUD / Nhật ký đọc-thôi từ
+`/api/audit-log`). `app.routes.ts` 3 route `phan-he/PH2/*` đổi từ `component: PlaceholderPage` sang
+`loadComponent` lazy — bỏ import `PlaceholderPage` không dùng nữa. Dev routing: `proxy.conf.json` thêm 6
+route trỏ 8095; demo routing: `infra/demo-tunnel/Caddyfile` thêm khối `@identity_api` (mirror
+`@nvkhcn_api`) + `Start-DemoProxy.ps1` thêm tham số/env `QTKHCN_IDENTITY_UPSTREAM` + readiness check —
+`caddy validate` xanh, chưa chạy `caddy run` thật.
+
+**Bug thật phát hiện khi click-through Playwright (không lộ ra ở build/typecheck):** `user-management.html`
+dùng `nz-icon nzType="check-circle" nzTheme="twotone"` cho cờ admin — ném lỗi console thật
+`[@ant-design/icons-angular]: the icon check-circle-twotone does not exist or is not registered` (fetch SVG
+động 404) vì `twotone` là một bộ icon riêng, KHÔNG tồn tại tiền lệ nào trong repo (`grep -r twotone` rỗng
+trước khi sửa). Đã đổi sang icon `check-circle` phẳng (đã đăng ký sẵn trong `SERVICE_TASK_ICONS`) + màu CSS
+`.um-admin-check`, đúng quy ước đăng ký icon tĩnh của `icons-provider.ts`. Đối chiếu toàn bộ 7 mã icon dùng ở
+3 trang mới (`apartment/check-circle/delete/edit/plus/safety-certificate/team`) — tất cả đã có sẵn trong các
+mảng `*_ICONS` hiện có, không cần thêm mảng `PH2_ICONS` mới.
+
+**Bước 6 — Nối `AuthService` vào identity-service, zero blast-radius:** `AuthService` KHÔNG đổi shape
+`DemoUser`/chữ ký `login()` (vẫn synchronous). Thêm `refreshCurrentUser()` public — nạp
+`roleCodes`/`administrator` thật từ `GET /api/effective-permissions/{email}`, ghi đè vào `DemoUser` đang giữ
+trong signal (giữ nguyên `apps`, theo D19 — entitlement App vẫn nguồn tĩnh). **Quyết định quan trọng:** gọi
+`refreshCurrentUser()` từ `Shell` (layout, mount sau `authGuard`, phủ cả login mới lẫn phiên khôi phục từ
+localStorage) — KHÔNG gọi từ `login()`/constructor của `AuthService` như thiết kế ban đầu, vì 4 spec file
+(`worklist.spec.ts`, `process-catalog.spec.ts`, `ho-so-detail.spec.ts`, `task-action.service.spec.ts`) gọi
+thẳng `TestBed.inject(AuthService).login(...)` với `afterEach(() => http.verify())` — auto-fire trong
+`login()`/constructor sẽ để lại 1 HTTP request chưa flush và vỡ `verify()` ở cả 4 file. Không có file nào
+trong số đó dựng `Shell`, nên chuyển điểm gọi sang `Shell` giữ đúng "zero blast-radius" cho cả 4 file, không
+cần sửa gì ở chúng. `auth.service.spec.ts` thêm 2 test mới (`refreshCurrentUser()` merge đúng
+roleCodes/administrator, và lỗi mạng giữ nguyên giá trị tĩnh) + 1 test xác nhận `login()` tự nó không gọi
+identity-service.
+
+**Verify:** identity-service `mvn test` **6/6 PASS** (2 cũ + 4 mới); `backend` full suite **PASS** (chạy lại
+sau khi bật filter mới, không regression); `ho-so-service` full suite **PASS**; Angular full suite
+**216/218 PASS** (2 fail `nav-items.spec.ts` **pre-existing**, không đụng file này); `ng build
+--configuration production` **GREEN** (chỉ warning budget/CommonJS có sẵn). Click-through Playwright thật
+trên `ng serve` + proxy: tạo 1 organization, 1 role `QA_TEST` gán quyền `VIEW`, 1 user, gán role `QA_TEST`
+cho user đó (xem đúng trong drawer), thu hồi role (xác nhận `audit_log` ghi `ROLE_ASSIGNED`/`ROLE_REVOKED`
+đúng thật) — tất cả qua `identity-service` thật, có sẵn seed 18 permission + 30+ role + 15 user hiển thị
+đúng trên UI (tab Quyền cũng render đúng 18 permission thật). `Shell.refreshCurrentUser()` xác nhận gọi
+`GET /api/effective-permissions/admin%40example.com` → **200** qua Network tab thật. Dữ liệu test đã dọn
+sạch (`DELETE` cả 3 bản ghi qua API, xác nhận lại count về đúng 1 org / 15 user / 0 role `QA_TEST`).
+
+**Chưa làm (ngoài phạm vi lần này):** hiển thị cây tổ chức (`nz-tree`) cho `co-cau-to-chuc` (đang là bảng
+phẳng); Bước 7 của kế hoạch gốc (xoá hardcode cũ `RoleCatalog.java`, `webapp/src/data/{roles,rbac}.ts`) —
+chưa xác nhận với user vì `webapp/` có thể coi là legacy; `caddy run` thật ngoài `caddy validate`;
+`Test-DemoReadiness.ps1` chưa được cập nhật để check thêm identity-service.
+
+---
+
+## ★ DONE — Identity Service runtime Backend — 2026-07-29 (owner Codex)
+
+Theo yêu cầu trực tiếp của user: tạo/kiểm tra database trên Postgres volume hiện tại, chạy identity-service
+8095, restart backend 8090 + ho-so-service 8093 với internal token đồng nhất, rồi smoke CRUD/assignment/
+effective-permissions và xác minh role mới đi xuyên qua `/api/my-tasks` + workflow authorization.
+
+Hoàn tất runtime trên Postgres volume hiện tại: tạo `qtkhcn_identity`, Flyway V1 áp thành công; đang chạy
+8090 PID 26580, 8093 PID 18976, 8095 PID 28448. Token runtime đồng nhất theo hai seam
+(`identity-dev-runtime` cho identity; `integration-dev-runtime` cho workflow↔hồ sơ). Smoke tạo org/user,
+gán PM/OWN_MISSION → effective permission trả PM + PROCESS_STEP → `/api/my-tasks` trả 2 task PM → backend
+`available-actions` trả APPROVE_STEP + REJECT_STEP. Đã revoke/xóa sạch dữ liệu smoke; API audit ghi đủ
+ROLE_REVOKED/USER_DELETED/ORGANIZATION_DELETED, user đã xóa trả 404. Log ở `.runtime/identity-backend/`.
+Phát hiện và sửa runtime-only boot bug thiếu `RestClient.Builder` bean. Verify cuối: backend 280/280,
+ho-so-service 68/68, identity-service 2/2, `git diff --check` sạch.
+
+---
+
+## ★ DONE — Identity Service / Phân hệ 2 Backend — 2026-07-29 (owner Codex)
+
+User đã phê duyệt trực tiếp triển khai phần Backend của
+`docs/research/identity-service-phan-he-2-plan-2026-07-29.md`, ưu tiên thay task runtime quy trình động đã
+xong source+test và chỉ còn runtime follow-up. Phạm vi: Bước 1–4 và xác minh backend; không làm Angular/SSO.
+
+Đã triển khai: service 8095 + DB/Flyway/seed; CRUD catalog/user/assignment; internal effective-permissions;
+hai identity provider gọi RestClient thay Map hardcode; Postgres init đăng ký DB. Verify: identity-service
+integration 2/2, ho-so-service full suite 68/68, backend full suite 280/280 (bao gồm consistency/HTTP contract),
+`git diff --check` sạch. Chưa khởi động stack dev/runtime 8095; init script chỉ tự chạy với Postgres volume mới,
+volume đang tồn tại cần tạo database `qtkhcn_identity` một lần bằng tay trước khi chạy service.
+
+Next task theo plan: Bước 5–6 Angular PH2 pages + nối AuthService; không nằm trong yêu cầu Backend lần này.
+
+---
+
+## ★ IN PROGRESS — Runtime quy trình động (process-agnostic) — 2026-07-28 (owner Claude, theo yêu cầu trực tiếp user)
+
+**Chuyển hướng có phê duyệt tường minh của user.** Task cũ (RD02.02 v3) đã DONE + RUNTIME VERIFIED;
+user chấp nhận chuyển hướng sang hướng mới này thay vì tiếp tục các follow-up còn treo của RD02.02.
+
+**Mục tiêu nghiệm thu:** vẽ một BPMN hoàn toàn mới (không phải RD01/RD02), deploy, tạo hồ sơ, chọn
+quy trình đó, chạy hết luồng — **không sửa một dòng Java nào**.
+
+**Phạm vi đã chốt với user (3 câu hỏi, trả lời trực tiếp 2026-07-28):**
+1. Người dùng tạo BPMN **cả hai đường**: editor trong app (`/quy-trinh`) VÀ deploy thẳng lên Camunda
+   rồi hệ thống hút về.
+2. Phần tử BPMN trong phạm vi: **userTask + gateway + eForm**. Service task / DMN / timer / message
+   NGOÀI phạm vi.
+3. Gắn quy trình ↔ hồ sơ: **người dùng chọn tự do** trong danh sách quy trình đã deploy. Không có
+   ràng buộc loại hồ sơ ↔ quy trình (user nói rõ "tối ưu thêm sau này").
+
+**Quyết định của user làm thay đổi kế hoạch ban đầu (ghi để không hiểu nhầm về sau):**
+- **Lát 0 (guard deploy-time) BỊ HUỶ.** User yêu cầu "cứ tạm thời cho phép deploy từ App, chưa cần
+  warning hoặc chặn cứng". Hệ quả đã nêu rõ cho user và user giữ nguyên quyết định: **BPMN có
+  service task sẽ deploy được nhưng hồ sơ TREO tại service task đó cho tới khi có job worker** —
+  đúng lớp bug RD02.02 `Check` ngày 2026-07-20, lần này do người dùng tự tạo ra.
+- Nhờ huỷ Lát 0, KHÔNG phải refactor `ProcessDefinitionImportValidator` từ static sang bean
+  (tránh được blast radius 15 callers).
+- Các kiểm tra của Lát 0 (thiếu form / role lạ / service task không worker) **chuyển sang màn đối
+  soát ở Lát 3** dưới dạng chẩn đoán đọc-thôi, không chặn ai.
+- **Đổi thứ tự: Lát 2 làm TRƯỚC Lát 1.** Lát 2 tự đứng được vì quy trình deploy qua app đã nằm sẵn
+  trong `process_definition_catalog`; Lát 1 (importer) chỉ cần cho đường deploy ngoài app.
+
+**7 gap đã khảo sát (2026-07-28), trạng thái:**
+| # | Gap | Lát | Trạng thái |
+|---|---|---|---|
+| A | Catalog chỉ biết quy trình deploy qua app; BPMN deploy thẳng lên Camunda vô hình | 1 | **DONE** (source+test) |
+| B | FE hardcode 4 mã quy trình theo (loai, cap) kèm cờ `supported` — `ho-so-detail.ts:140-154` | 2 | **DONE** (source+test) |
+| C | Service task không worker ⇒ treo | — | **NGOÀI PHẠM VI theo quyết định user** |
+| D | DMN `calledDecision` | — | **NGOÀI PHẠM VI** |
+| E | Action Studio policy + eForm binding theo `(processCode, taskDefinitionKey)` ⇒ quy trình mới không có nút nào | 3 | **DONE** (source+test) |
+| F | `candidateGroups` không đối chiếu danh mục vai trò | 3 | **DONE** (chẩn đoán, không chặn) |
+| G | Quy ước `bpmnProcessId = processCode.replace('.','_')` | 2 | **DONE** (source+test) |
+
+**Phát hiện quan trọng khi khảo sát — gap G nặng hơn dự kiến ban đầu:** quy ước dấu chấm KHÔNG chỉ
+nằm ở FE (`ho-so-detail.ts:275`) mà nằm cả trong backend engine —
+`CamundaReliableWorkflowEngine.start()` dòng 23: `processCode.replace('.', '_')`. Nghĩa là BPMN
+người dùng vẽ với id `quy_trinh_moi` chỉ khởi động được nếu `quyTrinh = "quy.trinh.moi"`, và mọi
+bpmnProcessId có dấu `_` thật đều không tới được. Phải sửa trong Lát 2, giữ fallback cho dữ liệu cũ
+(`HoSo.quyTrinh` hiện đang lưu dạng `"RD01.01"`).
+
+**Đã có sẵn, KHÔNG làm lại:** BPMN editor trong app + draft CRUD/revision/lint/deploy
+(`ProcessDefinitionDraftService`), deploy thật lên Zeebe (`CamundaDeploymentService`), metadata
+runtime đọc BPMN đã deploy (`BpmnUserTaskMetadataCatalog`, `DeployedBpmnRoutingReader`),
+`dossier_step` sinh động (`WorkflowProjectionService:179-187`), start process đã generic
+(`WorkflowSubmissionService` truyền thẳng `quyTrinh` → `engine.start(processCode, …)`).
+
+**Lát 2 — DONE (source + test), RUNTIME PENDING:**
+- [x] `CamundaReliableWorkflowEngine.start()`: tra `bpmnProcessId` trực tiếp trước, chỉ chạy lượt
+      thứ hai với `replace('.','_')` khi chuỗi thực sự khác (dữ liệu cũ `"RD01.01"`).
+- [x] `GET /api/process-definitions/selectable` + `SelectableProcessResponse` (mới).
+      `userTaskCount` lấy từ `DeployedBpmnRoutingReader.processes()` — cùng nguồn runtime dùng.
+      Catalog chưa có version deploy thì bị bỏ qua thay vì ném lỗi như `list()`.
+- [x] FE: `submitProcess()` computed hardcode → `selectableProcesses`/`selectedProcessId` nạp từ
+      API mỗi lần mở dialog; template đổi sang `nz-select` + 2 cảnh báo (quy trình 0 userTask;
+      "hệ thống không kiểm tra quy trình có phù hợp loại hồ sơ").
+- [x] FE `openBpmn()`: tra thẳng `quyTrinh` trước, **có cài fallback thật** bằng `catchError` sang
+      bản gạch dưới — nếu không sẽ hồi quy "Xem BPMN" cho mọi hồ sơ tạo trước 2026-07-28.
+- [x] Test: backend `ProcessDefinitionServiceTest` 7/7, `ProcessDefinitionHttpContractTest` 7/7,
+      **full backend 244/244 PASS BUILD SUCCESS**; Angular `ho-so-detail.spec.ts` **20/20 PASS**,
+      `ng build --configuration production` GREEN.
+
+**Verify đã chạy:** backend `mvn -o test` **244/244 PASS**; Angular full suite **206/208 PASS** —
+2 fail ở `layout/nav-items.spec.ts` là **pre-existing**, không nằm trong diff (`git status` xác nhận
+không đụng `nav-items.*`).
+
+**Lát 2 — CHƯA làm (runtime):** chưa build/restart 8090 với source mới, chưa click-through trình
+duyệt thật, chưa E2E gửi duyệt bằng một quy trình tự vẽ. Constructor
+`ProcessDefinitionService` đổi chữ ký (thêm `DeployedBpmnRoutingReader`) — đã sửa 2 test dựng bằng
+tay (`ProcessDefinitionServiceTest`, `BundledBpmnDeployedConsistencyTest`).
+
+**Lát 1 — DONE (source + test), RUNTIME PENDING:** nút "Đồng bộ từ Camunda" hút quy trình deploy
+thẳng lên engine về `process_definition_catalog`.
+- [x] `CamundaProcessDefinitionLookup`: thêm `listLatest(limit)` → `DeployedProcessPage(items,
+      totalOnEngine)` và `fetchXml(processDefinitionKey)`. **API đã xác minh bằng `javap` trên
+      `~/.m2/.../camunda-client-java-8.9.12.jar`**, không đoán: `newProcessDefinitionSearchRequest()`
+      + `filter(f -> f.isLatestVersion(true))` + `page(p -> p.limit(n))`, và
+      `newProcessDefinitionGetXmlRequest(long)` là `FinalCommandStep<String>`. `totalItems()` lấy
+      từ chính response phân trang nên chỉ tốn 1 round-trip.
+- [x] Record mới `DeployedProcessDefinition` (thêm `name`/`resourceName`) tách khỏi
+      `ProcessDefinitionInfo` để không đổi chữ ký `findLatest()` mà
+      `StartupProcessDeploymentService` đang dùng.
+- [x] Migration **V27** `process_definition_version.source VARCHAR(16) NOT NULL DEFAULT 'APP'` +
+      CHECK (`APP`/`EXTERNAL`) + enum `ProcessDefinitionSource`. Default `APP` đúng cho toàn bộ dữ
+      liệu cũ vì trước đó chỉ có đường deploy qua app.
+- [x] `DeployedProcessImportService` (điều phối, KHÔNG transactional) +
+      `DeployedProcessImportWriter` (`@Transactional(REQUIRES_NEW)`, mỗi quy trình một transaction).
+      **Lý do tách:** để trong 1 transaction thì 1 lỗi ghi sẽ đánh dấu rollback-only và kéo đổ luôn
+      những quy trình đã nhập thành công trước đó.
+- [x] Khoá đối chiếu là `camundaProcessDefinitionKey` (KHÔNG phải `bpmnProcessId`) — bản app tự
+      deploy đã lưu đúng key này nên được nhận là "đã biết", không nhập trùng. Cùng `bpmnProcessId`
+      từ 2 đường dùng CHUNG một dòng catalog, chỉ khác dòng version.
+- [x] `POST /api/process-definitions/sync-from-camunda` trả `ProcessSyncResponse` — 200 kèm
+      `failures` thay vì lỗi HTTP, để 1 BPMN hỏng trên engine không chặn các quy trình còn lại.
+- [x] `camundaDeploymentKey = 0` cho bản EXTERNAL: search API của Camunda không trả deployment key.
+      Cột NOT NULL, chỉ dùng truy vết ngược lên Operate, không tham gia khoá hay logic nào.
+- [x] FE: nút "Đồng bộ từ Camunda" + banner kết quả giữ nguyên trên màn (không dùng toast — một lượt
+      vừa nhập được vừa lỗi, toast biến mất trước khi đọc xong) + cột "Nguồn" (Từ app / Ngoài app).
+- [x] Test: `DeployedProcessImportServiceTest` 4/4, `DeployedProcessImportWriterTest` 3/3,
+      `ProcessDefinitionHttpContractTest` 9/9, `process-catalog.spec.ts` 7/7 (3 cũ + 4 mới).
+
+**Verify Lát 1:** backend `mvn -o test` **253/253 PASS BUILD SUCCESS**; Angular **210/212 PASS**
+(2 fail `layout/nav-items.spec.ts` **pre-existing**, `git status` xác nhận không đụng);
+`ng build --configuration production` GREEN.
+
+**Sửa ngoài phạm vi, có chủ ý:** `/quy-trinh` trước nay để `nz-icon` fetch SVG động qua HTTP
+(`reload`/`upload`/`plus`/`search` chưa nhóm nào đăng ký) — trái quy ước đăng ký tĩnh của
+`icons-provider.ts` và làm mọi unit test dựng trang này fail ở `http.verify()`. Đã thêm
+`PROCESS_CATALOG_ICONS` + wire vào `app.ts`.
+
+**Lát 1 — CHƯA làm (runtime):** chưa deploy thử một BPMN thẳng lên Camunda bằng Modeler/zbctl rồi
+bấm đồng bộ để xem nó vào catalog thật. Trần quét `MAX_SCAN = 500` chưa thử với engine nhiều quy
+trình. Chưa xử lý chiều ngược lại: quy trình bị xoá khỏi engine vẫn nằm lại trong catalog.
+
+**Lát 3 — DONE (source + test), RUNTIME PENDING.**
+
+*Phát hiện lớn nhất của lát này: gap E nặng hơn bảng khảo sát ghi.* Chỗ chặn thật của "vẽ BPMN mới
+rồi chạy hết luồng" không nằm ở Action Studio policy mà ở `WorkflowTaskActionRouting`: nó tra bảng
+`switch` cứng theo `processDefinitionId`, nên quy trình người dùng vẽ rơi vào `default -> Map.of()`
+(bấm "Đồng ý duyệt" xong Zeebe không có biến nào để rẽ ⇒ gateway đi default flow hoặc CONDITION_ERROR)
+và `default -> false` cho RETURN_STEP (không bao giờ trả lại được). Nếu chỉ làm đúng 3 việc trong kế
+hoạch Lát 3 thì nghiệm thu Lát 4 vẫn không thể đạt.
+
+- [x] `DeployedBpmnRoutingReader.actionVariables(processId, taskKey)` (mới) — suy biến điều khiển
+      thẳng từ conditionExpression: `= ketQuaDuyet = "dong_y"` → `{APPROVE_STEP: {ketQuaDuyet: dong_y}}`.
+      `RouteBranchResponse` thêm trường `variable` (null khi nhánh không phải dạng `biến = "chuỗi"` —
+      **đoán bừa tên biến sẽ đẩy hồ sơ sang nhánh sai mà không báo lỗi**). Default flow không có
+      conditionExpression ⇒ `variable` null, và đúng: chọn default flow là việc của Zeebe.
+- [x] `WorkflowTaskActionRouting` nhận `DeployedBpmnRoutingReader`; **bảng cứng RD01.01/RD02.02 giữ
+      nguyên và được ưu tiên** vì đã nghiệm thu runtime thật và mang sắc thái BPMN không nói ra được
+      (Task_6 duyệt là `dong_y_bo_sung`, RD02.02 cố ý fail-closed RETURN_STEP). Có test
+      `verifyNoInteractions(routingReader)` khoá thứ tự ưu tiên này.
+- [x] RETURN_STEP cho quy trình mới **fail-closed** đúng nguyên tắc RD02.02: chỉ cho phép khi BPMN
+      thật sự có nhánh hiệu chỉnh, không thì nó im lặng chạy y hệt APPROVE_STEP.
+- [x] **Phát hiện thứ hai:** seed V10 có 4 luật hiển thị nút CHUNG (`process_code`/`task_definition_key`
+      NULL) gắn sẵn biểu mẫu RD01.01 ⇒ mọi quy trình mới bị đối soát chấm `generic` (KHÔNG phải
+      `missing`), nên `scaffold()` cũ là no-op và bước của quy trình mới mở ra biểu mẫu RD01.01 —
+      server còn validate trường bắt buộc theo đúng biểu mẫu sai đó. `scaffold()` nay ghim đè khi BPMN
+      tự khai `formKey`; bước không tự khai thì để nguyên luật chung (không đẻ luật thừa).
+- [x] Bỏ hẳn nhánh dự phòng `BUNDLED_RD0101`: `ProcessDeploymentRunner` nay `syncCatalog` cho **cả
+      RD01.01** chứ không chỉ RD02.02 (an toàn khi chạy lại: sync bỏ qua nếu catalog đã có dòng, và
+      deploy lại BPMN y hệt thì Zeebe trả CÙNG processDefinitionKey). `resolve()` bỏ tham số
+      `processDefinitionId` (3 call site) và **không cache map rỗng** — cache rỗng sẽ đóng băng trạng
+      thái "không biết bước nào" đến hết vòng đời tiến trình nếu tra trúng lúc quy trình chưa vào catalog.
+- [x] Tự sinh luật sau deploy: `ProcessDeployedEvent` +
+      `@TransactionalEventListener(AFTER_COMMIT)` + `@Transactional(REQUIRES_NEW)`
+      (`DeployedProcessPolicyScaffolder`). **Cả hai hướng đơn giản hơn đều sai:** cùng transaction ⇒
+      lỗi sinh luật đánh dấu rollback-only và làm mất dòng catalog trong khi BPMN ĐÃ ở trên Zeebe;
+      `REQUIRES_NEW` ngay tại chỗ ⇒ transaction mới không thấy dòng version chưa commit nên scaffold
+      thành no-op im lặng. Cả 2 đường deploy (app + hút từ Camunda) đều phát sự kiện.
+- [x] `RoleCatalog` (mới) tách khỏi `ActionStudioService` — trước đó danh mục vai trò nằm private nên
+      không ai đối chiếu `candidateGroups` được. Giữ static thay vì bean để không đổi chữ ký
+      constructor `ActionStudioService` (7 test dựng tay).
+- [x] `JobWorkerRegistry` (mới) quét `@JobWorker(type=...)` bằng phản chiếu trên bean definition —
+      **không hardcode** danh sách job type, vì hardcode thì mỗi worker mới là một lần quên cập nhật.
+      `io.camunda.client.annotation.JobWorker.type()` xác minh bằng `javap` trên
+      `camunda-spring-boot-starter-8.9.12.jar` (KHÔNG nằm trong `camunda-client-java`).
+- [x] **Màn đối soát** — `ProcessReadinessService` + `GET
+      /api/process-definitions/by-bpmn-process-id/{id}/readiness` + drawer "Đối soát" trên `/quy-trinh`.
+      Đây chính là chỗ 3 kiểm tra của Lát 0 (đã huỷ) được chuyển tới, dạng chẩn đoán đọc-thôi:
+      biểu mẫu có thật trong thư viện không · `candidateGroups` có trong danh mục vai trò không ·
+      service task có worker lắng nghe không · nhánh nào chưa có luật ghim. Trả **200 kể cả khi tất cả
+      đều đỏ** (chẩn đoán, không phải cổng chặn). Lỗi đối soát luật chỉ thành một ghi chú, không làm
+      mất phần chẩn đoán còn lại.
+- [x] `SecureXml` (mới) gom cấu hình parser tắt DTD/external entity. **Không** gom
+      `ProcessDefinitionImportValidator` — đó là cổng kiểm duyệt dữ liệu từ ngoài, cứng hơn (có
+      EntityResolver ném lỗi + ErrorHandler biến warning thành lỗi), không nên bị kéo theo.
+- [x] Test mới: `ProcessReadinessServiceTest` 7/7, `DeployedProcessPolicyScaffolderTest` 2/2,
+      `DeployedBpmnRoutingReaderTest` 6/6 (+3), `WorkflowTaskActionRoutingTest` 25/25 (+3),
+      `ActionStudioServiceTest` 12/12 (+2), `BpmnUserTaskMetadataCatalogTest` 2/2 (+1),
+      `ProcessDefinitionHttpContractTest` 10/10 (+1), `process-catalog.spec.ts` 10/10 (+3).
+
+**Lát 4 — DONE (source + test), RUNTIME PENDING.** `UserAuthoredProcessAcceptanceTest`
+(Testcontainers Postgres 16, cùng image `infra/docker-compose.override.yml`) — **6/6 PASS**:
+- BPMN `quy_trinh_thu_nghiem` (start → LapHoSo → DuyetHoSo → gateway 3 nhánh: đồng ý / yêu cầu hiệu
+  chỉnh quay lại bước đầu / không đạt là default flow) **chưa từng xuất hiện ở bất kỳ file Java, hằng
+  số, migration hay resource nào** — viết ngay trong test, đúng như người dùng vẽ trên `/quy-trinh/ve`.
+- Chạy hết chuỗi: validate (không lỗi lint) → deploy → catalog → routing đọc đúng 2 bước/role/form →
+  `actionVariables` cho đúng biến điều khiển → `WorkflowTaskActionRouting` trả đúng biến cho
+  APPROVE/RETURN → `scaffold` ghim đúng biểu mẫu riêng (không mượn của RD01.01) → `simulate` với user
+  **không phải admin** (role CQ_KHCN) thấy nút duyệt kèm đúng form → `readiness` xanh.
+- Dùng dữ liệu seed Flyway thật (danh mục action, thư viện biểu mẫu, 4 luật CHUNG của V10) — chính bộ
+  seed đó là thứ từng làm quy trình mới lặng lẽ mượn biểu mẫu RD01.01.
+
+**Verify Lát 3 + 4:** backend `mvn -o test` **279/279 PASS BUILD SUCCESS**; Angular **213/215**
+(2 fail `layout/nav-items.spec.ts` **pre-existing**, không nằm trong diff);
+`ng build --configuration production` GREEN; `npx tsc -p tsconfig.app.json --noEmit` EXIT=0.
+
+**Lát 3 + 4 — CHƯA làm / giới hạn đã biết:**
+- **Zeebe bị mock trong Lát 4.** Test chứng minh mọi thứ PHÍA APP là process-agnostic; phần "engine
+  thật nhận BPMN và rẽ nhánh theo biến điều khiển" vẫn là giả định chưa nghiệm thu.
+- Chưa build/restart 8090, chưa click-through trình duyệt, chưa chạy hết luồng trên stack thật cho
+  bất kỳ lát nào trong 4 lát.
+- Dây `@TransactionalEventListener(AFTER_COMMIT)` chưa có integration test dựng cả Spring context —
+  phần phát sự kiện và phần xử lý sự kiện được test riêng, còn chính annotation thì chưa.
+- `JobWorkerRegistry` bỏ qua `@JobWorker` không khai `type=` (Camunda tự suy từ tên method). Dự án
+  hiện luôn khai tường minh; nếu sau này có worker không khai, đối soát sẽ báo "thiếu worker" nhầm.
+- Chiều ngược lại vẫn chưa xử lý (từ Lát 1): quy trình bị xoá khỏi engine vẫn nằm trong catalog và
+  vẫn chọn được khi gửi duyệt ⇒ hồ sơ chết ở `ProcessNotActiveException`. Đáng đưa vào màn đối soát.
+- **Bẫy môi trường gặp thật khi làm lát này:** IDE (Eclipse JDT) ghi class file lỗi vào
+  `backend/target/classes`, `mvn compile` bỏ qua vì timestamp, và Mockito báo "Could not modify all
+  classes" cho class mới. Xoá đúng file `.class` rồi `mvn -o compile` lại là hết — không phải lỗi code.
+
 ## ★ DONE — AI_Summarize đọc thêm nội dung tệp đính kèm (PDF/Word/Excel) — 2026-07-21 (owner Claude, theo yêu cầu trực tiếp user)
 
 **Bối cảnh:** tiếp nối việc chuyển provider AI_Summarize sang OpenAI (entry ngay dưới). Trước đó

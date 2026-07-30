@@ -34,6 +34,8 @@ export interface FormComponent {
   description?: string;
   text?: string;
   subtype?: string;
+  /** Nguồn ảnh (URL hoặc data URI) — dùng cho type `image`. */
+  source?: string;
   validate?: FormFieldValidate;
   values?: { value: string; label: string }[];
   /** Hiển thị có điều kiện — `hide` là biểu thức FEEL, true ⇒ ẩn trường. */

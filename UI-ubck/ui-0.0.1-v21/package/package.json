@@ -1,0 +1,32 @@
+{
+  "name": "@khcn-core/ui",
+  "version": "0.0.1-v21",
+  "main": "./fesm2022/ubck-core-ui.mjs",
+  "module": "fesm2022/khcn-core-ui.mjs",
+  "typings": "types/khcn-core-ui.d.ts",
+  "files": [
+    "*"
+  ],
+  "peerDependencies": {
+    "@angular/common": "21.2.5",
+    "@angular/core": "21.2.5",
+    "primeng": "^21.1.7",
+    "@ngx-translate/core": "17.0.0",
+    "lottie-web": "^5.13.0",
+    "ngx-lottie": "^21.2.0"
+  },
+  "dependencies": {
+    "tslib": "2.8.1"
+  },
+  "sideEffects": false,
+  "exports": {
+    "./package.json": {
+      "default": "./package.json"
+    },
+    ".": {
+      "types": "./types/khcn-core-ui.d.ts",
+      "default": "./fesm2022/khcn-core-ui.mjs"
+    }
+  },
+  "type": "module"
+}

@@ -161,6 +161,27 @@ export class FormDesignerComponent implements AfterViewInit, OnDestroy {
     return (this.editor as unknown as { saveSchema: () => unknown } | null)?.saveSchema();
   }
 
+  /** Replace the canvas with an imported form-js schema and leave it dirty until explicitly saved. */
+  async importSchema(schema: unknown): Promise<void> {
+    if (!this.editor) throw new Error('Trình thiết kế chưa sẵn sàng.');
+    const previousSchema = this.getSchema();
+    try {
+      await this.editor.importSchema(schema as never);
+    } catch (error) {
+      // form-js clears the canvas before importing; restore current work if the new schema is rejected.
+      await this.editor.importSchema(previousSchema as never);
+      throw error;
+    }
+    const sel = (this.editor.get('selection') as Selection).get() as FField | null;
+    this.selectedField.set(sel && sel.type ? sel : null);
+    this.canUndo.set(false);
+    this.canRedo.set(false);
+    this.dirtyFlag = true;
+    this.dirty.set(true);
+    this.dirtyChange.emit(true);
+    if (this.previewOpenFlag) this.previewSchema.set(this.getSchema());
+  }
+
   markSaved(): void {
     this.dirtyFlag = false;
     this.dirty.set(false);

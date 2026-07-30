@@ -83,8 +83,13 @@ interface FComp {
   expression?: string
   /** Trường chỉ đọc (không cho nhập tay). */
   readonly?: boolean
-  /** ③ Template component con — dùng cho `dynamiclist` (mỗi dòng render theo template này). */
+  /** ③ Template component con — dùng cho `dynamiclist` (mỗi dòng render theo template này);
+   *  cũng dùng cho `group` (container hiển thị thuần, KHÔNG tạo namespace dữ liệu riêng). */
   components?: FComp[]
+  /** Nội dung HTML tĩnh — dùng cho type `html`. Hỗ trợ nội suy `{{key}}` (đã escape giá trị). */
+  content?: string
+  /** Giá trị khởi tạo khi form chưa có data cho `key` này (không áp dụng trong dòng dynamiclist). */
+  defaultValue?: unknown
 }
 interface FSchema {
   components?: FComp[]
@@ -114,6 +119,37 @@ function evalFeel(expr: string | undefined, ctx: Record<string, unknown>): unkno
   } catch {
     return undefined
   }
+}
+
+/** Gom `defaultValue` của mọi field có `key`, đệ quy qua `group` (không đệ quy vào `dynamiclist`). */
+function collectDefaults(components: FComp[]): Record<string, unknown> {
+  const out: Record<string, unknown> = {}
+  for (const c of components) {
+    if (c.type === 'group' && Array.isArray(c.components)) {
+      Object.assign(out, collectDefaults(c.components))
+      continue
+    }
+    if (c.key && c.defaultValue !== undefined) out[c.key] = c.defaultValue
+  }
+  return out
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+/** Nội suy `{{key}}` trong HTML tĩnh (đáng tin — do thiết kế biểu mẫu tạo ra) bằng giá trị
+ *  ctx đã escape (giá trị người dùng gõ, phải escape để tránh XSS khi render dangerouslySetInnerHTML). */
+function renderTemplate(html: string, ctx: Record<string, unknown>): string {
+  return html.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_, key: string) => {
+    const v = ctx[key]
+    return v == null ? '' : escapeHtml(String(v))
+  })
 }
 
 function isEmpty(v: unknown): boolean {
@@ -204,6 +240,40 @@ function validateField(c: FComp, value: unknown): string | undefined {
  * `parent` là context cấp trên: dòng dynamiclist truyền context gốc vào đây nên biểu thức
  * FEEL trong dòng thấy cả biến gốc lẫn biến của dòng (dòng ưu tiên) — quyết R2.
  */
+/** Gom giá trị `expression`, đệ quy qua `group` (KHÔNG đệ quy vào `dynamiclist` — mỗi dòng tự tính riêng). */
+function collectExpressions(
+  components: FComp[],
+  base: Record<string, unknown>,
+  computed: Record<string, unknown>,
+) {
+  for (const c of components) {
+    if (c.type === 'group' && Array.isArray(c.components)) {
+      collectExpressions(c.components, base, computed)
+      continue
+    }
+    if (c.type === 'expression' && c.key && c.expression) {
+      computed[c.key] = evalFeel(c.expression, base)
+    }
+  }
+}
+
+/** Tính tập id đang ẩn, đệ quy qua `group` — group ẩn ⇒ toàn bộ field con bên trong cũng ẩn theo. */
+function computeHidden(
+  components: FComp[],
+  ctx: Record<string, unknown>,
+  hidden: Set<string>,
+  parentHidden: boolean,
+) {
+  for (const c of components) {
+    const expr = c.conditional?.hide
+    const ownHidden = parentHidden || (!!expr && evalFeel(expr, ctx) === true)
+    if (ownHidden) hidden.add(idOf(c))
+    if (c.type === 'group' && Array.isArray(c.components)) {
+      computeHidden(c.components, ctx, hidden, ownHidden)
+    }
+  }
+}
+
 function deriveState(
   components: FComp[],
   data: Record<string, unknown>,
@@ -211,17 +281,10 @@ function deriveState(
 ) {
   const base = { ...parent, ...data }
   const computed: Record<string, unknown> = {}
-  for (const c of components) {
-    if (c.type === 'expression' && c.key && c.expression) {
-      computed[c.key] = evalFeel(c.expression, base)
-    }
-  }
+  collectExpressions(components, base, computed)
   const ctx = { ...base, ...computed }
   const hidden = new Set<string>()
-  for (const c of components) {
-    const expr = c.conditional?.hide
-    if (expr && evalFeel(expr, ctx) === true) hidden.add(idOf(c))
-  }
+  computeHidden(components, ctx, hidden, false)
   return { computed, ctx, hidden }
 }
 
@@ -230,24 +293,25 @@ function rowErrKey(listId: string, index: number, fieldId: string): string {
   return `${listId}#${index}.${fieldId}`
 }
 
-/**
- * (Lát 3) Xử lý validate + gom data cho MỘT cấp component (đệ quy vào `dynamiclist`).
- * - Ghi lỗi vào `errs` (key phẳng; dòng dùng {@link rowErrKey}).
- * - Trả về object data của cấp này (chỉ trường visible; dynamiclist → mảng object).
- */
-function processLevel(
+/** Gom data + validate cho MỘT danh sách component đã biết `ctx`/`hidden` của cả cây (đệ quy
+ *  qua `group` — group không tạo namespace dữ liệu riêng nên field con gộp thẳng vào `out`). */
+function collectData(
   components: FComp[],
-  data: Record<string, unknown>,
-  parent: Record<string, unknown>,
+  ctx: Record<string, unknown>,
+  hidden: Set<string>,
   prefix: string,
   errs: Record<string, unknown>,
 ): Record<string, unknown> {
-  const { ctx, hidden } = deriveState(components, data, parent)
   const out: Record<string, unknown> = {}
   for (const c of components) {
-    if (!c.key || hidden.has(idOf(c))) continue // trường ẩn: bỏ validate + khỏi payload
+    if (hidden.has(idOf(c))) continue // trường/group ẩn: bỏ validate + khỏi payload
+    if (c.type === 'group' && Array.isArray(c.components)) {
+      Object.assign(out, collectData(c.components, ctx, hidden, prefix, errs))
+      continue
+    }
+    if (!c.key) continue
     if (c.type === 'dynamiclist') {
-      const rows = Array.isArray(data[c.key]) ? (data[c.key] as Record<string, unknown>[]) : []
+      const rows = Array.isArray(ctx[c.key]) ? (ctx[c.key] as Record<string, unknown>[]) : []
       if (c.validate?.required && rows.length === 0) {
         errs[prefix + idOf(c)] = 'Cần ít nhất một dòng.'
       }
@@ -263,16 +327,34 @@ function processLevel(
   return out
 }
 
+/**
+ * (Lát 3) Xử lý validate + gom data cho MỘT cấp component (đệ quy vào `dynamiclist`).
+ * - Ghi lỗi vào `errs` (key phẳng; dòng dùng {@link rowErrKey}).
+ * - Trả về object data của cấp này (chỉ trường visible; dynamiclist → mảng object; group → gộp phẳng).
+ */
+function processLevel(
+  components: FComp[],
+  data: Record<string, unknown>,
+  parent: Record<string, unknown>,
+  prefix: string,
+  errs: Record<string, unknown>,
+): Record<string, unknown> {
+  const { ctx, hidden } = deriveState(components, data, parent)
+  return collectData(components, ctx, hidden, prefix, errs)
+}
+
 const FormRenderer = forwardRef<FormRendererHandle, Props>(({ schema, data }, ref) => {
   const components = useMemo(() => componentsOf(schema), [schema])
   const [formData, setFormData] = useState<Record<string, unknown>>(() => ({
+    ...collectDefaults(components),
     ...(data ?? {}),
   }))
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  // Đổi schema → nạp lại dữ liệu khởi tạo, xoá lỗi (giống re-import của renderer cũ).
+  // Đổi schema → nạp lại dữ liệu khởi tạo (mặc định của schema, `data` truyền vào đè lên), xoá lỗi
+  // (giống re-import của renderer cũ).
   useEffect(() => {
-    setFormData({ ...(data ?? {}) })
+    setFormData({ ...collectDefaults(components), ...(data ?? {}) })
     setErrors({})
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [schema])
@@ -316,44 +398,67 @@ const FormRenderer = forwardRef<FormRendererHandle, Props>(({ schema, data }, re
     [components, formData],
   )
 
-  return (
-    <div className="vht-form">
-      {components.map((c, idx) => {
-        if (derived.hidden.has(idOf(c))) return null // ① trường đang ẩn
-        // ③ bảng động: render riêng, quản lý mảng dòng.
-        if (c.type === 'dynamiclist') {
-          return (
-            <DynamicList
-              key={idOf(c) || idx}
-              comp={c}
-              rows={Array.isArray(formData[c.key ?? '']) ? (formData[c.key ?? ''] as Record<string, unknown>[]) : []}
-              rootCtx={derived.ctx}
-              errors={errors}
-              errPrefix=""
-              onChange={(next) => c.key && setValue(c.key, next)}
-            />
-          )
-        }
-        // ② trường tính toán: giá trị lấy từ computed, không phải formData.
-        const isComputed = c.type === 'expression'
-        const value = c.key
-          ? isComputed
-            ? derived.computed[c.key]
-            : formData[c.key]
-          : undefined
+  // Render đệ quy — ④ `group`: container thuần (viền + nhãn), field con dùng chung
+  // formData/derived/errors với cấp cha (không có namespace riêng, khác `dynamiclist`).
+  // `html`: nội dung tĩnh do thiết kế biểu mẫu tạo ra, nội suy `{{key}}` bằng giá trị đã escape.
+  function renderComponents(list: FComp[]): ReactNode[] {
+    return list.map((c, idx) => {
+      if (derived.hidden.has(idOf(c))) return null // ① trường/group đang ẩn
+      if (c.type === 'group') {
         return (
-          <ComponentField
+          <div
             key={idOf(c) || idx}
-            comp={c}
-            value={value}
-            error={errors[idOf(c)]}
-            disabled={isComputed || c.readonly === true}
-            onChange={(v) => c.key && !isComputed && setValue(c.key, v)}
+            style={{ border: '1px solid #f0f0f0', borderRadius: 8, padding: '12px 16px 4px', marginBottom: 16 }}
+          >
+            {c.label && <div style={{ fontWeight: 600, marginBottom: 8 }}>{c.label}</div>}
+            {renderComponents(c.components ?? [])}
+          </div>
+        )
+      }
+      if (c.type === 'html') {
+        return (
+          <div
+            key={idOf(c) || idx}
+            style={{ marginBottom: 16 }}
+            dangerouslySetInnerHTML={{ __html: renderTemplate(c.content ?? '', derived.ctx) }}
           />
         )
-      })}
-    </div>
-  )
+      }
+      // ③ bảng động: render riêng, quản lý mảng dòng.
+      if (c.type === 'dynamiclist') {
+        return (
+          <DynamicList
+            key={idOf(c) || idx}
+            comp={c}
+            rows={Array.isArray(formData[c.key ?? '']) ? (formData[c.key ?? ''] as Record<string, unknown>[]) : []}
+            rootCtx={derived.ctx}
+            errors={errors}
+            errPrefix=""
+            onChange={(next) => c.key && setValue(c.key, next)}
+          />
+        )
+      }
+      // ② trường tính toán: giá trị lấy từ computed, không phải formData.
+      const isComputed = c.type === 'expression'
+      const value = c.key
+        ? isComputed
+          ? derived.computed[c.key]
+          : formData[c.key]
+        : undefined
+      return (
+        <ComponentField
+          key={idOf(c) || idx}
+          comp={c}
+          value={value}
+          error={errors[idOf(c)]}
+          disabled={isComputed || c.readonly === true}
+          onChange={(v) => c.key && !isComputed && setValue(c.key, v)}
+        />
+      )
+    })
+  }
+
+  return <div className="vht-form">{renderComponents(components)}</div>
 })
 
 FormRenderer.displayName = 'FormRenderer'

@@ -181,13 +181,33 @@
   </div>
 
   <nz-modal [nzVisible]="submitOpen()" nzTitle="Gửi duyệt hồ sơ" nzOkText="Gửi duyệt" nzCancelText="Hủy"
-    [nzOkLoading]="saving()" [nzOkDisabled]="!submitProcess()?.supported" (nzOnCancel)="submitOpen.set(false)" (nzOnOk)="submit()">
+    [nzOkLoading]="saving()" [nzOkDisabled]="!submitProcess()" (nzOnCancel)="submitOpen.set(false)" (nzOnOk)="submit()">
     <ng-container *nzModalContent>
+      <p>Hồ sơ <code>{{ dossier.id }}</code> sẽ đi vào quy trình:</p>
+      <nz-select style="width: 100%" nzPlaceHolder="Chọn quy trình đã deploy" nzShowSearch
+        [nzLoading]="selectableLoading()" [ngModel]="selectedProcessId()"
+        (ngModelChange)="selectedProcessId.set($event)">
+        @for (process of selectableProcesses(); track process.bpmnProcessId) {
+          <nz-option [nzValue]="process.bpmnProcessId"
+            [nzLabel]="process.name + ' · ' + process.bpmnProcessId + ' (v' + process.latestVersion + ')'"></nz-option>
+        }
+      </nz-select>
+
+      @if (selectableError(); as error) {
+        <nz-alert class="hsd-submit-alert" nzType="error" nzShowIcon [nzMessage]="error"></nz-alert>
+      } @else if (!selectableLoading() && !selectableProcesses().length) {
+        <nz-alert class="hsd-submit-alert" nzType="warning" nzShowIcon
+          nzMessage="Chưa có quy trình nào được deploy. Vào /quy-trinh để tạo và deploy BPMN trước."></nz-alert>
+      }
+
       @if (submitProcess(); as process) {
-        <p>Hồ sơ <code>{{ dossier.id }}</code> sẽ đi vào quy trình:</p>
-        <nz-card nzSize="small"><strong>{{ process.code }} · {{ process.name }}</strong></nz-card>
-        @if (!process.supported) { <nz-alert nzType="warning" nzShowIcon nzMessage="Backend hiện mới hỗ trợ gửi duyệt RD01.01."></nz-alert> }
-      } @else { <nz-alert nzType="warning" nzShowIcon nzMessage="Loại hồ sơ này chưa có quy trình gửi duyệt được hỗ trợ."></nz-alert> }
+        @if (!process.userTaskCount) {
+          <nz-alert class="hsd-submit-alert" nzType="warning" nzShowIcon
+            nzMessage="Quy trình này không có bước xử lý (userTask) nào — hồ sơ sẽ chạy tới cuối mà không sinh việc cho ai."></nz-alert>
+        }
+        <nz-alert class="hsd-submit-alert" nzType="info" nzShowIcon
+          nzMessage="Hệ thống không kiểm tra quy trình có phù hợp loại hồ sơ hay không — hãy chọn đúng."></nz-alert>
+      }
     </ng-container>
   </nz-modal>
 

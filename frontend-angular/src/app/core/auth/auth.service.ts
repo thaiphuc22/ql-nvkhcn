@@ -1,6 +1,7 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { DEMO_PASSWORD, DemoUser, findDemoUser } from './demo-users';
 import { ALL_APP_CODES, AppCode } from './app-registry';
+import { UserService } from '../services/user.service';
 
 const STORAGE_KEY = 'qtkhcn.auth.email';
 const ACTIVE_APP_STORAGE_KEY = 'qtkhcn.auth.active-app';
@@ -21,6 +22,8 @@ export interface LoginResult {
  */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  private readonly userService = inject(UserService);
+
   private readonly userSignal = signal<DemoUser | null>(this.restore());
   readonly user = this.userSignal.asReadonly();
   private readonly activeAppSignal = signal<AppCode | null>(this.restoreActiveApp());
@@ -55,6 +58,38 @@ export class AuthService {
     this.userSignal.set(found);
     this.clearActiveApp();
     return { ok: true };
+  }
+
+  /**
+   * Gỡ bản hardcode role/permission thứ 3 (`demo-users.ts`) — nạp role/permission/administrator
+   * THẬT từ `identity-service` (D22) cho user đang đăng nhập, ghi đè lên field cùng tên của
+   * `DemoUser` đang giữ trong signal. Gọi từ `Shell` (mounted sau khi qua `authGuard`, phủ cả
+   * đăng nhập mới lẫn phiên khôi phục từ localStorage) — KHÔNG gọi từ `login()`/constructor để
+   * các unit test gọi thẳng `AuthService.login()` (không dựng `Shell`) không phải lo mock HTTP.
+   * Chạy ngầm, không chặn — lỗi mạng (identity-service chưa chạy) chỉ log cảnh báo, giữ nguyên
+   * giá trị tĩnh, không phá luồng demo login hiện tại. `apps` KHÔNG bị ghi đè — entitlement App
+   * vẫn theo nguồn tĩnh D19.
+   */
+  refreshCurrentUser(): void {
+    const current = this.userSignal();
+    if (current) this.refreshEffectivePermissions(current.email);
+  }
+
+  private refreshEffectivePermissions(email: string): void {
+    this.userService.effectivePermissionsByEmail(email).subscribe({
+      next: (effective) => {
+        const current = this.userSignal();
+        if (!current || current.email !== email) return;
+        this.userSignal.set({
+          ...current,
+          roleCodes: [...effective.roleCodes],
+          isAdmin: current.isAdmin || effective.administrator,
+        });
+      },
+      error: (error) => {
+        console.warn(`[AuthService] Không nạp được role/permission thật từ identity-service cho ${email}.`, error);
+      },
+    });
   }
 
   logout(): void {

@@ -1,0 +1,1 @@
+package vn.vht.qtkhcn.identity.repository; import java.util.UUID; import org.springframework.data.jpa.repository.JpaRepository; import vn.vht.qtkhcn.identity.domain.AuditLog; public interface AuditLogRepository extends JpaRepository<AuditLog,UUID>{}

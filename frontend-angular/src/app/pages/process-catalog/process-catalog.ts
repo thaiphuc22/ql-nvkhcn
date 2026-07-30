@@ -30,6 +30,9 @@ import {
   ProcessDefinitionDraftResponse,
   ProcessDefinitionDraftSummaryResponse,
   ProcessImportErrorBody,
+  ProcessReadinessResponse,
+  ProcessSyncResponse,
+  ReadinessStatus,
   RunningInstanceResponse,
 } from '../../core/models/process-definition';
 
@@ -73,6 +76,17 @@ export class ProcessCatalogPage {
   readonly activeTabIndex = signal(0);
 
   readonly query = signal('');
+
+  // --- Đồng bộ quy trình deploy thẳng lên Camunda ---
+  readonly syncing = signal(false);
+  readonly syncResult = signal<ProcessSyncResponse | null>(null);
+
+  // --- Đối soát quy trình (chẩn đoán đọc-thôi, không chặn deploy) ---
+  readonly readinessDrawerOpen = signal(false);
+  readonly readinessLoading = signal(false);
+  readonly readinessProcess = signal<ProcessDefinitionSummaryResponse | null>(null);
+  readonly readiness = signal<ProcessReadinessResponse | null>(null);
+  readonly readinessError = signal<string | null>(null);
 
   // --- Runtime instance state (Camunda, tách khỏi catalog PostgreSQL) ---
   readonly instanceCounts = signal<Record<string, number>>({});
@@ -181,6 +195,69 @@ export class ProcessCatalogPage {
         this.loadingInstanceCounts.set(false);
       },
     });
+  }
+
+  /**
+   * Hút quy trình deploy thẳng lên Camunda về catalog.
+   *
+   * Hiển thị kết quả bằng banner giữ nguyên trên màn (`syncResult`) thay vì toast: một lượt đồng bộ
+   * có thể vừa nhập được vài quy trình vừa lỗi vài quy trình, toast biến mất trước khi đọc xong.
+   */
+  syncFromCamunda(): void {
+    this.syncing.set(true);
+    this.syncResult.set(null);
+    this.processDefinitionService.syncFromCamunda(this.auth.user()?.hoTen).subscribe({
+      next: (result) => {
+        this.syncing.set(false);
+        this.syncResult.set(result);
+        if (result.imported > 0) {
+          this.activeTabIndex.set(1);
+          this.reload();
+        }
+      },
+      error: (error: HttpErrorResponse) => {
+        this.syncing.set(false);
+        this.message.error(this.apiErrorMessage(error, 'Đồng bộ từ Camunda thất bại'));
+      },
+    });
+  }
+
+  dismissSyncResult(): void {
+    this.syncResult.set(null);
+  }
+
+  /**
+   * Mở bảng đối soát của một quy trình. Không cache: người dùng vừa sửa biểu mẫu / thêm luật xong là
+   * bấm lại để xem đã xanh chưa, mà cache thì họ vẫn thấy màu đỏ cũ và tưởng sửa không ăn.
+   */
+  openReadiness(process: ProcessDefinitionSummaryResponse): void {
+    this.readinessDrawerOpen.set(true);
+    this.readinessLoading.set(true);
+    this.readinessProcess.set(process);
+    this.readiness.set(null);
+    this.readinessError.set(null);
+    this.processDefinitionService.readiness(process.bpmnProcessId).subscribe({
+      next: (result) => {
+        this.readiness.set(result);
+        this.readinessLoading.set(false);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.readinessError.set(this.apiErrorMessage(error, 'Không đối soát được quy trình'));
+        this.readinessLoading.set(false);
+      },
+    });
+  }
+
+  closeReadinessDrawer(): void {
+    this.readinessDrawerOpen.set(false);
+  }
+
+  readinessColor(status: ReadinessStatus): string {
+    return status === 'ok' ? 'success' : status === 'warn' ? 'warning' : 'error';
+  }
+
+  readinessLabel(status: ReadinessStatus): string {
+    return status === 'ok' ? 'Sẵn sàng' : status === 'warn' ? 'Cần xem lại' : 'Sẽ hỏng';
   }
 
   openInstances(process: ProcessDefinitionSummaryResponse): void {

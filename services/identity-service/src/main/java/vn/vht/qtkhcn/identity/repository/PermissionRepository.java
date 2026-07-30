@@ -1,0 +1,1 @@
+package vn.vht.qtkhcn.identity.repository; import java.util.*; import org.springframework.data.jpa.repository.JpaRepository; import vn.vht.qtkhcn.identity.domain.Permission; public interface PermissionRepository extends JpaRepository<Permission,UUID>{Optional<Permission> findByCodeIgnoreCase(String code); boolean existsByCodeIgnoreCase(String code);}

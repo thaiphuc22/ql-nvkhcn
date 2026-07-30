@@ -10,8 +10,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilderFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -32,6 +30,15 @@ import vn.vht.qtkhcn.web.dto.ActionStudioDtos.RouteBranchResponse;
 public class DeployedBpmnRoutingReader {
     private static final Logger log = LoggerFactory.getLogger(DeployedBpmnRoutingReader.class);
     private static final Pattern FEEL_STRING = Pattern.compile("=\\s*[^=]+?=\\s*\"([^\"]+)\"");
+    /**
+     * Như {@link #FEEL_STRING} nhưng tách được CẢ TÊN BIẾN, không chỉ giá trị — nguồn duy nhất để
+     * {@link #actionVariables} biết phải set biến nào khi người dùng bấm một nút. Chỉ khớp dạng
+     * {@code = <biến> = "<giá trị>"} nguyên vế; điều kiện phức tạp hơn rơi về {@link #FEEL_STRING}
+     * (vẫn lấy được outcome để hiển thị, nhưng không suy ra được biến — đúng: đoán bừa tên biến sẽ
+     * đẩy hồ sơ sang nhánh sai mà không báo lỗi).
+     */
+    private static final Pattern FEEL_VARIABLE_EQUALS =
+            Pattern.compile("^\\s*=\\s*([A-Za-z_][A-Za-z0-9_.]*)\\s*=\\s*\"([^\"]+)\"\\s*$");
     private static final String BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL";
     private final ProcessDefinitionCatalogRepository catalogRepository;
     private final ProcessDefinitionVersionRepository versionRepository;
@@ -62,7 +69,7 @@ public class DeployedBpmnRoutingReader {
 
     ProcessRoutingResponse parse(ProcessDefinitionCatalog catalog, ProcessDefinitionVersion version) {
         try {
-            Document document = secureFactory().newDocumentBuilder()
+            Document document = SecureXml.factory().newDocumentBuilder()
                     .parse(new InputSource(new StringReader(version.getBpmnXml())));
             Map<String, Element> nodes = new HashMap<>();
             for (Element element : elements(document, "*")) {
@@ -112,13 +119,17 @@ public class DeployedBpmnRoutingReader {
                 descendantAttribute(task, "formDefinition", "formKey"), routes);
     }
 
+    /**
+     * Nhánh khai báo bằng property {@code qtkhcn.actions} thay vì gateway thật. {@code variable} luôn
+     * {@code null}: không có conditionExpression nào để đọc, nên cũng không có biến điều khiển để suy.
+     */
     private static RouteBranchResponse actionBranch(String actionCode, String forwardTarget) {
         return switch (actionCode) {
-            case "APPROVE_STEP" -> new RouteBranchResponse("APPROVE", "Đồng ý duyệt", forwardTarget, "forward");
-            case "REJECT_STEP" -> new RouteBranchResponse("REJECT", "Từ chối duyệt", "Kết thúc — từ chối", "reject");
-            case "RETURN_STEP" -> new RouteBranchResponse("RETURN", "Yêu cầu điều chỉnh", "Bước trước", "rework");
-            case "SUBMIT" -> new RouteBranchResponse("SUBMIT", "Gửi duyệt", forwardTarget, "forward");
-            default -> new RouteBranchResponse(actionCode, actionCode, forwardTarget, "forward");
+            case "APPROVE_STEP" -> new RouteBranchResponse("APPROVE", "Đồng ý duyệt", forwardTarget, "forward", null);
+            case "REJECT_STEP" -> new RouteBranchResponse("REJECT", "Từ chối duyệt", "Kết thúc — từ chối", "reject", null);
+            case "RETURN_STEP" -> new RouteBranchResponse("RETURN", "Yêu cầu điều chỉnh", "Bước trước", "rework", null);
+            case "SUBMIT" -> new RouteBranchResponse("SUBMIT", "Gửi duyệt", forwardTarget, "forward", null);
+            default -> new RouteBranchResponse(actionCode, actionCode, forwardTarget, "forward", null);
         };
     }
 
@@ -127,8 +138,17 @@ public class DeployedBpmnRoutingReader {
         Element target = nodes.get(flow.getAttribute("targetRef"));
         String label = blankFallback(flow.getAttribute("name"), target == null ? "Tiếp tục" : displayName(target));
         String condition = childText(flow, "conditionExpression");
-        Matcher matcher = FEEL_STRING.matcher(condition);
-        String outcome = matcher.find() ? matcher.group(1) : gatewayBranch ? slug(label) : "SUBMIT";
+        Matcher typed = FEEL_VARIABLE_EQUALS.matcher(condition);
+        String variable = null;
+        String outcome = null;
+        if (typed.matches()) {
+            variable = typed.group(1);
+            outcome = typed.group(2);
+        } else {
+            Matcher matcher = FEEL_STRING.matcher(condition);
+            if (matcher.find()) outcome = matcher.group(1);
+        }
+        if (outcome == null) outcome = gatewayBranch ? slug(label) : "SUBMIT";
         String targetName = target == null ? flow.getAttribute("targetRef") : displayName(target);
         String kind = "forward";
         if (target != null && "endEvent".equals(target.getLocalName())) {
@@ -136,18 +156,43 @@ public class DeployedBpmnRoutingReader {
             kind = normalized.contains("khong") || normalized.contains("tu_choi") ? "reject" : "complete";
         } else if (target != null && taskOrder.containsKey(target.getAttribute("id"))
                 && taskOrder.get(target.getAttribute("id")) <= taskOrder.getOrDefault(taskId, -1)) kind = "rework";
-        return new RouteBranchResponse(outcome, label, targetName, kind);
+        return new RouteBranchResponse(outcome, label, targetName, kind, variable);
     }
 
-    private static DocumentBuilderFactory secureFactory() throws Exception {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setNamespaceAware(true);
-        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-        factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
-        factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
-        factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
-        factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
-        return factory;
+    /**
+     * Biến điều khiển cần set khi người dùng bấm một nút tại {@code taskKey}, suy TRỰC TIẾP từ điều
+     * kiện gateway trong BPMN đã deploy: {@code {"APPROVE_STEP": {"ketQuaThamDinh": "dong_y"}}}.
+     *
+     * <p>Đây là mảnh còn thiếu để "vẽ BPMN mới rồi chạy hết luồng mà không sửa Java":
+     * {@code WorkflowTaskActionRouting} trước đây tra một bảng {@code switch} cứng theo
+     * {@code processDefinitionId}, nên quy trình mới rơi vào nhánh {@code default -> Map.of()} —
+     * bấm "Đồng ý duyệt" xong Zeebe không có biến nào để rẽ, gateway đi vào default flow hoặc ném
+     * CONDITION_ERROR.
+     *
+     * <p>Quy trình chưa deploy / chưa có XML trả map rỗng thay vì ném: đường gọi là thao tác duyệt
+     * của người dùng, không được phép sập vì lý do siêu dữ liệu.
+     */
+    public Map<String, Map<String, Object>> actionVariables(String bpmnProcessId, String taskKey) {
+        ProcessRoutingResponse routing;
+        try {
+            routing = require(bpmnProcessId);
+        } catch (RuntimeException notDeployedYet) {
+            log.debug("Không đọc được routing của {} để suy biến điều khiển", bpmnProcessId, notDeployedYet);
+            return Map.of();
+        }
+        Map<String, Map<String, Object>> result = new LinkedHashMap<>();
+        routing.steps().stream().filter(step -> step.key().equals(taskKey)).findFirst()
+                .ifPresent(step -> step.branches().stream()
+                        .filter(branch -> branch.variable() != null)
+                        .forEach(branch -> {
+                            String actionCode = BpmnOutcomeCodes.actionCode(branch.outcome());
+                            // putIfAbsent: hai nhánh cùng ánh xạ về một action (vd "dat" và "dong_y")
+                            // thì lấy nhánh vẽ trước, không âm thầm ghi đè bằng nhánh sau.
+                            if (actionCode != null) {
+                                result.putIfAbsent(actionCode, Map.of(branch.variable(), branch.outcome()));
+                            }
+                        }));
+        return Map.copyOf(result);
     }
 
     /**

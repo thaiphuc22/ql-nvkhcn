@@ -8,6 +8,7 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
+import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { NzSwitchModule } from 'ng-zorro-antd/switch';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
@@ -57,6 +58,9 @@ const KEYED = new Set(['textfield', 'textarea', 'number', 'datetime', 'expressio
 const REQUIREABLE = new Set(['textfield', 'textarea', 'number', 'datetime', 'filepicker', 'checkbox', 'checklist', 'radio', 'select', 'taglist', 'dynamiclist']);
 const OPTIONED = new Set(['select', 'radio', 'checklist', 'taglist']);
 const TEXTLEN = new Set(['textfield', 'textarea']);
+// Có nhãn hiển thị nhưng KHÔNG có key dữ liệu riêng (khớp `LABELED_NON_INPUTS` của
+// @bpmn-io/form-js-editor, trừ `group`/`dynamiclist` đã có mục riêng ở trên).
+const LABEL_ONLY = new Set(['button', 'table']);
 
 function emptyToUndef(v: string): string | undefined {
   return v.trim() === '' ? undefined : v;
@@ -68,7 +72,7 @@ function numOr(v: unknown): number | null {
 @Component({
   selector: 'app-form-field-properties',
   standalone: true,
-  imports: [FormsModule, NzButtonModule, NzDividerModule, NzEmptyModule, NzIconModule, NzInputModule, NzInputNumberModule, NzPopconfirmModule, NzSwitchModule, NzTagModule],
+  imports: [FormsModule, NzButtonModule, NzDividerModule, NzEmptyModule, NzIconModule, NzInputModule, NzInputNumberModule, NzPopconfirmModule, NzRadioModule, NzSwitchModule, NzTagModule],
   templateUrl: './form-field-properties.html',
   styleUrl: './form-field-properties.scss',
 })
@@ -90,6 +94,9 @@ export class FormFieldPropertiesComponent {
   readonly isNumber = computed(() => this.field()?.type === 'number');
   readonly isTextLen = computed(() => TEXTLEN.has(this.field()?.type ?? ''));
   readonly isOptioned = computed(() => OPTIONED.has(this.field()?.type ?? ''));
+  readonly isLabelOnly = computed(() => LABEL_ONLY.has(this.field()?.type ?? ''));
+  readonly isImage = computed(() => this.field()?.type === 'image');
+  readonly isDatetime = computed(() => this.field()?.type === 'datetime');
 
   // Draft locale — instance này được remount mỗi lần đổi field chọn (key ở
   // form-designer.ts), nên khởi tạo 1 lần từ field() hiện tại là đủ, không cần effect.
@@ -97,6 +104,7 @@ export class FormFieldPropertiesComponent {
   readonly draftLabel = signal(this.field()?.label ?? '');
   readonly draftDescription = signal(this.field()?.description ?? '');
   readonly draftText = signal(this.field()?.text ?? '');
+  readonly draftSource = signal(this.field()?.source ?? '');
   readonly draftExpression = signal(this.field()?.expression ?? '');
   readonly draftHide = signal(this.field()?.conditional?.hide ?? '');
   readonly draftMin = signal(numOr(this.field()?.validate?.min));
@@ -123,6 +131,12 @@ export class FormFieldPropertiesComponent {
   }
   commitText(): void {
     this.emitEdit('text', this.draftText());
+  }
+  commitSource(): void {
+    this.emitEdit('source', emptyToUndef(this.draftSource()));
+  }
+  commitSubtype(value: string): void {
+    this.emitEdit('subtype', value);
   }
   commitExpression(): void {
     this.emitEdit('expression', this.draftExpression());

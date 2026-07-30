@@ -11,6 +11,7 @@ import vn.vht.qtkhcn.hoso.service.WorkflowEventConflictException;
 import vn.vht.qtkhcn.hoso.service.DocumentStorageException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import vn.vht.qtkhcn.hoso.security.UnknownDemoIdentityException;
+import vn.vht.qtkhcn.hoso.security.IdentityServiceUnavailableException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -39,6 +40,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(UnknownDemoIdentityException.class)
     public ResponseEntity<ErrorBody> forbidden(UnknownDemoIdentityException exception) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorBody(exception.getMessage()));
+    }
+
+    @ExceptionHandler(IdentityServiceUnavailableException.class)
+    public ResponseEntity<ErrorBody> identityUnavailable(IdentityServiceUnavailableException exception) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(new ErrorBody(exception.getMessage()));
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)

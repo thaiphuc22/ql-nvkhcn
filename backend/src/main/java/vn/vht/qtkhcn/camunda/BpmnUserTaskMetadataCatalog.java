@@ -5,26 +5,29 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import vn.vht.qtkhcn.domain.ProcessDefinitionVersion;
 import vn.vht.qtkhcn.repository.ProcessDefinitionVersionRepository;
 
 /**
- * Resolves assignment and form metadata which is not present on Camunda element-instance/job search
- * responses. The deployed BPMN catalog is preferred; the bundled RD01.01 resource covers the startup
- * deployment which intentionally predates a catalog import row.
+ * Tên bước, assignee/candidate và form key — những thứ response element-instance/job của Camunda
+ * KHÔNG trả về. Nguồn duy nhất: BPMN XML của bản đã deploy, lưu trong {@code process_definition_version}.
+ *
+ * <p>Trước Lát 3, lớp này có thêm một nhánh dự phòng đọc thẳng {@code processes/rd0101.bpmn} trong
+ * classpath khi catalog không có dòng nào cho RD01.01. Nhánh đó tồn tại vì
+ * {@code ProcessDeploymentRunner} deploy RD01.01 lên Zeebe nhưng chỉ đồng bộ catalog cho RD02.02.
+ * Nay runner đồng bộ cả hai, nên nhánh dự phòng bị bỏ: nó đặc cách đúng một quy trình bundled, che
+ * mất chính lỗi "quy trình chạy trên engine nhưng vô hình với app" mà Lát 1 sinh ra nút đồng bộ để
+ * xử lý — và với quy trình người dùng tự vẽ thì nó chẳng giúp được gì.
  */
 @Component
 public class BpmnUserTaskMetadataCatalog {
     private static final String BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL";
-    private static final String BUNDLED_RD0101 = "processes/rd0101.bpmn";
 
     private final ProcessDefinitionVersionRepository versions;
     private final Map<Long, Map<String, UserTaskMetadata>> cache = new ConcurrentHashMap<>();
@@ -33,27 +36,24 @@ public class BpmnUserTaskMetadataCatalog {
         this.versions = versions;
     }
 
-    public UserTaskMetadata resolve(long processDefinitionKey, String processDefinitionId, String elementId) {
-        return cache.computeIfAbsent(processDefinitionKey,
-                        ignored -> load(processDefinitionKey, processDefinitionId))
-                .getOrDefault(elementId, UserTaskMetadata.EMPTY);
+    public UserTaskMetadata resolve(long processDefinitionKey, String elementId) {
+        Map<String, UserTaskMetadata> parsed = cache.get(processDefinitionKey);
+        if (parsed == null) {
+            parsed = load(processDefinitionKey);
+            // CHỈ cache kết quả có nội dung. Cache cả map rỗng thì một lượt tra trước khi quy trình
+            // được hút về catalog (nút "Đồng bộ từ Camunda", Lát 1) sẽ đóng băng trạng thái "không
+            // biết bước nào" đến hết vòng đời tiến trình — mọi bước hiện ra không tên, không role.
+            if (!parsed.isEmpty()) cache.put(processDefinitionKey, parsed);
+        }
+        return parsed.getOrDefault(elementId, UserTaskMetadata.EMPTY);
     }
 
-    private Map<String, UserTaskMetadata> load(long processDefinitionKey, String processDefinitionId) {
-        Optional<String> catalogXml = versions.findByCamundaProcessDefinitionKey(processDefinitionKey)
-                .map(item -> item.getBpmnXml());
-        if (catalogXml.isPresent()) {
-            return parse(catalogXml.get());
-        }
-        if ("RD01_01".equals(processDefinitionId)) {
-            try {
-                return parse(new String(new ClassPathResource(BUNDLED_RD0101)
-                        .getInputStream().readAllBytes(), StandardCharsets.UTF_8));
-            } catch (Exception e) {
-                throw new IllegalStateException("Không đọc được BPMN bundled " + BUNDLED_RD0101, e);
-            }
-        }
-        return Map.of();
+    private Map<String, UserTaskMetadata> load(long processDefinitionKey) {
+        return versions.findByCamundaProcessDefinitionKey(processDefinitionKey)
+                .map(ProcessDefinitionVersion::getBpmnXml)
+                .filter(xml -> xml != null && !xml.isBlank())
+                .map(BpmnUserTaskMetadataCatalog::parse)
+                .orElseGet(Map::of);
     }
 
     static Map<String, UserTaskMetadata> parse(String xml) {

@@ -4,12 +4,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import vn.vht.qtkhcn.service.DeployedBpmnRoutingReader;
 import vn.vht.qtkhcn.service.TaskActionException;
 
 /**
@@ -21,7 +25,8 @@ import vn.vht.qtkhcn.service.TaskActionException;
  */
 class WorkflowTaskActionRoutingTest {
 
-    private final WorkflowTaskActionRouting routing = new WorkflowTaskActionRouting();
+    private final DeployedBpmnRoutingReader routingReader = mock(DeployedBpmnRoutingReader.class);
+    private final WorkflowTaskActionRouting routing = new WorkflowTaskActionRouting(routingReader);
 
     @ParameterizedTest
     @ValueSource(strings = {"T01", "T02", "T05", "T24", "T33", "T03_CQ_KHCN", "T03_CQ_MS"})
@@ -62,6 +67,46 @@ class WorkflowTaskActionRoutingTest {
     @Test
     void approveStepIsSupportedForAnyRd0202Task() {
         assertTrue(routing.supports("RD02_02", "T24", "APPROVE_STEP"));
+    }
+
+    /**
+     * Quy trình người dùng tự vẽ: biến điều khiển phải suy ra từ chính BPMN đã deploy. Trước Lát 3
+     * nhánh này là {@code default -> Map.of()} — bấm "Đồng ý duyệt" xong Zeebe không có biến nào để
+     * rẽ, gateway rơi vào default flow hoặc ném CONDITION_ERROR.
+     */
+    @Test
+    void approveStepOnAUserAuthoredProcessTakesItsVariableFromTheDeployedBpmn() {
+        when(routingReader.actionVariables("quy_trinh_moi", "Duyet"))
+                .thenReturn(Map.of("APPROVE_STEP", Map.of("ketQuaDuyet", "dong_y")));
+
+        Map<String, Object> variables = routing.variables("quy_trinh_moi", "Duyet", "APPROVE_STEP",
+                "req-1", "actor-1");
+
+        assertEquals("dong_y", variables.get("ketQuaDuyet"));
+    }
+
+    @Test
+    void returnStepOnAUserAuthoredProcessIsAllowedOnlyWhenTheBpmnHasThatBranch() {
+        when(routingReader.actionVariables("quy_trinh_moi", "Duyet"))
+                .thenReturn(Map.of("RETURN_STEP", Map.of("ketQuaDuyet", "hieu_chinh")));
+        when(routingReader.actionVariables("quy_trinh_moi", "KhaiBao"))
+                .thenReturn(Map.of("APPROVE_STEP", Map.of("ketQuaDuyet", "dong_y")));
+
+        assertTrue(routing.supports("quy_trinh_moi", "Duyet", "RETURN_STEP"));
+        // Không có nhánh hiệu chỉnh trong BPMN ⇒ fail-closed, đúng như RD02.02: cho bấm mà không có
+        // gateway rẽ theo thì RETURN_STEP im lặng chạy y hệt APPROVE_STEP.
+        assertFalse(routing.supports("quy_trinh_moi", "KhaiBao", "RETURN_STEP"));
+    }
+
+    @Test
+    void bundledProcessesNeverConsultTheBpmnReader() {
+        // Bảng cứng RD01.01 mang sắc thái BPMN không nói ra được (Task_6 duyệt là dong_y_bo_sung).
+        // Nếu một ngày nào đó reader được ưu tiên hơn, test này vỡ trước khi hồ sơ đi sai nhánh.
+        Map<String, Object> variables = routing.variables("RD01_01", "Task_6", "APPROVE_STEP",
+                "req-1", "actor-1");
+
+        assertEquals("dong_y_bo_sung", variables.get("ketQuaThamDinh"));
+        verifyNoInteractions(routingReader);
     }
 
     private static Set<String> metadataKeys() {

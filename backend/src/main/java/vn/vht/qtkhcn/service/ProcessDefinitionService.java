@@ -6,7 +6,11 @@ import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,6 +24,8 @@ import vn.vht.qtkhcn.web.dto.ProcessDefinitionDetailResponse;
 import vn.vht.qtkhcn.web.dto.ProcessDefinitionImportResponse;
 import vn.vht.qtkhcn.web.dto.ProcessDefinitionSummaryResponse;
 import vn.vht.qtkhcn.web.dto.ProcessDefinitionVersionResponse;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ProcessRoutingResponse;
+import vn.vht.qtkhcn.web.dto.SelectableProcessResponse;
 
 @Service
 public class ProcessDefinitionService {
@@ -28,15 +34,21 @@ public class ProcessDefinitionService {
     private final CamundaDeploymentService deploymentService;
     private final ProcessDefinitionCatalogRepository catalogRepository;
     private final ProcessDefinitionVersionRepository versionRepository;
+    private final DeployedBpmnRoutingReader routingReader;
+    private final ApplicationEventPublisher events;
 
     public ProcessDefinitionService(ProcessDefinitionImportValidator validator,
             CamundaDeploymentService deploymentService,
             ProcessDefinitionCatalogRepository catalogRepository,
-            ProcessDefinitionVersionRepository versionRepository) {
+            ProcessDefinitionVersionRepository versionRepository,
+            DeployedBpmnRoutingReader routingReader,
+            ApplicationEventPublisher events) {
         this.validator = validator;
         this.deploymentService = deploymentService;
         this.catalogRepository = catalogRepository;
         this.versionRepository = versionRepository;
+        this.routingReader = routingReader;
+        this.events = events;
     }
 
     /**
@@ -101,6 +113,10 @@ public class ProcessDefinitionService {
         version.getWarnings().addAll(bpmn.warnings());
         version = versionRepository.save(version);
 
+        // Sinh luật hành động chạy SAU COMMIT (xem DeployedProcessPolicyScaffolder) — quy trình mới
+        // vẽ xong là bấm duyệt được luôn, mà lỗi sinh luật không kéo đổ dòng catalog vừa ghi.
+        events.publishEvent(new ProcessDeployedEvent(catalog.getBpmnProcessId(), actor));
+
         return new ProcessDefinitionImportResponse(catalog.getId(), version.getId(), catalog.getBpmnProcessId(),
                 catalog.getName(), version.getResourceName(), version.getCamundaDeploymentKey(),
                 version.getCamundaProcessDefinitionKey(), version.getCamundaVersion(), version.getStatus(),
@@ -114,8 +130,30 @@ public class ProcessDefinitionService {
             ProcessDefinitionVersion latest = latest(catalog.getId());
             return new ProcessDefinitionSummaryResponse(catalog.getId(), catalog.getBpmnProcessId(),
                     catalog.getName(), latest.getCamundaVersion(), latest.getResourceName(), latest.getStatus(),
-                    catalog.getUpdatedAt());
+                    latest.getSource(), catalog.getUpdatedAt());
         }).toList();
+    }
+
+    /**
+     * Danh sách quy trình người dùng chọn được khi gửi duyệt — thay cho bảng hardcode 4 mã theo
+     * (loại hồ sơ, cấp) từng nằm ở `ho-so-detail.ts`.
+     *
+     * Catalog chưa có version deploy thành công thì bị bỏ qua (không ném lỗi như {@link #list()}):
+     * một dòng catalog hỏng không được phép làm rỗng cả danh sách chọn của người dùng.
+     */
+    @Transactional(readOnly = true)
+    public List<SelectableProcessResponse> selectable() {
+        Map<String, Integer> userTaskCounts = routingReader.processes().stream()
+                .collect(Collectors.toMap(ProcessRoutingResponse::code, routing -> routing.steps().size(),
+                        (first, ignored) -> first));
+        return catalogRepository.findAllByOrderByBpmnProcessIdAsc().stream()
+                .map(catalog -> versionRepository.findFirstByCatalogIdOrderByCamundaVersionDesc(catalog.getId())
+                        .map(version -> new SelectableProcessResponse(catalog.getId(), catalog.getBpmnProcessId(),
+                                catalog.getName(), version.getCamundaVersion(),
+                                userTaskCounts.getOrDefault(catalog.getBpmnProcessId(), 0),
+                                catalog.getUpdatedAt())))
+                .flatMap(Optional::stream)
+                .toList();
     }
 
     @Transactional(readOnly = true)

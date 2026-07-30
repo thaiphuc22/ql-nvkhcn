@@ -4,7 +4,8 @@ import { Component, computed, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { combineLatest } from 'rxjs';
+import { combineLatest, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -18,6 +19,7 @@ import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzResultModule } from 'ng-zorro-antd/result';
+import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
@@ -41,6 +43,7 @@ import { TaskActionService } from '../../core/services/task-action.service';
 import { PERMISSION_LABEL, SimulatedAction, type DossierStatus as PolicyDossierStatus } from '../../core/models/action-studio';
 import { ActionStudioService } from '../../core/services/action-studio.service';
 import { EformService } from '../../core/services/eform.service';
+import { SelectableProcessResponse } from '../../core/models/process-definition';
 import { ProcessDefinitionService } from '../../core/services/process-definition.service';
 import { BpmnViewerComponent } from '../../shared/bpmn-viewer/bpmn-viewer';
 import { FormRendererComponent } from '../../shared/form-renderer/form-renderer';
@@ -67,8 +70,8 @@ const ALL_PERMISSIONS = Object.keys(PERMISSION_LABEL);
   selector: 'app-ho-so-detail',
   imports: [
     DatePipe, FormsModule, NzAlertModule, NzButtonModule, NzCardModule, NzDescriptionsModule, NzEmptyModule,
-    NzGridModule, NzIconModule, NzInputModule, NzModalModule, NzPopconfirmModule, NzResultModule, NzSpinModule,
-    NzTagModule,
+    NzGridModule, NzIconModule, NzInputModule, NzModalModule, NzPopconfirmModule, NzResultModule, NzSelectModule,
+    NzSpinModule, NzTagModule,
     FormRendererComponent, BpmnViewerComponent,
   ],
   templateUrl: './ho-so-detail.html',
@@ -131,27 +134,19 @@ export class HoSoDetailPage {
     return dossier?.steps.find((step) => step.buocIndex === dossier.buocHienTai) ?? null;
   });
   readonly rejectedStep = computed(() => this.item()?.steps.find((step) => step.trangThai === 'REJECTED') ?? null);
-  /** Quy trình gửi duyệt theo (loai, cap). `supported` = đã có BPMN active trên Zeebe.
+  /** Quy trình gửi duyệt = mọi quy trình đã deploy, nạp từ `/api/process-definitions/selectable`.
    *
-   * XET_DUYET+CS cố ý KHÔNG map sang RD02.02: quy trình đó tự tính lại `cap` bằng DMN
-   * `capNhiemVu` (`resultVariable="cap"`, ghi đè biến truyền vào) rồi rẽ `cap = "TD"`; hồ sơ
-   * cấp Cơ sở sẽ kết thúc ngay tại `End_KhongThuocTD` — start "thành công" nhưng không sinh
-   * task nào và hồ sơ treo. Chờ BPMN riêng cho cấp Cơ sở. */
-  readonly submitProcess = computed(() => {
-    const dossier = this.item();
-    if (!dossier) return null;
-    if (dossier.loai === 'CHU_TRUONG') {
-      return dossier.cap === 'CS'
-        ? { code: 'RD01.01', name: 'Xét duyệt Chủ trương cấp Cơ sở', supported: true }
-        : { code: 'RD01.02', name: 'Xét duyệt Chủ trương cấp Tập đoàn', supported: false };
-    }
-    if (dossier.loai === 'XET_DUYET') {
-      return dossier.cap === 'TD'
-        ? { code: 'RD02.02', name: 'Xét duyệt NV KHCN cấp Tập đoàn', supported: true }
-        : { code: 'RD02.01', name: 'Xét duyệt NV KHCN cấp Cơ sở', supported: false };
-    }
-    return null;
-  });
+   * Trước 2026-07-28 chỗ này là bảng hardcode 4 mã theo (loai, cap) kèm cờ `supported` — quy trình
+   * người dùng tự vẽ không bao giờ tới được UI. Nay người dùng **chọn tự do** (quyết định user):
+   * KHÔNG ràng buộc loại hồ sơ ↔ quy trình, nên chọn nhầm là có thật và chưa có gì chặn. Cảnh báo
+   * `userTaskCount === 0` ở template là mức bảo vệ duy nhất hiện có. */
+  readonly selectableProcesses = signal<SelectableProcessResponse[]>([]);
+  readonly selectableLoading = signal(false);
+  readonly selectableError = signal<string | null>(null);
+  readonly selectedProcessId = signal<string | null>(null);
+  readonly submitProcess = computed(
+    () => this.selectableProcesses().find((p) => p.bpmnProcessId === this.selectedProcessId()) ?? null,
+  );
   readonly selectedAction = computed(
     () => this.availableActions().find((a) => a.actionCode === this.selectedOutcome()) ?? null,
   );
@@ -272,17 +267,29 @@ export class HoSoDetailPage {
     this.bpmnLoading.set(true);
     this.bpmnError.set(null);
     this.bpmnXml.set(null);
-    const bpmnProcessId = processCode.replaceAll('.', '_');
-    this.processDefinitionService.getByBpmnProcessId(bpmnProcessId).subscribe({
-      next: (definition) => {
-        this.bpmnXml.set(definition.latestVersion.bpmnXml);
-        this.bpmnLoading.set(false);
-      },
-      error: (error: HttpErrorResponse) => {
-        this.bpmnError.set(this.errorText(error, 'Không thể tải sơ đồ BPMN'));
-        this.bpmnLoading.set(false);
-      },
-    });
+    // `quyTrinh` giờ chính là `bpmnProcessId` — tra thẳng chuỗi đó trước. Fallback
+    // `replaceAll('.','_')` chỉ để hồ sơ cũ (lưu dạng "RD01.01") vẫn xem được BPMN; đây đúng quy
+    // tắc backend engine dùng khi start (CamundaReliableWorkflowEngine.start).
+    const legacyProcessId = processCode.replaceAll('.', '_');
+    this.processDefinitionService
+      .getByBpmnProcessId(processCode)
+      .pipe(
+        catchError((error: HttpErrorResponse) =>
+          legacyProcessId === processCode
+            ? throwError(() => error)
+            : this.processDefinitionService.getByBpmnProcessId(legacyProcessId),
+        ),
+      )
+      .subscribe({
+        next: (definition) => {
+          this.bpmnXml.set(definition.latestVersion.bpmnXml);
+          this.bpmnLoading.set(false);
+        },
+        error: (error: HttpErrorResponse) => {
+          this.bpmnError.set(this.errorText(error, 'Không thể tải sơ đồ BPMN'));
+          this.bpmnLoading.set(false);
+        },
+      });
   }
 
   closeBpmn(): void { this.bpmnOpen.set(false); }
@@ -315,6 +322,7 @@ export class HoSoDetailPage {
   runDossierAction(action: SimulatedAction): void {
     if (action.outcome === 'SUBMIT') {
       this.submitOpen.set(true);
+      this.loadSelectableProcesses();
       return;
     }
     if (!action.formKey) {
@@ -351,19 +359,44 @@ export class HoSoDetailPage {
     return 'draft';
   }
 
+  /** Nạp danh sách quy trình mỗi lần mở dialog — quy trình mới deploy phải thấy được ngay, không
+   * chờ reload trang. */
+  private loadSelectableProcesses(): void {
+    this.selectableLoading.set(true);
+    this.selectableError.set(null);
+    this.processDefinitionService.selectable().subscribe({
+      next: (processes) => {
+        this.selectableProcesses.set(processes);
+        this.selectableLoading.set(false);
+        if (!processes.some((p) => p.bpmnProcessId === this.selectedProcessId())) {
+          this.selectedProcessId.set(null);
+        }
+      },
+      error: (error: HttpErrorResponse) => {
+        this.selectableProcesses.set([]);
+        this.selectableLoading.set(false);
+        this.selectableError.set(this.errorText(error, 'Không tải được danh sách quy trình'));
+      },
+    });
+  }
+
   submit(): void {
     const dossier = this.item();
     const process = this.submitProcess();
-    if (!dossier || !process?.supported) return;
+    if (!dossier || !process) return;
     this.saving.set(true);
     const actor = this.auth.user()?.hoTen ?? 'Người dùng hệ thống';
-    this.service.submit(dossier.id, { quyTrinh: process.code, quyTrinhTen: process.name }, actor).subscribe({
-      next: (updated) => {
-        this.item.set(updated); this.submitOpen.set(false); this.saving.set(false);
-        this.message.success(`Đã gửi duyệt hồ sơ ${updated.id} vào quy trình ${process.code}.`);
-      },
-      error: (error: HttpErrorResponse) => { this.saving.set(false); this.message.error(this.errorText(error, 'Gửi duyệt thất bại')); },
-    });
+    // `quyTrinh` mang thẳng `bpmnProcessId`. Backend engine tra đúng chuỗi này trước, chỉ fallback
+    // `replace('.','_')` cho hồ sơ cũ lưu dạng "RD01.01" — xem CamundaReliableWorkflowEngine.start().
+    this.service
+      .submit(dossier.id, { quyTrinh: process.bpmnProcessId, quyTrinhTen: process.name }, actor)
+      .subscribe({
+        next: (updated) => {
+          this.item.set(updated); this.submitOpen.set(false); this.saving.set(false);
+          this.message.success(`Đã gửi duyệt hồ sơ ${updated.id} vào quy trình ${process.bpmnProcessId}.`);
+        },
+        error: (error: HttpErrorResponse) => { this.saving.set(false); this.message.error(this.errorText(error, 'Gửi duyệt thất bại')); },
+      });
   }
 
   applyAction(): void {

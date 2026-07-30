@@ -29,6 +29,16 @@
     </div>
   }
 
+  @case ('html') {
+    <div class="ff-html" [innerHTML]="comp().text"></div>
+  }
+
+  @case ('image') {
+    @if (comp().source) {
+      <img class="ff-image" [src]="comp().source" [alt]="comp().label ?? ''" />
+    }
+  }
+
   @case ('separator') {
     <nz-divider></nz-divider>
   }

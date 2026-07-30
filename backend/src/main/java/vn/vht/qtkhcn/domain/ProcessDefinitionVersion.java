@@ -50,6 +50,11 @@ public class ProcessDefinitionVersion {
     @Column(name = "status", nullable = false, length = 32)
     private ProcessDefinitionStatus status;
 
+    /** Mặc định APP để mọi đường deploy cũ giữ nguyên hành vi; chỉ importer đặt EXTERNAL. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "source", nullable = false, length = 16)
+    private ProcessDefinitionSource source = ProcessDefinitionSource.APP;
+
     @Column(name = "imported_by", nullable = false)
     private String importedBy;
 

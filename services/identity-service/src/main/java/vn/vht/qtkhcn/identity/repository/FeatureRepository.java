@@ -1,0 +1,1 @@
+package vn.vht.qtkhcn.identity.repository; import java.util.*; import org.springframework.data.jpa.repository.JpaRepository; import vn.vht.qtkhcn.identity.domain.Feature; public interface FeatureRepository extends JpaRepository<Feature,UUID>{Optional<Feature> findByCodeIgnoreCase(String code);}

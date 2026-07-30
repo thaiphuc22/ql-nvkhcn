@@ -46,6 +46,9 @@ qtkhcn:
     base-url: ${QTKHCN_HO_SO_BASE_URL:http://127.0.0.1:8093}
     service-token: ${QTKHCN_HO_SO_SERVICE_TOKEN:}
     # Integration destination for workflow events. Business CRUD is never served by this service.
+  identity:
+    base-url: ${QTKHCN_IDENTITY_BASE_URL:http://127.0.0.1:8095}
+    service-token: ${QTKHCN_IDENTITY_SERVICE_TOKEN:}
   ai:
     # auto = OpenAI neu OPENAI_API_KEY co gia tri, neu khong thi dung Gemini khi GEMINI_API_KEY co gia tri.
     # Dat QTKHCN_AI_PROVIDER=gemini de ep dung Gemini khi ca hai key cung ton tai.

@@ -6,6 +6,13 @@
 
 export type ProcessDefinitionStatus = 'DEPLOYED';
 
+/**
+ * `APP` = deploy từ chính app (nhập .bpmn hoặc deploy bản nháp).
+ * `EXTERNAL` = deploy thẳng lên Camunda rồi được nút "Đồng bộ từ Camunda" hút về — KHÔNG đi qua
+ * validator nên không có warning lint nào.
+ */
+export type ProcessDefinitionSource = 'APP' | 'EXTERNAL';
+
 export interface ProcessDefinitionSummaryResponse {
   id: string;
   bpmnProcessId: string;
@@ -13,6 +20,48 @@ export interface ProcessDefinitionSummaryResponse {
   latestVersion: number;
   resourceName: string;
   status: ProcessDefinitionStatus;
+  /** Nguồn của BẢN MỚI NHẤT, không phải của cả quy trình. */
+  source: ProcessDefinitionSource;
+  updatedAt: string;
+}
+
+/** Port từ `ProcessSyncResponse.java` — kết quả một lượt "Đồng bộ từ Camunda". */
+export interface ImportedProcessResponse {
+  catalogId: string;
+  versionId: string;
+  bpmnProcessId: string;
+  name: string;
+  version: number;
+  newCatalog: boolean;
+}
+
+export interface ProcessSyncFailure {
+  bpmnProcessId: string;
+  message: string;
+}
+
+export interface ProcessSyncResponse {
+  scanned: number;
+  imported: number;
+  alreadyKnown: number;
+  importedProcesses: ImportedProcessResponse[];
+  failures: ProcessSyncFailure[];
+  warnings: string[];
+}
+
+/**
+ * Quy trình người dùng chọn được khi gửi duyệt (`GET /api/process-definitions/selectable`).
+ * Thay cho bảng hardcode 4 mã theo (loại hồ sơ, cấp) từng nằm trong `ho-so-detail.ts`.
+ *
+ * `userTaskCount === 0` = quy trình không có userTask nào; chọn vào thì hồ sơ chạy tới cuối mà
+ * không sinh việc cho ai. Backend cố ý KHÔNG chặn (quyết định user 2026-07-28), UI chỉ cảnh báo.
+ */
+export interface SelectableProcessResponse {
+  id: string;
+  bpmnProcessId: string;
+  name: string;
+  latestVersion: number;
+  userTaskCount: number;
   updatedAt: string;
 }
 
@@ -24,6 +73,7 @@ export interface ProcessDefinitionVersionResponse {
   camundaDeploymentKey: number;
   camundaProcessDefinitionKey: number;
   status: ProcessDefinitionStatus;
+  source: ProcessDefinitionSource;
   importedBy: string;
   importedAt: string;
   bpmnXml: string;
@@ -151,4 +201,45 @@ export interface ProcessDefinitionDraftValidationResponse {
 export interface ProcessImportErrorBody {
   message: string;
   errors: string[];
+}
+
+/**
+ * Đối soát quy trình (`ProcessReadinessResponse` phía backend). Đây là nơi ba kiểm tra vốn định đặt
+ * ở cổng deploy được chuyển tới sau khi chốt "cho deploy tự do, không chặn cứng": biểu mẫu có thật
+ * không, vai trò có trong danh mục không, service task có worker không. Chẩn đoán thuần, không chặn.
+ */
+export type ReadinessStatus = 'ok' | 'warn' | 'error';
+
+export interface UserTaskReadiness {
+  elementId: string;
+  name: string;
+  formKey: string | null;
+  formExists: boolean;
+  candidateGroups: string[];
+  unknownRoleCodes: string[];
+  dynamicAssignment: boolean;
+  boundActions: string[];
+  missingActions: string[];
+  status: ReadinessStatus;
+  issues: string[];
+}
+
+export interface ServiceTaskReadiness {
+  elementId: string;
+  name: string;
+  jobType: string | null;
+  workerRegistered: boolean;
+  status: ReadinessStatus;
+  issue: string | null;
+}
+
+export interface ProcessReadinessResponse {
+  bpmnProcessId: string;
+  name: string;
+  camundaVersion: number;
+  source: ProcessDefinitionSource;
+  status: ReadinessStatus;
+  userTasks: UserTaskReadiness[];
+  serviceTasks: ServiceTaskReadiness[];
+  notes: string[];
 }

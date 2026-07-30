@@ -99,7 +99,7 @@ class ActionStudioServiceTest {
     void scaffoldCreatesOnlyTrulyMissingRows() {
         when(routing.require("RD05_01")).thenReturn(new ProcessRoutingResponse("RD05_01", "Quy trình",
                 List.of(new ProcessStepResponse("Task_1", "Bước 1", "PM", "phieu-phe-duyet",
-                        List.of(new RouteBranchResponse("dong_y", "Đồng ý", "Hoàn tất", "complete"))))));
+                        List.of(new RouteBranchResponse("dong_y", "Đồng ý", "Hoàn tất", "complete", "ketQua"))))));
         when(policies.findAllByOrderByDisplayOrderAscIdAsc()).thenReturn(List.of());
         when(actions.findById(any())).thenAnswer(invocation -> Optional.of(action(invocation.getArgument(0), true, 1)));
         when(policies.existsById(any())).thenReturn(false);
@@ -115,8 +115,8 @@ class ActionStudioServiceTest {
     void scaffoldUsesApproveAndRejectActionCodesDeclaredByRd0202() {
         when(routing.require("RD02_02")).thenReturn(new ProcessRoutingResponse("RD02_02", "Quy trình",
                 List.of(new ProcessStepResponse("T14_GD_TTMS", "Ký duyệt", "GD_TTMS", "phieu-phe-duyet",
-                        List.of(new RouteBranchResponse("APPROVE", "Đồng ý", "Bước sau", "forward"),
-                                new RouteBranchResponse("REJECT", "Từ chối", "Kết thúc", "reject"))))));
+                        List.of(new RouteBranchResponse("APPROVE", "Đồng ý", "Bước sau", "forward", null),
+                                new RouteBranchResponse("REJECT", "Từ chối", "Kết thúc", "reject", null))))));
         when(policies.findAllByOrderByDisplayOrderAscIdAsc()).thenReturn(List.of());
         when(actions.findById(any())).thenAnswer(invocation -> Optional.of(action(invocation.getArgument(0), true, 1)));
         when(policies.existsById(any())).thenReturn(false);
@@ -229,6 +229,45 @@ class ActionStudioServiceTest {
         item.setUpdatedBy("seed");
         item.setUpdatedAt(OffsetDateTime.now());
         return item;
+    }
+
+    /**
+     * Bộ seed V10 có 4 luật CHUNG ({@code process_code}/{@code task_definition_key} đều NULL) gắn sẵn
+     * biểu mẫu của RD01.01. Không có ngoại lệ này thì mọi quy trình người dùng mới vẽ đều bị đối soát
+     * chấm "generic" (không phải "missing"), scaffold thành no-op, và bước của họ mở lên hiện biểu mẫu
+     * của RD01.01 — server còn validate trường bắt buộc theo đúng biểu mẫu sai đó.
+     */
+    @Test
+    void scaffoldPinsAStepCoveredOnlyByAGenericRuleWhenTheBpmnDeclaresItsOwnForm() {
+        when(routing.require("quy_trinh_moi")).thenReturn(new ProcessRoutingResponse("quy_trinh_moi",
+                "Quy trình mới", List.of(new ProcessStepResponse("Duyet", "Duyệt", "CQ_KHCN", "phieu-rieng",
+                        List.of(new RouteBranchResponse("dong_y", "Đồng ý", "Hoàn tất", "complete", "ketQua"))))));
+        when(policies.findAllByOrderByDisplayOrderAscIdAsc())
+                .thenReturn(List.of(policy("AP-06", null, null, 21)));
+        when(actions.findById(any())).thenAnswer(invocation -> Optional.of(action(invocation.getArgument(0), true, 1)));
+        when(policies.existsById(any())).thenReturn(false);
+        when(policies.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = service.scaffold("quy_trinh_moi", "alice");
+
+        assertThat(response.createdCount()).isEqualTo(1);
+        assertThat(response.createdPolicies().getFirst().formKey()).isEqualTo("phieu-rieng");
+        assertThat(response.createdPolicies().getFirst().taskDefinitionKey()).isEqualTo("Duyet");
+    }
+
+    /** Bước không tự khai biểu mẫu thì luật chung vẫn hợp lệ — không đẻ thêm luật thừa. */
+    @Test
+    void scaffoldLeavesAGenericallyCoveredStepAloneWhenTheBpmnHasNoFormOfItsOwn() {
+        when(routing.require("quy_trinh_moi")).thenReturn(new ProcessRoutingResponse("quy_trinh_moi",
+                "Quy trình mới", List.of(new ProcessStepResponse("Duyet", "Duyệt", "CQ_KHCN", null,
+                        List.of(new RouteBranchResponse("dong_y", "Đồng ý", "Hoàn tất", "complete", "ketQua"))))));
+        when(policies.findAllByOrderByDisplayOrderAscIdAsc())
+                .thenReturn(List.of(policy("AP-06", null, null, 21)));
+
+        var response = service.scaffold("quy_trinh_moi", "alice");
+
+        assertThat(response.createdCount()).isZero();
+        verify(policies, never()).saveAndFlush(any());
     }
 
     private static ActionAvailabilityPolicy policy(String id, String process, String task, int order) {

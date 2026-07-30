@@ -133,8 +133,7 @@ public class CamundaProcessInstanceQuery {
      * projection, so this also keeps naming consistent across screens.
      */
     private String stepName(ElementInstance element) {
-        String fromBpmn = metadata.resolve(element.getProcessDefinitionKey(),
-                element.getProcessDefinitionId(), element.getElementId()).name();
+        String fromBpmn = metadata.resolve(element.getProcessDefinitionKey(), element.getElementId()).name();
         if (!fromBpmn.isBlank()) return fromBpmn;
         // Non-user-task elements are absent from the catalog; fall back rather than show nothing.
         String fromEngine = element.getElementName();

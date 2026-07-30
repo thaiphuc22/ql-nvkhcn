@@ -88,7 +88,7 @@ public class ActionStudioService {
                         option("MOBILE", "Ứng dụng di động"), option("ACTION_STUDIO", "Ma trận Hành động")),
                 List.of(option("draft", "Khởi tạo"), option("processing", "Đang xử lý"),
                         option("approved", "Đã duyệt"), option("rejected", "Từ chối")),
-                roleOptions(),
+                RoleCatalog.options(),
                 List.of(option("SUBMIT_DOSSIER", "Gửi duyệt hồ sơ"),
                         option("PROCESS_STEP", "Xử lý bước"),
                         option("REQUEST_EXCEPTION", "Xin Chi tiết"),
@@ -98,26 +98,6 @@ public class ActionStudioService {
                 eformRepository.findAllByOrderByCreatedAtDesc().stream()
                         .map(item -> option(item.getKey(), item.getTen()))
                         .toList());
-    }
-
-    private static List<CatalogOptionResponse> roleOptions() {
-        return List.of(
-                option("PM", "Chủ nhiệm đề tài"), option("PA", "Trợ lý đề tài"),
-                option("NNC", "Người nghiên cứu"), option("TD", "Phòng Thẩm định"),
-                option("TCKT", "Phòng Tài chính - Kế toán"), option("LD", "Lãnh đạo"),
-                option("ADMIN", "Quản trị hệ thống"), option("CQ_KHCN", "Chuyên quản KHCN"),
-                option("CQ_MS", "Chuyên quản Mua sắm"), option("CQ_NS", "Chuyên quản Nhân sự"),
-                option("CQ_TCKT", "Chuyên quản TCKT"), option("TP_CLKHCN", "Trưởng phòng CLKHCN"),
-                option("TP_TCKT", "Trưởng phòng TCKT"), option("TP_NS", "Trưởng phòng Nhân sự"),
-                option("GD_TTMS", "Giám đốc TT Mua sắm"), option("BGD_TT", "BGĐ Trung tâm"),
-                option("BGD_KHOI", "BGĐ Khối"), option("CQ_QLKHCN", "Cơ quan QLKHCN"),
-                option("HDKHCN", "Hội đồng KHCN VHT"), option("HDXD", "Hội đồng Xét duyệt"),
-                option("HDXD_DC", "Hội đồng Xét duyệt điều chỉnh"), option("HDNT", "Hội đồng Nghiệm thu"),
-                option("HD_DGHT", "Hội đồng Đánh giá hoàn thành"), option("PTGD_CT", "Phó TGĐ Chuyên trách"),
-                option("TGD_VHT", "Tổng Giám đốc VHT"), option("CQ_KHCN_TD", "Cơ quan KHCN Tập đoàn"),
-                option("CQNV_TD", "Cơ quan nghiệp vụ Tập đoàn"), option("HDKHCN_TD", "Hội đồng KHCN Tập đoàn"),
-                option("HDXD_TD", "Hội đồng Xét duyệt Tập đoàn"), option("HDNT_TD", "Hội đồng Nghiệm thu Tập đoàn"),
-                option("BTGD_TD", "Ban TGĐ Tập đoàn"));
     }
 
     private static CatalogOptionResponse option(String value, String label) {
@@ -301,23 +281,42 @@ public class ActionStudioService {
         return reconcile(processCode, availabilityRepository.findAllByOrderByDisplayOrderAscIdAsc());
     }
 
+    /**
+     * Sinh luật hiển thị nút cho các nhánh trong BPMN chưa được ghim.
+     *
+     * <p>Chạy lại được: id tất định theo (quy trình, bước, outcome).
+     *
+     * <p><b>Không chỉ tạo cho {@code missing}.</b> Bộ seed V10 có 4 luật CHUNG
+     * ({@code process_code IS NULL AND task_definition_key IS NULL}) gắn sẵn biểu mẫu của RD01.01
+     * ({@code phieu-phe-duyet}, {@code phieu-y-kien}). Nghĩa là một quy trình người dùng mới vẽ luôn
+     * được đối soát chấm là {@code generic} chứ không phải {@code missing} — nút vẫn hiện ra, nhưng
+     * mở lên là biểu mẫu của RD01.01, và server còn validate trường bắt buộc theo biểu mẫu sai đó.
+     * Vì vậy khi BPMN của bước tự khai {@code formKey} riêng thì phải ghim đè lên luật chung.
+     */
     @Transactional
     public ScaffoldResponse scaffold(String processCode, String actorHeader) {
+        // Tra routing đúng một lần: vòng lặp cũ gọi require() lại cho mỗi dòng, tức parse lại BPMN
+        // theo số nhánh.
+        Map<String, String> formKeyByStep = new java.util.HashMap<>();
+        for (var step : routingCatalog.require(processCode).steps()) {
+            if (step.formKey() != null) formKeyByStep.put(step.key(), step.formKey());
+        }
         List<ActionAvailabilityPolicy> current = availabilityRepository.findAllByOrderByDisplayOrderAscIdAsc();
-        List<ReconcileResponse> missing = reconcile(processCode, current).stream()
-                .filter(row -> row.status().equals("missing")).toList();
+        List<ReconcileResponse> candidates = reconcile(processCode, current).stream()
+                .filter(row -> row.status().equals("missing")
+                        || (row.status().equals("generic") && formKeyByStep.containsKey(row.stepKey())))
+                .toList();
         List<AvailabilityResponse> created = new ArrayList<>();
         Set<String> seen = new LinkedHashSet<>();
-        for (ReconcileResponse row : missing) {
+        for (ReconcileResponse row : candidates) {
             String id = "AP-BPMN-" + processCode + "-" + row.stepKey() + "-" + row.outcome();
-            // Id tất định ⇒ scaffold phải chạy lại được. Bỏ qua id đã có (vd luật cũ đang bị khoá nên
-            // đối soát vẫn báo "missing") thay vì ném xung đột làm rollback cả lượt scaffold.
+            // Bỏ qua id đã có (vd luật cũ đang bị khoá nên đối soát vẫn báo "missing") thay vì ném
+            // xung đột làm rollback cả lượt scaffold.
             if (!seen.add(id) || availabilityRepository.existsById(id)) continue;
             AvailabilityRequest request = new AvailabilityRequest(id, row.actionCode(), "DOSSIER_DETAIL",
                     processCode, row.stepKey(), row.outcome().equals("SUBMIT") ? "draft" : "processing",
                     List.of(), List.of(row.outcome().equals("SUBMIT") ? "SUBMIT_DOSSIER" : "PROCESS_STEP"),
-                    routingCatalog.require(processCode).steps().stream().filter(step -> step.key().equals(row.stepKey()))
-                            .map(step -> step.formKey()).filter(Objects::nonNull).findFirst().orElse(null),
+                    formKeyByStep.get(row.stepKey()),
                     row.actionCode().equals("SUBMIT") ? "dossier.docsComplete = true"
                             : "user in currentStep.candidateGroups",
                     10, true);
@@ -554,19 +553,11 @@ public class ActionStudioService {
     }
 
     private static String outcomeAction(String outcome) {
-        String normalized = outcome == null ? "" : outcome.trim().toLowerCase(java.util.Locale.ROOT);
-        return switch (normalized) {
-            case "submit", "gui", "gui_duyet", "tiep_tuc" -> "SUBMIT";
-            case "approve", "dong_y", "dat", "phe_duyet" -> "APPROVE_STEP";
-            case "dong_y_bo_sung" -> "APPROVE_WITH_SUPPLEMENT";
-            case "return", "hieu_chinh", "yeu_cau_hieu_chinh", "tra_lai" -> "RETURN_STEP";
-            case "reject", "khong_dong_y", "khong_dat", "tu_choi" -> "REJECT_STEP";
-            default -> null;
-        };
+        return BpmnOutcomeCodes.actionCode(outcome);
     }
 
     private static boolean isOutcomeAction(String actionCode) {
-        return Set.of("SUBMIT", "APPROVE_STEP", "RETURN_STEP", "REJECT_STEP").contains(actionCode);
+        return BpmnOutcomeCodes.isOutcomeAction(actionCode);
     }
 
     private static void requireOneOf(String field, String value, Set<String> allowed) {

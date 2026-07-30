@@ -1,7 +1,6 @@
 import { Routes } from '@angular/router';
 import { Shell } from './layout/shell';
 import { LoginPage } from './pages/login/login';
-import { PlaceholderPage } from './pages/placeholder/placeholder';
 import { HoSoListPage } from './pages/ho-so-list/ho-so-list';
 import { ProcessCatalogPage } from './pages/process-catalog/process-catalog';
 import { ProcessDetailPage } from './pages/process-detail/process-detail';
@@ -126,15 +125,21 @@ export const routes: Routes = [
       },
       {
         path: 'phan-he/PH2/co-cau-to-chuc',
-        component: PlaceholderPage,
+        loadComponent: () => import('./pages/org-management/org-management').then((module) => module.OrgManagementPage),
         data: { title: 'Quản trị đơn vị', app: 'he-thong' },
       },
       {
         path: 'phan-he/PH2/nguoi-dung',
-        component: PlaceholderPage,
+        loadComponent: () =>
+          import('./pages/user-management/user-management').then((module) => module.UserManagementPage),
         data: { title: 'Quản trị người dùng', app: 'he-thong' },
       },
-      { path: 'phan-he/PH2/phan-quyen', component: PlaceholderPage, data: { title: 'Phân quyền', app: 'he-thong' } },
+      {
+        path: 'phan-he/PH2/phan-quyen',
+        loadComponent: () =>
+          import('./pages/role-permission/role-permission').then((module) => module.RolePermissionPage),
+        data: { title: 'Phân quyền', app: 'he-thong' },
+      },
       {
         path: 'phan-he/PH3/bieu-mau',
         loadComponent: () => import('./pages/form-library/form-library').then((module) => module.FormLibraryPage),

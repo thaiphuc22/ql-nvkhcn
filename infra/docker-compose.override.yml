@@ -16,6 +16,7 @@ services:
       - "127.0.0.1:5432:5432"
     volumes:
       - qtkhcn-postgres-data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
     networks:
       - camunda
     healthcheck:

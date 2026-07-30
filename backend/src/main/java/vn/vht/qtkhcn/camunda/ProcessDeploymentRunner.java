@@ -48,6 +48,14 @@ public class ProcessDeploymentRunner implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         deployBundled(BUNDLED_PROCESS_ID, BUNDLED_RESOURCE);
         deployBundled(RD0202_PROCESS_ID, RD0202_RESOURCE, RD0202_DANH_GIA_DMN_RESOURCE);
+        // RD01.01 trước Lát 3 chỉ được deploy lên Zeebe mà KHÔNG vào catalog, nên phần còn lại của hệ
+        // thống (metadata bước, đối soát, danh sách chọn khi gửi duyệt) phải sống bằng một nhánh dự
+        // phòng đọc file classpath riêng cho đúng nó — xem BpmnUserTaskMetadataCatalog. Đồng bộ ở đây
+        // để RD01.01 đi cùng một đường như mọi quy trình khác.
+        //
+        // An toàn khi chạy lại: sync bỏ qua nếu catalog đã có dòng, và deploy lại BPMN y hệt thì Zeebe
+        // trả về CÙNG processDefinitionKey (content-addressable) chứ không đẻ version mới.
+        syncCatalog(BUNDLED_PROCESS_ID, BUNDLED_RESOURCE);
         syncCatalog(RD0202_PROCESS_ID, RD0202_RESOURCE);
     }
 

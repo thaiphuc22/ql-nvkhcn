@@ -8,8 +8,11 @@ import {
   ProcessDefinitionImportResponse,
   ProcessDefinitionSummaryResponse,
   ProcessDefinitionVersionResponse,
+  ProcessReadinessResponse,
+  ProcessSyncResponse,
   RunningInstanceCountsResponse,
   RunningInstanceListResponse,
+  SelectableProcessResponse,
 } from '../models/process-definition';
 
 /** Gọi thật `/api/process-definitions/*` (backend Spring Boot, BPMN import/deploy workstream) — không phải mock. */
@@ -19,6 +22,25 @@ export class ProcessDefinitionService {
 
   list(): Observable<ProcessDefinitionSummaryResponse[]> {
     return this.http.get<ProcessDefinitionSummaryResponse[]>(`${API_BASE_URL}/api/process-definitions`);
+  }
+
+  /** Quy trình chọn được khi gửi duyệt — nguồn duy nhất, không còn danh sách hardcode trên FE. */
+  selectable(): Observable<SelectableProcessResponse[]> {
+    return this.http.get<SelectableProcessResponse[]>(
+      `${API_BASE_URL}/api/process-definitions/selectable`,
+    );
+  }
+
+  /**
+   * Hút quy trình deploy thẳng lên Camunda về catalog. Chủ động (bấm nút) chứ không chạy nền —
+   * đồng bộ ngầm sẽ âm thầm kéo cả process rác trên engine dev vào danh sách chọn khi gửi duyệt.
+   */
+  syncFromCamunda(actor?: string): Observable<ProcessSyncResponse> {
+    return this.http.post<ProcessSyncResponse>(
+      `${API_BASE_URL}/api/process-definitions/sync-from-camunda`,
+      null,
+      actor ? { headers: { 'X-QTKHCN-Actor': encodeAuditActor(actor) } } : undefined,
+    );
   }
 
   get(id: string): Observable<ProcessDefinitionDetailResponse> {
@@ -47,6 +69,16 @@ export class ProcessDefinitionService {
   runningInstances(id: string): Observable<RunningInstanceListResponse> {
     return this.http.get<RunningInstanceListResponse>(
       `${API_BASE_URL}/api/process-definitions/${id}/running-instances`,
+    );
+  }
+
+  /**
+   * Đối soát một quy trình đã deploy: biểu mẫu, vai trò, luật hành động, service task có worker chưa.
+   * Đọc-thôi — không sửa gì, gọi lại bao nhiêu lần cũng được.
+   */
+  readiness(bpmnProcessId: string): Observable<ProcessReadinessResponse> {
+    return this.http.get<ProcessReadinessResponse>(
+      `${API_BASE_URL}/api/process-definitions/by-bpmn-process-id/${encodeURIComponent(bpmnProcessId)}/readiness`,
     );
   }
 

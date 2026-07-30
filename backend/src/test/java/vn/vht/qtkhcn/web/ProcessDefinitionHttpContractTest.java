@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -29,11 +30,14 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import vn.vht.qtkhcn.config.WebConfig;
+import vn.vht.qtkhcn.domain.ProcessDefinitionSource;
 import vn.vht.qtkhcn.domain.ProcessDefinitionStatus;
 import vn.vht.qtkhcn.security.DevApiKeyFilter;
+import vn.vht.qtkhcn.service.DeployedProcessImportService;
 import vn.vht.qtkhcn.service.ProcessDefinitionService;
 import vn.vht.qtkhcn.service.ProcessImportException;
 import vn.vht.qtkhcn.service.ProcessInstanceOverviewService;
+import vn.vht.qtkhcn.service.ProcessReadinessService;
 import vn.vht.qtkhcn.web.dto.ProcessDefinitionDetailResponse;
 import vn.vht.qtkhcn.web.dto.ProcessDefinitionImportResponse;
 import vn.vht.qtkhcn.web.dto.ProcessDefinitionSummaryResponse;
@@ -42,6 +46,9 @@ import vn.vht.qtkhcn.web.dto.ProcessInstanceOverviewDtos.CurrentStepResponse;
 import vn.vht.qtkhcn.web.dto.ProcessInstanceOverviewDtos.RunningInstanceCountsResponse;
 import vn.vht.qtkhcn.web.dto.ProcessInstanceOverviewDtos.RunningInstanceListResponse;
 import vn.vht.qtkhcn.web.dto.ProcessInstanceOverviewDtos.RunningInstanceResponse;
+import vn.vht.qtkhcn.web.dto.ProcessReadinessResponse;
+import vn.vht.qtkhcn.web.dto.ProcessSyncResponse;
+import vn.vht.qtkhcn.web.dto.SelectableProcessResponse;
 
 class ProcessDefinitionHttpContractTest {
 
@@ -53,6 +60,8 @@ class ProcessDefinitionHttpContractTest {
     private AnnotationConfigWebApplicationContext context;
     private ProcessDefinitionService service;
     private ProcessInstanceOverviewService instanceOverviewService;
+    private DeployedProcessImportService importService;
+    private ProcessReadinessService readinessService;
     private MockMvc mvc;
 
     @BeforeEach
@@ -63,6 +72,8 @@ class ProcessDefinitionHttpContractTest {
         context.refresh();
         service = context.getBean(ProcessDefinitionService.class);
         instanceOverviewService = context.getBean(ProcessInstanceOverviewService.class);
+        importService = context.getBean(DeployedProcessImportService.class);
+        readinessService = context.getBean(ProcessReadinessService.class);
         DevApiKeyFilter filter = context.getBean(DevApiKeyFilter.class);
         ReflectionTestUtils.setField(filter, "expectedKey", KEY);
         mvc = MockMvcBuilders.webAppContextSetup(context).addFilters(filter).build();
@@ -93,7 +104,7 @@ class ProcessDefinitionHttpContractTest {
     void listDetailAndVersionsKeepBpmnXmlReadable() throws Exception {
         var version = versionResponse();
         when(service.list()).thenReturn(List.of(new ProcessDefinitionSummaryResponse(CATALOG_ID, "demo", "Demo",
-                4, "demo.bpmn", ProcessDefinitionStatus.DEPLOYED, NOW)));
+                4, "demo.bpmn", ProcessDefinitionStatus.DEPLOYED, ProcessDefinitionSource.APP, NOW)));
         when(service.get(CATALOG_ID)).thenReturn(new ProcessDefinitionDetailResponse(CATALOG_ID, "demo", "Demo",
                 NOW, NOW, version));
         when(service.getByBpmnProcessId("demo")).thenReturn(
@@ -112,6 +123,88 @@ class ProcessDefinitionHttpContractTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.bpmnProcessId").value("demo"))
                 .andExpect(jsonPath("$.latestVersion.bpmnXml").value("<xml/>"));
+    }
+
+    /**
+     * Hợp đồng của màn "Gửi duyệt": FE đọc `bpmnProcessId` để gửi đúng `quyTrinh`, và `userTaskCount`
+     * để cảnh báo quy trình rỗng. Đổi tên field ở đây là làm vỡ dropdown chọn quy trình.
+     */
+    @Test
+    void selectableExposesBpmnProcessIdAndUserTaskCountForTheSubmitPicker() throws Exception {
+        when(service.selectable()).thenReturn(List.of(
+                new SelectableProcessResponse(CATALOG_ID, "quy_trinh_moi", "Quy trình tự vẽ", 3, 2, NOW)));
+
+        mvc.perform(get("/api/process-definitions/selectable").header("X-QTKHCN-Dev-Key", KEY))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(CATALOG_ID.toString()))
+                .andExpect(jsonPath("$[0].bpmnProcessId").value("quy_trinh_moi"))
+                .andExpect(jsonPath("$[0].name").value("Quy trình tự vẽ"))
+                .andExpect(jsonPath("$[0].latestVersion").value(3))
+                .andExpect(jsonPath("$[0].userTaskCount").value(2));
+    }
+
+    /**
+     * Hợp đồng nút "Đồng bộ từ Camunda". Điểm quan trọng: một quy trình nhập lỗi vẫn trả 200 kèm
+     * `failures`, KHÔNG đổi thành lỗi HTTP — nếu đổi thì một BPMN hỏng trên engine sẽ chặn luôn
+     * những quy trình khác vào catalog.
+     */
+    @Test
+    void syncFromCamundaReportsPerProcessOutcomeInsteadOfFailingTheWholeRequest() throws Exception {
+        when(importService.syncFromCamunda("tester")).thenReturn(new ProcessSyncResponse(3, 1, 1,
+                List.of(new ProcessSyncResponse.ImportedProcess(CATALOG_ID, VERSION_ID, "quy_trinh_ngoai",
+                        "Quy trình vẽ ngoài app", 2, true)),
+                List.of(new ProcessSyncResponse.SyncFailure("quy_trinh_hong", "Không đọc được XML")),
+                List.of()));
+
+        mvc.perform(post("/api/process-definitions/sync-from-camunda")
+                        .header("X-QTKHCN-Dev-Key", KEY).header("X-QTKHCN-Actor", "tester"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.scanned").value(3))
+                .andExpect(jsonPath("$.imported").value(1))
+                .andExpect(jsonPath("$.alreadyKnown").value(1))
+                .andExpect(jsonPath("$.importedProcesses[0].bpmnProcessId").value("quy_trinh_ngoai"))
+                .andExpect(jsonPath("$.importedProcesses[0].newCatalog").value(true))
+                .andExpect(jsonPath("$.failures[0].bpmnProcessId").value("quy_trinh_hong"));
+    }
+
+    /**
+     * Đối soát quy trình là CHẨN ĐOÁN, không phải cổng chặn: kể cả khi mọi thứ đều đỏ, endpoint vẫn
+     * trả 200 với đầy đủ chi tiết để người dùng biết phải sửa gì — không đổi thành lỗi HTTP.
+     */
+    @Test
+    void readinessReturnsPerElementDiagnosticsWithHttp200EvenWhenEverythingIsBroken() throws Exception {
+        when(readinessService.readiness("quy_trinh_moi")).thenReturn(new ProcessReadinessResponse(
+                "quy_trinh_moi", "Quy trình mới", 1, "APP", "error",
+                List.of(new ProcessReadinessResponse.UserTaskReadiness("Duyet", "Duyệt hồ sơ",
+                        "phieu-khong-ton-tai", false, List.of("TD_KHCN"), List.of("TD_KHCN"), false,
+                        List.of(), List.of("APPROVE_STEP"), "error",
+                        List.of("Biểu mẫu \"phieu-khong-ton-tai\" không có trong thư viện biểu mẫu."))),
+                List.of(new ProcessReadinessResponse.ServiceTaskReadiness("Check", "Kiểm tra", "khcn.chua-ai-lam",
+                        false, "error", "Không có job worker nào lắng nghe \"khcn.chua-ai-lam\".")),
+                List.of()));
+
+        mvc.perform(get("/api/process-definitions/by-bpmn-process-id/quy_trinh_moi/readiness")
+                        .header("X-QTKHCN-Dev-Key", KEY))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("error"))
+                .andExpect(jsonPath("$.userTasks[0].elementId").value("Duyet"))
+                .andExpect(jsonPath("$.userTasks[0].formExists").value(false))
+                .andExpect(jsonPath("$.userTasks[0].unknownRoleCodes[0]").value("TD_KHCN"))
+                .andExpect(jsonPath("$.userTasks[0].missingActions[0]").value("APPROVE_STEP"))
+                .andExpect(jsonPath("$.serviceTasks[0].jobType").value("khcn.chua-ai-lam"))
+                .andExpect(jsonPath("$.serviceTasks[0].workerRegistered").value(false));
+    }
+
+    /** Cột `source` phải ra tới JSON, nếu không màn `/quy-trinh` không phân biệt được nguồn. */
+    @Test
+    void listExposesTheSourceOfTheLatestVersion() throws Exception {
+        when(service.list()).thenReturn(List.of(new ProcessDefinitionSummaryResponse(CATALOG_ID, "quy_trinh_ngoai",
+                "Quy trình vẽ ngoài app", 2, "quy_trinh_ngoai.bpmn", ProcessDefinitionStatus.DEPLOYED,
+                ProcessDefinitionSource.EXTERNAL, NOW)));
+
+        mvc.perform(get("/api/process-definitions").header("X-QTKHCN-Dev-Key", KEY))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].source").value("EXTERNAL"));
     }
 
     @Test
@@ -189,7 +282,7 @@ class ProcessDefinitionHttpContractTest {
 
     private static ProcessDefinitionVersionResponse versionResponse() {
         return new ProcessDefinitionVersionResponse(VERSION_ID, 4, "demo.bpmn", "a".repeat(64), 43L, 44L,
-                ProcessDefinitionStatus.DEPLOYED, "tester", NOW, "<xml/>", List.of());
+                ProcessDefinitionStatus.DEPLOYED, ProcessDefinitionSource.APP, "tester", NOW, "<xml/>", List.of());
     }
 
     @Configuration
@@ -206,9 +299,22 @@ class ProcessDefinitionHttpContractTest {
         }
 
         @Bean
+        DeployedProcessImportService deployedProcessImportService() {
+            return mock(DeployedProcessImportService.class);
+        }
+
+        @Bean
+        ProcessReadinessService processReadinessService() {
+            return mock(ProcessReadinessService.class);
+        }
+
+        @Bean
         ProcessDefinitionController processDefinitionController(ProcessDefinitionService service,
-                ProcessInstanceOverviewService instanceOverviewService) {
-            return new ProcessDefinitionController(service, instanceOverviewService);
+                ProcessInstanceOverviewService instanceOverviewService,
+                DeployedProcessImportService importService,
+                ProcessReadinessService readinessService) {
+            return new ProcessDefinitionController(service, instanceOverviewService, importService,
+                    readinessService);
         }
 
         @Bean

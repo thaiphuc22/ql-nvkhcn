@@ -301,51 +301,58 @@ describe('HoSoDetailPage', () => {
     }
   });
 
-  it('submits the supported RD01.01 process and refreshes the page state from the response', () => {
+  // Từ 2026-07-28 quy trình gửi duyệt KHÔNG còn suy ra từ (loai, cap) mà lấy từ
+  // `/api/process-definitions/selectable` và người dùng chọn tự do — kể cả quy trình tự vẽ.
+  it('loads the deployed processes when the submit dialog opens and submits the picked one', () => {
     const fixture = createPage();
+    fixture.componentInstance.runDossierAction(
+      { outcome: 'SUBMIT', actionCode: 'SUBMIT' } as never,
+    );
+    http.expectOne('/api/process-definitions/selectable').flush([
+      {
+        id: 'c1', bpmnProcessId: 'quy_trinh_moi', name: 'Quy trình tự vẽ',
+        latestVersion: 3, userTaskCount: 2, updatedAt: '2026-07-28T00:00:00Z',
+      },
+    ]);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.submitProcess()).toBeNull();
+    fixture.componentInstance.selectedProcessId.set('quy_trinh_moi');
+    expect(fixture.componentInstance.submitProcess()?.name).toBe('Quy trình tự vẽ');
+
     fixture.componentInstance.submit();
     const request = http.expectOne(`/api/ho-so/${dossier.id}/submit`);
     expect(request.request.method).toBe('POST');
-    expect(request.request.body).toEqual({ quyTrinh: 'RD01.01', quyTrinhTen: 'Xét duyệt Chủ trương cấp Cơ sở' });
-    request.flush({ ...dossier, trangThai: 'PROCESSING', quyTrinh: 'RD01.01' });
+    // `quyTrinh` mang thẳng bpmnProcessId, không còn mã có dấu chấm.
+    expect(request.request.body).toEqual({ quyTrinh: 'quy_trinh_moi', quyTrinhTen: 'Quy trình tự vẽ' });
+    request.flush({ ...dossier, trangThai: 'PROCESSING', quyTrinh: 'quy_trinh_moi' });
     expect(fixture.componentInstance.item()?.trangThai).toBe('PROCESSING');
   });
 
-  it('submits an XET_DUYET cấp Tập đoàn dossier into RD02.02', () => {
-    const tapDoan: HoSoResponse = { ...dossier, loai: 'XET_DUYET', cap: 'TD' };
-    setup(tapDoan.id);
-    const fixture = TestBed.createComponent(HoSoDetailPage);
-    http.expectOne(`/api/ho-so/${tapDoan.id}`).flush(tapDoan);
-    flushSimulation();
-    fixture.detectChanges();
-
-    expect(fixture.componentInstance.submitProcess()).toEqual(
-      { code: 'RD02.02', name: 'Xét duyệt NV KHCN cấp Tập đoàn', supported: true },
-    );
+  it('does not submit while no process is picked', () => {
+    const fixture = createPage();
     fixture.componentInstance.submit();
-    const request = http.expectOne(`/api/ho-so/${tapDoan.id}/submit`);
-    expect(request.request.body).toEqual(
-      { quyTrinh: 'RD02.02', quyTrinhTen: 'Xét duyệt NV KHCN cấp Tập đoàn' },
-    );
-    request.flush({ ...tapDoan, trangThai: 'PROCESSING', quyTrinh: 'RD02.02' });
-    expect(fixture.componentInstance.item()?.trangThai).toBe('PROCESSING');
+    http.expectNone(`/api/ho-so/${dossier.id}/submit`);
   });
 
-  // RD02.02 rẽ theo DMN `capNhiemVu` và loại hồ sơ cấp Cơ sở tại End_KhongThuocTD — gửi duyệt
-  // được sẽ tạo instance chết lặng, nên phải chặn ở đây cho tới khi có BPMN cấp Cơ sở.
-  it('does not offer a submittable process for an XET_DUYET cấp Cơ sở dossier', () => {
-    const coSo: HoSoResponse = { ...dossier, loai: 'XET_DUYET', cap: 'CS' };
-    setup(coSo.id);
+  // Hồ sơ cũ lưu `quyTrinh` dạng "RD01.01" trong khi catalog dùng id "RD01_01" — xem BPMN phải
+  // vẫn chạy được, nếu không là hồi quy cho toàn bộ hồ sơ tạo trước 2026-07-28.
+  it('falls back to the underscore process id when viewing the BPMN of a legacy dossier', () => {
+    const legacy: HoSoResponse = { ...dossier, quyTrinh: 'RD01.01' };
+    setup(legacy.id);
     const fixture = TestBed.createComponent(HoSoDetailPage);
-    http.expectOne(`/api/ho-so/${coSo.id}`).flush(coSo);
+    http.expectOne(`/api/ho-so/${legacy.id}`).flush(legacy);
     flushSimulation();
     fixture.detectChanges();
 
-    expect(fixture.componentInstance.submitProcess()).toEqual(
-      { code: 'RD02.01', name: 'Xét duyệt NV KHCN cấp Cơ sở', supported: false },
-    );
-    fixture.componentInstance.submit();
-    http.expectNone(`/api/ho-so/${coSo.id}/submit`);
+    fixture.componentInstance.openBpmn();
+    http.expectOne('/api/process-definitions/by-bpmn-process-id/RD01.01')
+      .flush({ message: 'not found' }, { status: 404, statusText: 'Not Found' });
+    http.expectOne('/api/process-definitions/by-bpmn-process-id/RD01_01')
+      .flush({ latestVersion: { bpmnXml: '<definitions/>' } });
+
+    expect(fixture.componentInstance.bpmnXml()).toBe('<definitions/>');
+    expect(fixture.componentInstance.bpmnError()).toBeNull();
   });
 
   it('shows no action controls when opened directly and no active task belongs to the user', () => {
@@ -404,6 +411,11 @@ describe('HoSoDetailPage', () => {
     flushNoActiveTask();
 
     fixture.componentInstance.openBpmn();
+    // `quyTrinh` được tra thẳng trước (quy trình tự vẽ dùng id bất kỳ); chỉ khi 404 mới thử bản
+    // gạch dưới cho hồ sơ cũ. `processingDossier.quyTrinh` = "RD01.01" nên đi qua cả 2 bước.
+    const direct = http.expectOne('/api/process-definitions/by-bpmn-process-id/RD01.01');
+    expect(direct.request.method).toBe('GET');
+    direct.flush({ message: 'not found' }, { status: 404, statusText: 'Not Found' });
     const request = http.expectOne('/api/process-definitions/by-bpmn-process-id/RD01_01');
     expect(request.request.method).toBe('GET');
     request.flush({ latestVersion: { bpmnXml: '<definitions />' } });

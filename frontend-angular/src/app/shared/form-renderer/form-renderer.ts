@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, effect, input, signal, untracked } from '@angular/core';
 
 import { componentsOf, idOf, type FormComponent } from '../../core/models/eform';
@@ -17,7 +18,7 @@ import { FormFieldComponent } from './form-field';
 @Component({
   selector: 'app-form-renderer',
   standalone: true,
-  imports: [FormFieldComponent, FormDynamicListComponent],
+  imports: [NgTemplateOutlet, FormFieldComponent, FormDynamicListComponent],
   templateUrl: './form-renderer.html',
   styleUrl: './form-renderer.scss',
 })

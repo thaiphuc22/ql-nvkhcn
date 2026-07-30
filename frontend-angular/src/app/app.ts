@@ -7,6 +7,7 @@ import {
   INTEGRATION_ICONS,
   NAV_ICONS,
   NHIEM_VU_ICONS,
+  PROCESS_CATALOG_ICONS,
   SERVICE_TASK_ICONS,
 } from './core/icons-provider';
 
@@ -25,6 +26,7 @@ export class App {
       ...EFORM_ICONS,
       ...NHIEM_VU_ICONS,
       ...INTEGRATION_ICONS,
+      ...PROCESS_CATALOG_ICONS,
     );
   }
 }
