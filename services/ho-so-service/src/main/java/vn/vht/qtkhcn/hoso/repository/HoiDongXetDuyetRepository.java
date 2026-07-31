@@ -11,6 +11,14 @@ public interface HoiDongXetDuyetRepository extends JpaRepository<HoiDongXetDuyet
     Optional<HoiDongXetDuyet> findByHoSoIdAndCapAndSourceTaskDefinitionKey(
             String hoSoId, HoiDongCap cap, String sourceTaskDefinitionKey);
 
+    @Override
+    @EntityGraph(attributePaths = "thanhVien")
+    List<HoiDongXetDuyet> findAll();
+
+    @Override
+    @EntityGraph(attributePaths = "thanhVien")
+    Optional<HoiDongXetDuyet> findById(Long id);
+
     @EntityGraph(attributePaths = "thanhVien")
     List<HoiDongXetDuyet> findByHoSoIdOrderByCreatedAtAsc(String hoSoId);
 
@@ -19,4 +27,8 @@ public interface HoiDongXetDuyetRepository extends JpaRepository<HoiDongXetDuyet
 
     @EntityGraph(attributePaths = "thanhVien")
     List<HoiDongXetDuyet> findByHoSoIdInOrderByCreatedAtAsc(List<String> hoSoIds);
+
+    boolean existsByMaHoiDong(String maHoiDong);
+
+    boolean existsByMaHoiDongAndIdNot(String maHoiDong, long id);
 }

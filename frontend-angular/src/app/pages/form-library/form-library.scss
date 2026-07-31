@@ -62,3 +62,17 @@
 .fl-required {
   color: #ff4d4f;
 }
+
+.fl-key-hint {
+  color: var(--vht-ink-3);
+  font-size: 12px;
+  margin-top: -2px;
+
+  code {
+    font-size: 12px;
+  }
+
+  &.fl-key-hint-error {
+    color: #ff4d4f;
+  }
+}

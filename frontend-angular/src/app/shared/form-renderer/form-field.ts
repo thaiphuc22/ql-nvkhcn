@@ -1,6 +1,9 @@
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, inject, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { DomSanitizer, type SafeHtml } from '@angular/platform-browser';
 
+import { wrapCSSStyles } from '@bpmn-io/form-js';
+import DOMPurify from 'dompurify';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
@@ -38,15 +41,48 @@ import { parseFormMarkdown } from '../../core/models/eform-runtime';
   styleUrl: './form-field.scss',
 })
 export class FormFieldComponent {
+  private readonly sanitizer = inject(DomSanitizer);
+
   readonly comp = input.required<FormComponent>();
   readonly value = input<unknown>(undefined);
   readonly error = input<string | undefined>(undefined);
   readonly disabled = input(false);
+  /**
+   * Options động theo `valuesKey` (xem `FormComponent.valuesKey`) — do component cha bơm xuống từ
+   * input data của form, vì trường lá không biết gì về dữ liệu ngoài giá trị của chính nó.
+   */
+  readonly valueSources = input<Record<string, { value: string; label: string }[]>>({});
   readonly valueChange = output<unknown>();
 
-  readonly options = computed(() => (this.comp().values ?? []).map((o) => ({ label: o.label, value: o.value })));
+  readonly options = computed(() => {
+    const c = this.comp();
+    const source = c.values ?? (c.valuesKey ? this.valueSources()[c.valuesKey] : undefined) ?? [];
+    return source.map((o) => ({ label: o.label, value: o.value }));
+  });
   readonly required = computed(() => !!(this.comp().validate as FormFieldValidate | undefined)?.required);
   readonly markdownBlocks = computed(() => parseFormMarkdown(this.comp().text ?? ''));
+
+  /** Class scope riêng cho từng field `html` — dùng làm tiền tố khi khoanh vùng `<style>` bằng
+   * `wrapCSSStyles`, để style tự định nghĩa trong 1 khối HTML không rò sang field khác. */
+  readonly htmlScopeClass = computed(() => `ff-html-scope-${(this.comp().id ?? 'x').replace(/[^a-zA-Z0-9_-]/g, '_')}`);
+
+  /**
+   * Nội dung khối HTML tĩnh (`type: 'html'`) đã qua sanitize. Angular sanitizer mặc định của
+   * `[innerHTML]` xoá cả thẻ `<style>` lẫn thuộc tính `style="..."` (không nằm trong whitelist
+   * thẻ/attr riêng của Angular) — đó là lý do style tự định nghĩa trong HTML không bao giờ áp dụng
+   * được dù nội dung đã đúng field `content`. Tự sanitize bằng `DOMPurify` với đúng cấu hình
+   * `@bpmn-io/form-js-viewer` dùng cho field `html` thật (`FORCE_BODY: true, FORBID_TAGS: []` — giữ
+   * thẻ `<style>`, vẫn chặn `<script>`/event handler như `onerror`), rồi khoanh vùng bằng
+   * `wrapCSSStyles` (cùng helper form-js dùng, export public từ `@bpmn-io/form-js`) để CSS không rò
+   * ra field khác — KHÔNG bypass thẳng nội dung thô, tránh XSS.
+   */
+  readonly sanitizedHtml = computed<SafeHtml>(() => {
+    const cleaned = DOMPurify.sanitize(this.comp().content ?? '', { FORCE_BODY: true, FORBID_TAGS: [] });
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = cleaned;
+    wrapCSSStyles(wrapper, `.${this.htmlScopeClass()}`);
+    return this.sanitizer.bypassSecurityTrustHtml(wrapper.innerHTML);
+  });
   /** checkbox tự chứa nhãn (bên phải ô tick) → không lặp label phía trên. */
   readonly showLabelOnTop = computed(() => this.comp().type !== 'checkbox');
 

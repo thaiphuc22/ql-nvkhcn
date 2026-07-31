@@ -1,0 +1,103 @@
+@if (loading()) {
+  <div class="hdf-loading"><nz-spin nzSimple></nz-spin></div>
+} @else {
+  <div class="hdf-page">
+    <div class="hdf-header">
+      <button nz-button nzType="text" (click)="cancel()"><span nz-icon nzType="arrow-left"></span></button>
+      <h2>{{ editingId() ? 'Sửa Hội đồng' : 'Tạo mới Hội đồng' }}</h2>
+      <div class="hdf-header-actions">
+        <button nz-button (click)="cancel()" [disabled]="saving()">Hủy</button>
+        <button nz-button nzType="primary" [nzLoading]="saving()" [disabled]="!canSubmit()" (click)="submit()">Lưu</button>
+      </div>
+    </div>
+
+    @if (errorMessage()) {
+      <nz-alert nzType="error" nzShowIcon [nzMessage]="errorMessage()"></nz-alert>
+    }
+
+    <section class="hdf-section">
+      <h3>Thông tin chung</h3>
+      <div nz-row [nzGutter]="12">
+        <div nz-col [nzXs]="24" [nzSm]="6">
+          <label class="hdf-label">Mã Hội đồng <span class="hdf-required">*</span></label>
+          <input nz-input placeholder="VD: HD-2026-01" [ngModel]="maHoiDong()" (ngModelChange)="maHoiDong.set($event)" />
+        </div>
+        <div nz-col [nzXs]="24" [nzSm]="6">
+          <label class="hdf-label">Chọn cấp hội đồng <span class="hdf-required">*</span></label>
+          <nz-select [ngModel]="cap()" (ngModelChange)="cap.set($event)" [nzDisabled]="!!editingId()" nzPlaceHolder="Chọn cấp hội đồng">
+            @for (option of capOptions; track option.value) { <nz-option [nzValue]="option.value" [nzLabel]="option.label"></nz-option> }
+          </nz-select>
+        </div>
+        <div nz-col [nzXs]="24" [nzSm]="7">
+          <label class="hdf-label">Chọn hồ sơ <span class="hdf-required">*</span></label>
+          <nz-select nzShowSearch [ngModel]="hoSoId()" (ngModelChange)="hoSoId.set($event)"
+            [nzDisabled]="!!editingId()" nzPlaceHolder="Chọn theo mã hồ sơ">
+            @for (hoSo of hoSoList(); track hoSo.id) {
+              <nz-option [nzValue]="hoSo.id" [nzLabel]="hoSoLabel(hoSo)"></nz-option>
+            }
+          </nz-select>
+        </div>
+        <div nz-col [nzXs]="24" [nzSm]="5">
+          <label class="hdf-label">Cấp nhiệm vụ</label>
+          <input nz-input disabled [value]="selectedHoSo() ? nhiemVuCapLabel[selectedHoSo()!.cap] : '—'" />
+        </div>
+      </div>
+      <div class="hdf-row-gap">
+        <label class="hdf-label">Căn cứ pháp lý</label>
+        <textarea nz-input rows="2" [ngModel]="canCuPhapLy()" (ngModelChange)="canCuPhapLy.set($event)"
+          placeholder="Ví dụ: Quyết định số 01/QĐ-..."></textarea>
+      </div>
+    </section>
+
+    <section class="hdf-section">
+      <h3>Thành viên hội đồng</h3>
+      <div class="hdf-members-table-wrap">
+        <table class="hdf-members-table">
+          <thead>
+            <tr>
+              <th>Vai trò trong Hội đồng <span class="hdf-required">*</span></th>
+              <th>Chọn thành viên <span class="hdf-required">*</span></th>
+              <th>Chức danh khoa học</th>
+              <th>Mã nhân viên</th>
+              <th>Phòng ban</th>
+              <th>Email</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (member of members(); track $index) {
+              <tr>
+                <td>
+                  <nz-select nzShowSearch nzPlaceHolder="Chọn vai trò trong Hội đồng"
+                    [ngModel]="member.vaiTroTrongHoiDong" (ngModelChange)="updateMemberRole($index, $event)">
+                    @for (role of vaiTroOptions; track role) { <nz-option [nzValue]="role" [nzLabel]="role"></nz-option> }
+                  </nz-select>
+                </td>
+                <td>
+                  <nz-select nzShowSearch nzPlaceHolder="Chọn thành viên"
+                    [ngModel]="member.userId" (ngModelChange)="selectMember($index, $event)">
+                    @for (candidate of candidates(); track candidate.userId) {
+                      <nz-option [nzValue]="candidate.userId" [nzLabel]="candidate.hoTen"></nz-option>
+                    }
+                  </nz-select>
+                </td>
+                <td><input nz-input disabled [value]="candidateOf(member)?.chucDanhKhoaHoc || '-'" /></td>
+                <td><input nz-input disabled [value]="candidateOf(member)?.maNhanVien || '-'" /></td>
+                <td><input nz-input disabled [value]="candidateOf(member)?.phongBan || '-'" /></td>
+                <td><input nz-input disabled [value]="candidateOf(member)?.email || '-'" /></td>
+                <td class="hdf-row-actions">
+                  <button nz-button nzType="default" nzSize="small" (click)="addMemberAfter($index)" aria-label="Thêm dòng">
+                    <span nz-icon nzType="plus"></span>
+                  </button>
+                  <button nz-button nzType="default" nzDanger nzSize="small" (click)="removeMember($index)" aria-label="Xóa dòng">
+                    <span nz-icon nzType="delete"></span>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+}

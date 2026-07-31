@@ -1,4 +1,5 @@
 import { HoSoActionOutcome } from './ho-so';
+import { ActionFormBundle } from './action-studio';
 
 /** Action code hợp lệ cho task action — dùng chung enum đã khoá với `/api/ho-so/{id}/actions` cũ và
  * Action Studio catalog (APPROVE_STEP/RETURN_STEP/REJECT_STEP), không phát minh code mới. */
@@ -8,11 +9,18 @@ export type TaskActionCode = HoSoActionOutcome;
 export interface TaskAvailableAction {
   actionCode: TaskActionCode;
   label: string;
+  icon: string;
+  uiGroup: string;
   tone: string;
+  displayOrder: number;
+  helpText: string | null;
   requiresReason: boolean;
   requiresEvidence: boolean;
   requiresConfirm: boolean;
   formKey: string | null;
+  policyId: string;
+  policyVersion: number;
+  formBundle?: ActionFormBundle | null;
 }
 
 /** Wrapper returned by GET /api/tasks/{taskKey}/available-actions. */
@@ -28,6 +36,8 @@ export interface TaskActionRequest {
   requestId: string;
   taskKey: string;
   actionCode: TaskActionCode;
+  expectedPolicyId: string;
+  expectedPolicyVersion: number;
   comment: string | null;
   formData: Record<string, unknown>;
   expectedTaskState: string;
@@ -45,4 +55,28 @@ export interface TaskActionResult {
   taskKey: string;
   processInstanceKey: string;
   status: TaskActionStatus;
+}
+
+export interface TaskFormDraftRequest {
+  actionCode: TaskActionCode;
+  expectedPolicyId: string;
+  expectedPolicyVersion: number;
+  outputNamespace: string;
+  data: unknown;
+}
+
+export interface TaskFormSubmission {
+  id: string;
+  taskKey: string;
+  taskDefinitionKey: string;
+  policyId: string;
+  bundleVersion: number;
+  formKey: string;
+  formVersion: number | null;
+  outputNamespace: string;
+  actionCode: TaskActionCode;
+  data: unknown;
+  status: 'DRAFT' | 'PENDING' | 'COMPLETED' | 'FAILED';
+  createdAt: string;
+  completedAt: string | null;
 }

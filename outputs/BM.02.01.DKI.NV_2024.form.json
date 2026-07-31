@@ -1,0 +1,79 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.9.0",
+  "exporter": { "name": "Camunda Web Modeler", "version": "c72e043" },
+  "schemaVersion": 19,
+  "id": "Form_BM0201_DKI_NV_2024",
+  "components": [
+    {
+      "type": "html",
+      "id": "Html_huong_dan_che_do",
+      "content": "<div style=\"padding:10px 12px;background:#f4f7fb;border-left:4px solid #0f62fe\"><strong>Chế độ hiển thị:</strong> Nhập và kiểm tra thông tin ở chế độ soạn thảo. Sau đó bật <em>Xem văn bản hoàn chỉnh</em> để xem đơn theo đúng bố cục biểu mẫu.</div>",
+      "layout": { "row": "Row_huong_dan_che_do", "columns": null }
+    },
+    {
+      "type": "checkbox",
+      "id": "Field_che_do_xem_van_ban",
+      "key": "cheDoXemVanBan",
+      "label": "Xem văn bản hoàn chỉnh",
+      "description": "Bỏ chọn để quay lại chế độ soạn thảo và chỉnh sửa dữ liệu.",
+      "defaultValue": false,
+      "layout": { "row": "Row_che_do_xem_van_ban", "columns": null }
+    },
+    {
+      "type": "group",
+      "id": "Group_soan_thao",
+      "label": "Thông tin soạn thảo",
+      "showOutline": true,
+      "conditional": { "hide": "=cheDoXemVanBan = true" },
+      "components": [
+        { "type": "html", "id": "Html_thong_tin_chung", "content": "<div style=\"margin:4px 0;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">1. Thông tin văn bản và căn cứ đăng ký</div>", "layout": { "row": "Row_sec_1", "columns": null } },
+        { "type": "textfield", "id": "Field_don_vi_chu_tri", "key": "donViChuTri", "label": "Tên đơn vị chủ trì nhiệm vụ", "validate": { "required": true }, "layout": { "row": "Row_unit", "columns": 8 } },
+        { "type": "textfield", "id": "Field_dia_danh", "key": "diaDanh", "label": "Địa danh", "defaultValue": "Hà Nội", "validate": { "required": true }, "layout": { "row": "Row_unit", "columns": 4 } },
+        { "type": "textfield", "id": "Field_ngay", "key": "ngayVanBan", "label": "Ngày", "validate": { "required": true, "validationType": "custom", "pattern": "^(0?[1-9]|[12][0-9]|3[01])$" }, "layout": { "row": "Row_date", "columns": 4 } },
+        { "type": "textfield", "id": "Field_thang", "key": "thangVanBan", "label": "Tháng", "validate": { "required": true, "validationType": "custom", "pattern": "^(0?[1-9]|1[0-2])$" }, "layout": { "row": "Row_date", "columns": 4 } },
+        { "type": "textfield", "id": "Field_nam", "key": "namVanBan", "label": "Năm", "validate": { "required": true, "validationType": "custom", "pattern": "^[0-9]{4}$" }, "layout": { "row": "Row_date", "columns": 4 } },
+        { "type": "textfield", "id": "Field_nam_ke_hoach", "key": "namKeHoach", "label": "Năm kế hoạch đã được phê duyệt", "validate": { "required": true, "validationType": "custom", "pattern": "^[0-9]{4}$" }, "layout": { "row": "Row_plan", "columns": 6 } },
+        { "type": "datetime", "subtype": "date", "id": "Field_ngay_phe_duyet_ke_hoach", "key": "ngayPheDuyetKeHoach", "label": "Ngày phê duyệt kế hoạch", "validate": { "required": true }, "layout": { "row": "Row_plan", "columns": 6 } },
+        { "type": "textfield", "id": "Field_so_quyet_dinh", "key": "soQuyetDinhChuTruong", "label": "Số quyết định phê duyệt chủ trương", "appearance": { "suffix": "/QĐ-CNVTQĐ-QLĐT" }, "validate": { "required": true }, "layout": { "row": "Row_decision", "columns": 6 } },
+        { "type": "datetime", "subtype": "date", "id": "Field_ngay_quyet_dinh", "key": "ngayQuyetDinhChuTruong", "label": "Ngày ban hành quyết định", "validate": { "required": true }, "layout": { "row": "Row_decision", "columns": 6 } },
+        { "type": "textarea", "id": "Field_can_cu_bo_sung", "key": "canCuBoSung", "label": "Căn cứ bổ sung (nếu có)", "description": "Mỗi căn cứ trên một dòng.", "layout": { "row": "Row_basis", "columns": null } },
+
+        { "type": "html", "id": "Html_nhiem_vu", "content": "<div style=\"margin:14px 0 4px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">2. Thông tin chung về nhiệm vụ</div>", "layout": { "row": "Row_sec_2", "columns": null } },
+        { "type": "textfield", "id": "Field_ten_nhiem_vu", "key": "tenNhiemVu", "label": "Tên nhiệm vụ", "validate": { "required": true }, "layout": { "row": "Row_mission", "columns": 10 } },
+        { "type": "textfield", "id": "Field_linh_vuc", "key": "linhVuc", "label": "Lĩnh vực", "validate": { "required": true }, "layout": { "row": "Row_mission", "columns": 6 } },
+        { "type": "textfield", "id": "Field_dia_chi_don_vi", "key": "diaChiDonVi", "label": "Địa chỉ đơn vị chủ trì", "validate": { "required": true }, "layout": { "row": "Row_address", "columns": null } },
+
+        { "type": "html", "id": "Html_chu_nhiem", "content": "<div style=\"margin-top:10px;font-weight:700\">Chủ nhiệm nhiệm vụ</div>", "layout": { "row": "Row_leader_title", "columns": null } },
+        { "type": "textfield", "id": "Field_chu_nhiem_ho_ten", "key": "chuNhiemHoTen", "label": "Họ và tên", "validate": { "required": true }, "layout": { "row": "Row_leader_1", "columns": 8 } },
+        { "type": "textfield", "id": "Field_chu_nhiem_cap_bac", "key": "chuNhiemCapBac", "label": "Cấp bậc", "layout": { "row": "Row_leader_1", "columns": 4 } },
+        { "type": "textfield", "id": "Field_chu_nhiem_chuc_vu", "key": "chuNhiemChucVu", "label": "Chức vụ", "validate": { "required": true }, "layout": { "row": "Row_leader_1", "columns": 4 } },
+        { "type": "datetime", "subtype": "date", "id": "Field_chu_nhiem_ngay_sinh", "key": "chuNhiemNgaySinh", "label": "Ngày tháng năm sinh", "validate": { "required": true }, "layout": { "row": "Row_leader_2", "columns": 6 } },
+        { "type": "select", "id": "Field_chu_nhiem_gioi_tinh", "key": "chuNhiemGioiTinh", "label": "Giới tính", "values": [{ "value": "nam", "label": "Nam" }, { "value": "nu", "label": "Nữ" }], "validate": { "required": true }, "layout": { "row": "Row_leader_2", "columns": 4 } },
+        { "type": "textfield", "id": "Field_chu_nhiem_hoc_ham_hoc_vi", "key": "chuNhiemHocHamHocVi", "label": "Học hàm, học vị", "layout": { "row": "Row_leader_2", "columns": 6 } },
+        { "type": "textfield", "id": "Field_chu_nhiem_dien_thoai", "key": "chuNhiemDienThoai", "label": "Điện thoại", "validate": { "required": true }, "layout": { "row": "Row_leader_3", "columns": 6 } },
+        { "type": "textfield", "id": "Field_chu_nhiem_email", "key": "chuNhiemEmail", "label": "Email Viettel", "validate": { "required": true, "validationType": "custom", "pattern": "^[^\\s@]+@viettel\\.com\\.vn$" }, "layout": { "row": "Row_leader_3", "columns": 10 } },
+        { "type": "textarea", "id": "Field_tinh_cap_thiet", "key": "tinhCapThiet", "label": "Tính cấp thiết của nhiệm vụ", "validate": { "required": true }, "layout": { "row": "Row_necessity", "columns": null } },
+        { "type": "textarea", "id": "Field_muc_tieu", "key": "mucTieu", "label": "Mục tiêu của nhiệm vụ", "validate": { "required": true }, "layout": { "row": "Row_objective", "columns": null } },
+        { "type": "number", "id": "Field_thoi_gian", "key": "thoiGianThucHienThang", "label": "Thời gian thực hiện (tháng)", "validate": { "required": true, "min": 1 }, "layout": { "row": "Row_duration", "columns": 6 } },
+
+        { "type": "html", "id": "Html_ho_so", "content": "<div style=\"margin:14px 0 4px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">3. Hồ sơ đăng ký chủ trì thực hiện nhiệm vụ</div>", "layout": { "row": "Row_sec_3", "columns": null } },
+        { "type": "checklist", "id": "Field_thanh_phan_ho_so", "key": "thanhPhanHoSo", "label": "Thành phần hồ sơ", "defaultValue": ["don_dang_ky", "thuyet_minh", "du_toan"], "values": [{ "value": "don_dang_ky", "label": "Đơn đăng ký kèm Quyết định phê duyệt chủ trương thực hiện nhiệm vụ KHCN" }, { "value": "thuyet_minh", "label": "Thuyết minh nhiệm vụ" }, { "value": "du_toan", "label": "Dự toán nhiệm vụ; các hồ sơ cơ sở giá, báo giá" }, { "value": "tai_lieu_khac", "label": "Tài liệu liên quan khác (nếu có)" }], "validate": { "required": true }, "layout": { "row": "Row_documents", "columns": null } },
+        { "type": "textarea", "id": "Field_tai_lieu_khac", "key": "taiLieuKhac", "label": "Mô tả tài liệu liên quan khác (nếu có)", "layout": { "row": "Row_other_documents", "columns": null } },
+
+        { "type": "html", "id": "Html_ky_ten", "content": "<div style=\"margin:14px 0 4px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">4. Thông tin ký đơn</div>", "layout": { "row": "Row_sec_4", "columns": null } },
+        { "type": "textfield", "id": "Field_nguoi_ky_chu_nhiem", "key": "nguoiKyChuNhiem", "label": "Họ tên Chủ nhiệm nhiệm vụ", "defaultValue": "=chuNhiemHoTen", "layout": { "row": "Row_sign", "columns": 8 } },
+        { "type": "textfield", "id": "Field_thu_truong_ho_ten", "key": "thuTruongHoTen", "label": "Họ tên Thủ trưởng đơn vị chủ trì", "layout": { "row": "Row_sign", "columns": 8 } }
+      ],
+      "layout": { "row": "Row_editor", "columns": null }
+    },
+    {
+      "type": "html",
+      "id": "Html_van_ban_hoan_chinh",
+      "content": "<style>.bm-page{max-width:850px;margin:0 auto;padding:30px 46px 54px;background:#fff;color:#111;font-family:\"Times New Roman\",Times,serif;font-size:17px;line-height:1.48;box-sizing:border-box}.bm-head{display:grid;grid-template-columns:1fr 1fr;gap:30px;text-align:center;line-height:1.25}.bm-head p,.bm-page p{margin:0 0 8px}.bm-bold{font-weight:700}.bm-upper{text-transform:uppercase}.bm-rule{display:inline-block;border-top:1px solid #111;width:130px;margin-top:3px}.bm-date{text-align:right;font-style:italic;margin:12px 20px 20px}.bm-title{text-align:center;font-size:20px;font-weight:700;margin:24px 0 18px}.bm-body{text-align:justify;text-indent:36px}.bm-section{font-weight:700;margin-top:14px}.bm-field{margin-left:20px}.bm-lines{white-space:pre-line}.bm-sign{display:grid;grid-template-columns:1fr 1fr;gap:50px;margin-top:28px;text-align:center;font-weight:700}.bm-sign-space{height:80px}.bm-value:empty::after{content:\"................................\";font-weight:400}@media(max-width:680px){.bm-page{padding:18px 14px;font-size:15px}.bm-head,.bm-sign{gap:14px}}</style><article class=\"bm-page\"><header class=\"bm-head\"><div><p class=\"bm-upper bm-bold\">TẬP ĐOÀN CÔNG NGHIỆP - VIỄN THÔNG QUÂN ĐỘI</p><p class=\"bm-upper bm-bold\">{{donViChuTri}}</p><span class=\"bm-rule\"></span></div><div><p class=\"bm-upper bm-bold\">CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</p><p class=\"bm-bold\">Độc lập - Tự do - Hạnh phúc</p><span class=\"bm-rule\"></span></div></header><div class=\"bm-date\">{{diaDanh}}, ngày {{ngayVanBan}} tháng {{thangVanBan}} năm {{namVanBan}}</div><div class=\"bm-title\">ĐƠN ĐĂNG KÝ THỰC HIỆN NHIỆM VỤ KHCN</div><p class=\"bm-body\">Căn cứ Kế hoạch năm {{namKeHoach}} đã được Người có thẩm quyền phê duyệt ngày {{ngayPheDuyetKeHoach}};</p><p class=\"bm-body\">Căn cứ Quyết định số {{soQuyetDinhChuTruong}}/QĐ-CNVTQĐ-QLĐT ngày {{ngayQuyetDinhChuTruong}} của Người có thẩm quyền về việc phê duyệt chủ trương thực hiện nhiệm vụ KHCN “{{tenNhiemVu}}”;</p><p class=\"bm-body\">Căn cứ chức năng, nhiệm vụ của “{{donViChuTri}}”,</p><p class=\"bm-body bm-lines\">{{canCuBoSung}}</p><p class=\"bm-body\">“{{donViChuTri}}” và Đồng chí “{{chuNhiemHoTen}}” đăng ký thực hiện nhiệm vụ “{{tenNhiemVu}}” thuộc lĩnh vực {{linhVuc}}, cụ thể như sau:</p><p class=\"bm-section\">I. Thông tin chung về nhiệm vụ</p><p class=\"bm-field\"><strong>Đơn vị chủ trì nhiệm vụ:</strong></p><p class=\"bm-field\">- Tên đơn vị: {{donViChuTri}}</p><p class=\"bm-field\">- Địa chỉ: {{diaChiDonVi}}</p><p class=\"bm-field\"><strong>Chủ nhiệm nhiệm vụ:</strong></p><p class=\"bm-field\">- Họ và tên: {{chuNhiemHoTen}}</p><p class=\"bm-field\">- Cấp bậc: {{chuNhiemCapBac}} &nbsp;&nbsp;&nbsp; Chức vụ: {{chuNhiemChucVu}}</p><p class=\"bm-field\">- Ngày tháng năm sinh: {{chuNhiemNgaySinh}} &nbsp;&nbsp;&nbsp; Giới tính: {{chuNhiemGioiTinh}}</p><p class=\"bm-field\">- Học hàm, học vị: {{chuNhiemHocHamHocVi}}</p><p class=\"bm-field\">- Điện thoại: {{chuNhiemDienThoai}} &nbsp;&nbsp;&nbsp; Email: {{chuNhiemEmail}}</p><p class=\"bm-field\"><strong>Tính cấp thiết của nhiệm vụ:</strong></p><p class=\"bm-field bm-lines\">{{tinhCapThiet}}</p><p class=\"bm-field\"><strong>Mục tiêu của nhiệm vụ:</strong></p><p class=\"bm-field bm-lines\">{{mucTieu}}</p><p class=\"bm-field\"><strong>Thời gian thực hiện:</strong> {{thoiGianThucHienThang}} tháng.</p><p class=\"bm-section\">II. Hồ sơ đăng ký chủ trì thực hiện nhiệm vụ gồm:</p><p class=\"bm-field\">1. Đơn đăng ký kèm Quyết định phê duyệt chủ trương thực hiện nhiệm vụ KHCN.</p><p class=\"bm-field\">2. Thuyết minh nhiệm vụ.</p><p class=\"bm-field\">3. Dự toán nhiệm vụ; các hồ sơ cơ sở giá, báo giá.</p><p class=\"bm-field\">4. Tài liệu liên quan khác (nếu có): {{taiLieuKhac}}</p><p class=\"bm-body\">Chúng tôi xin cam đoan những nội dung và thông tin kê khai trong hồ sơ này là đúng sự thật./.</p><footer class=\"bm-sign\"><div><p>CHỦ NHIỆM NHIỆM VỤ</p><p><em>(chữ ký, họ tên)</em></p><div class=\"bm-sign-space\"></div><p>{{nguoiKyChuNhiem}}</p></div><div><p>THỦ TRƯỞNG ĐƠN VỊ<br>CHỦ TRÌ NHIỆM VỤ</p><p><em>(chữ ký, họ tên và đóng dấu)</em></p><div class=\"bm-sign-space\"></div><p>{{thuTruongHoTen}}</p></div></footer></article>",
+      "conditional": { "hide": "=cheDoXemVanBan != true" },
+      "layout": { "row": "Row_preview", "columns": null }
+    }
+  ],
+  "type": "default"
+}

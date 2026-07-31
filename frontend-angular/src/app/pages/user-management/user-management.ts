@@ -22,8 +22,8 @@ import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { BACKEND_CONNECTION_LABEL } from '../../core/api-config';
 import {
   AppResponse,
-  AssignmentRequest,
   AssignmentResponse,
+  BulkAssignmentRequest,
   DataScopeResponse,
   RoleResponse,
   UserRequest,
@@ -74,8 +74,26 @@ export class UserManagementPage implements OnInit {
   readonly roles = signal<RoleResponse[]>([]);
   readonly dataScopes = signal<DataScopeResponse[]>([]);
   readonly appCatalog = signal<AppResponse[]>([]);
+  /** Assignment của mọi user (1 request) — nguồn cho cột "Vai trò" ở bảng ngoài. */
+  readonly allAssignments = signal<AssignmentResponse[]>([]);
 
   readonly statusOptions = ['ACTIVE', 'INACTIVE'];
+
+  /** userId -> danh sách mã vai trò, để render tag không phải quét lại mảng mỗi ô. */
+  readonly roleCodesByUser = computed(() => {
+    const map = new Map<string, string[]>();
+    for (const a of this.allAssignments()) {
+      const codes = map.get(a.userId) ?? [];
+      if (!codes.includes(a.roleCode)) codes.push(a.roleCode);
+      map.set(a.userId, codes);
+    }
+    for (const codes of map.values()) codes.sort();
+    return map;
+  });
+
+  readonly usersWithoutRole = computed(
+    () => this.list().filter((u) => (this.roleCodesByUser().get(u.id) ?? []).length === 0).length,
+  );
 
   // --- CRUD user ---
   readonly modalOpen = signal(false);
@@ -95,7 +113,8 @@ export class UserManagementPage implements OnInit {
   readonly assignTarget = signal<UserResponse | null>(null);
   readonly assignments = signal<AssignmentResponse[]>([]);
   readonly assignmentsLoading = signal(false);
-  readonly newRoleCode = signal<string | null>(null);
+  /** Gán nhiều vai trò 1 lượt — trước đây là 1 mã/lần nên gán 4 vai trò là 4 lần bấm. */
+  readonly newRoleCodes = signal<string[]>([]);
   readonly newDataScope = signal<string | null>(null);
   readonly newOrganizationId = signal<string | null>(null);
   readonly newEffectiveFrom = signal<Date | null>(null);
@@ -107,14 +126,33 @@ export class UserManagementPage implements OnInit {
   readonly userAppsLoading = signal(false);
   readonly userAppsSaving = signal(false);
 
-  readonly canAssign = computed(() => !!this.newRoleCode() && !!this.newDataScope());
+  readonly canAssign = computed(() => this.newRoleCodes().length > 0 && !!this.newDataScope());
+
+  /** Vai trò user đã có bị loại khỏi ô chọn — gán lại sẽ bị backend bỏ qua, hiện ra chỉ gây nhầm. */
+  readonly assignableRoles = computed(() => {
+    const owned = new Set(this.assignments().map((a) => a.roleCode));
+    return this.roles().filter((r) => !owned.has(r.code));
+  });
 
   ngOnInit(): void {
     this.reload();
+    this.reloadAllAssignments();
     this.orgService.list().subscribe({ next: (list) => this.orgs.set(list) });
     this.roleService.list().subscribe({ next: (list) => this.roles.set(list) });
     this.dataScopeService.list().subscribe({ next: (list) => this.dataScopes.set(list) });
     this.appCatalogService.list().subscribe({ next: (list) => this.appCatalog.set(list) });
+  }
+
+  /** Không chặn UI: lỗi ở đây chỉ làm cột "Vai trò" trống, bảng người dùng vẫn dùng được. */
+  private reloadAllAssignments(): void {
+    this.users.allAssignments().subscribe({
+      next: (list) => this.allAssignments.set(list),
+      error: () => this.allAssignments.set([]),
+    });
+  }
+
+  roleCodesOf(userId: string): string[] {
+    return this.roleCodesByUser().get(userId) ?? [];
   }
 
   reload(): void {
@@ -207,6 +245,7 @@ export class UserManagementPage implements OnInit {
       next: () => {
         this.message.success(`Đã xoá người dùng "${user.fullName}".`);
         this.reload();
+        this.reloadAllAssignments(); // xoá user cascade cả assignment — cột "Vai trò" phải theo.
       },
       error: (error: HttpErrorResponse) => {
         this.message.error(this.apiErrorMessage(error, 'Xoá người dùng thất bại'));
@@ -242,8 +281,12 @@ export class UserManagementPage implements OnInit {
   }
 
   private resetAssignForm(): void {
-    this.newRoleCode.set(null);
-    this.newDataScope.set(null);
+    this.newRoleCodes.set([]);
+    // Phạm vi dữ liệu preselect theo rank thấp nhất (hẹp nhất) đang active: bắt buộc phải có
+    // giá trị nên để trống chỉ làm nút "Gán vai trò" bị disable mà không nói vì sao, và mặc
+    // định hẹp là hướng an toàn khi người gán không nghĩ tới trường này.
+    const narrowest = [...this.dataScopes()].sort((a, b) => a.rank - b.rank)[0];
+    this.newDataScope.set(narrowest?.code ?? null);
     this.newOrganizationId.set(null);
     this.newEffectiveFrom.set(null);
     this.newEffectiveTo.set(null);
@@ -251,23 +294,28 @@ export class UserManagementPage implements OnInit {
 
   addAssignment(): void {
     const target = this.assignTarget();
-    const roleCode = this.newRoleCode();
+    const roleCodes = this.newRoleCodes();
     const dataScope = this.newDataScope();
-    if (!target || !roleCode || !dataScope) return;
-    const request: AssignmentRequest = {
-      roleCode,
+    if (!target || roleCodes.length === 0 || !dataScope) return;
+    const request: BulkAssignmentRequest = {
+      roleCodes,
       dataScope,
       organizationId: this.newOrganizationId(),
       effectiveFrom: toIsoDate(this.newEffectiveFrom()),
       effectiveTo: toIsoDate(this.newEffectiveTo()),
     };
     this.assigning.set(true);
-    this.users.assign(target.id, request).subscribe({
-      next: () => {
+    this.users.assignBulk(target.id, request).subscribe({
+      next: (created) => {
         this.assigning.set(false);
-        this.message.success(`Đã gán vai trò ${roleCode}.`);
+        if (created.length === 0) {
+          this.message.info('Các vai trò đã chọn đều đã được gán với cùng phạm vi — không tạo thêm.');
+        } else {
+          this.message.success(`Đã gán ${created.length} vai trò: ${created.map((a) => a.roleCode).join(', ')}.`);
+        }
         this.resetAssignForm();
         this.reloadAssignments(target.id);
+        this.reloadAllAssignments();
       },
       error: (error: HttpErrorResponse) => {
         this.assigning.set(false);
@@ -283,6 +331,7 @@ export class UserManagementPage implements OnInit {
       next: () => {
         this.message.success(`Đã thu hồi vai trò ${assignment.roleCode}.`);
         this.reloadAssignments(target.id);
+        this.reloadAllAssignments();
       },
       error: (error: HttpErrorResponse) => {
         this.message.error(this.apiErrorMessage(error, 'Thu hồi vai trò thất bại'));

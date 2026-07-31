@@ -1,6 +1,6 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { Observable, catchError, forkJoin, map, tap, throwError } from 'rxjs';
 import { API_BASE_URL, encodeAuditActor } from '../api-config';
 import {
   ActionAvailabilityPolicy, ActionDefinition, ActionPresentation, ExceptionPolicy,
@@ -34,7 +34,8 @@ export interface ReconcileRow {
   stepName: string;
   outcome: string;
   actionCode: string;
-  status: 'ok' | 'generic' | 'unfilled' | 'missing' | 'unmapped';
+  status: 'OK' | 'GENERIC_POLICY' | 'MISSING_FORM' | 'MISSING_POLICY' | 'UNMAPPED_BRANCH'
+    | 'ORPHAN_POLICY' | 'ROLE_MISMATCH' | 'CONFLICT' | 'INVALID_TARGET';
   policyId: string | null;
   reason: string;
 }
@@ -64,7 +65,7 @@ export class ActionStudioService {
     actions: this.definitions().length,
     activeActions: this.definitions().filter((item) => item.active).length,
     policies: this.availabilityPolicies().length,
-    enabledPolicies: this.availabilityPolicies().filter((item) => item.enabled).length,
+    enabledPolicies: this.availabilityPolicies().filter((item) => item.lifecycleStatus === 'ACTIVE').length,
     exceptions: this.exceptionPolicies().filter((item) => item.enabled).length,
   }));
 
@@ -83,6 +84,16 @@ export class ActionStudioService {
     return this.http.put<ActionPresentation>(
       `${BASE_URL}/actions/${encodeURIComponent(value.actionCode)}/presentation`,
       { label: value.label, icon: value.icon, uiGroup: value.uiGroup, tone: value.tone, order: value.order, helpText: value.helpText ?? null },
+      { headers: { 'If-Match': String(value.version ?? 0), ...actorHeaders(actor) } },
+    ).pipe(tap((saved) => {
+      this.presentationsSignal.update((items) => items.map((item) => item.actionCode === saved.actionCode ? saved : item));
+      this.definitionsSignal.update((items) => items.map((item) => item.actionCode === saved.actionCode ? { ...item, version: saved.version } : item));
+    }));
+  }
+
+  resetPresentation(value: ActionPresentation, actor?: string): Observable<ActionPresentation> {
+    return this.http.post<ActionPresentation>(
+      `${BASE_URL}/actions/${encodeURIComponent(value.actionCode)}/presentation/reset`, null,
       { headers: { 'If-Match': String(value.version ?? 0), ...actorHeaders(actor) } },
     ).pipe(tap((saved) => {
       this.presentationsSignal.update((items) => items.map((item) => item.actionCode === saved.actionCode ? saved : item));
@@ -113,6 +124,40 @@ export class ActionStudioService {
     return this.http.delete<void>(`${BASE_URL}/availability-policies/${encodeURIComponent(value.id)}`,
       { headers: { 'If-Match': String(value.version ?? 0), ...actorHeaders(actor) } })
       .pipe(tap(() => this.availabilitySignal.update((items) => items.filter((item) => item.id !== value.id))));
+  }
+
+  removeAvailabilityBulk(values: ActionAvailabilityPolicy[], actor?: string): Observable<{ deletedCount: number; deletedIds: string[] }> {
+    const batch = this.http.post<{ deletedCount: number; deletedIds: string[] }>(
+      `${BASE_URL}/availability-policies/bulk-delete`,
+      { items: values.map((item) => ({ id: item.id, version: item.version ?? 0 })) },
+      { headers: actorHeaders(actor) },
+    );
+    return batch.pipe(
+      catchError((error: HttpErrorResponse) => error.status === 405
+        ? forkJoin(values.map((item) => this.http.delete<void>(
+            `${BASE_URL}/availability-policies/${encodeURIComponent(item.id)}`,
+            { headers: { 'If-Match': String(item.version ?? 0), ...actorHeaders(actor) } },
+          ))).pipe(map(() => ({ deletedCount: values.length, deletedIds: values.map((item) => item.id) })))
+        : throwError(() => error)),
+      tap((result) => {
+      const deleted = new Set(result.deletedIds);
+      this.availabilitySignal.update((items) => items.filter((item) => !deleted.has(item.id)));
+      }),
+    );
+  }
+
+  setAvailabilityStatusBulk(values: ActionAvailabilityPolicy[], enabled: boolean, actor?: string): Observable<{ updatedCount: number; updatedPolicies: ActionAvailabilityPolicy[] }> {
+    return this.http.post<{ updatedCount: number; updatedPolicies: ActionAvailabilityPolicy[] }>(
+      `${BASE_URL}/availability-policies/bulk-status`,
+      { enabled, items: values.map((item) => ({ id: item.id, version: item.version ?? 0 })) },
+      { headers: actorHeaders(actor) },
+    ).pipe(
+      catchError((error: HttpErrorResponse) => error.status === 405
+        ? forkJoin(values.map((item) => this.saveAvailability({ ...item, lifecycleStatus: enabled ? 'ACTIVE' : 'DISABLED' }, actor)))
+            .pipe(map((updatedPolicies) => ({ updatedCount: updatedPolicies.length, updatedPolicies })))
+        : throwError(() => error)),
+      tap((result) => result.updatedPolicies.forEach((item) => this.upsertAvailability(item))),
+    );
   }
 
   saveException(value: ExceptionPolicy, actor?: string): Observable<ExceptionPolicy> {

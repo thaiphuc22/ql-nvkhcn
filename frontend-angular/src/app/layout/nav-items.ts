@@ -37,6 +37,7 @@ export const NAV_ITEMS: NavItem[] = [
     children: [
       { key: 'nhiem-vu', label: 'Danh sách NV KHCN', route: '/nhiem-vu' },
       { key: 'ho-so', label: 'Danh sách Hồ sơ KHCN', route: '/ho-so' },
+      { key: 'hoi-dong', label: 'Quản lý Hội đồng', route: '/hoi-dong' },
     ],
   },
   { key: 'dashboard', label: 'Tổng quan', route: '/tong-quan', icon: 'dashboard', app: 'quytrinh' },
@@ -86,6 +87,7 @@ export const SECTION_TITLE_BY_ROUTE: Record<string, string> = {
   '/viec-cua-toi': 'Việc của tôi',
   '/nhiem-vu': 'Quản trị KHCN',
   '/ho-so': 'Quản trị KHCN',
+  '/hoi-dong': 'Quản trị KHCN',
   '/quy-trinh': 'Quản lý quy trình',
   '/quan-ly-luat': 'Ma trận quyết định',
   '/ma-tran-phe-duyet': 'Ma trận phê duyệt',

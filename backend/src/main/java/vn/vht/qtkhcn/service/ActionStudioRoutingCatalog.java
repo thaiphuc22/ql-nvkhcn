@@ -19,4 +19,8 @@ public class ActionStudioRoutingCatalog {
     public ProcessRoutingResponse require(String code) {
         return reader.require(code);
     }
+
+    public ProcessRoutingResponse require(String code, int version) {
+        return reader.require(code, version);
+    }
 }

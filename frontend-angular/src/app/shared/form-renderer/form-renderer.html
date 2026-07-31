@@ -21,6 +21,7 @@
           [rows]="listRows(c)"
           [rootCtx]="derived().ctx"
           [errors]="fieldErrorsMap()"
+          [valueSources]="valueSources()"
           errPrefix=""
           (rowsChange)="c.key && setValue(c, $event)"
         ></app-form-dynamic-list>
@@ -29,7 +30,8 @@
           [comp]="c"
           [value]="fieldValue(c)"
           [error]="fieldError(c)"
-          [disabled]="isComputed(c) || c.readonly === true"
+          [valueSources]="valueSources()"
+          [disabled]="readonly() || isComputed(c) || c.readonly === true"
           (valueChange)="setValue(c, $event)"
         ></app-form-field>
       }

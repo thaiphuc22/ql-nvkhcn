@@ -60,16 +60,42 @@ export const HOI_DONG_CAP_LABEL: Record<HoiDongCap, string> = {
 
 export interface ThanhVienHoiDongResponse {
   hoTen: string;
+  userId: string | null;
   vaiTroTrongHoiDong: string | null;
 }
 
 export interface HoiDongXetDuyetResponse {
   id: number;
+  /** Nhãn nghiệp vụ tự đặt (VD "HD-2026-01"), duy nhất toàn hệ thống — khác `id` tự sinh. */
+  maHoiDong: string;
+  hoSoId: string;
   cap: HoiDongCap;
-  sourceTaskDefinitionKey: string;
+  /** null = tạo thủ công qua /hoi-dong, không sinh tự động từ workflow. */
+  sourceTaskDefinitionKey: string | null;
   canCuPhapLy: string | null;
   createdAt: string;
+  version: number;
   thanhVien: ThanhVienHoiDongResponse[];
+}
+
+export interface ThanhVienHoiDongRequest {
+  hoTen: string;
+  userId?: string | null;
+  vaiTroTrongHoiDong?: string | null;
+}
+
+export interface CreateHoiDongRequest {
+  maHoiDong: string;
+  hoSoId: string;
+  cap: HoiDongCap;
+  canCuPhapLy?: string | null;
+  thanhVien: ThanhVienHoiDongRequest[];
+}
+
+export interface UpdateHoiDongRequest {
+  maHoiDong: string;
+  canCuPhapLy?: string | null;
+  thanhVien: ThanhVienHoiDongRequest[];
 }
 
 export interface HoSoResponse {

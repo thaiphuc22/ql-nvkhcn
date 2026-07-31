@@ -85,8 +85,13 @@
         <div class="fpr-section">
           <div class="fpr-section-title">Nội dung</div>
           <div class="fpr-field">
-            <div class="fpr-label">{{ field()!.type === 'text' ? 'Văn bản (Markdown)' : 'Mã HTML' }}</div>
-            <textarea nz-input [rows]="5" [ngModel]="draftText()" (ngModelChange)="draftText.set($event)" (blur)="commitText()" [class.fpr-mono]="field()!.type === 'html'"></textarea>
+            @if (field()!.type === 'text') {
+              <div class="fpr-label">Văn bản (Markdown)</div>
+              <textarea nz-input [rows]="5" [ngModel]="draftText()" (ngModelChange)="draftText.set($event)" (blur)="commitText()"></textarea>
+            } @else {
+              <div class="fpr-label">Mã HTML</div>
+              <textarea nz-input [rows]="5" class="fpr-mono" [ngModel]="draftContent()" (ngModelChange)="draftContent.set($event)" (blur)="commitContent()"></textarea>
+            }
           </div>
         </div>
       }

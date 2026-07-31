@@ -9,5 +9,6 @@ import vn.vht.qtkhcn.domain.ProcessDefinitionVersion;
 public interface ProcessDefinitionVersionRepository extends JpaRepository<ProcessDefinitionVersion, UUID> {
     List<ProcessDefinitionVersion> findByCatalogIdOrderByCamundaVersionDesc(UUID catalogId);
     Optional<ProcessDefinitionVersion> findFirstByCatalogIdOrderByCamundaVersionDesc(UUID catalogId);
+    Optional<ProcessDefinitionVersion> findByCatalogIdAndCamundaVersion(UUID catalogId, int camundaVersion);
     Optional<ProcessDefinitionVersion> findByCamundaProcessDefinitionKey(long camundaProcessDefinitionKey);
 }

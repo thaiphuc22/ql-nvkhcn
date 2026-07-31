@@ -31,16 +31,18 @@ public class WorkflowProjectionService {
     private final WorkflowTaskProjectionRepository taskRepository;
     private final WorkflowProcessProjectionRepository processRepository;
     private final HoSoRepository hoSoRepository;
+    private final HoiDongXetDuyetService hoiDong;
     private final ObjectMapper json;
 
     public WorkflowProjectionService(WorkflowEventInboxRepository inboxRepository,
             WorkflowTaskProjectionRepository taskRepository,
             WorkflowProcessProjectionRepository processRepository,
-            HoSoRepository hoSoRepository, ObjectMapper json) {
+            HoSoRepository hoSoRepository, HoiDongXetDuyetService hoiDong, ObjectMapper json) {
         this.inboxRepository = inboxRepository;
         this.taskRepository = taskRepository;
         this.processRepository = processRepository;
         this.hoSoRepository = hoSoRepository;
+        this.hoiDong = hoiDong;
         this.json = json;
     }
 
@@ -86,6 +88,7 @@ public class WorkflowProjectionService {
         taskRepository.deleteByHoSoId(hoSoId);
         List<WorkflowTaskProjection> projectedTasks = tasks.values().stream()
                 .map(task -> task.toEntity(hoSoId, processInstanceId, finalProcessState, now)).toList();
+        projectedTasks.forEach(task -> narrowToHoiDong(hoSoId, task));
         taskRepository.saveAll(projectedTasks);
 
         WorkflowProcessProjection process = processRepository.findById(processInstanceId)
@@ -106,6 +109,23 @@ public class WorkflowProjectionService {
         });
         inboxRepository.saveAll(events);
         hoSoRepository.save(hoSo);
+    }
+
+    /**
+     * Gắn danh sách thành viên Hội đồng xét duyệt của hồ sơ này vào task họp hội đồng.
+     *
+     * <p>BPMN chỉ khai được vế tĩnh {@code candidateGroups="HDXD"/"HDXD_TD"} — nghĩa là "ai đủ tư cách
+     * ngồi hội đồng", không phải "ai ở trong hội đồng của hồ sơ này". Không thu hẹp thì mọi người giữ
+     * vai trò đó thấy task họp hội đồng của MỌI hồ sơ. Việc dịch nhóm sang người diễn ra ở đây, trong
+     * app, đúng D9/D20 (Zeebe không biết ai thuộc nhóm nào; kiểm tra quyền nằm hoàn toàn trong code).
+     *
+     * <p>Chỉ điền khi Camunda không tự trả về {@code candidateUsers} — nếu một ngày BPMN gán đích danh
+     * (assignee hoặc candidateUsers thật), giá trị của engine luôn thắng, không bị đè.</p>
+     */
+    private void narrowToHoiDong(String hoSoId, WorkflowTaskProjection task) {
+        if (!task.getCandidateUsers().isEmpty() || task.getAssignee() != null) return;
+        List<String> members = hoiDong.candidateUsersTheoNhom(hoSoId, task.getCandidateGroups());
+        if (!members.isEmpty()) task.setCandidateUsers(new LinkedHashSet<>(members));
     }
 
     private static void validateCorrelation(HoSo hoSo, List<WorkflowEventInbox> events,

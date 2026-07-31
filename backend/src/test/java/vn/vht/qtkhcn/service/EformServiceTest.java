@@ -18,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import vn.vht.qtkhcn.domain.Eform;
 import vn.vht.qtkhcn.repository.EformRepository;
+import vn.vht.qtkhcn.repository.EformVersionRepository;
 import vn.vht.qtkhcn.web.dto.EformDtos.CreateEformRequest;
 import vn.vht.qtkhcn.web.dto.EformDtos.UpdateMetaRequest;
 import vn.vht.qtkhcn.web.dto.EformDtos.UpdateSchemaRequest;
@@ -30,7 +31,7 @@ class EformServiceTest {
     @BeforeEach
     void setUp() {
         repository = mock(EformRepository.class);
-        service = new EformService(repository, objectMapper);
+        service = new EformService(repository, mock(EformVersionRepository.class), objectMapper);
     }
 
     private Map<String, Object> schema(String id) {

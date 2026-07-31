@@ -65,6 +65,18 @@ code { color: #b42318; background: #fff1f0; padding: 2px 5px; border-radius: 4px
 .as-form-grid nz-select { width: 100%; }
 .as-form-grid .wide { grid-column: 1 / -1; }
 .as-drawer-actions { position: sticky; bottom: 0; margin-top: 24px; padding: 14px 0; background: #fff; border-top: 1px solid #eaecf0; display: flex; justify-content: flex-end; gap: 8px; }
+.as-bundle { padding: 14px; border: 1px solid #d0d5dd; border-radius: 10px; background: #f9fafb; }
+.as-bundle-title, .as-bundle-handle, .as-bundle-copy { display: flex; align-items: center; gap: 10px; }
+.as-bundle-title { justify-content: space-between; }
+.as-bundle-config { margin-top: 12px; }
+.as-bundle-copy { margin: 12px 0; }
+.as-bundle-copy nz-select { flex: 1; }
+.as-bundle-list { display: flex; flex-direction: column; gap: 12px; }
+.as-bundle-item { padding: 12px; border: 1px solid #eaecf0; border-radius: 8px; background: #fff; box-shadow: 0 1px 2px #1018280d; }
+.as-bundle-handle { margin-bottom: 12px; cursor: move; color: #667085; }
+.cdk-drag-preview { box-sizing: border-box; border-radius: 8px; box-shadow: 0 8px 24px #10182826; }
+.cdk-drag-placeholder { opacity: .25; }
+.cdk-drag-animating, .as-bundle-list.cdk-drop-list-dragging .as-bundle-item:not(.cdk-drag-placeholder) { transition: transform 180ms ease; }
 
 @media (max-width: 640px) {
   .as-form-grid { grid-template-columns: 1fr; }

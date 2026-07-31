@@ -133,18 +133,21 @@ public class ProcessReadinessService {
         List<ReconcileResponse> stepRows = reconcile.stream()
                 .filter(row -> row.stepKey().equals(task.elementId())).toList();
         List<String> bound = stepRows.stream()
-                .filter(row -> Set.of("ok", "unfilled").contains(row.status()))
+                .filter(row -> Set.of("OK", "GENERIC_POLICY", "MISSING_FORM", "UNFILLED")
+                        .contains(normalizeReconcileStatus(row.status())))
                 .map(ReconcileResponse::actionCode).distinct().toList();
         List<String> missing = stepRows.stream()
-                .filter(row -> row.status().equals("missing"))
+                .filter(row -> normalizeReconcileStatus(row.status()).equals("MISSING_POLICY"))
                 .map(ReconcileResponse::actionCode).distinct().toList();
         if (!missing.isEmpty()) {
             issues.add("Chưa có luật hiển thị nút cho: " + String.join(", ", missing)
                     + " — bấm \"Tạo luật còn thiếu từ BPMN\" ở Ma trận Hành động.");
         }
-        stepRows.stream().filter(row -> row.status().equals("generic")).findFirst().ifPresent(row ->
+        stepRows.stream().filter(row -> normalizeReconcileStatus(row.status()).equals("GENERIC_POLICY"))
+                .findFirst().ifPresent(row ->
                 issues.add("Đang dùng luật chung (không ghim theo bước) — biểu mẫu kèm nút có thể là của quy trình khác."));
-        stepRows.stream().filter(row -> row.status().equals("unmapped")).forEach(row ->
+        stepRows.stream().filter(row -> normalizeReconcileStatus(row.status()).equals("UNMAPPED_BRANCH"))
+                .forEach(row ->
                 issues.add("Nhánh \"" + row.outcome() + "\" chưa ánh xạ được sang action code nào."));
 
         String status = nobodyAssigned || (task.formKey() != null && !formExists) ? ERROR
@@ -152,6 +155,16 @@ public class ProcessReadinessService {
         return new UserTaskReadiness(task.elementId(), task.name(), task.formKey(), formExists,
                 task.candidateGroups(), unknownRoles, task.dynamicAssignment(), bound, missing, status,
                 List.copyOf(issues));
+    }
+
+    private static String normalizeReconcileStatus(String status) {
+        if (status == null) return "";
+        return switch (status.trim().toUpperCase(java.util.Locale.ROOT)) {
+            case "MISSING" -> "MISSING_POLICY";
+            case "GENERIC" -> "GENERIC_POLICY";
+            case "UNMAPPED" -> "UNMAPPED_BRANCH";
+            default -> status.trim().toUpperCase(java.util.Locale.ROOT);
+        };
     }
 
     private ServiceTaskReadiness serviceTask(ParsedServiceTask task) {

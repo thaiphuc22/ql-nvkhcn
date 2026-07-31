@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 
 public final class ActionStudioDtos {
     private ActionStudioDtos() {
@@ -55,17 +56,43 @@ public final class ActionStudioDtos {
             @Size(max = 128) String taskDefinitionKey,
             @Size(max = 32) String dossierStatus,
             @NotNull List<@NotBlank @Size(max = 64) String> allowedRoleCodes,
-            @NotNull List<@NotBlank @Size(max = 64) String> requiredPermissions,
             @Size(max = 128) String formKey,
             @Size(max = 1000) String conditionExpression,
-            @Min(0) int displayOrder, boolean enabled) {
+            @Min(0) int displayOrder, @NotBlank String lifecycleStatus,
+            Integer processVersion, String displayLabel, String displayIcon, String uiGroup, String tone,
+            String helpText, FormBundleRequest formBundle) {
+        public AvailabilityRequest(String id, String actionCode, String surface, String processCode,
+                String taskDefinitionKey, String dossierStatus, List<String> allowedRoleCodes, String formKey,
+                String conditionExpression, int displayOrder, String lifecycleStatus) {
+            this(id, actionCode, surface, processCode, taskDefinitionKey, dossierStatus, allowedRoleCodes, formKey,
+                    conditionExpression, displayOrder, lifecycleStatus, null, null, null, null, null, null, null);
+        }
     }
 
     public record AvailabilityResponse(String id, String actionCode, String surface, String processCode,
             String taskDefinitionKey, String dossierStatus, List<String> allowedRoleCodes,
-            List<String> requiredPermissions, String formKey, String conditionExpression,
-            int displayOrder, boolean enabled, long version, String updatedBy, OffsetDateTime updatedAt) {
+            String formKey, String conditionExpression, int displayOrder, String lifecycleStatus,
+            long version, String updatedBy, OffsetDateTime updatedAt, Integer processVersion,
+            String displayLabel, String displayIcon, String uiGroup, String tone, String helpText,
+            FormBundleResponse formBundle) {
     }
+
+    public record BulkDeleteAvailabilityRequest(@NotEmpty List<@NotNull BulkDeleteAvailabilityItem> items) {}
+    public record BulkDeleteAvailabilityItem(@NotBlank String id, @Min(0) long version) {}
+    public record BulkDeleteAvailabilityResponse(int deletedCount, List<String> deletedIds) {}
+    public record BulkStatusAvailabilityRequest(boolean enabled,
+            @NotEmpty List<@NotNull BulkDeleteAvailabilityItem> items) {}
+    public record BulkStatusAvailabilityResponse(int updatedCount, List<AvailabilityResponse> updatedPolicies) {}
+
+    public record FormBundleRequest(String displayMode, boolean allowDraft, String completionPolicy,
+            Long version, @NotNull List<FormBundleItemRequest> items) {}
+    public record FormBundleItemRequest(@NotBlank String formKey, Long formVersion, @Min(0) int displayOrder,
+            String displayTitle, boolean required, @NotBlank String mode, boolean skippable,
+            String conditionExpression, @NotBlank String outputNamespace) {}
+    public record FormBundleResponse(String displayMode, boolean allowDraft, String completionPolicy,
+            Long version, List<FormBundleItemResponse> items) {}
+    public record FormBundleItemResponse(String formKey, Long formVersion, int displayOrder, String displayTitle,
+            boolean required, String mode, boolean skippable, String conditionExpression, String outputNamespace) {}
 
     public record ExceptionRequest(@NotBlank String id, @NotBlank String actionCode,
             @NotBlank String objectType, String processCode, String fromStepKey,
@@ -81,7 +108,10 @@ public final class ActionStudioDtos {
             boolean requiresEvidence, boolean enabled, long version, String updatedBy, OffsetDateTime updatedAt) {
     }
 
-    public record ProcessRoutingResponse(String code, String name, List<ProcessStepResponse> steps) {
+    public record ProcessRoutingResponse(String code, String name, List<ProcessStepResponse> steps, Integer processVersion) {
+        public ProcessRoutingResponse(String code, String name, List<ProcessStepResponse> steps) {
+            this(code, name, steps, null);
+        }
     }
 
     public record ProcessStepResponse(String key, String name, String role, String formKey,
@@ -101,14 +131,27 @@ public final class ActionStudioDtos {
     public record SimulationRequest(@NotBlank String surface, @NotBlank String processCode,
             @NotBlank String taskDefinitionKey, @NotBlank String dossierStatus,
             @NotNull List<@NotBlank String> roleCodes,
-            @NotNull List<@NotBlank String> permissions, boolean isAdmin) {
+            @NotNull List<@NotBlank String> permissions, boolean isAdmin, Integer processVersion,
+            Map<String, Object> businessContext) {
+        public SimulationRequest(String surface, String processCode, String taskDefinitionKey, String dossierStatus,
+                List<String> roleCodes, List<String> permissions, boolean isAdmin) {
+            this(surface, processCode, taskDefinitionKey, dossierStatus, roleCodes, permissions, isAdmin, null, Map.of());
+        }
     }
 
     public record SimulatedActionResponse(String actionCode, String actionName, String actionType,
             String outcome, boolean requiresReason, boolean requiresEvidence, boolean requiresConfirm,
             boolean active, String label, String icon, String uiGroup, String tone, int order,
             String helpText, boolean visible, boolean enabled, String policyId, List<String> reasons,
-            String formKey) {
+            String formKey, Long policyVersion, FormBundleResponse formBundle) {
+        public SimulatedActionResponse(String actionCode, String actionName, String actionType, String outcome,
+                boolean requiresReason, boolean requiresEvidence, boolean requiresConfirm, boolean active,
+                String label, String icon, String uiGroup, String tone, int order, String helpText, boolean visible,
+                boolean enabled, String policyId, List<String> reasons, String formKey, Long policyVersion) {
+            this(actionCode, actionName, actionType, outcome, requiresReason, requiresEvidence, requiresConfirm,
+                    active, label, icon, uiGroup, tone, order, helpText, visible, enabled, policyId, reasons,
+                    formKey, policyVersion, null);
+        }
     }
 
     public record ReconcileResponse(String processCode, String stepKey, String stepName, String outcome,

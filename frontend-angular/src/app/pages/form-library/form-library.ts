@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
@@ -68,6 +68,19 @@ export class FormLibraryPage implements OnInit {
   readonly formLoai = signal<FormMeta['loai'] | undefined>(undefined);
   readonly formMoTa = signal('');
 
+  /** Mã sẽ thực sự được gửi lên backend — tự sinh từ Tên khi ô Mã bỏ trống, hiển thị làm gợi ý
+   * trực quan thay vì để người dùng đoán (trước đây ô "Mã" chỉ ghi chú "tự sinh" mà không cho xem
+   * trước giá trị). */
+  readonly formKeyPreview = computed(() => slugifyFormKey(this.formKey().trim() || this.formTen()));
+
+  /** Chặn trùng mã ngay trên client bằng danh sách đã tải, thay vì luôn chờ backend trả 409 —
+   * danh sách có thể lệch nếu form vừa được tạo ở tab khác, nên submitCreate() vẫn giữ nguyên xử lý
+   * lỗi 409 làm lưới an toàn cuối cùng. */
+  readonly keyTaken = computed(() => {
+    const key = this.formKeyPreview();
+    return !!key && this.list().some((f) => f.key === key);
+  });
+
   ngOnInit(): void {
     this.loading.set(true);
     this.forms.load().subscribe({
@@ -93,9 +106,13 @@ export class FormLibraryPage implements OnInit {
       this.message.error('Nhập tên biểu mẫu.');
       return;
     }
-    const key = slugifyFormKey(this.formKey() || ten);
+    const key = this.formKeyPreview();
     if (!key) {
       this.message.error('Mã biểu mẫu không hợp lệ.');
+      return;
+    }
+    if (this.keyTaken()) {
+      this.message.error(`Mã biểu mẫu "${key}" đã tồn tại — đổi tên hoặc nhập mã khác.`);
       return;
     }
     this.creating.set(true);

@@ -1,0 +1,303 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.9.0",
+  "exporter": {
+    "name": "Camunda Web Modeler",
+    "version": "c72e043"
+  },
+  "schemaVersion": 19,
+  "id": "Form_BM_02_08_QDH_NV_2024",
+  "components": [
+    {
+      "type": "html",
+      "id": "Html_1860",
+      "content": "<div style=\"padding:10px 12px;background:#f4f7fb;border-left:4px solid #0f62fe\"><strong>Chế độ hiển thị:</strong> Nhập và kiểm tra dữ liệu ở chế độ soạn thảo. Bật <em>Xem văn bản hoàn chỉnh</em> để xem bản trình bày.</div>",
+      "layout": {
+        "row": "Row_1859",
+        "columns": null
+      }
+    },
+    {
+      "type": "checkbox",
+      "id": "Field_1861",
+      "key": "cheDoXemVanBan",
+      "label": "Xem văn bản hoàn chỉnh",
+      "defaultValue": false,
+      "layout": {
+        "row": "Row_1862",
+        "columns": null
+      }
+    },
+    {
+      "type": "group",
+      "id": "Group_1863",
+      "label": "Thông tin soạn thảo",
+      "showOutline": true,
+      "conditional": {
+        "hide": "=cheDoXemVanBan = true"
+      },
+      "components": [
+        {
+          "type": "html",
+          "id": "Html_1856",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">Thông tin quyết định</div>",
+          "layout": {
+            "row": "Row_1855",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_981",
+          "key": "diaDanh",
+          "label": "Địa danh",
+          "layout": {
+            "row": "Row_982",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          },
+          "defaultValue": "Hà Nội"
+        },
+        {
+          "type": "datetime",
+          "id": "Field_983",
+          "key": "ngayVanBan",
+          "label": "Ngày văn bản",
+          "layout": {
+            "row": "Row_984",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          },
+          "subtype": "date"
+        },
+        {
+          "type": "textfield",
+          "id": "Field_985",
+          "key": "soVanBan",
+          "label": "Số văn bản",
+          "layout": {
+            "row": "Row_986",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_987",
+          "key": "nguoiKy",
+          "label": "Họ tên người ký",
+          "layout": {
+            "row": "Row_988",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_989",
+          "key": "chucDanhKy",
+          "label": "Chức danh người ký",
+          "layout": {
+            "row": "Row_990",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_991",
+          "key": "tenNhiemVu",
+          "label": "Tên nhiệm vụ",
+          "layout": {
+            "row": "Row_992",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_993",
+          "key": "maNhiemVu",
+          "label": "Mã nhiệm vụ",
+          "layout": {
+            "row": "Row_994",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_995",
+          "key": "donViChuTri",
+          "label": "Đơn vị chủ trì",
+          "layout": {
+            "row": "Row_996",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_997",
+          "key": "chuNhiemHoTen",
+          "label": "Cá nhân đăng ký chủ nhiệm nhiệm vụ",
+          "layout": {
+            "row": "Row_998",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_999",
+          "key": "linhVuc",
+          "label": "Lĩnh vực",
+          "layout": {
+            "row": "Row_1000",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_1001",
+          "key": "canCuBoSung",
+          "label": "Căn cứ bổ sung",
+          "layout": {
+            "row": "Row_1002",
+            "columns": null
+          }
+        },
+        {
+          "type": "html",
+          "id": "Html_1858",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">Hội đồng xét duyệt</div>",
+          "layout": {
+            "row": "Row_1857",
+            "columns": null
+          }
+        },
+        {
+          "type": "dynamiclist",
+          "id": "List_1009",
+          "key": "thanhVienHoiDong",
+          "label": "Danh sách thành viên Hội đồng",
+          "showOutline": true,
+          "components": [
+            {
+              "type": "textfield",
+              "id": "Field_1003",
+              "key": "hoTen",
+              "label": "Họ và tên",
+              "layout": {
+                "row": "Row_1004",
+                "columns": null
+              },
+              "validate": {
+                "required": true
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_1005",
+              "key": "capBacChucVu",
+              "label": "Cấp bậc, chức vụ",
+              "layout": {
+                "row": "Row_1006",
+                "columns": null
+              }
+            },
+            {
+              "type": "select",
+              "id": "Field_1007",
+              "key": "vaiTro",
+              "label": "Vai trò",
+              "layout": {
+                "row": "Row_1008",
+                "columns": null
+              },
+              "validate": {
+                "required": true
+              },
+              "values": [
+                {
+                  "value": "chu_tich",
+                  "label": "Chủ tịch Hội đồng"
+                },
+                {
+                  "value": "pho_chu_tich",
+                  "label": "Phó Chủ tịch Hội đồng"
+                },
+                {
+                  "value": "phan_bien",
+                  "label": "Ủy viên phản biện"
+                },
+                {
+                  "value": "thu_ky",
+                  "label": "Ủy viên, Thư ký khoa học"
+                },
+                {
+                  "value": "uy_vien",
+                  "label": "Ủy viên Hội đồng"
+                }
+              ]
+            }
+          ],
+          "layout": {
+            "row": "Row_1010",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_1011",
+          "key": "nhiemVuHoiDong",
+          "label": "Nhiệm vụ của Hội đồng",
+          "layout": {
+            "row": "Row_1012",
+            "columns": null
+          },
+          "defaultValue": "Nghiên cứu hồ sơ; nhận xét, đánh giá; báo cáo kết quả xét duyệt; bảo mật thông tin theo quy định."
+        },
+        {
+          "type": "textarea",
+          "id": "Field_1013",
+          "key": "noiNhan",
+          "label": "Nơi nhận",
+          "layout": {
+            "row": "Row_1014",
+            "columns": null
+          }
+        }
+      ],
+      "layout": {
+        "row": "Row_1864",
+        "columns": null
+      }
+    },
+    {
+      "type": "html",
+      "id": "Html_1865",
+      "content": "<style>.bm-page{max-width:900px;margin:0 auto;padding:34px 48px;background:#fff;color:#111;font:17px/1.48 \"Times New Roman\",serif;box-sizing:border-box}.bm-head{text-align:center}.bm-head .nation{font-weight:700;text-transform:uppercase}.bm-head .motto{font-weight:700}.bm-rule{display:inline-block;width:150px;border-top:1px solid #111}.bm-title{text-align:center;font-size:20px;font-weight:700;margin:24px 0}.bm-code{text-align:right;font-size:13px}.bm-page h3{font-size:17px;margin:18px 0 8px}.bm-page p{margin:4px 0;text-align:justify;white-space:pre-line}.value:empty:after{content:\"................................\";font-weight:400}@media(max-width:680px){.bm-page{padding:18px 14px;font-size:15px}}</style><article class=\"bm-page\"><div class=\"bm-code\">BM.02.08.QDH.NV_2024</div><header class=\"bm-head\"><div class=\"nation\">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div><div class=\"motto\">Độc lập - Tự do - Hạnh phúc</div><span class=\"bm-rule\"></span></header><div class=\"bm-title\">QUYẾT ĐỊNH THÀNH LẬP HỘI ĐỒNG XÉT DUYỆT NHIỆM VỤ KHCN CẤP TẬP ĐOÀN</div><section><h3>Thông tin quyết định</h3><p><strong>Địa danh:</strong> <span class=\"value\">{{diaDanh}}</span></p><p><strong>Ngày văn bản:</strong> <span class=\"value\">{{ngayVanBan}}</span></p><p><strong>Số văn bản:</strong> <span class=\"value\">{{soVanBan}}</span></p><p><strong>Họ tên người ký:</strong> <span class=\"value\">{{nguoiKy}}</span></p><p><strong>Chức danh người ký:</strong> <span class=\"value\">{{chucDanhKy}}</span></p><p><strong>Tên nhiệm vụ:</strong> <span class=\"value\">{{tenNhiemVu}}</span></p><p><strong>Mã nhiệm vụ:</strong> <span class=\"value\">{{maNhiemVu}}</span></p><p><strong>Đơn vị chủ trì:</strong> <span class=\"value\">{{donViChuTri}}</span></p><p><strong>Cá nhân đăng ký chủ nhiệm nhiệm vụ:</strong> <span class=\"value\">{{chuNhiemHoTen}}</span></p><p><strong>Lĩnh vực:</strong> <span class=\"value\">{{linhVuc}}</span></p><p><strong>Căn cứ bổ sung:</strong> <span class=\"value\">{{canCuBoSung}}</span></p></section><section><h3>Hội đồng xét duyệt</h3><p><strong>Danh sách thành viên Hội đồng:</strong> <span class=\"value\">{{thanhVienHoiDong}}</span></p><p><strong>Nhiệm vụ của Hội đồng:</strong> <span class=\"value\">{{nhiemVuHoiDong}}</span></p><p><strong>Nơi nhận:</strong> <span class=\"value\">{{noiNhan}}</span></p></section></article>",
+      "conditional": {
+        "hide": "=cheDoXemVanBan != true"
+      },
+      "layout": {
+        "row": "Row_1866",
+        "columns": null
+      }
+    }
+  ],
+  "type": "default"
+}

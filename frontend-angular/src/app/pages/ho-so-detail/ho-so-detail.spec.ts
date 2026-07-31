@@ -100,9 +100,13 @@ describe('HoSoDetailPage', () => {
   }
 
   function flushSimulation(actions: SimulatedAction[] = []) {
-    const request = http.expectOne('/api/action-studio/simulate');
-    expect(request.request.method).toBe('POST');
-    request.flush(actions);
+    const requests = http.match((request) => request.url.startsWith('/api/dossiers/')
+      && request.url.endsWith('/available-actions'));
+    if (!requests.length) return;
+    expect(requests.length).toBe(1);
+    const request = requests[0];
+    expect(request.request.method).toBe('GET');
+    request.flush({ dossierId: request.request.url.split('/')[3], actions });
   }
 
   function flushNoActiveTask() {
@@ -117,15 +121,27 @@ describe('HoSoDetailPage', () => {
     expect(fixture.nativeElement.textContent).toContain(dossier.thoiGianThucHien);
   });
 
+  it('shows an explicit error instead of silently hiding actions when availability fails', () => {
+    setup(dossier.id);
+    const fixture = TestBed.createComponent(HoSoDetailPage);
+    http.expectOne(`/api/ho-so/${dossier.id}`).flush(dossier);
+    http.expectOne(`/api/dossiers/${dossier.id}/available-actions`)
+      .flush({ message: 'Identity service unavailable' }, { status: 503, statusText: 'Service Unavailable' });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Không thể tải các thao tác hồ sơ');
+    expect(fixture.nativeElement.textContent).toContain('Identity service unavailable');
+  });
+
   it('renders the generated council and its members when present', () => {
     const withCouncil: HoSoResponse = {
       ...dossier,
       hoiDongXetDuyet: [{
-        id: 1, cap: 'CO_SO', sourceTaskDefinitionKey: 'T05', canCuPhapLy: 'QĐ số 01',
-        createdAt: '2026-07-20T03:00:00Z',
+        id: 1, maHoiDong: 'HD-2026-01', hoSoId: dossier.id, cap: 'CO_SO', sourceTaskDefinitionKey: 'T05',
+        canCuPhapLy: 'QĐ số 01', createdAt: '2026-07-20T03:00:00Z', version: 0,
         thanhVien: [
-          { hoTen: 'Nguyễn Văn A', vaiTroTrongHoiDong: 'Chủ tịch' },
-          { hoTen: 'Trần Thị B', vaiTroTrongHoiDong: null },
+          { hoTen: 'Nguyễn Văn A', userId: null, vaiTroTrongHoiDong: 'Chủ tịch' },
+          { hoTen: 'Trần Thị B', userId: null, vaiTroTrongHoiDong: null },
         ],
       }],
     };
@@ -306,7 +322,7 @@ describe('HoSoDetailPage', () => {
   it('loads the deployed processes when the submit dialog opens and submits the picked one', () => {
     const fixture = createPage();
     fixture.componentInstance.runDossierAction(
-      { outcome: 'SUBMIT', actionCode: 'SUBMIT' } as never,
+      { outcome: 'SUBMIT', actionCode: 'SUBMIT', policyId: 'AP-SUBMIT', policyVersion: 4 } as never,
     );
     http.expectOne('/api/process-definitions/selectable').flush([
       {
@@ -321,18 +337,35 @@ describe('HoSoDetailPage', () => {
     expect(fixture.componentInstance.submitProcess()?.name).toBe('Quy trình tự vẽ');
 
     fixture.componentInstance.submit();
-    const request = http.expectOne(`/api/ho-so/${dossier.id}/submit`);
+    const request = http.expectOne(`/api/dossiers/${dossier.id}/actions`);
     expect(request.request.method).toBe('POST');
     // `quyTrinh` mang thẳng bpmnProcessId, không còn mã có dấu chấm.
-    expect(request.request.body).toEqual({ quyTrinh: 'quy_trinh_moi', quyTrinhTen: 'Quy trình tự vẽ' });
-    request.flush({ ...dossier, trangThai: 'PROCESSING', quyTrinh: 'quy_trinh_moi' });
-    expect(fixture.componentInstance.item()?.trangThai).toBe('PROCESSING');
+    expect(request.request.body).toEqual({ actionCode: 'SUBMIT', expectedPolicyId: 'AP-SUBMIT',
+      expectedPolicyVersion: 4, processCode: 'quy_trinh_moi', processName: 'Quy trình tự vẽ' });
+    request.flush({ dossierId: dossier.id, status: 'ACCEPTED' });
+    http.expectOne(`/api/ho-so/${dossier.id}`).flush({ ...dossier, trangThai: 'START_PENDING', quyTrinh: 'quy_trinh_moi' });
+    expect(fixture.componentInstance.item()?.trangThai).toBe('START_PENDING');
   });
 
   it('does not submit while no process is picked', () => {
     const fixture = createPage();
     fixture.componentInstance.submit();
     http.expectNone(`/api/ho-so/${dossier.id}/submit`);
+  });
+
+  it('reports why submit cannot continue when the action policy snapshot is missing', () => {
+    const fixture = createPage();
+    fixture.componentInstance.selectedProcessId.set('RD02_02');
+    fixture.componentInstance.selectableProcesses.set([{
+      id: 'rd02', bpmnProcessId: 'RD02_02', name: 'Xét duyệt cấp Tập đoàn',
+      latestVersion: 5, userTaskCount: 61, updatedAt: '2026-07-22T00:00:00Z',
+    }]);
+    fixture.componentInstance.formAction.set({ outcome: 'SUBMIT', actionCode: 'SUBMIT' } as never);
+
+    fixture.componentInstance.submit();
+
+    expect(TestBed.inject(NzMessageService).error).toHaveBeenCalled();
+    flushSimulation();
   });
 
   // Hồ sơ cũ lưu `quyTrinh` dạng "RD01.01" trong khi catalog dùng id "RD01_01" — xem BPMN phải
@@ -436,12 +469,14 @@ describe('HoSoDetailPage', () => {
       taskKey: 't2-key-1', processInstanceKey: '2251799813697704', taskDefinitionKey: 't2',
       actions: [
         {
-          actionCode: 'APPROVE_STEP', label: 'Đồng ý duyệt', tone: 'primary',
+          actionCode: 'APPROVE_STEP', label: 'Đồng ý duyệt', icon: 'check', uiGroup: 'PRIMARY', tone: 'primary', displayOrder: 10, helpText: null,
           requiresReason: false, requiresEvidence: false, requiresConfirm: true, formKey: 'phieu-phe-duyet',
+          policyId: 'AP-APPROVE', policyVersion: 3,
         },
         {
-          actionCode: 'RETURN_STEP', label: 'Trả lại', tone: 'default',
+          actionCode: 'RETURN_STEP', label: 'Trả lại', icon: 'rollback', uiGroup: 'PRIMARY', tone: 'default', displayOrder: 20, helpText: null,
           requiresReason: true, requiresEvidence: false, requiresConfirm: false, formKey: 'phieu-y-kien',
+          policyId: 'AP-RETURN', policyVersion: 2,
         },
       ],
     };
@@ -471,6 +506,7 @@ describe('HoSoDetailPage', () => {
     expect(post.request.headers.get('X-QTKHCN-User-Id')).toBe('pm@example.com');
     expect(post.request.body).toEqual({
       requestId: expect.any(String), taskKey: 't2-key-1', actionCode: 'APPROVE_STEP',
+      expectedPolicyId: 'AP-APPROVE', expectedPolicyVersion: 3,
       comment: null, formData: {}, expectedTaskState: 'ACTIVE',
     });
     post.flush({
@@ -511,8 +547,9 @@ describe('HoSoDetailPage', () => {
       processInstanceKey: '2251799813697704',
       taskDefinitionKey: 't3',
       actions: [{
-        actionCode: 'APPROVE_STEP', label: 'Phê duyệt bước mới', tone: 'primary',
+        actionCode: 'APPROVE_STEP', label: 'Phê duyệt bước mới', icon: 'check', uiGroup: 'PRIMARY', tone: 'primary', displayOrder: 10, helpText: null,
         requiresReason: false, requiresEvidence: false, requiresConfirm: true, formKey: null,
+        policyId: 'AP-NEXT', policyVersion: 1,
       }],
     } satisfies TaskAvailableActionsResponse);
     fixture.detectChanges();
@@ -532,8 +569,9 @@ describe('HoSoDetailPage', () => {
     http.expectOne('/api/tasks/t2-key-1/available-actions').flush({
       taskKey: 't2-key-1', processInstanceKey: '2251799813697704', taskDefinitionKey: 't2',
       actions: [{
-        actionCode: 'APPROVE_STEP', label: 'Đồng ý duyệt', tone: 'primary',
+        actionCode: 'APPROVE_STEP', label: 'Đồng ý duyệt', icon: 'check', uiGroup: 'PRIMARY', tone: 'primary', displayOrder: 10, helpText: null,
         requiresReason: false, requiresEvidence: false, requiresConfirm: true, formKey: 'bm-02-08-qdh-nv',
+        policyId: 'AP-FORM', policyVersion: 5,
       }],
     } satisfies TaskAvailableActionsResponse);
     fixture.detectChanges();
@@ -573,7 +611,7 @@ describe('HoSoDetailPage', () => {
       actionCode: 'BM.02.01.DKI', actionName: 'Tạo BM.02.01.DKI', actionType: 'SUPPORT', active: true,
       label: 'Tạo BM.02.01.DKI', icon: 'appstore', uiGroup: 'MORE', tone: 'default', order: 62,
       helpText: 'Tạo biểu mẫu đăng ký', visible: true, enabled: true, policyId: 'AP-1784539922796',
-      reasons: ['Khớp luật'], formKey: 'bm-02-00-cv-dk-xd-nv',
+      policyVersion: 1, reasons: ['Khớp luật'], formKey: 'bm-02-00-cv-dk-xd-nv',
     }]);
     fixture.detectChanges();
 

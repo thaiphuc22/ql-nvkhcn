@@ -1,10 +1,12 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { CdkDragDrop, CdkDrag, CdkDragHandle, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzBadgeModule } from 'ng-zorro-antd/badge';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzCardModule } from 'ng-zorro-antd/card';
+import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 import { NzDrawerModule } from 'ng-zorro-antd/drawer';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
@@ -34,7 +36,7 @@ import { AuthService } from '../../core/auth/auth.service';
 @Component({
   selector: 'app-action-studio',
   imports: [
-    FormsModule, NzAlertModule, NzBadgeModule, NzButtonModule, NzCardModule, NzDescriptionsModule,
+    FormsModule, CdkDrag, CdkDragHandle, CdkDropList, NzAlertModule, NzBadgeModule, NzButtonModule, NzCardModule, NzCheckboxModule, NzDescriptionsModule,
     NzDrawerModule, NzEmptyModule, NzGridModule, NzIconModule, NzInputModule, NzPopconfirmModule,
     NzProgressModule, NzSelectModule, NzSpaceModule, NzSwitchModule, NzTableModule, NzTabsModule,
     NzTagModule, NzTooltipModule, NzTypographyModule,
@@ -60,14 +62,24 @@ export class ActionStudioPage implements OnInit {
   readonly permissions = computed(() => this.store.referenceData().permissions);
   readonly groups = Object.keys(ACTION_GROUP_LABEL) as ActionUiGroup[];
   readonly tones = Object.keys(ACTION_TONE_LABEL) as ActionTone[];
+  readonly policyStatusLabel = {
+    DRAFT: 'Bản nháp', ACTIVE: 'Đang hoạt động', DISABLED: 'Đã vô hiệu', INVALID: 'Không còn hợp lệ',
+  } as const;
+  readonly policyStatusColor = {
+    DRAFT: 'gold', ACTIVE: 'success', DISABLED: 'default', INVALID: 'error',
+  } as const;
 
   readonly selectedTabIndex = signal(0);
   readonly policyQuery = signal('');
   readonly policyActionFilter = signal<string | null>(null);
   readonly policyEnabledFilter = signal<boolean | null>(null);
   readonly policyDraft = signal<ActionAvailabilityPolicy | null>(null);
+  readonly selectedPolicyIds = signal<ReadonlySet<string>>(new Set());
+  readonly deletingPolicies = signal(false);
+  readonly updatingPolicyStatus = signal(false);
   readonly exceptionDraft = signal<ExceptionPolicy | null>(null);
   readonly presentationDraft = signal<ActionPresentation | null>(null);
+  readonly bundleCopySourceId = signal<string | null>(null);
   readonly reconcileProcess = signal('');
   readonly reconcileRows = signal<ReconcileRow[]>([]);
   readonly simulatedActions = signal<SimulatedAction[]>([]);
@@ -81,17 +93,23 @@ export class ActionStudioPage implements OnInit {
     return this.store.availabilityPolicies().filter((item) =>
       (!query || `${item.id} ${item.actionCode} ${item.processCode ?? ''} ${item.taskDefinitionKey ?? ''}`.toLowerCase().includes(query)) &&
       (!this.policyActionFilter() || item.actionCode === this.policyActionFilter()) &&
-      (this.policyEnabledFilter() == null || item.enabled === this.policyEnabledFilter()),
+      (this.policyEnabledFilter() == null || (item.lifecycleStatus === 'ACTIVE') === this.policyEnabledFilter()),
     ).sort((a, b) => a.displayOrder - b.displayOrder);
   });
+  readonly selectedPolicies = computed(() => this.store.availabilityPolicies()
+    .filter((item) => this.selectedPolicyIds().has(item.id)));
+  readonly allFilteredPoliciesSelected = computed(() => this.filteredPolicies().length > 0
+    && this.filteredPolicies().every((item) => this.selectedPolicyIds().has(item.id)));
+  readonly someFilteredPoliciesSelected = computed(() => !this.allFilteredPoliciesSelected()
+    && this.filteredPolicies().some((item) => this.selectedPolicyIds().has(item.id)));
   readonly reconcileStats = computed(() => {
     const rows = this.reconcileRows();
     return {
-      ok: rows.filter((item) => item.status === 'ok').length,
-      generic: rows.filter((item) => item.status === 'generic').length,
-      unfilled: rows.filter((item) => item.status === 'unfilled').length,
-      missing: rows.filter((item) => item.status === 'missing').length,
-      percent: rows.length ? Math.round(rows.filter((item) => item.status === 'ok').length / rows.length * 100) : 0,
+      ok: rows.filter((item) => item.status === 'OK').length,
+      generic: rows.filter((item) => item.status === 'GENERIC_POLICY').length,
+      unfilled: rows.filter((item) => item.status === 'MISSING_FORM').length,
+      missing: rows.filter((item) => item.status === 'MISSING_POLICY').length,
+      percent: rows.length ? Math.round(rows.filter((item) => item.status === 'OK').length / rows.length * 100) : 0,
     };
   });
   readonly simulationSteps = computed(() => this.store.processes().find((item) => item.code === this.simulation().processCode)?.steps ?? []);
@@ -127,22 +145,86 @@ export class ActionStudioPage implements OnInit {
 
   openNewPolicy(): void {
     this.policyDraft.set({ id: `AP-${Date.now()}`, actionCode: 'APPROVE_STEP', surface: 'DOSSIER_DETAIL', processCode: null,
-      taskDefinitionKey: null, dossierStatus: 'processing', allowedRoleCodes: [], requiredPermissions: ['PROCESS_STEP'],
-      formKey: 'phieu-phe-duyet', conditionExpression: 'user in currentStep.candidateGroups', displayOrder: 50, enabled: true });
+      taskDefinitionKey: null, dossierStatus: 'processing', allowedRoleCodes: [],
+      formKey: null, conditionExpression: 'user in currentStep.candidateGroups', displayOrder: 50, lifecycleStatus: 'DRAFT' });
   }
 
   editPolicy(item: ActionAvailabilityPolicy): void {
-    this.policyDraft.set({ ...item, allowedRoleCodes: [...item.allowedRoleCodes], requiredPermissions: [...item.requiredPermissions] });
+    this.policyDraft.set({ ...item, allowedRoleCodes: [...item.allowedRoleCodes] });
   }
 
   patchPolicy<K extends keyof ActionAvailabilityPolicy>(key: K, value: ActionAvailabilityPolicy[K]): void {
     this.policyDraft.update((item) => item ? { ...item, [key]: value } : item);
   }
 
+  selectPolicyProcess(code: string | null): void {
+    const process = this.store.processes().find((item) => item.code === code);
+    this.policyDraft.update((item) => item ? { ...item, processCode: code, processVersion: process?.processVersion ?? null,
+      taskDefinitionKey: null } : item);
+  }
+
+  addBundleItem(): void {
+    this.policyDraft.update((item) => item ? { ...item, formBundle: {
+      displayMode: item.formBundle?.displayMode ?? 'STEPPER', allowDraft: item.formBundle?.allowDraft ?? false,
+      completionPolicy: 'ALL_REQUIRED_VALID', version: item.formBundle?.version ?? 1,
+      items: [...(item.formBundle?.items ?? []), { formKey: this.forms()[0]?.value ?? '', formVersion: null,
+        displayOrder: (item.formBundle?.items.length ?? 0) + 1, required: true, mode: 'EDIT', skippable: false,
+        outputNamespace: `form${(item.formBundle?.items.length ?? 0) + 1}` }],
+    } } : item);
+  }
+
+  patchBundleItem(index: number, patch: Record<string, unknown>): void {
+    this.policyDraft.update((item) => item?.formBundle ? { ...item, formBundle: { ...item.formBundle,
+      items: item.formBundle.items.map((form, i) => i === index ? { ...form, ...patch } : form) } } : item);
+  }
+
+  removeBundleItem(index: number): void {
+    this.policyDraft.update((item) => item?.formBundle ? { ...item, formBundle: { ...item.formBundle,
+      items: item.formBundle.items.filter((_, i) => i !== index).map((form, i) => ({ ...form, displayOrder: i + 1 })) } } : item);
+  }
+
+  patchBundle(patch: Partial<NonNullable<ActionAvailabilityPolicy['formBundle']>>): void {
+    this.policyDraft.update((item) => item?.formBundle
+      ? { ...item, formBundle: { ...item.formBundle, ...patch } } : item);
+  }
+
+  dropBundleItem(event: CdkDragDrop<unknown[]>): void {
+    this.policyDraft.update((item) => {
+      if (!item?.formBundle || event.previousIndex === event.currentIndex) return item;
+      const items = item.formBundle.items.map((form) => ({ ...form }));
+      moveItemInArray(items, event.previousIndex, event.currentIndex);
+      return { ...item, formBundle: { ...item.formBundle,
+        items: items.map((form, index) => ({ ...form, displayOrder: index + 1 })) } };
+    });
+  }
+
+  copyBundle(): void {
+    const source = this.store.availabilityPolicies().find((item) => item.id === this.bundleCopySourceId());
+    if (!source?.formBundle) { this.message.warning('Vui lòng chọn một luật có Form Bundle.'); return; }
+    const bundle = source.formBundle;
+    this.policyDraft.update((item) => item ? { ...item, formBundle: {
+      displayMode: bundle.displayMode, allowDraft: bundle.allowDraft,
+      completionPolicy: bundle.completionPolicy, version: 1,
+      items: bundle.items.map((form) => ({ ...form })),
+    } } : item);
+    this.message.success(`Đã sao chép Form Bundle từ ${source.id}.`);
+  }
+
   savePolicy(): void {
     const item = this.policyDraft();
     if (!item) return;
     if (!item.id.trim() || !item.actionCode) { this.message.warning('Vui lòng nhập đủ mã luật và hành động.'); return; }
+    const action = this.store.definitions().find((definition) => definition.actionCode === item.actionCode);
+    if (item.lifecycleStatus === 'ACTIVE' && action?.actionType === 'STANDARD') {
+      if (!item.processCode || !item.processVersion || !item.taskDefinitionKey) {
+        this.message.warning('Luật Standard Action phải chọn quy trình và bước BPMN trước khi kích hoạt.');
+        return;
+      }
+      if (!item.allowedRoleCodes.length) {
+        this.message.warning('Luật Standard Action phải có ít nhất một vai trò trước khi kích hoạt.');
+        return;
+      }
+    }
     this.store.saveAvailability(item, this.actor()).subscribe({
       next: () => { this.policyDraft.set(null); this.message.success('Đã lưu luật hiển thị nút.'); this.refreshDerived(); },
       error: (error) => this.showError('Không lưu được luật hiển thị nút.', error),
@@ -150,7 +232,7 @@ export class ActionStudioPage implements OnInit {
   }
 
   togglePolicy(item: ActionAvailabilityPolicy, enabled: boolean): void {
-    this.store.saveAvailability({ ...item, enabled }, this.actor()).subscribe({
+    this.store.saveAvailability({ ...item, lifecycleStatus: enabled ? 'ACTIVE' : 'DISABLED' }, this.actor()).subscribe({
       next: () => this.refreshDerived(),
       error: (error) => this.showError('Không đổi được trạng thái luật.', error),
     });
@@ -158,8 +240,60 @@ export class ActionStudioPage implements OnInit {
 
   removePolicy(item: ActionAvailabilityPolicy): void {
     this.store.removeAvailability(item, this.actor()).subscribe({
-      next: () => { this.message.success('Đã xóa luật.'); this.refreshDerived(); },
+      next: () => { this.setPolicySelected(item.id, false); this.message.success('Đã xóa luật.'); this.refreshDerived(); },
       error: (error) => this.showError('Không xóa được luật.', error),
+    });
+  }
+
+  setPolicySelected(id: string, selected: boolean): void {
+    this.selectedPolicyIds.update((current) => {
+      const next = new Set(current);
+      selected ? next.add(id) : next.delete(id);
+      return next;
+    });
+  }
+
+  setAllFilteredPoliciesSelected(selected: boolean): void {
+    this.selectedPolicyIds.update((current) => {
+      const next = new Set(current);
+      this.filteredPolicies().forEach((item) => selected ? next.add(item.id) : next.delete(item.id));
+      return next;
+    });
+  }
+
+  removeSelectedPolicies(): void {
+    const selected = this.selectedPolicies();
+    if (!selected.length || this.deletingPolicies()) return;
+    this.deletingPolicies.set(true);
+    this.store.removeAvailabilityBulk(selected, this.actor()).subscribe({
+      next: (result) => {
+        this.selectedPolicyIds.set(new Set());
+        this.deletingPolicies.set(false);
+        this.message.success(`Đã xóa ${result.deletedCount} luật hiển thị nút.`);
+        this.refreshDerived();
+      },
+      error: (error) => {
+        this.deletingPolicies.set(false);
+        this.showError('Không xóa được các luật đã chọn.', error);
+      },
+    });
+  }
+
+  setSelectedPoliciesStatus(enabled: boolean): void {
+    const selected = this.selectedPolicies();
+    if (!selected.length || this.updatingPolicyStatus()) return;
+    this.updatingPolicyStatus.set(true);
+    this.store.setAvailabilityStatusBulk(selected, enabled, this.actor()).subscribe({
+      next: (result) => {
+        this.selectedPolicyIds.set(new Set());
+        this.updatingPolicyStatus.set(false);
+        this.message.success(`Đã ${enabled ? 'bật' : 'tắt'} ${result.updatedCount} luật hiển thị nút.`);
+        this.refreshDerived();
+      },
+      error: (error) => {
+        this.updatingPolicyStatus.set(false);
+        this.showError(`Không ${enabled ? 'bật' : 'tắt'} được các luật đã chọn.`, error);
+      },
     });
   }
 
@@ -214,6 +348,19 @@ export class ActionStudioPage implements OnInit {
     });
   }
 
+  resetPresentation(): void {
+    const item = this.presentationDraft();
+    if (!item) return;
+    this.store.resetPresentation(item, this.actor()).subscribe({
+      next: (saved) => {
+        this.presentationDraft.set({ ...saved });
+        this.message.success('Đã khôi phục cách trình bày mặc định.');
+        this.refreshSimulation();
+      },
+      error: (error) => this.showError('Không khôi phục được cách trình bày mặc định.', error),
+    });
+  }
+
   scaffold(): void {
     this.store.scaffold(this.reconcileProcess(), this.actor()).subscribe({
       next: (response) => {
@@ -248,11 +395,15 @@ export class ActionStudioPage implements OnInit {
   }
 
   statusColor(status: ReconcileRow['status']): string {
-    return ({ ok: 'success', generic: 'processing', unfilled: 'warning', missing: 'error', unmapped: 'default' })[status];
+    return ({ OK: 'success', GENERIC_POLICY: 'processing', MISSING_FORM: 'warning', MISSING_POLICY: 'error',
+      UNMAPPED_BRANCH: 'default', ORPHAN_POLICY: 'error', ROLE_MISMATCH: 'warning', CONFLICT: 'error',
+      INVALID_TARGET: 'error' })[status];
   }
 
   statusText(status: ReconcileRow['status']): string {
-    return ({ ok: 'Đã khớp', generic: 'Luật chung', unfilled: 'Thiếu biểu mẫu', missing: 'Thiếu luật', unmapped: 'Chưa ánh xạ' })[status];
+    return ({ OK: 'Đã khớp', GENERIC_POLICY: 'Luật chung', MISSING_FORM: 'Thiếu biểu mẫu',
+      MISSING_POLICY: 'Thiếu luật', UNMAPPED_BRANCH: 'Chưa ánh xạ', ORPHAN_POLICY: 'Luật mồ côi',
+      ROLE_MISMATCH: 'Lệch vai trò', CONFLICT: 'Xung đột', INVALID_TARGET: 'Đích không hợp lệ' })[status];
   }
 
   private refreshDerived(): void {

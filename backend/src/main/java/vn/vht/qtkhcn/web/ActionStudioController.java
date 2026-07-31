@@ -19,6 +19,10 @@ import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ActionResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.AuditResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.AvailabilityRequest;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.AvailabilityResponse;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.BulkDeleteAvailabilityRequest;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.BulkDeleteAvailabilityResponse;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.BulkStatusAvailabilityRequest;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.BulkStatusAvailabilityResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ConfigResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ExceptionRequest;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ExceptionResponse;
@@ -52,6 +56,13 @@ public class ActionStudioController {
         return service.updatePresentation(code, request, version(ifMatch), actor);
     }
 
+    @PostMapping("/actions/{code}/presentation/reset")
+    public PresentationResponse resetPresentation(@PathVariable String code,
+            @RequestHeader("If-Match") String ifMatch,
+            @RequestHeader(value = "X-QTKHCN-Actor", required = false) String actor) {
+        return service.resetPresentation(code, version(ifMatch), actor);
+    }
+
     @PostMapping("/actions/{code}/status")
     public ActionResponse setActionStatus(@PathVariable String code,
             @Valid @RequestBody StatusRequest request,
@@ -80,6 +91,20 @@ public class ActionStudioController {
             @RequestHeader(value = "X-QTKHCN-Actor", required = false) String actor) {
         service.deleteAvailability(id, version(ifMatch), actor);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/availability-policies/bulk-delete")
+    public BulkDeleteAvailabilityResponse deleteAvailabilityBulk(
+            @Valid @RequestBody BulkDeleteAvailabilityRequest request,
+            @RequestHeader(value = "X-QTKHCN-Actor", required = false) String actor) {
+        return service.deleteAvailabilityBulk(request, actor);
+    }
+
+    @PostMapping("/availability-policies/bulk-status")
+    public BulkStatusAvailabilityResponse setAvailabilityStatusBulk(
+            @Valid @RequestBody BulkStatusAvailabilityRequest request,
+            @RequestHeader(value = "X-QTKHCN-Actor", required = false) String actor) {
+        return service.setAvailabilityStatusBulk(request, actor);
     }
 
     @GetMapping("/availability-policies/{id}/history")

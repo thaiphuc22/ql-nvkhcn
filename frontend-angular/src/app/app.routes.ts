@@ -48,6 +48,21 @@ export const routes: Routes = [
       },
       { path: 'ho-so', component: HoSoListPage, data: { title: 'Danh sách Hồ sơ KHCN', app: 'qlnvkhcn' } },
       {
+        path: 'hoi-dong',
+        loadComponent: () => import('./pages/hoi-dong-list/hoi-dong-list').then((module) => module.HoiDongListPage),
+        data: { title: 'Quản lý Hội đồng', app: 'qlnvkhcn' },
+      },
+      {
+        path: 'hoi-dong/moi',
+        loadComponent: () => import('./pages/hoi-dong-form/hoi-dong-form').then((module) => module.HoiDongFormPage),
+        data: { title: 'Tạo mới Hội đồng', app: 'qlnvkhcn' },
+      },
+      {
+        path: 'hoi-dong/:id/sua',
+        loadComponent: () => import('./pages/hoi-dong-form/hoi-dong-form').then((module) => module.HoiDongFormPage),
+        data: { title: 'Sửa Hội đồng', app: 'qlnvkhcn' },
+      },
+      {
         path: 'ho-so/tao-moi',
         loadComponent: () => import('./pages/ho-so-create/ho-so-create').then((module) => module.HoSoCreatePage),
         data: { title: 'Tạo mới Hồ sơ', app: 'qlnvkhcn' },

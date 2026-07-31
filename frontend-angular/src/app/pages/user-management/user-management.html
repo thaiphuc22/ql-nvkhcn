@@ -21,6 +21,18 @@
         <div class="um-stat-label">Tổng người dùng</div>
       </div>
     </div>
+    <div nz-col [nzXs]="24" [nzSm]="8">
+      <div class="um-stat-card">
+        <div class="um-stat-value">{{ allAssignments().length }}</div>
+        <div class="um-stat-label">Lượt gán vai trò</div>
+      </div>
+    </div>
+    <div nz-col [nzXs]="24" [nzSm]="8">
+      <div class="um-stat-card">
+        <div class="um-stat-value" [class.um-stat-warn]="usersWithoutRole() > 0">{{ usersWithoutRole() }}</div>
+        <div class="um-stat-label">Chưa có vai trò nào</div>
+      </div>
+    </div>
   </div>
 
   <div class="um-card">
@@ -31,6 +43,7 @@
           <th>Họ tên</th>
           <th>Chức danh</th>
           <th>Đơn vị</th>
+          <th nzWidth="220px">Vai trò</th>
           <th nzWidth="110px">Trạng thái</th>
           <th nzWidth="90px" nzAlign="center">Admin</th>
           <th nzWidth="200px">Thao tác</th>
@@ -43,6 +56,22 @@
             <td>{{ u.fullName }}</td>
             <td>{{ u.jobTitle || '—' }}</td>
             <td>{{ orgName(u.organizationId) }}</td>
+            <td>
+              @if (roleCodesOf(u.id).length === 0) {
+                <span class="um-role-none">—</span>
+              } @else {
+                <span class="um-role-tags">
+                  @for (code of roleCodesOf(u.id).slice(0, 3); track code) {
+                    <nz-tag nzColor="processing">{{ code }}</nz-tag>
+                  }
+                  @if (roleCodesOf(u.id).length > 3) {
+                    <nz-tag nz-tooltip [nzTooltipTitle]="roleCodesOf(u.id).join(', ')">
+                      +{{ roleCodesOf(u.id).length - 3 }}
+                    </nz-tag>
+                  }
+                </span>
+              }
+            </td>
             <td>
               @if (u.status === 'ACTIVE') {
                 <nz-tag nzColor="success">Hoạt động</nz-tag>
@@ -171,11 +200,21 @@
           <div class="um-assign-form">
             <h4>Gán vai trò mới</h4>
             <label>Vai trò <span class="um-required">*</span></label>
-            <nz-select nzPlaceHolder="Chọn vai trò" [ngModel]="newRoleCode()" (ngModelChange)="newRoleCode.set($event)">
-              @for (r of roles(); track r.code) {
+            <nz-select
+              nzMode="multiple"
+              nzShowSearch
+              nzPlaceHolder="Chọn một hoặc nhiều vai trò"
+              [ngModel]="newRoleCodes()"
+              (ngModelChange)="newRoleCodes.set($event)"
+            >
+              @for (r of assignableRoles(); track r.code) {
                 <nz-option [nzLabel]="r.code + ' — ' + r.name" [nzValue]="r.code"></nz-option>
               }
             </nz-select>
+            <div class="um-assign-note">
+              Phạm vi dữ liệu, đơn vị và khoảng hiệu lực dưới đây áp dụng cho <strong>tất cả</strong>
+              vai trò được chọn ở lượt gán này. Vai trò user đã có không xuất hiện trong danh sách.
+            </div>
             <label>Phạm vi dữ liệu <span class="um-required">*</span></label>
             <nz-select nzPlaceHolder="Chọn phạm vi dữ liệu" [ngModel]="newDataScope()" (ngModelChange)="newDataScope.set($event)">
               @for (s of dataScopes(); track s.code) {
@@ -200,7 +239,11 @@
             </div>
             <button nz-button nzType="primary" [nzLoading]="assigning()" [disabled]="!canAssign()" (click)="addAssignment()">
               <span nz-icon nzType="plus"></span>
-              Gán vai trò
+              @if (newRoleCodes().length > 1) {
+                Gán {{ newRoleCodes().length }} vai trò
+              } @else {
+                Gán vai trò
+              }
             </button>
           </div>
         </nz-tab>

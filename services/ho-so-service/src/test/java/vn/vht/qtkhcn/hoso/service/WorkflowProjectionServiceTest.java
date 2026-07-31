@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,6 +14,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +36,7 @@ class WorkflowProjectionServiceTest {
     private final WorkflowTaskProjectionRepository tasks = mock(WorkflowTaskProjectionRepository.class);
     private final WorkflowProcessProjectionRepository processes = mock(WorkflowProcessProjectionRepository.class);
     private final HoSoRepository hoSoRepository = mock(HoSoRepository.class);
+    private final HoiDongXetDuyetService hoiDong = mock(HoiDongXetDuyetService.class);
     private final AtomicReference<List<WorkflowTaskProjection>> savedTasks = new AtomicReference<>();
     private HoSo hoSo;
     private WorkflowProjectionService service;
@@ -49,7 +52,7 @@ class WorkflowProjectionServiceTest {
             savedTasks.set(value);
             return value;
         });
-        service = new WorkflowProjectionService(inbox, tasks, processes, hoSoRepository,
+        service = new WorkflowProjectionService(inbox, tasks, processes, hoSoRepository, hoiDong,
                 new ObjectMapper().findAndRegisterModules());
     }
 
@@ -173,6 +176,35 @@ class WorkflowProjectionServiceTest {
         task.setTrangThai(StepStatus.PENDING);
         dossier.setSteps(new ArrayList<>(List.of(created, task)));
         return dossier;
+    }
+
+    @Test void councilStepIsNarrowedToTheMembersOfThisDossier() {
+        when(hoiDong.candidateUsersTheoNhom("HS-1", Set.of("HDXD")))
+                .thenReturn(List.of("hoidong1@example.com", "hoidong2@example.com"));
+        when(inbox.findByHoSoIdOrderByOccurredAtAscEventIdAsc("HS-1")).thenReturn(List.of(
+                event("TASK_CREATED", "2026-07-18T10:00:00Z", """
+                        {"taskKey":"2001","taskDefinitionKey":"T07","name":"Hop HDXD cap Co so phien 1",
+                         "assignee":"","candidateGroups":["HDXD"],"candidateUsers":[]}
+                        """)));
+
+        service.rebuild("HS-1");
+
+        assertEquals(Set.of("hoidong1@example.com", "hoidong2@example.com"),
+                savedTasks.get().getFirst().getCandidateUsers(),
+                "candidateGroups=HDXD mới chỉ nói 'ai đủ tư cách'; projection phải chốt về đúng hội đồng của hồ sơ này");
+    }
+
+    @Test void enginesOwnCandidateUsersAreNeverOverwrittenByTheCouncilLookup() {
+        when(inbox.findByHoSoIdOrderByOccurredAtAscEventIdAsc("HS-1")).thenReturn(List.of(
+                event("TASK_CREATED", "2026-07-18T10:00:00Z", """
+                        {"taskKey":"2001","taskDefinitionKey":"T07","name":"Hop HDXD cap Co so phien 1",
+                         "assignee":"","candidateGroups":["HDXD"],"candidateUsers":["nguoi-duoc-chi-dinh@example.com"]}
+                        """)));
+
+        service.rebuild("HS-1");
+
+        assertEquals(Set.of("nguoi-duoc-chi-dinh@example.com"), savedTasks.get().getFirst().getCandidateUsers());
+        verifyNoInteractions(hoiDong);
     }
 
     private static WorkflowEventInbox taskEvent(String type, String at) {

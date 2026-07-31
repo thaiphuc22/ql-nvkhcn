@@ -60,6 +60,15 @@ public class DeployedBpmnRoutingReader {
                 .orElseThrow(() -> new IllegalArgumentException("Quy trình chưa được deploy: " + code));
     }
 
+    public ProcessRoutingResponse require(String code, int processVersion) {
+        ProcessDefinitionCatalog catalog = catalogRepository.findByBpmnProcessId(code)
+                .orElseThrow(() -> new IllegalArgumentException("Process is not deployed: " + code));
+        ProcessDefinitionVersion version = versionRepository.findByCatalogIdAndCamundaVersion(catalog.getId(), processVersion)
+                .filter(item -> item.getBpmnXml() != null && !item.getBpmnXml().isBlank())
+                .orElseThrow(() -> new IllegalArgumentException("Process version is not deployed: " + code + " v" + processVersion));
+        return cache.computeIfAbsent(version.getCamundaProcessDefinitionKey(), ignored -> parse(catalog, version));
+    }
+
     private java.util.Optional<ProcessRoutingResponse> latestRouting(ProcessDefinitionCatalog catalog) {
         return versionRepository.findFirstByCatalogIdOrderByCamundaVersionDesc(catalog.getId())
                 .filter(version -> version.getBpmnXml() != null && !version.getBpmnXml().isBlank())
@@ -86,7 +95,8 @@ public class DeployedBpmnRoutingReader {
             List<String> defaultUserTaskActions = actionCodes(propertyValue(process, "qtkhcn.userTaskActions"));
             List<ProcessStepResponse> steps = tasks.stream()
                     .map(task -> step(task, nodes, outgoing, taskOrder, defaultUserTaskActions)).toList();
-            return new ProcessRoutingResponse(catalog.getBpmnProcessId(), catalog.getName(), steps);
+            return new ProcessRoutingResponse(catalog.getBpmnProcessId(), catalog.getName(), steps,
+                    version.getCamundaVersion());
         } catch (Exception exception) {
             throw new IllegalStateException("Không đọc được BPMN đã deploy: " + catalog.getBpmnProcessId(), exception);
         }

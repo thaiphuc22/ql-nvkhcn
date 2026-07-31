@@ -20,6 +20,7 @@
     "@bpmn-io/form-js": "^1.24.0",
     "bpmn-js": "^17.11.1",
     "bpmn-js-properties-panel": "^5.61.0",
+    "dompurify": "^3.4.11",
     "feelin": "^7.0.1",
     "ng-zorro-antd": "^21.3.2",
     "rxjs": "~7.8.0",

@@ -29,6 +29,19 @@ export class AuthService {
   private readonly activeAppSignal = signal<AppCode | null>(this.restoreActiveApp());
   readonly activeApp = this.activeAppSignal.asReadonly();
 
+  /**
+   * Đã nạp xong vai trò thật từ identity-service cho user đang đăng nhập chưa. `demo-users.ts`
+   * không còn hardcode `roleCodes`, nên trước khi cờ này bật thì "không có vai trò" chỉ nghĩa là
+   * CHƯA BIẾT — màn phụ thuộc vai trò (`/viec-cua-toi`) phải hiện trạng thái đang tải, không
+   * được kết luận danh sách rỗng.
+   */
+  private readonly rolesLoadedSignal = signal(false);
+  readonly rolesLoaded = this.rolesLoadedSignal.asReadonly();
+
+  /** Gọi identity-service thất bại — UI phải nói rõ thay vì hiện màn trống không giải thích. */
+  private readonly identityUnavailableSignal = signal(false);
+  readonly identityUnavailable = this.identityUnavailableSignal.asReadonly();
+
   entitledApps(): AppCode[] {
     const current = this.userSignal();
     if (!current) return [];
@@ -57,18 +70,23 @@ export class AuthService {
     }
     this.userSignal.set(found);
     this.clearActiveApp();
+    this.rolesLoadedSignal.set(false);
+    this.identityUnavailableSignal.set(false);
     return { ok: true };
   }
 
   /**
-   * Gỡ bản hardcode role/permission thứ 3 (`demo-users.ts`) — nạp role/permission/administrator
-   * THẬT từ `identity-service` (D22) cho user đang đăng nhập, ghi đè lên field cùng tên của
-   * `DemoUser` đang giữ trong signal. Gọi từ `Shell` (mounted sau khi qua `authGuard`, phủ cả
-   * đăng nhập mới lẫn phiên khôi phục từ localStorage) — KHÔNG gọi từ `login()`/constructor để
-   * các unit test gọi thẳng `AuthService.login()` (không dựng `Shell`) không phải lo mock HTTP.
-   * Chạy ngầm, không chặn — lỗi mạng (identity-service chưa chạy) chỉ log cảnh báo, giữ nguyên
-   * giá trị tĩnh, không phá luồng demo login hiện tại. `apps` KHÔNG bị ghi đè — entitlement App
-   * vẫn theo nguồn tĩnh D19.
+   * Nạp vai trò/administrator THẬT từ `identity-service` (D22, bảng `user_role_assignments`) cho
+   * user đang đăng nhập. Đây là nguồn sự thật DUY NHẤT về vai trò kể từ khi `demo-users.ts` bỏ
+   * hardcode `roleCodes` — gán vai trò trên `/nguoi-dung` có hiệu lực ngay ở lần nạp kế tiếp.
+   *
+   * Gọi từ `Shell` (mounted sau khi qua `authGuard`, phủ cả đăng nhập mới lẫn phiên khôi phục từ
+   * localStorage) — KHÔNG gọi từ `login()`/constructor để các unit test gọi thẳng
+   * `AuthService.login()` (không dựng `Shell`) không phải mock HTTP.
+   *
+   * Chạy ngầm, không chặn điều hướng: lỗi mạng chỉ bật `identityUnavailable()` để UI nói rõ, chứ
+   * không đá người dùng ra trang đăng nhập. `apps` KHÔNG bị ghi đè — entitlement App vẫn theo
+   * nguồn tĩnh D19.
    */
   refreshCurrentUser(): void {
     const current = this.userSignal();
@@ -83,11 +101,19 @@ export class AuthService {
         this.userSignal.set({
           ...current,
           roleCodes: [...effective.roleCodes],
-          isAdmin: current.isAdmin || effective.administrator,
+          // Nguồn thật thắng, KHÔNG OR với giá trị tĩnh: hạ cờ admin của một tài khoản trên
+          // `/nguoi-dung` phải có tác dụng, chứ không bị `demo-users.ts` giữ mãi ở true.
+          isAdmin: effective.administrator,
         });
+        this.identityUnavailableSignal.set(false);
+        this.rolesLoadedSignal.set(true);
       },
       error: (error) => {
-        console.warn(`[AuthService] Không nạp được role/permission thật từ identity-service cho ${email}.`, error);
+        console.warn(`[AuthService] Không nạp được vai trò thật từ identity-service cho ${email}.`, error);
+        this.identityUnavailableSignal.set(true);
+        // Vẫn coi là "đã xong lượt nạp" để UI thoát khỏi trạng thái loading vô hạn; phân biệt
+        // "không có vai trò" với "không gọi được" bằng identityUnavailable().
+        this.rolesLoadedSignal.set(true);
       },
     });
   }
@@ -100,6 +126,8 @@ export class AuthService {
     }
     this.userSignal.set(null);
     this.clearActiveApp();
+    this.rolesLoadedSignal.set(false);
+    this.identityUnavailableSignal.set(false);
   }
 
   private restore(): DemoUser | null {

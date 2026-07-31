@@ -73,6 +73,33 @@
   color: #52c41a;
 }
 
+.um-stat-warn {
+  color: #d46b08;
+}
+
+.um-role-tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+
+  nz-tag {
+    margin-inline-end: 0;
+  }
+}
+
+.um-role-none {
+  color: var(--vht-ink-3);
+}
+
+// Ghi chú "áp dụng cho tất cả vai trò được chọn" — không dùng thẻ label để không bị
+// .um-assign-form label ăn font-weight/margin.
+.um-assign-note {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--vht-ink-2);
+}
+
 .um-assign-list {
   margin-bottom: 20px;
 }

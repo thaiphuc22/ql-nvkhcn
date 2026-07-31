@@ -30,7 +30,7 @@
   }
 
   @case ('html') {
-    <div class="ff-html" [innerHTML]="comp().text"></div>
+    <div [class]="'ff-html ' + htmlScopeClass()" [innerHTML]="sanitizedHtml()"></div>
   }
 
   @case ('image') {

@@ -28,6 +28,8 @@ import vn.vht.qtkhcn.repository.EformRepository;
 import vn.vht.qtkhcn.repository.ProcessDefinitionCatalogRepository;
 import vn.vht.qtkhcn.repository.ProcessDefinitionVersionRepository;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.SimulationRequest;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.AvailabilityRequest;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ScaffoldResponse;
 
 /**
  * <b>Nghiệm thu Lát 4 — "vẽ một BPMN hoàn toàn mới, chạy hết luồng, KHÔNG sửa một dòng Java nào".</b>
@@ -143,9 +145,14 @@ class UserAuthoredProcessAcceptanceTest {
         assertThat(result.createdPolicies())
                 .filteredOn(policy -> policy.taskDefinitionKey().equals("DuyetHoSo"))
                 .isNotEmpty()
-                .allSatisfy(policy -> assertThat(policy.formKey()).isEqualTo("phieu-phe-duyet"));
+                .allSatisfy(policy -> {
+                    assertThat(policy.formKey()).isNull();
+                    assertThat(policy.formBundle().items().getFirst().formKey()).isEqualTo("phieu-phe-duyet");
+                    assertThat(policy.lifecycleStatus()).isEqualTo("DRAFT");
+                    assertThat(policy.allowedRoleCodes()).containsExactly("CQ_KHCN");
+                });
         assertThat(result.rows()).filteredOn(row -> row.stepKey().equals("DuyetHoSo"))
-                .extracting(row -> row.status()).doesNotContain("missing", "generic");
+                .extracting(row -> row.status()).containsOnly("GENERIC_POLICY");
     }
 
     /**
@@ -154,7 +161,7 @@ class UserAuthoredProcessAcceptanceTest {
      */
     @Test
     void aNonAdminApproverSeesTheApproveButtonBoundToThisProcessOwnForm() {
-        actionStudio.scaffold(PROCESS_ID, "nguoi-ve-bpmn");
+        activateScaffoldedPolicies(actionStudio.scaffold(PROCESS_ID, "nguoi-ve-bpmn"));
 
         var visible = actionStudio.simulate(new SimulationRequest("DOSSIER_DETAIL", PROCESS_ID,
                 "DuyetHoSo", "processing", List.of("CQ_KHCN"), List.of("PROCESS_STEP"), false));
@@ -170,13 +177,26 @@ class UserAuthoredProcessAcceptanceTest {
     /** Đối soát phải chấm quy trình này là xanh — biểu mẫu có thật, vai trò có thật, nút đã ghim. */
     @Test
     void theReadinessReportIsGreenForThisProcess() {
-        actionStudio.scaffold(PROCESS_ID, "nguoi-ve-bpmn");
+        activateScaffoldedPolicies(actionStudio.scaffold(PROCESS_ID, "nguoi-ve-bpmn"));
         var readiness = new ProcessReadinessService(catalogs, versions, actionStudio, eforms, jobWorkers)
                 .readiness(PROCESS_ID);
 
         assertThat(readiness.userTasks()).extracting(task -> task.status()).containsOnly("ok");
         assertThat(readiness.serviceTasks()).isEmpty();
         assertThat(readiness.status()).isEqualTo("ok");
+    }
+
+    private void activateScaffoldedPolicies(ScaffoldResponse scaffold) {
+        scaffold.createdPolicies().forEach(policy -> {
+            List<String> roles = policy.taskDefinitionKey().equals("DuyetHoSo")
+                    ? List.of("CQ_KHCN") : List.of("PM");
+            actionStudio.updateAvailability(policy.id(), new AvailabilityRequest(policy.id(), policy.actionCode(),
+                    policy.surface(), policy.processCode(), policy.taskDefinitionKey(), policy.dossierStatus(), roles,
+                    policy.formKey(), policy.conditionExpression(), policy.displayOrder(), "ACTIVE",
+                    policy.processVersion(), policy.displayLabel(), policy.displayIcon(), policy.uiGroup(),
+                    policy.tone(), policy.helpText(), null),
+                    policy.version(), "quan-tri-quy-trinh");
+        });
     }
 
     /**

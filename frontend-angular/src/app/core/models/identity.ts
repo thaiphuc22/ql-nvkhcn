@@ -35,6 +35,7 @@ export interface FeatureResponse {
   code: string;
   name: string;
   group: string;
+  appCode: string;
   description: string | null;
   active: boolean;
   legacy: boolean;
@@ -57,6 +58,7 @@ export interface RoleResponse {
   code: string;
   name: string;
   kind: string;
+  appCode: string;
   active: boolean;
   permissionCodes: string[];
   matrix: MatrixEntryResponse[];
@@ -66,6 +68,7 @@ export interface RoleRequest {
   code: string;
   name: string;
   kind: string;
+  appCode: string;
   active?: boolean;
   permissionCodes: string[];
   matrix?: MatrixEntryRequest[];
@@ -108,6 +111,26 @@ export interface AssignmentRequest {
   organizationId: string | null;
   effectiveFrom: string | null;
   effectiveTo: string | null;
+}
+
+/** Gán N vai trò cùng lúc, dùng chung một phạm vi dữ liệu / đơn vị / khoảng hiệu lực. */
+export interface BulkAssignmentRequest {
+  roleCodes: string[];
+  dataScope: string;
+  organizationId: string | null;
+  effectiveFrom: string | null;
+  effectiveTo: string | null;
+}
+
+/** Một hàng của ma trận Role×Permission: tập quyền của `roleCode` trên chức năng đang lưu. */
+export interface RoleMatrixCellRequest {
+  roleCode: string;
+  permissionCodes: string[];
+  enabled?: boolean;
+}
+
+export interface RoleMatrixFeatureRequest {
+  roles: RoleMatrixCellRequest[];
 }
 
 export interface DataScopeResponse {

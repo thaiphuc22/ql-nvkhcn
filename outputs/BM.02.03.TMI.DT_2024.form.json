@@ -1,0 +1,1377 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.9.0",
+  "exporter": {
+    "name": "Camunda Web Modeler",
+    "version": "c72e043"
+  },
+  "schemaVersion": 19,
+  "id": "Form_BM_02_03_TMI_DT_2024",
+  "components": [
+    {
+      "type": "html",
+      "id": "Html_1784",
+      "content": "<div style=\"padding:10px 12px;background:#f4f7fb;border-left:4px solid #0f62fe\"><strong>Chế độ hiển thị:</strong> Nhập và kiểm tra dữ liệu ở chế độ soạn thảo. Bật <em>Xem văn bản hoàn chỉnh</em> để xem bản trình bày.</div>",
+      "layout": {
+        "row": "Row_1783",
+        "columns": null
+      }
+    },
+    {
+      "type": "checkbox",
+      "id": "Field_1785",
+      "key": "cheDoXemVanBan",
+      "label": "Xem văn bản hoàn chỉnh",
+      "defaultValue": false,
+      "layout": {
+        "row": "Row_1786",
+        "columns": null
+      }
+    },
+    {
+      "type": "group",
+      "id": "Group_1787",
+      "label": "Thông tin soạn thảo",
+      "showOutline": true,
+      "conditional": {
+        "hide": "=cheDoXemVanBan = true"
+      },
+      "components": [
+        {
+          "type": "html",
+          "id": "Html_1774",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">I. Thông tin chung về đề tài</div>",
+          "layout": {
+            "row": "Row_1773",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_151",
+          "key": "diaDanh",
+          "label": "Địa danh",
+          "layout": {
+            "row": "Row_152",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          },
+          "defaultValue": "Hà Nội"
+        },
+        {
+          "type": "datetime",
+          "id": "Field_153",
+          "key": "ngayVanBan",
+          "label": "Ngày văn bản",
+          "layout": {
+            "row": "Row_154",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          },
+          "subtype": "date"
+        },
+        {
+          "type": "textfield",
+          "id": "Field_155",
+          "key": "soVanBan",
+          "label": "Số văn bản",
+          "layout": {
+            "row": "Row_156",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_157",
+          "key": "nguoiKy",
+          "label": "Họ tên người ký",
+          "layout": {
+            "row": "Row_158",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_159",
+          "key": "chucDanhKy",
+          "label": "Chức danh người ký",
+          "layout": {
+            "row": "Row_160",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_161",
+          "key": "tenNhiemVu",
+          "label": "Tên đề tài",
+          "layout": {
+            "row": "Row_162",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_163",
+          "key": "maNhiemVu",
+          "label": "Mã đề tài",
+          "layout": {
+            "row": "Row_164",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_165",
+          "key": "donViChuTri",
+          "label": "Đơn vị chủ trì",
+          "layout": {
+            "row": "Row_166",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_169",
+          "key": "linhVuc",
+          "label": "Lĩnh vực",
+          "layout": {
+            "row": "Row_170",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "number",
+          "id": "Field_171",
+          "key": "thoiGianThucHienThang",
+          "label": "Thời gian thực hiện (tháng)",
+          "layout": {
+            "row": "Row_172",
+            "columns": null
+          },
+          "validate": {
+            "required": true,
+            "min": 1
+          }
+        },
+        {
+          "type": "datetime",
+          "id": "Field_173",
+          "key": "ngayBatDau",
+          "label": "Ngày bắt đầu",
+          "layout": {
+            "row": "Row_174",
+            "columns": null
+          },
+          "subtype": "date"
+        },
+        {
+          "type": "datetime",
+          "id": "Field_175",
+          "key": "ngayKetThuc",
+          "label": "Ngày kết thúc",
+          "layout": {
+            "row": "Row_176",
+            "columns": null
+          },
+          "subtype": "date"
+        },
+        {
+          "type": "number",
+          "id": "Field_177",
+          "key": "tongKinhPhi",
+          "label": "Tổng kinh phí (triệu đồng)",
+          "layout": {
+            "row": "Row_178",
+            "columns": null
+          },
+          "validate": {
+            "required": true,
+            "min": 0
+          }
+        },
+        {
+          "type": "select",
+          "id": "Field_179",
+          "key": "capQuanLy",
+          "label": "Cấp quản lý",
+          "layout": {
+            "row": "Row_180",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          },
+          "values": [
+            {
+              "value": "tap_doan",
+              "label": "Tập đoàn"
+            },
+            {
+              "value": "co_so",
+              "label": "Cơ sở"
+            }
+          ]
+        },
+        {
+          "type": "select",
+          "id": "Field_181",
+          "key": "loaiNhiemVu",
+          "label": "Loại đề tài",
+          "layout": {
+            "row": "Row_182",
+            "columns": null
+          },
+          "values": [
+            {
+              "value": "chuong_trinh",
+              "label": "Chương trình"
+            },
+            {
+              "value": "du_an_khcn",
+              "label": "Dự án KH&CN"
+            },
+            {
+              "value": "doc_lap",
+              "label": "Độc lập"
+            },
+            {
+              "value": "khac",
+              "label": "Khác"
+            }
+          ]
+        },
+        {
+          "type": "textfield",
+          "id": "Field_183",
+          "key": "chuNhiemHoTen",
+          "label": "Chủ nhiệm đề tài - Họ và tên",
+          "layout": {
+            "row": "Row_184",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_185",
+          "key": "chuNhiemCapBac",
+          "label": "Chủ nhiệm đề tài - Cấp bậc",
+          "layout": {
+            "row": "Row_186",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_187",
+          "key": "chuNhiemChucVu",
+          "label": "Chủ nhiệm đề tài - Chức vụ",
+          "layout": {
+            "row": "Row_188",
+            "columns": null
+          }
+        },
+        {
+          "type": "datetime",
+          "id": "Field_189",
+          "key": "chuNhiemNgaySinh",
+          "label": "Chủ nhiệm đề tài - Ngày sinh",
+          "layout": {
+            "row": "Row_190",
+            "columns": null
+          },
+          "subtype": "date"
+        },
+        {
+          "type": "select",
+          "id": "Field_191",
+          "key": "chuNhiemGioiTinh",
+          "label": "Chủ nhiệm đề tài - Giới tính",
+          "layout": {
+            "row": "Row_192",
+            "columns": null
+          },
+          "values": [
+            {
+              "value": "nam",
+              "label": "Nam"
+            },
+            {
+              "value": "nu",
+              "label": "Nữ"
+            }
+          ]
+        },
+        {
+          "type": "textfield",
+          "id": "Field_193",
+          "key": "chuNhiemHocHamHocVi",
+          "label": "Chủ nhiệm đề tài - Học hàm, học vị/trình độ chuyên môn",
+          "layout": {
+            "row": "Row_194",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_195",
+          "key": "chuNhiemDienThoai",
+          "label": "Chủ nhiệm đề tài - Điện thoại",
+          "layout": {
+            "row": "Row_196",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_197",
+          "key": "chuNhiemEmail",
+          "label": "Chủ nhiệm đề tài - Email",
+          "layout": {
+            "row": "Row_198",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_199",
+          "key": "chuNhiemDonVi",
+          "label": "Chủ nhiệm đề tài - Đơn vị công tác",
+          "layout": {
+            "row": "Row_200",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_201",
+          "key": "chuNhiemDiaChi",
+          "label": "Chủ nhiệm đề tài - Địa chỉ đơn vị",
+          "layout": {
+            "row": "Row_202",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_203",
+          "key": "thuKyHoTen",
+          "label": "Thư ký khoa học - Họ và tên",
+          "layout": {
+            "row": "Row_204",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_205",
+          "key": "thuKyCapBac",
+          "label": "Thư ký khoa học - Cấp bậc",
+          "layout": {
+            "row": "Row_206",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_207",
+          "key": "thuKyChucVu",
+          "label": "Thư ký khoa học - Chức vụ",
+          "layout": {
+            "row": "Row_208",
+            "columns": null
+          }
+        },
+        {
+          "type": "datetime",
+          "id": "Field_209",
+          "key": "thuKyNgaySinh",
+          "label": "Thư ký khoa học - Ngày sinh",
+          "layout": {
+            "row": "Row_210",
+            "columns": null
+          },
+          "subtype": "date"
+        },
+        {
+          "type": "select",
+          "id": "Field_211",
+          "key": "thuKyGioiTinh",
+          "label": "Thư ký khoa học - Giới tính",
+          "layout": {
+            "row": "Row_212",
+            "columns": null
+          },
+          "values": [
+            {
+              "value": "nam",
+              "label": "Nam"
+            },
+            {
+              "value": "nu",
+              "label": "Nữ"
+            }
+          ]
+        },
+        {
+          "type": "textfield",
+          "id": "Field_213",
+          "key": "thuKyHocHamHocVi",
+          "label": "Thư ký khoa học - Học hàm, học vị/trình độ chuyên môn",
+          "layout": {
+            "row": "Row_214",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_215",
+          "key": "thuKyDienThoai",
+          "label": "Thư ký khoa học - Điện thoại",
+          "layout": {
+            "row": "Row_216",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_217",
+          "key": "thuKyEmail",
+          "label": "Thư ký khoa học - Email",
+          "layout": {
+            "row": "Row_218",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_219",
+          "key": "thuKyDonVi",
+          "label": "Thư ký khoa học - Đơn vị công tác",
+          "layout": {
+            "row": "Row_220",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_221",
+          "key": "thuKyDiaChi",
+          "label": "Thư ký khoa học - Địa chỉ đơn vị",
+          "layout": {
+            "row": "Row_222",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_223",
+          "key": "donViDienThoai",
+          "label": "Điện thoại đơn vị chủ trì",
+          "layout": {
+            "row": "Row_224",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_225",
+          "key": "donViWebsite",
+          "label": "Website đơn vị chủ trì",
+          "layout": {
+            "row": "Row_226",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_227",
+          "key": "donViDiaChi",
+          "label": "Địa chỉ đơn vị chủ trì",
+          "layout": {
+            "row": "Row_228",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_229",
+          "key": "thuTruongDonVi",
+          "label": "Thủ trưởng đơn vị",
+          "layout": {
+            "row": "Row_230",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_231",
+          "key": "soTaiKhoan",
+          "label": "Số tài khoản",
+          "layout": {
+            "row": "Row_232",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_233",
+          "key": "nganHang",
+          "label": "Ngân hàng",
+          "layout": {
+            "row": "Row_234",
+            "columns": null
+          }
+        },
+        {
+          "type": "html",
+          "id": "Html_1776",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">Tổ chức và nhân sự thực hiện</div>",
+          "layout": {
+            "row": "Row_1775",
+            "columns": null
+          }
+        },
+        {
+          "type": "dynamiclist",
+          "id": "List_247",
+          "key": "toChucPhoiHop",
+          "label": "Các tổ chức phối hợp chính",
+          "showOutline": true,
+          "components": [
+            {
+              "type": "textfield",
+              "id": "Field_235",
+              "key": "tenToChuc",
+              "label": "Tên tổ chức",
+              "layout": {
+                "row": "Row_236",
+                "columns": null
+              },
+              "validate": {
+                "required": true
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_237",
+              "key": "maSoToChuc",
+              "label": "Mã số tổ chức",
+              "layout": {
+                "row": "Row_238",
+                "columns": null
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_239",
+              "key": "dienThoai",
+              "label": "Điện thoại",
+              "layout": {
+                "row": "Row_240",
+                "columns": null
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_241",
+              "key": "diaChi",
+              "label": "Địa chỉ",
+              "layout": {
+                "row": "Row_242",
+                "columns": null
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_243",
+              "key": "thuTruong",
+              "label": "Thủ trưởng tổ chức",
+              "layout": {
+                "row": "Row_244",
+                "columns": null
+              }
+            },
+            {
+              "type": "textarea",
+              "id": "Field_245",
+              "key": "noiDungPhoiHop",
+              "label": "Nội dung phối hợp",
+              "layout": {
+                "row": "Row_246",
+                "columns": null
+              }
+            }
+          ],
+          "layout": {
+            "row": "Row_248",
+            "columns": null
+          }
+        },
+        {
+          "type": "dynamiclist",
+          "id": "List_257",
+          "key": "thanhVien",
+          "label": "Thành viên thực hiện đề tài",
+          "showOutline": true,
+          "components": [
+            {
+              "type": "textfield",
+              "id": "Field_249",
+              "key": "hoTenHocVi",
+              "label": "Họ tên, học hàm, học vị",
+              "layout": {
+                "row": "Row_250",
+                "columns": null
+              },
+              "validate": {
+                "required": true
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_251",
+              "key": "chucDanh",
+              "label": "Chức danh thực hiện đề tài",
+              "layout": {
+                "row": "Row_252",
+                "columns": null
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_253",
+              "key": "donViCongTac",
+              "label": "Đơn vị công tác",
+              "layout": {
+                "row": "Row_254",
+                "columns": null
+              }
+            },
+            {
+              "type": "textarea",
+              "id": "Field_255",
+              "key": "noiDungPhuTrach",
+              "label": "Nội dung phụ trách",
+              "layout": {
+                "row": "Row_256",
+                "columns": null
+              }
+            }
+          ],
+          "layout": {
+            "row": "Row_258",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "html",
+          "id": "Html_1778",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">II. Mục tiêu, nội dung và phương án thực hiện</div>",
+          "layout": {
+            "row": "Row_1777",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_259",
+          "key": "mucTieu",
+          "label": "Mục tiêu của đề tài",
+          "layout": {
+            "row": "Row_260",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "select",
+          "id": "Field_261",
+          "key": "tinhTrang",
+          "label": "Tình trạng đề tài",
+          "layout": {
+            "row": "Row_262",
+            "columns": null
+          },
+          "values": [
+            {
+              "value": "moi",
+              "label": "Mới"
+            },
+            {
+              "value": "ke_tiep_nhom",
+              "label": "Kế tiếp hướng nghiên cứu của nhóm tác giả"
+            },
+            {
+              "value": "ke_tiep_khac",
+              "label": "Kế tiếp nghiên cứu của người khác"
+            }
+          ]
+        },
+        {
+          "type": "textarea",
+          "id": "Field_263",
+          "key": "tongQuanNgoaiNuoc",
+          "label": "Tổng quan tình hình nghiên cứu ngoài nước",
+          "layout": {
+            "row": "Row_264",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_265",
+          "key": "tongQuanTrongNuoc",
+          "label": "Tổng quan tình hình nghiên cứu trong nước",
+          "layout": {
+            "row": "Row_266",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_267",
+          "key": "luanGiaiNoiDung",
+          "label": "Luận giải nội dung cần nghiên cứu",
+          "layout": {
+            "row": "Row_268",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "dynamiclist",
+          "id": "List_277",
+          "key": "taiLieuTrichDan",
+          "label": "Công trình, tài liệu trích dẫn",
+          "showOutline": true,
+          "components": [
+            {
+              "type": "textfield",
+              "id": "Field_269",
+              "key": "tenTaiLieu",
+              "label": "Tên công trình/tài liệu",
+              "layout": {
+                "row": "Row_270",
+                "columns": null
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_271",
+              "key": "tacGia",
+              "label": "Tác giả",
+              "layout": {
+                "row": "Row_272",
+                "columns": null
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_273",
+              "key": "noiCongBo",
+              "label": "Nơi công bố",
+              "layout": {
+                "row": "Row_274",
+                "columns": null
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_275",
+              "key": "namCongBo",
+              "label": "Năm công bố",
+              "layout": {
+                "row": "Row_276",
+                "columns": null
+              }
+            }
+          ],
+          "layout": {
+            "row": "Row_278",
+            "columns": null
+          }
+        },
+        {
+          "type": "dynamiclist",
+          "id": "List_291",
+          "key": "noiDungCongViec",
+          "label": "Nội dung công việc và phương án thực hiện",
+          "showOutline": true,
+          "components": [
+            {
+              "type": "textfield",
+              "id": "Field_279",
+              "key": "noiDung",
+              "label": "Nội dung/công việc",
+              "layout": {
+                "row": "Row_280",
+                "columns": null
+              },
+              "validate": {
+                "required": true
+              }
+            },
+            {
+              "type": "textarea",
+              "id": "Field_281",
+              "key": "phuongAn",
+              "label": "Phương án thực hiện",
+              "layout": {
+                "row": "Row_282",
+                "columns": null
+              }
+            },
+            {
+              "type": "textarea",
+              "id": "Field_283",
+              "key": "ketQua",
+              "label": "Kết quả phải đạt",
+              "layout": {
+                "row": "Row_284",
+                "columns": null
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_285",
+              "key": "thoiGian",
+              "label": "Thời gian",
+              "layout": {
+                "row": "Row_286",
+                "columns": null
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_287",
+              "key": "donViThucHien",
+              "label": "Cá nhân/đơn vị thực hiện",
+              "layout": {
+                "row": "Row_288",
+                "columns": null
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_289",
+              "key": "kinhPhi",
+              "label": "Kinh phí",
+              "layout": {
+                "row": "Row_290",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            }
+          ],
+          "layout": {
+            "row": "Row_292",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_293",
+          "key": "congNgheLoiLamChu",
+          "label": "Các công nghệ lõi sẽ làm chủ",
+          "layout": {
+            "row": "Row_294",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_295",
+          "key": "congNghePhuThuoc",
+          "label": "Các công nghệ lõi phụ thuộc đối tác",
+          "layout": {
+            "row": "Row_296",
+            "columns": null
+          }
+        },
+        {
+          "type": "number",
+          "id": "Field_297",
+          "key": "tyLeLamChu",
+          "label": "Tỷ lệ làm chủ sản phẩm (%)",
+          "layout": {
+            "row": "Row_298",
+            "columns": null
+          },
+          "validate": {
+            "min": 0
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_299",
+          "key": "nenTangSanPham",
+          "label": "Nền tảng sản phẩm",
+          "layout": {
+            "row": "Row_300",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_301",
+          "key": "phuongAnPhoiHop",
+          "label": "Phương án phối hợp trong nước",
+          "layout": {
+            "row": "Row_302",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_303",
+          "key": "hopTacQuocTe",
+          "label": "Phương án hợp tác quốc tế",
+          "layout": {
+            "row": "Row_304",
+            "columns": null
+          }
+        },
+        {
+          "type": "dynamiclist",
+          "id": "List_317",
+          "key": "chuyenGia",
+          "label": "Chuyên gia thuê trong/ngoài nước",
+          "showOutline": true,
+          "components": [
+            {
+              "type": "textfield",
+              "id": "Field_305",
+              "key": "hoTenHocVi",
+              "label": "Họ tên, học hàm, học vị",
+              "layout": {
+                "row": "Row_306",
+                "columns": null
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_307",
+              "key": "quocTich",
+              "label": "Quốc tịch",
+              "layout": {
+                "row": "Row_308",
+                "columns": null
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_309",
+              "key": "toChuc",
+              "label": "Tổ chức",
+              "layout": {
+                "row": "Row_310",
+                "columns": null
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_311",
+              "key": "linhVuc",
+              "label": "Lĩnh vực chuyên môn",
+              "layout": {
+                "row": "Row_312",
+                "columns": null
+              }
+            },
+            {
+              "type": "textarea",
+              "id": "Field_313",
+              "key": "noiDung",
+              "label": "Nội dung thực hiện và lý do thuê",
+              "layout": {
+                "row": "Row_314",
+                "columns": null
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_315",
+              "key": "thangQuyDoi",
+              "label": "Thời gian quy đổi (tháng)",
+              "layout": {
+                "row": "Row_316",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            }
+          ],
+          "layout": {
+            "row": "Row_318",
+            "columns": null
+          }
+        },
+        {
+          "type": "html",
+          "id": "Html_1780",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">III. Sản phẩm KHCN của đề tài</div>",
+          "layout": {
+            "row": "Row_1779",
+            "columns": null
+          }
+        },
+        {
+          "type": "dynamiclist",
+          "id": "List_327",
+          "key": "sanPhamDangI",
+          "label": "Sản phẩm dạng I",
+          "showOutline": true,
+          "components": [
+            {
+              "type": "textfield",
+              "id": "Field_319",
+              "key": "tenSanPham",
+              "label": "Tên sản phẩm",
+              "layout": {
+                "row": "Row_320",
+                "columns": null
+              },
+              "validate": {
+                "required": true
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_321",
+              "key": "sanPhamThamKhao",
+              "label": "Sản phẩm tham khảo",
+              "layout": {
+                "row": "Row_322",
+                "columns": null
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_323",
+              "key": "soLuong",
+              "label": "Số lượng/quy mô",
+              "layout": {
+                "row": "Row_324",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "textarea",
+              "id": "Field_325",
+              "key": "chiTieu",
+              "label": "Chỉ tiêu kỹ thuật/yêu cầu chất lượng",
+              "layout": {
+                "row": "Row_326",
+                "columns": null
+              }
+            }
+          ],
+          "layout": {
+            "row": "Row_328",
+            "columns": null
+          }
+        },
+        {
+          "type": "dynamiclist",
+          "id": "List_339",
+          "key": "sanPhamDangII",
+          "label": "Sản phẩm dạng II",
+          "showOutline": true,
+          "components": [
+            {
+              "type": "textfield",
+              "id": "Field_329",
+              "key": "tenSanPham",
+              "label": "Tên sản phẩm",
+              "layout": {
+                "row": "Row_330",
+                "columns": null
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_331",
+              "key": "donViTinh",
+              "label": "Đơn vị tính",
+              "layout": {
+                "row": "Row_332",
+                "columns": null
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_333",
+              "key": "soLuong",
+              "label": "Số lượng",
+              "layout": {
+                "row": "Row_334",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "textarea",
+              "id": "Field_335",
+              "key": "yeuCauKhoaHoc",
+              "label": "Yêu cầu khoa học cần đạt",
+              "layout": {
+                "row": "Row_336",
+                "columns": null
+              }
+            },
+            {
+              "type": "textarea",
+              "id": "Field_337",
+              "key": "ghiChu",
+              "label": "Ghi chú",
+              "layout": {
+                "row": "Row_338",
+                "columns": null
+              }
+            }
+          ],
+          "layout": {
+            "row": "Row_340",
+            "columns": null
+          }
+        },
+        {
+          "type": "dynamiclist",
+          "id": "List_349",
+          "key": "sanPhamDangIII",
+          "label": "Sản phẩm công bố, sở hữu trí tuệ và đào tạo",
+          "showOutline": true,
+          "components": [
+            {
+              "type": "textfield",
+              "id": "Field_341",
+              "key": "loaiSanPham",
+              "label": "Loại sản phẩm",
+              "layout": {
+                "row": "Row_342",
+                "columns": null
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_343",
+              "key": "tenSanPham",
+              "label": "Tên sản phẩm",
+              "layout": {
+                "row": "Row_344",
+                "columns": null
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_345",
+              "key": "noiCongBo",
+              "label": "Nơi công bố/đăng ký",
+              "layout": {
+                "row": "Row_346",
+                "columns": null
+              }
+            },
+            {
+              "type": "textarea",
+              "id": "Field_347",
+              "key": "yeuCau",
+              "label": "Yêu cầu cần đạt",
+              "layout": {
+                "row": "Row_348",
+                "columns": null
+              }
+            }
+          ],
+          "layout": {
+            "row": "Row_350",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_351",
+          "key": "phuongAnUngDung",
+          "label": "Phương án ứng dụng và sử dụng kết quả",
+          "layout": {
+            "row": "Row_352",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_353",
+          "key": "hieuQuaKhcn",
+          "label": "Hiệu quả khoa học và công nghệ",
+          "layout": {
+            "row": "Row_354",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_355",
+          "key": "hieuQuaQuocPhong",
+          "label": "Hiệu quả quốc phòng, an ninh",
+          "layout": {
+            "row": "Row_356",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_357",
+          "key": "hieuQuaKinhTe",
+          "label": "Hiệu quả kinh tế - xã hội",
+          "layout": {
+            "row": "Row_358",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_359",
+          "key": "phuongAnThuHoi",
+          "label": "Phương án thu hồi chi phí nghiên cứu",
+          "layout": {
+            "row": "Row_360",
+            "columns": null
+          }
+        },
+        {
+          "type": "html",
+          "id": "Html_1782",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">IV. Kinh phí và ký xác nhận</div>",
+          "layout": {
+            "row": "Row_1781",
+            "columns": null
+          }
+        },
+        {
+          "type": "number",
+          "id": "Field_361",
+          "key": "kinhPhiQuyKhcn",
+          "label": "Kinh phí từ Quỹ phát triển KHCN",
+          "layout": {
+            "row": "Row_362",
+            "columns": null
+          },
+          "validate": {
+            "min": 0
+          }
+        },
+        {
+          "type": "number",
+          "id": "Field_363",
+          "key": "kinhPhiTuCo",
+          "label": "Kinh phí tự có",
+          "layout": {
+            "row": "Row_364",
+            "columns": null
+          },
+          "validate": {
+            "min": 0
+          }
+        },
+        {
+          "type": "number",
+          "id": "Field_365",
+          "key": "kinhPhiKhac",
+          "label": "Kinh phí khác",
+          "layout": {
+            "row": "Row_366",
+            "columns": null
+          },
+          "validate": {
+            "min": 0
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_367",
+          "key": "canCuDuToan",
+          "label": "Căn cứ và giải trình dự toán",
+          "layout": {
+            "row": "Row_368",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_369",
+          "key": "nguoiKyChuNhiem",
+          "label": "Người ký - Chủ nhiệm đề tài",
+          "layout": {
+            "row": "Row_370",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_371",
+          "key": "nguoiKyDonVi",
+          "label": "Người ký - Đơn vị chủ trì",
+          "layout": {
+            "row": "Row_372",
+            "columns": null
+          }
+        }
+      ],
+      "layout": {
+        "row": "Row_1788",
+        "columns": null
+      }
+    },
+    {
+      "type": "html",
+      "id": "Html_1789",
+      "content": "<style>.bm-page{max-width:900px;margin:0 auto;padding:34px 48px;background:#fff;color:#111;font:17px/1.48 \"Times New Roman\",serif;box-sizing:border-box}.bm-head{text-align:center}.bm-head .nation{font-weight:700;text-transform:uppercase}.bm-head .motto{font-weight:700}.bm-rule{display:inline-block;width:150px;border-top:1px solid #111}.bm-title{text-align:center;font-size:20px;font-weight:700;margin:24px 0}.bm-code{text-align:right;font-size:13px}.bm-page h3{font-size:17px;margin:18px 0 8px}.bm-page p{margin:4px 0;text-align:justify;white-space:pre-line}.value:empty:after{content:\"................................\";font-weight:400}@media(max-width:680px){.bm-page{padding:18px 14px;font-size:15px}}</style><article class=\"bm-page\"><div class=\"bm-code\">BM.02.03.TMI.DT_2024</div><header class=\"bm-head\"><div class=\"nation\">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div><div class=\"motto\">Độc lập - Tự do - Hạnh phúc</div><span class=\"bm-rule\"></span></header><div class=\"bm-title\">THUYẾT MINH ĐỀ TÀI KHCN CẤP TẬP ĐOÀN</div><section><h3>I. Thông tin chung về đề tài</h3><p><strong>Địa danh:</strong> <span class=\"value\">{{diaDanh}}</span></p><p><strong>Ngày văn bản:</strong> <span class=\"value\">{{ngayVanBan}}</span></p><p><strong>Số văn bản:</strong> <span class=\"value\">{{soVanBan}}</span></p><p><strong>Họ tên người ký:</strong> <span class=\"value\">{{nguoiKy}}</span></p><p><strong>Chức danh người ký:</strong> <span class=\"value\">{{chucDanhKy}}</span></p><p><strong>Tên đề tài:</strong> <span class=\"value\">{{tenNhiemVu}}</span></p><p><strong>Mã đề tài:</strong> <span class=\"value\">{{maNhiemVu}}</span></p><p><strong>Đơn vị chủ trì:</strong> <span class=\"value\">{{donViChuTri}}</span></p><p><strong>Lĩnh vực:</strong> <span class=\"value\">{{linhVuc}}</span></p><p><strong>Thời gian thực hiện (tháng):</strong> <span class=\"value\">{{thoiGianThucHienThang}}</span></p><p><strong>Ngày bắt đầu:</strong> <span class=\"value\">{{ngayBatDau}}</span></p><p><strong>Ngày kết thúc:</strong> <span class=\"value\">{{ngayKetThuc}}</span></p><p><strong>Tổng kinh phí (triệu đồng):</strong> <span class=\"value\">{{tongKinhPhi}}</span></p><p><strong>Cấp quản lý:</strong> <span class=\"value\">{{capQuanLy}}</span></p><p><strong>Loại đề tài:</strong> <span class=\"value\">{{loaiNhiemVu}}</span></p><p><strong>Chủ nhiệm đề tài - Họ và tên:</strong> <span class=\"value\">{{chuNhiemHoTen}}</span></p><p><strong>Chủ nhiệm đề tài - Cấp bậc:</strong> <span class=\"value\">{{chuNhiemCapBac}}</span></p><p><strong>Chủ nhiệm đề tài - Chức vụ:</strong> <span class=\"value\">{{chuNhiemChucVu}}</span></p><p><strong>Chủ nhiệm đề tài - Ngày sinh:</strong> <span class=\"value\">{{chuNhiemNgaySinh}}</span></p><p><strong>Chủ nhiệm đề tài - Giới tính:</strong> <span class=\"value\">{{chuNhiemGioiTinh}}</span></p><p><strong>Chủ nhiệm đề tài - Học hàm, học vị/trình độ chuyên môn:</strong> <span class=\"value\">{{chuNhiemHocHamHocVi}}</span></p><p><strong>Chủ nhiệm đề tài - Điện thoại:</strong> <span class=\"value\">{{chuNhiemDienThoai}}</span></p><p><strong>Chủ nhiệm đề tài - Email:</strong> <span class=\"value\">{{chuNhiemEmail}}</span></p><p><strong>Chủ nhiệm đề tài - Đơn vị công tác:</strong> <span class=\"value\">{{chuNhiemDonVi}}</span></p><p><strong>Chủ nhiệm đề tài - Địa chỉ đơn vị:</strong> <span class=\"value\">{{chuNhiemDiaChi}}</span></p><p><strong>Thư ký khoa học - Họ và tên:</strong> <span class=\"value\">{{thuKyHoTen}}</span></p><p><strong>Thư ký khoa học - Cấp bậc:</strong> <span class=\"value\">{{thuKyCapBac}}</span></p><p><strong>Thư ký khoa học - Chức vụ:</strong> <span class=\"value\">{{thuKyChucVu}}</span></p><p><strong>Thư ký khoa học - Ngày sinh:</strong> <span class=\"value\">{{thuKyNgaySinh}}</span></p><p><strong>Thư ký khoa học - Giới tính:</strong> <span class=\"value\">{{thuKyGioiTinh}}</span></p><p><strong>Thư ký khoa học - Học hàm, học vị/trình độ chuyên môn:</strong> <span class=\"value\">{{thuKyHocHamHocVi}}</span></p><p><strong>Thư ký khoa học - Điện thoại:</strong> <span class=\"value\">{{thuKyDienThoai}}</span></p><p><strong>Thư ký khoa học - Email:</strong> <span class=\"value\">{{thuKyEmail}}</span></p><p><strong>Thư ký khoa học - Đơn vị công tác:</strong> <span class=\"value\">{{thuKyDonVi}}</span></p><p><strong>Thư ký khoa học - Địa chỉ đơn vị:</strong> <span class=\"value\">{{thuKyDiaChi}}</span></p><p><strong>Điện thoại đơn vị chủ trì:</strong> <span class=\"value\">{{donViDienThoai}}</span></p><p><strong>Website đơn vị chủ trì:</strong> <span class=\"value\">{{donViWebsite}}</span></p><p><strong>Địa chỉ đơn vị chủ trì:</strong> <span class=\"value\">{{donViDiaChi}}</span></p><p><strong>Thủ trưởng đơn vị:</strong> <span class=\"value\">{{thuTruongDonVi}}</span></p><p><strong>Số tài khoản:</strong> <span class=\"value\">{{soTaiKhoan}}</span></p><p><strong>Ngân hàng:</strong> <span class=\"value\">{{nganHang}}</span></p></section><section><h3>Tổ chức và nhân sự thực hiện</h3><p><strong>Các tổ chức phối hợp chính:</strong> <span class=\"value\">{{toChucPhoiHop}}</span></p><p><strong>Thành viên thực hiện đề tài:</strong> <span class=\"value\">{{thanhVien}}</span></p></section><section><h3>II. Mục tiêu, nội dung và phương án thực hiện</h3><p><strong>Mục tiêu của đề tài:</strong> <span class=\"value\">{{mucTieu}}</span></p><p><strong>Tình trạng đề tài:</strong> <span class=\"value\">{{tinhTrang}}</span></p><p><strong>Tổng quan tình hình nghiên cứu ngoài nước:</strong> <span class=\"value\">{{tongQuanNgoaiNuoc}}</span></p><p><strong>Tổng quan tình hình nghiên cứu trong nước:</strong> <span class=\"value\">{{tongQuanTrongNuoc}}</span></p><p><strong>Luận giải nội dung cần nghiên cứu:</strong> <span class=\"value\">{{luanGiaiNoiDung}}</span></p><p><strong>Công trình, tài liệu trích dẫn:</strong> <span class=\"value\">{{taiLieuTrichDan}}</span></p><p><strong>Nội dung công việc và phương án thực hiện:</strong> <span class=\"value\">{{noiDungCongViec}}</span></p><p><strong>Các công nghệ lõi sẽ làm chủ:</strong> <span class=\"value\">{{congNgheLoiLamChu}}</span></p><p><strong>Các công nghệ lõi phụ thuộc đối tác:</strong> <span class=\"value\">{{congNghePhuThuoc}}</span></p><p><strong>Tỷ lệ làm chủ sản phẩm (%):</strong> <span class=\"value\">{{tyLeLamChu}}</span></p><p><strong>Nền tảng sản phẩm:</strong> <span class=\"value\">{{nenTangSanPham}}</span></p><p><strong>Phương án phối hợp trong nước:</strong> <span class=\"value\">{{phuongAnPhoiHop}}</span></p><p><strong>Phương án hợp tác quốc tế:</strong> <span class=\"value\">{{hopTacQuocTe}}</span></p><p><strong>Chuyên gia thuê trong/ngoài nước:</strong> <span class=\"value\">{{chuyenGia}}</span></p></section><section><h3>III. Sản phẩm KHCN của đề tài</h3><p><strong>Sản phẩm dạng I:</strong> <span class=\"value\">{{sanPhamDangI}}</span></p><p><strong>Sản phẩm dạng II:</strong> <span class=\"value\">{{sanPhamDangII}}</span></p><p><strong>Sản phẩm công bố, sở hữu trí tuệ và đào tạo:</strong> <span class=\"value\">{{sanPhamDangIII}}</span></p><p><strong>Phương án ứng dụng và sử dụng kết quả:</strong> <span class=\"value\">{{phuongAnUngDung}}</span></p><p><strong>Hiệu quả khoa học và công nghệ:</strong> <span class=\"value\">{{hieuQuaKhcn}}</span></p><p><strong>Hiệu quả quốc phòng, an ninh:</strong> <span class=\"value\">{{hieuQuaQuocPhong}}</span></p><p><strong>Hiệu quả kinh tế - xã hội:</strong> <span class=\"value\">{{hieuQuaKinhTe}}</span></p><p><strong>Phương án thu hồi chi phí nghiên cứu:</strong> <span class=\"value\">{{phuongAnThuHoi}}</span></p></section><section><h3>IV. Kinh phí và ký xác nhận</h3><p><strong>Kinh phí từ Quỹ phát triển KHCN:</strong> <span class=\"value\">{{kinhPhiQuyKhcn}}</span></p><p><strong>Kinh phí tự có:</strong> <span class=\"value\">{{kinhPhiTuCo}}</span></p><p><strong>Kinh phí khác:</strong> <span class=\"value\">{{kinhPhiKhac}}</span></p><p><strong>Căn cứ và giải trình dự toán:</strong> <span class=\"value\">{{canCuDuToan}}</span></p><p><strong>Người ký - Chủ nhiệm đề tài:</strong> <span class=\"value\">{{nguoiKyChuNhiem}}</span></p><p><strong>Người ký - Đơn vị chủ trì:</strong> <span class=\"value\">{{nguoiKyDonVi}}</span></p></section></article>",
+      "conditional": {
+        "hide": "=cheDoXemVanBan != true"
+      },
+      "layout": {
+        "row": "Row_1790",
+        "columns": null
+      }
+    }
+  ],
+  "type": "default"
+}

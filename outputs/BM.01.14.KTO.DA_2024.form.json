@@ -1,0 +1,689 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.9.0",
+  "exporter": {
+    "name": "Camunda Web Modeler",
+    "version": "c72e043"
+  },
+  "schemaVersion": 19,
+  "id": "Form_BM_01_14_KTO_DA_2024",
+  "components": [
+    {
+      "type": "html",
+      "id": "Html_1375",
+      "content": "<div style=\"padding:10px 12px;background:#f4f7fb;border-left:4px solid #0f62fe\"><strong>Chế độ hiển thị:</strong> Nhập và kiểm tra dữ liệu ở chế độ soạn thảo. Bật <em>Xem văn bản hoàn chỉnh</em> để xem bản trình bày.</div>",
+      "layout": {
+        "row": "Row_1376",
+        "columns": null
+      }
+    },
+    {
+      "type": "checkbox",
+      "id": "Field_1377",
+      "key": "cheDoXemVanBan",
+      "label": "Xem văn bản hoàn chỉnh",
+      "defaultValue": false,
+      "layout": {
+        "row": "Row_1378",
+        "columns": null
+      }
+    },
+    {
+      "type": "group",
+      "id": "Group_1379",
+      "label": "Thông tin soạn thảo",
+      "showOutline": true,
+      "conditional": {
+        "hide": "=cheDoXemVanBan = true"
+      },
+      "components": [
+        {
+          "type": "html",
+          "id": "Html_1369",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">Thông tin dự án và khái toán</div>",
+          "layout": {
+            "row": "Row_1370",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_731",
+          "key": "donViBanHanh",
+          "label": "Đơn vị ban hành/chủ trì",
+          "layout": {
+            "row": "Row_732",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_733",
+          "key": "soVanBan",
+          "label": "Số văn bản",
+          "layout": {
+            "row": "Row_734",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_735",
+          "key": "diaDanh",
+          "label": "Địa danh",
+          "layout": {
+            "row": "Row_736",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          },
+          "defaultValue": "Hà Nội"
+        },
+        {
+          "type": "datetime",
+          "id": "Field_737",
+          "key": "ngayVanBan",
+          "label": "Ngày văn bản",
+          "layout": {
+            "row": "Row_738",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          },
+          "subtype": "date"
+        },
+        {
+          "type": "textfield",
+          "id": "Field_739",
+          "key": "nguoiKy",
+          "label": "Họ tên người ký",
+          "layout": {
+            "row": "Row_740",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_741",
+          "key": "chucDanhKy",
+          "label": "Chức danh người ký",
+          "layout": {
+            "row": "Row_742",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_743",
+          "key": "tenDuAn",
+          "label": "Tên dự án",
+          "layout": {
+            "row": "Row_744",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_745",
+          "key": "nhomDuAn",
+          "label": "Nhóm/phân loại dự án",
+          "layout": {
+            "row": "Row_746",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_747",
+          "key": "capQuyetDinhChuTruong",
+          "label": "Cấp quyết định chủ trương đầu tư",
+          "layout": {
+            "row": "Row_748",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_749",
+          "key": "capQuyetDinhDauTu",
+          "label": "Cấp quyết định đầu tư",
+          "layout": {
+            "row": "Row_750",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_751",
+          "key": "chuDauTu",
+          "label": "Chủ đầu tư",
+          "layout": {
+            "row": "Row_752",
+            "columns": null
+          },
+          "defaultValue": "Tập đoàn Công nghiệp - Viễn thông Quân đội"
+        },
+        {
+          "type": "textfield",
+          "id": "Field_753",
+          "key": "daiDienChuDauTu",
+          "label": "Đại diện chủ đầu tư",
+          "layout": {
+            "row": "Row_754",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_755",
+          "key": "donViThucHien",
+          "label": "Cơ quan, đơn vị thực hiện dự án",
+          "layout": {
+            "row": "Row_756",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_757",
+          "key": "doiTuongThuHuong",
+          "label": "Đối tượng thụ hưởng",
+          "layout": {
+            "row": "Row_758",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_759",
+          "key": "hinhThucQuanLy",
+          "label": "Hình thức quản lý dự án",
+          "layout": {
+            "row": "Row_760",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_761",
+          "key": "diaDiemThucHien",
+          "label": "Địa điểm thực hiện dự án",
+          "layout": {
+            "row": "Row_762",
+            "columns": null
+          }
+        },
+        {
+          "type": "number",
+          "id": "Field_763",
+          "key": "tongMucDauTu",
+          "label": "Tổng mức đầu tư (VNĐ)",
+          "layout": {
+            "row": "Row_764",
+            "columns": null
+          },
+          "validate": {
+            "required": true,
+            "min": 0
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_765",
+          "key": "tongMucDauTuBangChu",
+          "label": "Tổng mức đầu tư bằng chữ",
+          "layout": {
+            "row": "Row_766",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_767",
+          "key": "nguonVon",
+          "label": "Nguồn vốn",
+          "layout": {
+            "row": "Row_768",
+            "columns": null
+          },
+          "defaultValue": "Quỹ phát triển KHCN Viettel"
+        },
+        {
+          "type": "datetime",
+          "id": "Field_769",
+          "key": "ngayBatDau",
+          "label": "Ngày bắt đầu dự kiến",
+          "layout": {
+            "row": "Row_770",
+            "columns": null
+          },
+          "subtype": "date"
+        },
+        {
+          "type": "datetime",
+          "id": "Field_771",
+          "key": "ngayKetThuc",
+          "label": "Ngày kết thúc dự kiến",
+          "layout": {
+            "row": "Row_772",
+            "columns": null
+          },
+          "subtype": "date"
+        },
+        {
+          "type": "textfield",
+          "id": "Field_773",
+          "key": "hinhThucDauTu",
+          "label": "Hình thức đầu tư",
+          "layout": {
+            "row": "Row_774",
+            "columns": null
+          },
+          "defaultValue": "Dự án đầu tư mua sắm hỗ trợ KHCN"
+        },
+        {
+          "type": "textfield",
+          "id": "Field_775",
+          "key": "donViTinhTien",
+          "label": "Đơn vị tiền tệ",
+          "layout": {
+            "row": "Row_776",
+            "columns": null
+          },
+          "defaultValue": "VNĐ"
+        },
+        {
+          "type": "textarea",
+          "id": "Field_777",
+          "key": "canCuKhaiToan",
+          "label": "Căn cứ lập khái toán",
+          "layout": {
+            "row": "Row_778",
+            "columns": null
+          }
+        },
+        {
+          "type": "html",
+          "id": "Html_1371",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">Chi phí thiết bị</div>",
+          "layout": {
+            "row": "Row_1372",
+            "columns": null
+          }
+        },
+        {
+          "type": "dynamiclist",
+          "id": "List_805",
+          "key": "chiPhiThietBi",
+          "label": "Danh mục thiết bị và chi phí",
+          "showOutline": true,
+          "components": [
+            {
+              "type": "textfield",
+              "id": "Field_779",
+              "key": "maThietBi",
+              "label": "Mã thiết bị",
+              "layout": {
+                "row": "Row_780",
+                "columns": null
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_781",
+              "key": "tenThietBi",
+              "label": "Tên thiết bị",
+              "layout": {
+                "row": "Row_782",
+                "columns": null
+              }
+            },
+            {
+              "type": "textarea",
+              "id": "Field_783",
+              "key": "cauHinhChiTieu",
+              "label": "Cấu hình/chỉ tiêu kỹ thuật",
+              "layout": {
+                "row": "Row_784",
+                "columns": null
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_785",
+              "key": "donViTinh",
+              "label": "Đơn vị tính",
+              "layout": {
+                "row": "Row_786",
+                "columns": null
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_787",
+              "key": "soLuong",
+              "label": "Số lượng",
+              "layout": {
+                "row": "Row_788",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_789",
+              "key": "donGiaNgoaiTe",
+              "label": "Đơn giá ngoại tệ",
+              "layout": {
+                "row": "Row_790",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_791",
+              "key": "tyGia",
+              "label": "Tỷ giá",
+              "layout": {
+                "row": "Row_792",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_793",
+              "key": "donGiaVnd",
+              "label": "Đơn giá VNĐ",
+              "layout": {
+                "row": "Row_794",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_795",
+              "key": "thanhTienChuaVat",
+              "label": "Thành tiền chưa VAT",
+              "layout": {
+                "row": "Row_796",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_797",
+              "key": "thueSuatVat",
+              "label": "Thuế suất VAT (%)",
+              "layout": {
+                "row": "Row_798",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_799",
+              "key": "thueVat",
+              "label": "Tiền VAT",
+              "layout": {
+                "row": "Row_800",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_801",
+              "key": "thanhTienCoVat",
+              "label": "Thành tiền có VAT",
+              "layout": {
+                "row": "Row_802",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "textarea",
+              "id": "Field_803",
+              "key": "coSoGia",
+              "label": "Cơ sở giá/báo giá",
+              "layout": {
+                "row": "Row_804",
+                "columns": null
+              }
+            }
+          ],
+          "layout": {
+            "row": "Row_806",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "html",
+          "id": "Html_1373",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">Chi phí khác và tổng hợp</div>",
+          "layout": {
+            "row": "Row_1374",
+            "columns": null
+          }
+        },
+        {
+          "type": "dynamiclist",
+          "id": "List_819",
+          "key": "chiPhiKhac",
+          "label": "Chi phí quản lý, tư vấn, kiểm toán và chi phí khác",
+          "showOutline": true,
+          "components": [
+            {
+              "type": "textfield",
+              "id": "Field_807",
+              "key": "maKhoanMuc",
+              "label": "Mã khoản mục",
+              "layout": {
+                "row": "Row_808",
+                "columns": null
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_809",
+              "key": "noiDungChiPhi",
+              "label": "Nội dung chi phí",
+              "layout": {
+                "row": "Row_810",
+                "columns": null
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_811",
+              "key": "giaTriTruocVat",
+              "label": "Giá trị trước VAT",
+              "layout": {
+                "row": "Row_812",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_813",
+              "key": "thueVat",
+              "label": "Thuế VAT",
+              "layout": {
+                "row": "Row_814",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_815",
+              "key": "giaTriSauVat",
+              "label": "Giá trị sau VAT",
+              "layout": {
+                "row": "Row_816",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "textarea",
+              "id": "Field_817",
+              "key": "coSoTinh",
+              "label": "Cơ sở tính",
+              "layout": {
+                "row": "Row_818",
+                "columns": null
+              }
+            }
+          ],
+          "layout": {
+            "row": "Row_820",
+            "columns": null
+          }
+        },
+        {
+          "type": "number",
+          "id": "Field_821",
+          "key": "chiPhiDuPhong",
+          "label": "Chi phí dự phòng",
+          "layout": {
+            "row": "Row_822",
+            "columns": null
+          },
+          "validate": {
+            "min": 0
+          }
+        },
+        {
+          "type": "number",
+          "id": "Field_823",
+          "key": "tongCongTruocVat",
+          "label": "Tổng cộng trước VAT",
+          "layout": {
+            "row": "Row_824",
+            "columns": null
+          },
+          "validate": {
+            "min": 0
+          }
+        },
+        {
+          "type": "number",
+          "id": "Field_825",
+          "key": "tongThueVat",
+          "label": "Tổng thuế VAT",
+          "layout": {
+            "row": "Row_826",
+            "columns": null
+          },
+          "validate": {
+            "min": 0
+          }
+        },
+        {
+          "type": "number",
+          "id": "Field_827",
+          "key": "tongCongSauVat",
+          "label": "Tổng cộng sau VAT",
+          "layout": {
+            "row": "Row_828",
+            "columns": null
+          },
+          "validate": {
+            "required": true,
+            "min": 0
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_829",
+          "key": "tongCongBangChu",
+          "label": "Tổng cộng bằng chữ",
+          "layout": {
+            "row": "Row_830",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_831",
+          "key": "ghiChuKhaiToan",
+          "label": "Ghi chú khái toán",
+          "layout": {
+            "row": "Row_832",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_833",
+          "key": "noiNhan",
+          "label": "Nơi nhận",
+          "layout": {
+            "row": "Row_834",
+            "columns": null
+          }
+        }
+      ],
+      "layout": {
+        "row": "Row_1380",
+        "columns": null
+      }
+    },
+    {
+      "type": "html",
+      "id": "Html_1381",
+      "content": "<style>.bm-page{max-width:900px;margin:0 auto;padding:34px 48px;background:#fff;color:#111;font:17px/1.48 \"Times New Roman\",serif;box-sizing:border-box}.bm-code{text-align:right;font-size:13px}.bm-head{text-align:center}.bm-head strong{display:block}.bm-rule{display:inline-block;width:150px;border-top:1px solid #111}.bm-title{text-align:center;font-size:20px;font-weight:700;margin:24px 0}.bm-page h3{font-size:17px;margin:18px 0 8px}.bm-page p{margin:4px 0;text-align:justify;white-space:pre-line}.value:empty:after{content:\"................................\"}@media(max-width:680px){.bm-page{padding:18px 14px;font-size:15px}}</style><article class=\"bm-page\"><div class=\"bm-code\">BM.01.14.KTO.DA_2024</div><header class=\"bm-head\"><strong>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong><strong>Độc lập - Tự do - Hạnh phúc</strong><span class=\"bm-rule\"></span></header><div class=\"bm-title\">KHÁI TOÁN DỰ ÁN ĐẦU TƯ HỖ TRỢ KHCN</div><section><h3>Thông tin dự án và khái toán</h3><p><strong>Đơn vị ban hành/chủ trì:</strong> <span class=\"value\">{{donViBanHanh}}</span></p><p><strong>Số văn bản:</strong> <span class=\"value\">{{soVanBan}}</span></p><p><strong>Địa danh:</strong> <span class=\"value\">{{diaDanh}}</span></p><p><strong>Ngày văn bản:</strong> <span class=\"value\">{{ngayVanBan}}</span></p><p><strong>Họ tên người ký:</strong> <span class=\"value\">{{nguoiKy}}</span></p><p><strong>Chức danh người ký:</strong> <span class=\"value\">{{chucDanhKy}}</span></p><p><strong>Tên dự án:</strong> <span class=\"value\">{{tenDuAn}}</span></p><p><strong>Nhóm/phân loại dự án:</strong> <span class=\"value\">{{nhomDuAn}}</span></p><p><strong>Cấp quyết định chủ trương đầu tư:</strong> <span class=\"value\">{{capQuyetDinhChuTruong}}</span></p><p><strong>Cấp quyết định đầu tư:</strong> <span class=\"value\">{{capQuyetDinhDauTu}}</span></p><p><strong>Chủ đầu tư:</strong> <span class=\"value\">{{chuDauTu}}</span></p><p><strong>Đại diện chủ đầu tư:</strong> <span class=\"value\">{{daiDienChuDauTu}}</span></p><p><strong>Cơ quan, đơn vị thực hiện dự án:</strong> <span class=\"value\">{{donViThucHien}}</span></p><p><strong>Đối tượng thụ hưởng:</strong> <span class=\"value\">{{doiTuongThuHuong}}</span></p><p><strong>Hình thức quản lý dự án:</strong> <span class=\"value\">{{hinhThucQuanLy}}</span></p><p><strong>Địa điểm thực hiện dự án:</strong> <span class=\"value\">{{diaDiemThucHien}}</span></p><p><strong>Tổng mức đầu tư (VNĐ):</strong> <span class=\"value\">{{tongMucDauTu}}</span></p><p><strong>Tổng mức đầu tư bằng chữ:</strong> <span class=\"value\">{{tongMucDauTuBangChu}}</span></p><p><strong>Nguồn vốn:</strong> <span class=\"value\">{{nguonVon}}</span></p><p><strong>Ngày bắt đầu dự kiến:</strong> <span class=\"value\">{{ngayBatDau}}</span></p><p><strong>Ngày kết thúc dự kiến:</strong> <span class=\"value\">{{ngayKetThuc}}</span></p><p><strong>Hình thức đầu tư:</strong> <span class=\"value\">{{hinhThucDauTu}}</span></p><p><strong>Đơn vị tiền tệ:</strong> <span class=\"value\">{{donViTinhTien}}</span></p><p><strong>Căn cứ lập khái toán:</strong> <span class=\"value\">{{canCuKhaiToan}}</span></p></section><section><h3>Chi phí thiết bị</h3><p><strong>Danh mục thiết bị và chi phí:</strong> <span class=\"value\">{{chiPhiThietBi}}</span></p></section><section><h3>Chi phí khác và tổng hợp</h3><p><strong>Chi phí quản lý, tư vấn, kiểm toán và chi phí khác:</strong> <span class=\"value\">{{chiPhiKhac}}</span></p><p><strong>Chi phí dự phòng:</strong> <span class=\"value\">{{chiPhiDuPhong}}</span></p><p><strong>Tổng cộng trước VAT:</strong> <span class=\"value\">{{tongCongTruocVat}}</span></p><p><strong>Tổng thuế VAT:</strong> <span class=\"value\">{{tongThueVat}}</span></p><p><strong>Tổng cộng sau VAT:</strong> <span class=\"value\">{{tongCongSauVat}}</span></p><p><strong>Tổng cộng bằng chữ:</strong> <span class=\"value\">{{tongCongBangChu}}</span></p><p><strong>Ghi chú khái toán:</strong> <span class=\"value\">{{ghiChuKhaiToan}}</span></p><p><strong>Nơi nhận:</strong> <span class=\"value\">{{noiNhan}}</span></p></section></article>",
+      "conditional": {
+        "hide": "=cheDoXemVanBan != true"
+      },
+      "layout": {
+        "row": "Row_1382",
+        "columns": null
+      }
+    }
+  ],
+  "type": "default"
+}

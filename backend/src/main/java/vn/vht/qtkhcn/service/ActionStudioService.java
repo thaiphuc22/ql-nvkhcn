@@ -14,26 +14,42 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import vn.vht.qtkhcn.domain.ActionAvailabilityPolicy;
+import vn.vht.qtkhcn.domain.ActionAvailabilityPolicyStatus;
+import vn.vht.qtkhcn.domain.ActionFormBundleItem;
+import vn.vht.qtkhcn.domain.ActionFormBundleSnapshot;
 import vn.vht.qtkhcn.domain.ActionExceptionPolicy;
 import vn.vht.qtkhcn.domain.ActionStudioAction;
 import vn.vht.qtkhcn.domain.ActionStudioAudit;
+import vn.vht.qtkhcn.domain.Eform;
 import vn.vht.qtkhcn.repository.ActionAvailabilityPolicyRepository;
 import vn.vht.qtkhcn.repository.ActionExceptionPolicyRepository;
 import vn.vht.qtkhcn.repository.ActionStudioActionRepository;
 import vn.vht.qtkhcn.repository.ActionStudioAuditRepository;
 import vn.vht.qtkhcn.repository.EformRepository;
+import vn.vht.qtkhcn.repository.ActionFormBundleSnapshotRepository;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ActionResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.AuditResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.AvailabilityRequest;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.AvailabilityResponse;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.BulkDeleteAvailabilityRequest;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.BulkDeleteAvailabilityResponse;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.BulkStatusAvailabilityRequest;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.BulkStatusAvailabilityResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.CatalogOptionResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ConfigResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ExceptionRequest;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ExceptionResponse;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.FormBundleItemResponse;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.FormBundleResponse;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.FormBundleItemRequest;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.FormBundleRequest;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.PresentationRequest;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.PresentationResponse;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ProcessRoutingResponse;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ProcessStepResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ReconcileResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ReferenceDataResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ScaffoldResponse;
@@ -50,6 +66,7 @@ public class ActionStudioService {
     private static final Set<String> STATUSES = Set.of("draft", "processing", "approved", "rejected");
     private static final Set<String> TARGET_TYPES = Set.of("STEP", "STATUS", "COMPLETE");
     private static final Set<String> OBJECT_TYPES = Set.of("DOSSIER", "MISSION", "PROPOSAL");
+    private static final Set<String> POLICY_STATUSES = Set.of("DRAFT", "ACTIVE", "DISABLED", "INVALID");
 
     private final ActionStudioActionRepository actionRepository;
     private final ActionAvailabilityPolicyRepository availabilityRepository;
@@ -57,19 +74,34 @@ public class ActionStudioService {
     private final ActionStudioAuditRepository auditRepository;
     private final ActionStudioRoutingCatalog routingCatalog;
     private final EformRepository eformRepository;
+    private final ActionBusinessConditionEvaluator conditions;
+    private final ActionFormBundleSnapshotRepository bundleSnapshots;
 
+    @Autowired
     public ActionStudioService(ActionStudioActionRepository actionRepository,
             ActionAvailabilityPolicyRepository availabilityRepository,
             ActionExceptionPolicyRepository exceptionRepository,
             ActionStudioAuditRepository auditRepository,
             ActionStudioRoutingCatalog routingCatalog,
-            EformRepository eformRepository) {
+            EformRepository eformRepository, ActionBusinessConditionEvaluator conditions,
+            ActionFormBundleSnapshotRepository bundleSnapshots) {
         this.actionRepository = actionRepository;
         this.availabilityRepository = availabilityRepository;
         this.exceptionRepository = exceptionRepository;
         this.auditRepository = auditRepository;
         this.routingCatalog = routingCatalog;
         this.eformRepository = eformRepository;
+        this.conditions = conditions;
+        this.bundleSnapshots = bundleSnapshots;
+    }
+
+    ActionStudioService(ActionStudioActionRepository actionRepository,
+            ActionAvailabilityPolicyRepository availabilityRepository,
+            ActionExceptionPolicyRepository exceptionRepository,
+            ActionStudioAuditRepository auditRepository,
+            ActionStudioRoutingCatalog routingCatalog, EformRepository eformRepository) {
+        this(actionRepository, availabilityRepository, exceptionRepository, auditRepository, routingCatalog,
+                eformRepository, new ActionBusinessConditionEvaluator(new ObjectMapper(), new ApprovalConditionEngine()), null);
     }
 
     @Transactional(readOnly = true)
@@ -111,6 +143,7 @@ public class ActionStudioService {
         assertVersion(code, expectedVersion, action.getVersion());
         requireOneOf("nhóm hiển thị", request.uiGroup(), UI_GROUPS);
         requireOneOf("tone", request.tone(), TONES);
+        validatePresentation(action, request.uiGroup(), request.tone());
         action.setLabel(request.label().trim());
         action.setIcon(request.icon().trim());
         action.setUiGroup(request.uiGroup());
@@ -120,6 +153,24 @@ public class ActionStudioService {
         touch(action, actorHeader);
         action = actionRepository.saveAndFlush(action);
         audit("ACTION", code, "UPDATE_PRESENTATION", actorHeader, "Cập nhật cách hiển thị nút.");
+        return toPresentation(action);
+    }
+
+    @Transactional
+    public PresentationResponse resetPresentation(String code, long expectedVersion, String actorHeader) {
+        ActionStudioAction action = action(code);
+        assertVersion(code, expectedVersion, action.getVersion());
+        action.setLabel(action.getActionName());
+        action.setIcon(defaultIcon(action));
+        action.setUiGroup(defaultUiGroup(action));
+        action.setTone(defaultTone(action));
+        action.setDisplayOrder(defaultDisplayOrder(action));
+        action.setHelpText("EXCEPTION".equals(action.getActionType())
+                ? "Hành động ngoại lệ cần được kiểm soát và phê duyệt riêng." : null);
+        validatePresentation(action, action.getUiGroup(), action.getTone());
+        touch(action, actorHeader);
+        action = actionRepository.saveAndFlush(action);
+        audit("ACTION", code, "RESET_PRESENTATION", actorHeader, "Khôi phục trình bày mặc định.");
         return toPresentation(action);
     }
 
@@ -137,6 +188,7 @@ public class ActionStudioService {
 
     @Transactional
     public AvailabilityResponse createAvailability(AvailabilityRequest request, String actorHeader) {
+        request = normalizeLegacyForm(request);
         String id = request.id().trim();
         if (availabilityRepository.existsById(id)) {
             throw new ActionStudioConflictException("Mã luật khả dụng đã tồn tại: " + id);
@@ -145,9 +197,11 @@ public class ActionStudioService {
         assertNoDuplicateAvailability(request, null);
         ActionAvailabilityPolicy entity = new ActionAvailabilityPolicy();
         apply(entity, request);
+        if (request.formBundle() != null) entity.setBundleVersion(1L);
         entity.setVersion(0);
         touch(entity, actorHeader);
         entity = availabilityRepository.saveAndFlush(entity);
+        snapshotBundle(entity, actorHeader);
         audit("AVAILABILITY", entity.getId(), "CREATE", actorHeader, "Tạo luật hiển thị nút.");
         return toAvailability(entity);
     }
@@ -155,16 +209,25 @@ public class ActionStudioService {
     @Transactional
     public AvailabilityResponse updateAvailability(String id, AvailabilityRequest request, long expectedVersion,
             String actorHeader) {
+        request = normalizeLegacyForm(request);
         if (!id.equals(request.id().trim())) {
             throw new IllegalArgumentException("Không được đổi mã luật khả dụng.");
         }
         ActionAvailabilityPolicy entity = availability(id);
         assertVersion(id, expectedVersion, entity.getVersion());
+        String previousBundle = bundleJson(toBundle(entity));
+        long previousBundleVersion = entity.getBundleVersion() == null ? 0 : entity.getBundleVersion();
         validateAvailability(request);
         assertNoDuplicateAvailability(request, id);
         apply(entity, request);
+        if (request.formBundle() != null) {
+            String nextBundle = bundleJson(toBundle(entity));
+            entity.setBundleVersion(previousBundle.equals(nextBundle) ? Math.max(1, previousBundleVersion)
+                    : Math.max(1, previousBundleVersion + 1));
+        }
         touch(entity, actorHeader);
         entity = availabilityRepository.saveAndFlush(entity);
+        snapshotBundle(entity, actorHeader);
         audit("AVAILABILITY", id, "UPDATE", actorHeader, "Cập nhật luật hiển thị nút.");
         return toAvailability(entity);
     }
@@ -248,23 +311,54 @@ public class ActionStudioService {
         try {
             List<String> missing = new ArrayList<>();
             collectMissingRequired(JSON.readTree(form.getSchemaJson()), formData, missing);
-            return List.copyOf(missing);
+            // Nhiều dòng dynamiclist cùng thiếu một trường ⇒ cùng một nhãn lặp lại; người dùng chỉ cần
+            // biết trường nào thiếu, không cần nghe nhắc n lần.
+            return missing.stream().distinct().toList();
         } catch (com.fasterxml.jackson.core.JsonProcessingException invalidSchema) {
             throw new IllegalStateException("Schema biểu mẫu không hợp lệ: " + formKey, invalidSchema);
         }
     }
 
+    /**
+     * Trường con của một {@code dynamiclist} sống trong dữ liệu CỦA TỪNG DÒNG, không phải ở gốc
+     * formData — nên phải đổi ngữ cảnh khi đi xuống, đúng như renderer làm (xem
+     * {@code FormDynamicListComponent}: mỗi dòng render với context riêng).
+     *
+     * <p>Trước đây hàm này đệ quy phẳng với formData gốc, nên mọi trường con bắt buộc đều bị báo
+     * thiếu dù người dùng đã nhập đủ: {@code bm-02-08-qdh-nv} (QĐ thành lập HĐXD) có "Họ và tên" và
+     * "Vai trò trong Hội đồng" bắt buộc bên trong dynamiclist, khiến thao tác duyệt T05 luôn trả
+     * FORM_VALIDATION_FAILED và Hội đồng xét duyệt không bao giờ được sinh. Lỗi này có sẵn, phát hiện
+     * khi thêm trường "Tài khoản" vào chính biểu mẫu đó.</p>
+     */
     private static void collectMissingRequired(JsonNode node, Map<String, Object> formData, List<String> missing) {
         if (node == null) return;
-        if (node.isObject()) {
-            String key = node.path("key").asText("").trim();
-            if (!key.isEmpty() && node.path("validate").path("required").asBoolean(false)
-                    && emptyFormValue(formData.get(key))) {
-                missing.add(node.path("label").asText(key));
-            }
+        if (node.isArray()) {
             node.elements().forEachRemaining(child -> collectMissingRequired(child, formData, missing));
-        } else if (node.isArray()) {
-            node.elements().forEachRemaining(child -> collectMissingRequired(child, formData, missing));
+            return;
+        }
+        if (!node.isObject()) return;
+
+        String key = node.path("key").asText("").trim();
+        boolean required = node.path("validate").path("required").asBoolean(false);
+        Object value = key.isEmpty() ? null : formData.get(key);
+        if (!key.isEmpty() && required && emptyFormValue(value)) {
+            missing.add(node.path("label").asText(key));
+            // Danh sách rỗng đã báo thiếu ở chính nó; soi tiếp từng dòng là thừa (không có dòng nào).
+            if ("dynamiclist".equals(node.path("type").asText(""))) return;
+        }
+        if ("dynamiclist".equals(node.path("type").asText(""))) {
+            collectMissingRequiredInRows(node.path("components"), value, missing);
+            return;
+        }
+        node.elements().forEachRemaining(child -> collectMissingRequired(child, formData, missing));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void collectMissingRequiredInRows(JsonNode template, Object rows, List<String> missing) {
+        if (!(rows instanceof List<?> items)) return;
+        for (Object row : items) {
+            if (!(row instanceof Map<?, ?> values)) continue;
+            collectMissingRequired(template, (Map<String, Object>) values, missing);
         }
     }
 
@@ -298,13 +392,19 @@ public class ActionStudioService {
         // Tra routing đúng một lần: vòng lặp cũ gọi require() lại cho mỗi dòng, tức parse lại BPMN
         // theo số nhánh.
         Map<String, String> formKeyByStep = new java.util.HashMap<>();
-        for (var step : routingCatalog.require(processCode).steps()) {
+        Map<String, List<String>> roleCodesByStep = new java.util.HashMap<>();
+        ProcessRoutingResponse scaffoldProcess = routingCatalog.require(processCode);
+        for (var step : scaffoldProcess.steps()) {
             if (step.formKey() != null) formKeyByStep.put(step.key(), step.formKey());
+            roleCodesByStep.put(step.key(), List.copyOf(csvCodes(step.role())));
         }
         List<ActionAvailabilityPolicy> current = availabilityRepository.findAllByOrderByDisplayOrderAscIdAsc();
         List<ReconcileResponse> candidates = reconcile(processCode, current).stream()
-                .filter(row -> row.status().equals("missing")
-                        || (row.status().equals("generic") && formKeyByStep.containsKey(row.stepKey())))
+                .filter(row -> row.status().equals("MISSING_POLICY")
+                        || (formKeyByStep.containsKey(row.stepKey()) && row.policyId() != null
+                                && current.stream().anyMatch(policy -> policy.getId().equals(row.policyId())
+                                        && policy.getProcessCode() == null
+                                        && policy.getTaskDefinitionKey() == null)))
                 .toList();
         List<AvailabilityResponse> created = new ArrayList<>();
         Set<String> seen = new LinkedHashSet<>();
@@ -313,13 +413,16 @@ public class ActionStudioService {
             // Bỏ qua id đã có (vd luật cũ đang bị khoá nên đối soát vẫn báo "missing") thay vì ném
             // xung đột làm rollback cả lượt scaffold.
             if (!seen.add(id) || availabilityRepository.existsById(id)) continue;
+            String formKey = formKeyByStep.get(row.stepKey());
+            FormBundleRequest bundle = formKey == null ? null : new FormBundleRequest("STEPPER", false,
+                    "ALL_REQUIRED_VALID", 1L, List.of(new FormBundleItemRequest(formKey, null, 1,
+                            null, true, "EDIT", false, null, "form")));
             AvailabilityRequest request = new AvailabilityRequest(id, row.actionCode(), "DOSSIER_DETAIL",
                     processCode, row.stepKey(), row.outcome().equals("SUBMIT") ? "draft" : "processing",
-                    List.of(), List.of(row.outcome().equals("SUBMIT") ? "SUBMIT_DOSSIER" : "PROCESS_STEP"),
-                    formKeyByStep.get(row.stepKey()),
+                    roleCodesByStep.getOrDefault(row.stepKey(), List.of()), null,
                     row.actionCode().equals("SUBMIT") ? "dossier.docsComplete = true"
                             : "user in currentStep.candidateGroups",
-                    10, true);
+                    10, "DRAFT", scaffoldProcess.processVersion(), null, null, null, null, null, bundle);
             created.add(createAvailability(request, actorHeader));
         }
         return new ScaffoldResponse(created.size(), created, reconcile(processCode));
@@ -328,11 +431,13 @@ public class ActionStudioService {
     private SimulatedActionResponse simulate(ActionStudioAction action, List<ActionAvailabilityPolicy> policies,
             SimulationRequest request) {
         ActionAvailabilityPolicy policy = policies.stream()
-                .filter(ActionAvailabilityPolicy::isEnabled)
+                .filter(ActionStudioService::isActive)
                 .filter(item -> item.getActionCode().equals(action.getActionCode()))
                 .filter(item -> item.getSurface() == null || item.getSurface().equals(request.surface()))
                 .filter(item -> item.getProcessCode() == null
                         || normalizeProcessCode(item.getProcessCode()).equals(normalizeProcessCode(request.processCode())))
+                .filter(item -> item.getProcessVersion() == null
+                        || Objects.equals(item.getProcessVersion(), request.processVersion()))
                 .filter(item -> item.getTaskDefinitionKey() == null || item.getTaskDefinitionKey().equals(request.taskDefinitionKey()))
                 .filter(item -> item.getDossierStatus() == null || item.getDossierStatus().equals(request.dossierStatus()))
                 .max(Comparator.comparingInt(ActionStudioService::specificity)
@@ -344,49 +449,108 @@ public class ActionStudioService {
         boolean roleOk = policy == null || request.isAdmin() || policy.getAllowedRoleCodes().isEmpty()
                 || policy.getAllowedRoleCodes().stream().anyMatch(request.roleCodes()::contains);
         if (!roleOk) reasons.add("Người dùng không có vai trò được luật cho phép.");
-        List<String> missingPermissions = policy == null ? List.of()
-                : policy.getRequiredPermissions().stream().filter(item -> !request.permissions().contains(item)).toList();
-        if (!request.isAdmin() && !missingPermissions.isEmpty()) {
-            reasons.add("Thiếu quyền: " + String.join(", ", missingPermissions) + ".");
-        }
+        boolean conditionOk = policy == null || conditions.evaluate(policy.getConditionExpression(),
+                conditionContext(request));
+        if (!conditionOk) reasons.add("Chua thoa dieu kien nghiep vu cua luat.");
         boolean visible = action.isActive() && policy != null && roleOk;
-        if (reasons.isEmpty()) reasons.add("Khớp luật và đủ quyền thực hiện.");
+        if (reasons.isEmpty()) reasons.add("Khớp luật hiển thị và vai trò được phép.");
+        FormBundleResponse applicableBundle = applicableBundle(toBundle(policy), conditionContext(request));
         return new SimulatedActionResponse(action.getActionCode(), action.getActionName(), action.getActionType(),
                 action.getOutcome(), action.isRequiresReason(), action.isRequiresEvidence(), action.isRequiresConfirm(),
-                action.isActive(), action.getLabel(), action.getIcon(), action.getUiGroup(), action.getTone(),
-                action.getDisplayOrder(), action.getHelpText(), visible,
-                visible && (request.isAdmin() || missingPermissions.isEmpty()), policy == null ? null : policy.getId(),
-                reasons, policy == null ? null : policy.getFormKey());
+                action.isActive(), override(policy == null ? null : policy.getDisplayLabel(), action.getLabel()),
+                override(policy == null ? null : policy.getDisplayIcon(), action.getIcon()),
+                override(policy == null ? null : policy.getUiGroup(), action.getUiGroup()),
+                override(policy == null ? null : policy.getTone(), action.getTone()),
+                policy == null ? action.getDisplayOrder() : policy.getDisplayOrder(),
+                override(policy == null ? null : policy.getHelpText(), action.getHelpText()), visible,
+                visible && conditionOk, policy == null ? null : policy.getId(), reasons,
+                effectiveFormKey(policy), policy == null ? null : policy.getVersion(), applicableBundle);
+    }
+
+    private FormBundleResponse applicableBundle(FormBundleResponse bundle, Map<String, Object> context) {
+        if (bundle == null) return null;
+        List<FormBundleItemResponse> items = bundle.items().stream()
+                .filter(item -> conditions.evaluate(item.conditionExpression(), context))
+                .toList();
+        return new FormBundleResponse(bundle.displayMode(), bundle.allowDraft(), bundle.completionPolicy(),
+                bundle.version(), items);
     }
 
     private List<ReconcileResponse> reconcile(String processCode, List<ActionAvailabilityPolicy> policies) {
         var process = routingCatalog.require(processCode);
-        return process.steps().stream().flatMap(step -> step.branches().stream().map(branch -> {
+        List<ReconcileResponse> rows = new ArrayList<>(process.steps().stream().flatMap(step -> step.branches().stream().map(branch -> {
             String actionCode = outcomeAction(branch.outcome());
             if (actionCode == null) {
                 return new ReconcileResponse(processCode, step.key(), step.name(), branch.outcome(), null,
-                        "unmapped", null, "Outcome BPMN chưa được ánh xạ sang action code.");
+                        "UNMAPPED_BRANCH", null, "Outcome BPMN chưa được ánh xạ sang action code.");
             }
-            ActionAvailabilityPolicy exact = policies.stream().filter(ActionAvailabilityPolicy::isEnabled)
+            if (branch.target() == null || branch.target().isBlank()) {
+                return new ReconcileResponse(processCode, step.key(), step.name(), branch.outcome(), actionCode,
+                        "INVALID_TARGET", null, "Nhánh BPMN không có đích hợp lệ.");
+            }
+            ActionAvailabilityPolicy exact = policies.stream().filter(ActionStudioService::isActive)
                     .filter(item -> item.getProcessCode() != null
                             && normalizeProcessCode(item.getProcessCode()).equals(normalizeProcessCode(processCode)))
+                    .filter(item -> item.getProcessVersion() == null
+                            || Objects.equals(item.getProcessVersion(), process.processVersion()))
                     .filter(item -> step.key().equals(item.getTaskDefinitionKey()))
                     .filter(item -> actionCode.equals(item.getActionCode())).findFirst().orElse(null);
-            ActionAvailabilityPolicy generic = policies.stream().filter(ActionAvailabilityPolicy::isEnabled)
+            ActionAvailabilityPolicy generic = policies.stream().filter(ActionStudioService::isActive)
                     .filter(item -> item.getProcessCode() == null && item.getTaskDefinitionKey() == null)
                     .filter(item -> actionCode.equals(item.getActionCode())).findFirst().orElse(null);
             ActionAvailabilityPolicy matched = exact != null ? exact : generic;
-            String status = matched == null ? "missing" : exact == null ? "generic"
-                    : matched.getFormKey() == null && isOutcomeAction(actionCode) ? "unfilled" : "ok";
+            Set<String> candidates = csvCodes(step.role());
+            List<String> dynamicCandidates = candidates.stream().filter(ActionStudioService::isDynamicRoleExpression).toList();
+            List<String> unknownCandidates = candidates.stream()
+                    .filter(candidate -> !isDynamicRoleExpression(candidate) && !RoleCatalog.isKnown(candidate)).toList();
+            boolean invalidCandidateMapping = candidates.isEmpty() || !dynamicCandidates.isEmpty() || !unknownCandidates.isEmpty();
+            boolean roleMismatch = invalidCandidateMapping
+                    || matched != null && !candidates.containsAll(matched.getAllowedRoleCodes());
+            boolean conflict = matched != null && policies.stream().filter(ActionStudioService::isActive)
+                    .filter(item -> !item.getId().equals(matched.getId()))
+                    .filter(item -> actionCode.equals(item.getActionCode()))
+                    .anyMatch(item -> sameSelector(item, matched));
+            String status = conflict ? "CONFLICT" : roleMismatch ? "ROLE_MISMATCH"
+                    : matched == null ? "MISSING_POLICY" : exact == null ? "GENERIC_POLICY"
+                    : matched.getFormKey() == null && matched.getFormBundleItems().isEmpty()
+                            && isOutcomeAction(actionCode) ? "MISSING_FORM" : "OK";
             String reason = switch (status) {
-                case "ok" -> "Đã ghim đúng bước và đủ cấu hình.";
-                case "generic" -> "Đang được phủ bởi luật chung.";
-                case "unfilled" -> "Đã có luật nhưng chưa gắn biểu mẫu.";
+                case "OK" -> "Đã ghim đúng bước và đủ cấu hình.";
+                case "GENERIC_POLICY" -> "Đang được phủ bởi luật chung.";
+                case "MISSING_FORM" -> "Đã có luật nhưng chưa gắn biểu mẫu.";
+                case "ROLE_MISMATCH" -> !dynamicCandidates.isEmpty()
+                        ? "Candidate Group động không thể phân tích tĩnh: " + String.join(", ", dynamicCandidates) + "."
+                        : !unknownCandidates.isEmpty()
+                                ? "Candidate Group không tồn tại trong danh mục vai trò: " + String.join(", ", unknownCandidates) + "."
+                                : candidates.isEmpty() ? "User Task chưa khai báo Candidate Group."
+                                : "Vai trò của luật nằm ngoài Candidate Group của bước.";
+                case "CONFLICT" -> "Có nhiều luật ACTIVE trùng selector cho nhánh này.";
                 default -> "Chưa có luật hiển thị cho nhánh này.";
             };
             return new ReconcileResponse(processCode, step.key(), step.name(), branch.outcome(), actionCode,
                     status, matched == null ? null : matched.getId(), reason);
-        })).toList();
+        })).toList());
+
+        Set<String> routed = process.steps().stream().flatMap(step -> step.branches().stream()
+                .map(branch -> step.key() + "\u0000" + outcomeAction(branch.outcome())))
+                .collect(java.util.stream.Collectors.toSet());
+        policies.stream().filter(ActionStudioService::isActive)
+                .filter(item -> item.getProcessCode() != null
+                        && normalizeProcessCode(item.getProcessCode()).equals(normalizeProcessCode(processCode)))
+                .filter(item -> item.getTaskDefinitionKey() != null && isStandardAction(item.getActionCode()))
+                .filter(item -> !routed.contains(item.getTaskDefinitionKey() + "\u0000" + item.getActionCode()))
+                .forEach(item -> rows.add(new ReconcileResponse(processCode, item.getTaskDefinitionKey(),
+                        item.getTaskDefinitionKey(), null, item.getActionCode(), "ORPHAN_POLICY", item.getId(),
+                        "Luật ACTIVE không còn nhánh tương ứng trong BPMN.")));
+        return List.copyOf(rows);
+    }
+
+    private static boolean sameSelector(ActionAvailabilityPolicy left, ActionAvailabilityPolicy right) {
+        return Objects.equals(left.getSurface(), right.getSurface())
+                && Objects.equals(normalizeProcessCode(left.getProcessCode()), normalizeProcessCode(right.getProcessCode()))
+                && Objects.equals(left.getProcessVersion(), right.getProcessVersion())
+                && Objects.equals(left.getTaskDefinitionKey(), right.getTaskDefinitionKey())
+                && Objects.equals(left.getDossierStatus(), right.getDossierStatus());
     }
 
     private void validateAvailability(AvailabilityRequest request) {
@@ -396,17 +560,178 @@ public class ActionStudioService {
         if (request.taskDefinitionKey() != null && request.processCode() == null) {
             throw new IllegalArgumentException("taskDefinitionKey yêu cầu processCode.");
         }
+        requireOneOf("lifecycleStatus", request.lifecycleStatus(), POLICY_STATUSES);
+        if (request.uiGroup() != null) requireOneOf("uiGroup", request.uiGroup(), UI_GROUPS);
+        if (request.tone() != null) requireOneOf("tone", request.tone(), TONES);
+        ActionStudioAction definition = action(request.actionCode());
+        String group = override(request.uiGroup(), definition.getUiGroup());
+        String tone = override(request.tone(), definition.getTone());
+        if ((request.uiGroup() != null || request.tone() != null) && "SUPPORT".equals(definition.getActionType())
+                && (!"MORE".equals(group) || !"default".equals(tone)))
+            throw new IllegalArgumentException("Support Action chi duoc dung MORE/default.");
+        if (request.uiGroup() != null && "EXCEPTION".equals(definition.getActionType()) && !"EXCEPTION".equals(group))
+            throw new IllegalArgumentException("Exception Action phai nam trong nhom EXCEPTION.");
+        if (request.tone() != null && "REJECT_STEP".equals(request.actionCode()) && "primary".equals(tone))
+            throw new IllegalArgumentException("REJECT_STEP khong duoc dung tone primary.");
+        validateBundle(request);
+        if ("ACTIVE".equals(request.lifecycleStatus()) && isStandardAction(request.actionCode())) {
+            validateStandardActionActivation(request);
+        }
+    }
+
+    @Transactional
+    public BulkDeleteAvailabilityResponse deleteAvailabilityBulk(BulkDeleteAvailabilityRequest request,
+            String actorHeader) {
+        List<String> ids = request.items().stream().map(item -> item.id().trim()).toList();
+        if (new java.util.HashSet<>(ids).size() != ids.size()) {
+            throw new IllegalArgumentException("Danh sach xoa co ma luat bi trung.");
+        }
+        Map<String, ActionAvailabilityPolicy> policies = availabilityRepository.findAllById(ids).stream()
+                .collect(java.util.stream.Collectors.toMap(ActionAvailabilityPolicy::getId, item -> item));
+        for (var requested : request.items()) {
+            ActionAvailabilityPolicy policy = policies.get(requested.id().trim());
+            if (policy == null) throw new EntityNotFoundException("Khong tim thay luat kha dung " + requested.id());
+            assertVersion(policy.getId(), requested.version(), policy.getVersion());
+        }
+        availabilityRepository.deleteAll(policies.values());
+        availabilityRepository.flush();
+        ids.forEach(id -> audit("AVAILABILITY", id, "DELETE", actorHeader, "Xoa hang loat luat hien thi nut."));
+        return new BulkDeleteAvailabilityResponse(ids.size(), List.copyOf(ids));
+    }
+
+    @Transactional
+    public BulkStatusAvailabilityResponse setAvailabilityStatusBulk(BulkStatusAvailabilityRequest request,
+            String actorHeader) {
+        List<String> ids = request.items().stream().map(item -> item.id().trim()).toList();
+        if (new java.util.HashSet<>(ids).size() != ids.size()) {
+            throw new IllegalArgumentException("Danh sach cap nhat co ma luat bi trung.");
+        }
+        Map<String, ActionAvailabilityPolicy> policies = availabilityRepository.findAllById(ids).stream()
+                .collect(java.util.stream.Collectors.toMap(ActionAvailabilityPolicy::getId, item -> item));
+        for (var requested : request.items()) {
+            ActionAvailabilityPolicy policy = policies.get(requested.id().trim());
+            if (policy == null) throw new EntityNotFoundException("Khong tim thay luat kha dung " + requested.id());
+            assertVersion(policy.getId(), requested.version(), policy.getVersion());
+            if (request.enabled()) validateAvailability(toAvailabilityRequest(policy, "ACTIVE"));
+        }
+        for (String id : ids) {
+            ActionAvailabilityPolicy policy = policies.get(id);
+            policy.setLifecycleStatus(request.enabled()
+                    ? ActionAvailabilityPolicyStatus.ACTIVE : ActionAvailabilityPolicyStatus.DISABLED);
+            touch(policy, actorHeader);
+        }
+        availabilityRepository.saveAll(policies.values());
+        availabilityRepository.flush();
+        List<AvailabilityResponse> updated = ids.stream().map(id -> toAvailability(policies.get(id))).toList();
+        ids.forEach(id -> audit("AVAILABILITY", id, "UPDATE", actorHeader,
+                request.enabled() ? "Bat hang loat luat hien thi nut." : "Tat hang loat luat hien thi nut."));
+        return new BulkStatusAvailabilityResponse(updated.size(), List.copyOf(updated));
+    }
+
+    private AvailabilityRequest toAvailabilityRequest(ActionAvailabilityPolicy policy, String lifecycleStatus) {
+        return new AvailabilityRequest(policy.getId(), policy.getActionCode(), policy.getSurface(),
+                policy.getProcessCode(), policy.getTaskDefinitionKey(), policy.getDossierStatus(),
+                List.copyOf(policy.getAllowedRoleCodes()), policy.getFormKey(), policy.getConditionExpression(),
+                policy.getDisplayOrder(), lifecycleStatus, policy.getProcessVersion(), policy.getDisplayLabel(),
+                policy.getDisplayIcon(), policy.getUiGroup(), policy.getTone(), policy.getHelpText(), null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> missingRequiredBundleFields(FormBundleResponse bundle, Map<String, Object> formData,
+            Map<String, Object> context) {
+        if (bundle == null) return List.of();
+        List<String> missing = new ArrayList<>();
+        for (FormBundleItemResponse item : bundle.items()) {
+            if (!conditions.evaluate(item.conditionExpression(), context)) continue;
+            Object namespaced = formData.get(item.outputNamespace());
+            Map<String, Object> values = namespaced instanceof Map<?, ?> map
+                    ? (Map<String, Object>) map : Map.of();
+            if (item.required() && values.isEmpty()) missing.add(item.displayTitle() == null ? item.formKey() : item.displayTitle());
+            missing.addAll(missingRequiredFormFields(item.formKey(), values));
+        }
+        return missing.stream().distinct().toList();
+    }
+
+    @Transactional
+    public int invalidateIncompatiblePolicies(String processCode, String actorHeader) {
+        int changed = 0;
+        for (ActionAvailabilityPolicy policy : availabilityRepository.findAllByOrderByDisplayOrderAscIdAsc()) {
+            if (!isActive(policy) || policy.getProcessCode() == null
+                    || !normalizeProcessCode(policy.getProcessCode()).equals(normalizeProcessCode(processCode))) continue;
+            try {
+                if (policy.getProcessVersion() == null) throw new IllegalArgumentException("missing process version");
+                ProcessStepResponse step = routingCatalog.require(policy.getProcessCode(), policy.getProcessVersion()).steps().stream()
+                        .filter(item -> Objects.equals(item.key(), policy.getTaskDefinitionKey())).findFirst().orElseThrow();
+                if (isStandardAction(policy.getActionCode()) && step.branches().stream()
+                        .map(branch -> outcomeAction(branch.outcome())).noneMatch(policy.getActionCode()::equals)) throw new IllegalArgumentException("orphan route");
+                Set<String> candidates = csvCodes(step.role());
+                if (!candidates.containsAll(policy.getAllowedRoleCodes())) throw new IllegalArgumentException("role mismatch");
+            } catch (RuntimeException incompatible) {
+                policy.setLifecycleStatus(ActionAvailabilityPolicyStatus.INVALID);
+                touch(policy, actorHeader);
+                availabilityRepository.save(policy);
+                audit("AVAILABILITY", policy.getId(), "INVALIDATE", actorHeader, incompatible.getMessage());
+                changed++;
+            }
+        }
+        return changed;
+    }
+
+    private void validateStandardActionActivation(AvailabilityRequest request) {
+        if (blankToNull(request.processCode()) == null || request.processVersion() == null
+                || blankToNull(request.taskDefinitionKey()) == null) {
+            throw new IllegalArgumentException(
+                    "Luật Standard Action ACTIVE phải ghim vào processCode và taskDefinitionKey cụ thể.");
+        }
+        if (request.allowedRoleCodes().isEmpty()) {
+            throw new IllegalArgumentException("Luật Standard Action ACTIVE phải có ít nhất một vai trò được phép.");
+        }
+
+        ProcessRoutingResponse process = routingCatalog.require(request.processCode(), request.processVersion());
+        ProcessStepResponse step = process.steps().stream()
+                .filter(item -> item.key().equals(request.taskDefinitionKey()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Task không tồn tại trong BPMN đã deploy: " + request.taskDefinitionKey()));
+
+        boolean routeExists = step.branches().stream()
+                .map(branch -> outcomeAction(branch.outcome()))
+                .anyMatch(request.actionCode()::equals);
+        if (!routeExists) {
+            throw new IllegalArgumentException("BPMN không có route cho Action " + request.actionCode()
+                    + " tại task " + request.taskDefinitionKey() + ".");
+        }
+
+        Set<String> candidateGroups = csvCodes(step.role());
+        List<String> dynamicCandidateGroups = candidateGroups.stream()
+                .filter(ActionStudioService::isDynamicRoleExpression).toList();
+        if (!dynamicCandidateGroups.isEmpty()) {
+            throw new IllegalArgumentException("Candidate Group động cần được ánh xạ thủ công: "
+                    + String.join(", ", dynamicCandidateGroups) + ".");
+        }
+        List<String> unknownCandidateGroups = candidateGroups.stream().filter(role -> !RoleCatalog.isKnown(role)).toList();
+        if (!unknownCandidateGroups.isEmpty()) {
+            throw new IllegalArgumentException("Candidate Group không tồn tại trong danh mục vai trò: "
+                    + String.join(", ", unknownCandidateGroups) + ".");
+        }
+        List<String> rolesOutsideCandidateGroups = normalizeCodes(request.allowedRoleCodes()).stream()
+                .filter(role -> !candidateGroups.contains(role)).toList();
+        if (!rolesOutsideCandidateGroups.isEmpty()) {
+            throw new IllegalArgumentException("Vai trò không thuộc Candidate Group của task: "
+                    + String.join(", ", rolesOutsideCandidateGroups) + ".");
+        }
     }
 
     private void assertNoDuplicateAvailability(AvailabilityRequest request, String currentId) {
-        if (!request.enabled()) return;
+        if (!"ACTIVE".equals(request.lifecycleStatus())) return;
         ActionAvailabilityPolicy duplicate = availabilityRepository.findAllByOrderByDisplayOrderAscIdAsc().stream()
-                .filter(ActionAvailabilityPolicy::isEnabled)
+                .filter(ActionStudioService::isActive)
                 .filter(item -> !item.getId().equals(currentId))
                 .filter(item -> item.getActionCode().equals(request.actionCode().trim()))
                 .filter(item -> Objects.equals(item.getSurface(), blankToNull(request.surface())))
                 .filter(item -> Objects.equals(normalizeProcessCode(item.getProcessCode()),
                         normalizeProcessCode(blankToNull(request.processCode()))))
+                .filter(item -> Objects.equals(item.getProcessVersion(), request.processVersion()))
                 .filter(item -> Objects.equals(item.getTaskDefinitionKey(), blankToNull(request.taskDefinitionKey())))
                 .filter(item -> Objects.equals(item.getDossierStatus(), blankToNull(request.dossierStatus())))
                 .findFirst().orElse(null);
@@ -414,7 +739,48 @@ public class ActionStudioService {
             throw new ActionStudioConflictException("Luật " + duplicate.getId()
                     + " đang bật cho cùng hành động và ngữ cảnh. Hãy tắt hoặc cập nhật luật đó trước.");
         }
+        ActionAvailabilityPolicy overlap = availabilityRepository.findAllByOrderByDisplayOrderAscIdAsc().stream()
+                .filter(ActionStudioService::isActive).filter(item -> !item.getId().equals(currentId))
+                .filter(item -> item.getActionCode().equals(request.actionCode().trim()))
+                .filter(item -> intersects(item, request) && !contains(item, request) && !contains(request, item))
+                .findFirst().orElse(null);
+        if (overlap != null) throw new ActionStudioConflictException("CONFLICT with policy " + overlap.getId());
     }
+
+    private void validateBundle(AvailabilityRequest request) {
+        if (request.formBundle() == null) return;
+        requireOneOf("bundle displayMode", request.formBundle().displayMode(), Set.of("STEPPER", "TABS"));
+        requireOneOf("bundle completionPolicy", request.formBundle().completionPolicy(), Set.of("ALL_REQUIRED_VALID"));
+        Set<Integer> orders = new java.util.HashSet<>();
+        Set<String> namespaces = new java.util.HashSet<>();
+        request.formBundle().items().forEach(item -> {
+            requireOneOf("form mode", item.mode(), Set.of("VIEW", "EDIT"));
+            if (!orders.add(item.displayOrder())) throw new IllegalArgumentException("Form Bundle bi trung displayOrder.");
+            if (!namespaces.add(item.outputNamespace().trim())) throw new IllegalArgumentException("Form Bundle bi trung outputNamespace.");
+            var form = eformRepository.findById(item.formKey().trim())
+                    .orElseThrow(() -> new IllegalArgumentException("Bieu mau khong ton tai: " + item.formKey()));
+            if (item.formVersion() != null && item.formVersion() != form.getVersion())
+                throw new IllegalArgumentException("Phien ban bieu mau khong ton tai: " + item.formKey());
+        });
+    }
+
+    private static boolean intersects(ActionAvailabilityPolicy a, AvailabilityRequest b) {
+        return intersects(a.getSurface(), b.surface()) && intersects(normalizeProcessCode(a.getProcessCode()), normalizeProcessCode(b.processCode()))
+                && intersects(a.getProcessVersion(), b.processVersion()) && intersects(a.getTaskDefinitionKey(), b.taskDefinitionKey())
+                && intersects(a.getDossierStatus(), b.dossierStatus());
+    }
+    private static boolean contains(ActionAvailabilityPolicy a, AvailabilityRequest b) {
+        return contains(a.getSurface(), b.surface()) && contains(normalizeProcessCode(a.getProcessCode()), normalizeProcessCode(b.processCode()))
+                && contains(a.getProcessVersion(), b.processVersion()) && contains(a.getTaskDefinitionKey(), b.taskDefinitionKey())
+                && contains(a.getDossierStatus(), b.dossierStatus());
+    }
+    private static boolean contains(AvailabilityRequest a, ActionAvailabilityPolicy b) {
+        return contains(a.surface(), b.getSurface()) && contains(normalizeProcessCode(a.processCode()), normalizeProcessCode(b.getProcessCode()))
+                && contains(a.processVersion(), b.getProcessVersion()) && contains(a.taskDefinitionKey(), b.getTaskDefinitionKey())
+                && contains(a.dossierStatus(), b.getDossierStatus());
+    }
+    private static boolean intersects(Object a, Object b) { return a == null || b == null || Objects.equals(a, b); }
+    private static boolean contains(Object parent, Object child) { return parent == null || Objects.equals(parent, child); }
 
     private void validateException(ExceptionRequest request) {
         ActionStudioAction action = action(request.actionCode());
@@ -460,14 +826,43 @@ public class ActionStudioService {
         entity.setActionCode(request.actionCode().trim());
         entity.setSurface(blankToNull(request.surface()));
         entity.setProcessCode(blankToNull(request.processCode()));
+        entity.setProcessVersion(request.processVersion());
         entity.setTaskDefinitionKey(blankToNull(request.taskDefinitionKey()));
         entity.setDossierStatus(blankToNull(request.dossierStatus()));
         entity.setAllowedRoleCodes(normalizeCodes(request.allowedRoleCodes()));
-        entity.setRequiredPermissions(normalizeCodes(request.requiredPermissions()));
-        entity.setFormKey(blankToNull(request.formKey()));
+        entity.setFormKey(request.formBundle() == null ? blankToNull(request.formKey()) : null);
+        entity.setDisplayLabel(blankToNull(request.displayLabel()));
+        entity.setDisplayIcon(blankToNull(request.displayIcon()));
+        entity.setUiGroup(blankToNull(request.uiGroup()));
+        entity.setTone(blankToNull(request.tone()));
+        entity.setHelpText(blankToNull(request.helpText()));
+        entity.getFormBundleItems().clear();
+        if (request.formBundle() != null) {
+            entity.setBundleDisplayMode(blankToNull(request.formBundle().displayMode()));
+            entity.setBundleAllowDraft(request.formBundle().allowDraft());
+            entity.setBundleCompletionPolicy(blankToNull(request.formBundle().completionPolicy()));
+            entity.setBundleVersion(request.formBundle().version() == null ? 1L : request.formBundle().version());
+            request.formBundle().items().forEach(source -> {
+                ActionFormBundleItem item = new ActionFormBundleItem();
+                item.setFormKey(source.formKey().trim());
+                item.setFormVersion(source.formVersion());
+                item.setDisplayOrder(source.displayOrder());
+                item.setDisplayTitle(blankToNull(source.displayTitle()));
+                item.setRequired(source.required());
+                item.setMode(source.mode());
+                item.setSkippable(source.skippable());
+                item.setConditionExpression(blankToNull(source.conditionExpression()));
+                item.setOutputNamespace(source.outputNamespace().trim());
+                entity.getFormBundleItems().add(item);
+            });
+        } else {
+            entity.setBundleDisplayMode(null);
+            entity.setBundleCompletionPolicy(null);
+            entity.setBundleVersion(null);
+        }
         entity.setConditionExpression(blankToNull(request.conditionExpression()));
         entity.setDisplayOrder(request.displayOrder());
-        entity.setEnabled(request.enabled());
+        entity.setLifecycleStatus(ActionAvailabilityPolicyStatus.valueOf(request.lifecycleStatus()));
     }
 
     private static void apply(ActionExceptionPolicy entity, ExceptionRequest request) {
@@ -515,8 +910,10 @@ public class ActionStudioService {
     private static AvailabilityResponse toAvailability(ActionAvailabilityPolicy item) {
         return new AvailabilityResponse(item.getId(), item.getActionCode(), item.getSurface(), item.getProcessCode(),
                 item.getTaskDefinitionKey(), item.getDossierStatus(), List.copyOf(item.getAllowedRoleCodes()),
-                List.copyOf(item.getRequiredPermissions()), item.getFormKey(), item.getConditionExpression(),
-                item.getDisplayOrder(), item.isEnabled(), item.getVersion(), item.getUpdatedBy(), item.getUpdatedAt());
+                item.getFormKey(), item.getConditionExpression(), item.getDisplayOrder(),
+                item.getLifecycleStatus().name(), item.getVersion(), item.getUpdatedBy(), item.getUpdatedAt(),
+                item.getProcessVersion(), item.getDisplayLabel(), item.getDisplayIcon(), item.getUiGroup(),
+                item.getTone(), item.getHelpText(), toBundle(item));
     }
 
     private static ExceptionResponse toException(ActionExceptionPolicy item) {
@@ -549,6 +946,7 @@ public class ActionStudioService {
 
     private static int specificity(ActionAvailabilityPolicy item) {
         return (item.getSurface() == null ? 0 : 1) + (item.getProcessCode() == null ? 0 : 1)
+                + (item.getProcessVersion() == null ? 0 : 1)
                 + (item.getTaskDefinitionKey() == null ? 0 : 1) + (item.getDossierStatus() == null ? 0 : 1);
     }
 
@@ -558,6 +956,142 @@ public class ActionStudioService {
 
     private static boolean isOutcomeAction(String actionCode) {
         return BpmnOutcomeCodes.isOutcomeAction(actionCode);
+    }
+
+    private AvailabilityRequest normalizeLegacyForm(AvailabilityRequest request) {
+        String legacyFormKey = blankToNull(request.formKey());
+        if (request.formBundle() != null || legacyFormKey == null) return request;
+        Long formVersion = eformRepository.findById(legacyFormKey).map(Eform::getVersion).orElse(null);
+        FormBundleRequest bundle = new FormBundleRequest("STEPPER", false, "ALL_REQUIRED_VALID", 1L,
+                List.of(new FormBundleItemRequest(legacyFormKey, formVersion, 1, null,
+                        true, "EDIT", false, null, "form")));
+        return new AvailabilityRequest(request.id(), request.actionCode(), request.surface(), request.processCode(),
+                request.taskDefinitionKey(), request.dossierStatus(), request.allowedRoleCodes(), null,
+                request.conditionExpression(), request.displayOrder(), request.lifecycleStatus(),
+                request.processVersion(), request.displayLabel(), request.displayIcon(), request.uiGroup(),
+                request.tone(), request.helpText(), bundle);
+    }
+
+    private static FormBundleResponse toBundle(ActionAvailabilityPolicy policy) {
+        if (policy == null || policy.getFormBundleItems().isEmpty()) return null;
+        return new FormBundleResponse(policy.getBundleDisplayMode(), policy.isBundleAllowDraft(),
+                policy.getBundleCompletionPolicy(), policy.getBundleVersion(), policy.getFormBundleItems().stream()
+                        .sorted(Comparator.comparingInt(ActionFormBundleItem::getDisplayOrder))
+                        .map(item -> new FormBundleItemResponse(item.getFormKey(), item.getFormVersion(),
+                                item.getDisplayOrder(), item.getDisplayTitle(), item.isRequired(), item.getMode(),
+                                item.isSkippable(), item.getConditionExpression(), item.getOutputNamespace()))
+                        .toList());
+    }
+
+    private static String bundleJson(FormBundleResponse bundle) {
+        if (bundle == null) return "null";
+        com.fasterxml.jackson.databind.node.ObjectNode node = JSON.valueToTree(bundle);
+        node.remove("version");
+        try { return JSON.writeValueAsString(node); }
+        catch (com.fasterxml.jackson.core.JsonProcessingException impossible) { throw new IllegalStateException(impossible); }
+    }
+
+    private void snapshotBundle(ActionAvailabilityPolicy policy, String actorHeader) {
+        FormBundleResponse bundle = toBundle(policy);
+        if (bundleSnapshots == null || bundle == null || bundle.version() == null) return;
+        String id = policy.getId() + ":" + bundle.version();
+        if (bundleSnapshots.existsById(id)) return;
+        ActionFormBundleSnapshot snapshot = new ActionFormBundleSnapshot();
+        snapshot.setId(id);
+        snapshot.setPolicyId(policy.getId());
+        snapshot.setBundleVersion(bundle.version());
+        try { snapshot.setConfigJson(JSON.writeValueAsString(bundle)); }
+        catch (com.fasterxml.jackson.core.JsonProcessingException impossible) { throw new IllegalStateException(impossible); }
+        snapshot.setCreatedBy(ProcessDefinitionService.normalizeActor(actorHeader));
+        snapshot.setCreatedAt(now());
+        bundleSnapshots.save(snapshot);
+    }
+
+    private static String effectiveFormKey(ActionAvailabilityPolicy policy) {
+        if (policy == null) return null;
+        return policy.getFormBundleItems().stream().sorted(Comparator.comparingInt(ActionFormBundleItem::getDisplayOrder))
+                .map(ActionFormBundleItem::getFormKey).findFirst().orElse(policy.getFormKey());
+    }
+
+    private static String override(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value;
+    }
+
+    private static Map<String, Object> conditionContext(SimulationRequest request) {
+        Map<String, Object> context = new java.util.LinkedHashMap<>(request.businessContext() == null
+                ? Map.of() : request.businessContext());
+        context.putIfAbsent("user", request.roleCodes());
+        context.putIfAbsent("currentStep", Map.of("candidateGroups", request.roleCodes()));
+        return context;
+    }
+
+    private static LinkedHashSet<String> csvCodes(String values) {
+        if (values == null || values.isBlank()) return new LinkedHashSet<>();
+        return java.util.Arrays.stream(values.split(",")).map(String::trim).filter(value -> !value.isEmpty())
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private static boolean isDynamicRoleExpression(String value) {
+        if (value == null) return false;
+        String candidate = value.trim();
+        return candidate.startsWith("=") || candidate.contains("${") || candidate.contains("#{");
+    }
+
+    private boolean isStandardAction(String actionCode) {
+        return "STANDARD".equals(action(actionCode).getActionType());
+    }
+
+    private static boolean isActive(ActionAvailabilityPolicy policy) {
+        return policy.getLifecycleStatus() == ActionAvailabilityPolicyStatus.ACTIVE;
+    }
+
+    private static void validatePresentation(ActionStudioAction action, String uiGroup, String tone) {
+        switch (action.getActionType()) {
+            case "SUPPORT" -> {
+                if (!"MORE".equals(uiGroup) || !"default".equals(tone))
+                    throw new IllegalArgumentException("Support Action chỉ được dùng nhóm MORE và tone default.");
+            }
+            case "EXCEPTION" -> {
+                if (!"EXCEPTION".equals(uiGroup) || !Set.of("warning", "danger").contains(tone))
+                    throw new IllegalArgumentException("Exception Action phải ở nhóm EXCEPTION với tone warning hoặc danger.");
+            }
+            case "STANDARD" -> {
+                if (!Set.of("PRIMARY", "MORE").contains(uiGroup)
+                        || !Set.of("primary", "default", "danger").contains(tone))
+                    throw new IllegalArgumentException("Standard Action chỉ được dùng nhóm PRIMARY/MORE và tone primary/default/danger.");
+                if ("REJECT_STEP".equals(action.getActionCode()) && "primary".equals(tone))
+                    throw new IllegalArgumentException("REJECT_STEP không được dùng tone primary.");
+            }
+            default -> throw new IllegalArgumentException("Loại Action không hợp lệ: " + action.getActionType());
+        }
+    }
+
+    private static String defaultIcon(ActionStudioAction action) {
+        return "EXCEPTION".equals(action.getActionType()) ? "safety"
+                : "SUPPORT".equals(action.getActionType()) ? "appstore" : "thunderbolt";
+    }
+
+    private static String defaultUiGroup(ActionStudioAction action) {
+        return "EXCEPTION".equals(action.getActionType()) ? "EXCEPTION"
+                : "SUPPORT".equals(action.getActionType()) ? "MORE" : "PRIMARY";
+    }
+
+    private static String defaultTone(ActionStudioAction action) {
+        if ("REJECT_STEP".equals(action.getActionCode())) return "danger";
+        if ("EXCEPTION".equals(action.getActionType())) return "warning";
+        if (Set.of("SUBMIT", "APPROVE_STEP").contains(action.getActionCode())) return "primary";
+        return "default";
+    }
+
+    private static int defaultDisplayOrder(ActionStudioAction action) {
+        return switch (action.getActionCode()) {
+            case "SUBMIT" -> 10;
+            case "APPROVE_STEP" -> 11;
+            case "RETURN_STEP" -> 12;
+            case "REJECT_STEP" -> 13;
+            default -> "SUPPORT".equals(action.getActionType()) ? 50
+                    : "EXCEPTION".equals(action.getActionType()) ? 100 : 20;
+        };
     }
 
     private static void requireOneOf(String field, String value, Set<String> allowed) {

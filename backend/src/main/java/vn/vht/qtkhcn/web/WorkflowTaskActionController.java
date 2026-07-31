@@ -13,6 +13,9 @@ import vn.vht.qtkhcn.service.WorkflowTaskActionService;
 import vn.vht.qtkhcn.web.dto.TaskActionDtos.AvailableActionsResponse;
 import vn.vht.qtkhcn.web.dto.TaskActionDtos.ExecuteActionRequest;
 import vn.vht.qtkhcn.web.dto.TaskActionDtos.ExecuteActionResponse;
+import vn.vht.qtkhcn.web.dto.TaskActionDtos.SaveFormDraftRequest;
+import vn.vht.qtkhcn.web.dto.TaskActionDtos.FormSubmissionResponse;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/tasks")
@@ -35,5 +38,18 @@ public class WorkflowTaskActionController {
             @RequestHeader(name = USER_ID, required = false) String userId,
             @Valid @RequestBody ExecuteActionRequest request) {
         return ResponseEntity.accepted().body(service.execute(taskKey, request, userId));
+    }
+
+    @PostMapping("/{taskKey}/form-submissions/draft")
+    public FormSubmissionResponse saveDraft(@PathVariable String taskKey,
+            @RequestHeader(name = USER_ID, required = false) String userId,
+            @Valid @RequestBody SaveFormDraftRequest request) {
+        return service.saveDraft(taskKey, request, userId);
+    }
+
+    @GetMapping("/{taskKey}/form-submissions")
+    public List<FormSubmissionResponse> submissions(@PathVariable String taskKey,
+            @RequestHeader(name = USER_ID, required = false) String userId) {
+        return service.submissions(taskKey, userId);
     }
 }

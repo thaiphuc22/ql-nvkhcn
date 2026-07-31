@@ -31,6 +31,14 @@
       "Authorization": "Bearer dev-ho-so-local-only"
     }
   },
+  "/api/hoi-dong": {
+    "target": "http://localhost:8093",
+    "secure": false,
+    "changeOrigin": false,
+    "headers": {
+      "Authorization": "Bearer dev-ho-so-local-only"
+    }
+  },
   "/api/organizations": {
     "target": "http://localhost:8095",
     "secure": false,
@@ -40,6 +48,14 @@
     }
   },
   "/api/roles": {
+    "target": "http://localhost:8095",
+    "secure": false,
+    "changeOrigin": false,
+    "headers": {
+      "X-QTKHCN-Dev-Key": "dev-local-only"
+    }
+  },
+  "/api/role-matrix": {
     "target": "http://localhost:8095",
     "secure": false,
     "changeOrigin": false,

@@ -41,8 +41,10 @@ public class DeployedProcessPolicyScaffolder {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void onProcessDeployed(ProcessDeployedEvent event) {
         try {
+            int invalidated = actionStudio.invalidateIncompatiblePolicies(event.bpmnProcessId(), event.actor());
             var result = actionStudio.scaffold(event.bpmnProcessId(), event.actor());
-            log.info("Đã sinh {} luật hành động cho quy trình {}", result.createdCount(), event.bpmnProcessId());
+            log.info("Đã sinh {} luật hành động và vô hiệu {} luật không tương thích cho quy trình {}",
+                    result.createdCount(), invalidated, event.bpmnProcessId());
         } catch (RuntimeException failure) {
             // Không có action code tương ứng trong danh mục, outcome BPMN lạ, biểu mẫu chưa tồn tại…
             // — tất cả đều là "quy trình cần cấu hình thêm", không phải "deploy hỏng".

@@ -6,6 +6,7 @@ import { API_BASE_URL } from '../api-config';
 import {
   AssignmentRequest,
   AssignmentResponse,
+  BulkAssignmentRequest,
   EffectivePermissionsResponse,
   UserAppsRequest,
   UserAppsResponse,
@@ -47,6 +48,22 @@ export class UserService {
       `${API_BASE_URL}/api/users/${userId}/role-assignments`,
       request,
     );
+  }
+
+  /**
+   * Gán nhiều vai trò trong 1 request. Backend idempotent (bỏ qua assignment trùng khớp hoàn
+   * toàn), nên response chỉ chứa các dòng THỰC SỰ vừa tạo — mảng rỗng nghĩa là không có gì mới.
+   */
+  assignBulk(userId: string, request: BulkAssignmentRequest): Observable<AssignmentResponse[]> {
+    return this.http.post<AssignmentResponse[]>(
+      `${API_BASE_URL}/api/users/${userId}/role-assignments/bulk`,
+      request,
+    );
+  }
+
+  /** Assignment của MỌI user trong 1 lượt — nguồn cho cột "Vai trò" ở bảng danh sách. */
+  allAssignments(): Observable<AssignmentResponse[]> {
+    return this.http.get<AssignmentResponse[]>(`${API_BASE_URL}/api/users/role-assignments`);
   }
 
   revoke(userId: string, assignmentId: string): Observable<void> {

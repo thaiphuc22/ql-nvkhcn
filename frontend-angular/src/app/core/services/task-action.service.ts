@@ -8,6 +8,8 @@ import {
   TaskActionRequest,
   TaskActionResult,
   TaskAvailableActionsResponse,
+  TaskFormDraftRequest,
+  TaskFormSubmission,
 } from '../models/task-action';
 
 /**
@@ -31,6 +33,20 @@ export class TaskActionService {
     return this.http.post<TaskActionResult>(
       `${this.endpoint}/${encodeURIComponent(taskKey)}/actions`,
       { ...request, taskKey, formData: request.formData ?? {} },
+      { headers: this.identityHeaders() },
+    );
+  }
+
+  saveFormDraft(taskKey: string, request: TaskFormDraftRequest): Observable<TaskFormSubmission> {
+    return this.http.post<TaskFormSubmission>(
+      `${this.endpoint}/${encodeURIComponent(taskKey)}/form-submissions/draft`, request,
+      { headers: this.identityHeaders() },
+    );
+  }
+
+  formSubmissions(taskKey: string): Observable<TaskFormSubmission[]> {
+    return this.http.get<TaskFormSubmission[]>(
+      `${this.endpoint}/${encodeURIComponent(taskKey)}/form-submissions`,
       { headers: this.identityHeaders() },
     );
   }

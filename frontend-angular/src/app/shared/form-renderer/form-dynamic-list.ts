@@ -31,6 +31,8 @@ export class FormDynamicListComponent {
   readonly rows = input<Record<string, unknown>[]>([]);
   readonly rootCtx = input<Record<string, unknown>>({});
   readonly errors = input<Record<string, string>>({});
+  /** Options động theo `valuesKey` — chuyển tiếp nguyên si xuống từng ô của mỗi dòng. */
+  readonly valueSources = input<Record<string, { value: string; label: string }[]>>({});
   readonly errPrefix = input('');
   readonly rowsChange = output<Record<string, unknown>[]>();
 

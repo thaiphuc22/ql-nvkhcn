@@ -47,7 +47,15 @@ describe('AuthService app entitlement', () => {
     httpMock.expectNone((req) => req.url.startsWith('/api/effective-permissions/'));
   });
 
-  it('refreshCurrentUser() overlays real roleCodes/administrator from identity-service, keeps static apps', () => {
+  it('demo accounts carry no static roleCodes — identity-service is the only source', () => {
+    const auth = TestBed.inject(AuthService);
+    auth.login('pm@example.com', '123456');
+    expect(auth.user()?.roleCodes).toEqual([]);
+    expect(auth.rolesLoaded()).toBe(false);
+    expect(auth.identityUnavailable()).toBe(false);
+  });
+
+  it('refreshCurrentUser() loads real roleCodes/administrator from identity-service, keeps static apps', () => {
     const auth = TestBed.inject(AuthService);
     auth.login('pm@example.com', '123456');
 
@@ -67,17 +75,49 @@ describe('AuthService app entitlement', () => {
     expect(auth.user()?.roleCodes).toEqual(['PM', 'PA']);
     expect(auth.user()?.isAdmin).toBe(false);
     expect(auth.user()?.apps).toEqual(['qlnvkhcn']);
+    expect(auth.rolesLoaded()).toBe(true);
+    expect(auth.identityUnavailable()).toBe(false);
   });
 
-  it('refreshCurrentUser() failure keeps the static demo roleCodes (does not break login)', () => {
+  it('administrator from identity-service wins over the static isAdmin flag (can be lowered)', () => {
+    const auth = TestBed.inject(AuthService);
+    auth.login('admin@example.com', '123456');
+    expect(auth.user()?.isAdmin).toBe(true);
+
+    auth.refreshCurrentUser();
+    httpMock.expectOne('/api/effective-permissions/admin%40example.com').flush({
+      id: 'u9', userId: 'u9', email: 'admin@example.com', fullName: 'Lê Văn Cường',
+      organizationId: null, roleCodes: [], permissions: [], administrator: false,
+    });
+
+    expect(auth.user()?.isAdmin).toBe(false);
+  });
+
+  it('refreshCurrentUser() failure flags identityUnavailable instead of failing silently', () => {
     const auth = TestBed.inject(AuthService);
     auth.login('pm@example.com', '123456');
-    const staticRoleCodes = auth.user()?.roleCodes;
 
     auth.refreshCurrentUser();
     const req = httpMock.expectOne('/api/effective-permissions/pm%40example.com');
     req.flush({ message: 'unreachable' }, { status: 0, statusText: 'Unknown Error' });
 
-    expect(auth.user()?.roleCodes).toEqual(staticRoleCodes);
+    // Login không bị phá; nhưng UI phải biết là "chưa nạp được" chứ không phải "không có vai trò".
+    expect(auth.user()?.email).toBe('pm@example.com');
+    expect(auth.user()?.roleCodes).toEqual([]);
+    expect(auth.identityUnavailable()).toBe(true);
+    expect(auth.rolesLoaded()).toBe(true);
+  });
+
+  it('logout() clears the role-loading flags so the next login starts from unknown', () => {
+    const auth = TestBed.inject(AuthService);
+    auth.login('pm@example.com', '123456');
+    auth.refreshCurrentUser();
+    httpMock.expectOne('/api/effective-permissions/pm%40example.com')
+      .flush({ message: 'unreachable' }, { status: 0, statusText: 'Unknown Error' });
+    expect(auth.identityUnavailable()).toBe(true);
+
+    auth.logout();
+    expect(auth.rolesLoaded()).toBe(false);
+    expect(auth.identityUnavailable()).toBe(false);
   });
 });

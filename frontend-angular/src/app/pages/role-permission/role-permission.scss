@@ -108,3 +108,154 @@ thead .rp-matrix-feature {
 .rp-matrix-perm {
   text-align: center;
 }
+
+// ── Tab "Ma trận phân quyền" (ghim Vai trò, lưới card theo Chức năng) ───────────────────────
+
+.rp-matrix-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.rp-matrix-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 220px;
+
+  > span {
+    font-size: 12px;
+    color: var(--vht-text-secondary, #8c8c8c);
+  }
+}
+
+.rp-matrix-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.rp-matrix-hint {
+  margin-bottom: 12px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--vht-text-secondary, #8c8c8c);
+}
+
+.rp-matrix-empty {
+  text-align: center;
+  padding: 24px;
+  color: var(--vht-text-secondary, #8c8c8c);
+}
+
+.rp-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+}
+
+.rp-feature-card {
+  border: 1px solid var(--vht-border);
+  border-radius: var(--vht-radius);
+  background: #fff;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+// Card đã sửa nhưng chưa lưu — phải thấy ngay mình đang thay đổi chức năng nào.
+.rp-feature-card-dirty {
+  box-shadow: inset 3px 0 0 #faad14;
+  background: #fffbe6;
+}
+
+.rp-feature-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rp-feature-card-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.rp-feature-card-name {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rp-feature-card-code {
+  color: var(--vht-text-secondary, #8c8c8c);
+  font-size: 11px;
+}
+
+.rp-feature-card-tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.rp-feature-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rp-feature-card-label {
+  font-size: 12px;
+  color: var(--vht-text-secondary, #8c8c8c);
+}
+
+.rp-feature-card-perms {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px 12px;
+  max-height: 120px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+// ── Drawer "Sửa" chi tiết chức năng ──────────────────────────────────────────────────────────
+
+.rp-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.rp-detail-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rp-detail-row-column {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.rp-detail-label {
+  font-weight: 500;
+  color: var(--vht-text-secondary, #8c8c8c);
+}
+
+.rp-detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.rp-detail-empty {
+  color: var(--vht-text-secondary, #8c8c8c);
+  font-size: 12px;
+}

@@ -33,11 +33,22 @@ export interface FormComponent {
   label?: string;
   description?: string;
   text?: string;
+  /** Nội dung khối HTML tĩnh — chỉ dùng cho type `html` (khác `text`, vốn dùng cho markdown của
+   * type `text`; đây đúng theo quy ước schema thật của `@bpmn-io/form-js`, xem `Html.config.create`
+   * trong `form-js-viewer`). */
+  content?: string;
   subtype?: string;
   /** Nguồn ảnh (URL hoặc data URI) — dùng cho type `image`. */
   source?: string;
   validate?: FormFieldValidate;
   values?: { value: string; label: string }[];
+  /**
+   * Nguồn options ĐỘNG (cơ chế chuẩn form-js): thay vì liệt kê trong schema, options lấy từ input
+   * data của form theo khoá này. Dùng cho danh mục thay đổi theo dữ liệu hệ thống — ví dụ
+   * `ungVienHoiDong` (user đang giữ vai trò HDXD/HDXD_TD) ở `bm-02-08-qdh-nv`, vốn không thể đóng
+   * băng trong schema vì phân quyền đổi theo thời gian. Có `values` thì `values` thắng.
+   */
+  valuesKey?: string;
   /** Hiển thị có điều kiện — `hide` là biểu thức FEEL, true ⇒ ẩn trường. */
   conditional?: { hide?: string };
   /** Trường tính toán — biểu thức FEEL, giá trị readonly (dùng với type `expression`). */

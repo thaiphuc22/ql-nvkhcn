@@ -21,8 +21,7 @@ describe('ActionStudioService', () => {
   const policy: ActionAvailabilityPolicy = {
     id: 'AP-01', actionCode: 'APPROVE_STEP', surface: 'DOSSIER_DETAIL', processCode: 'RD01.01',
     taskDefinitionKey: 't2', dossierStatus: 'processing', allowedRoleCodes: ['TD'],
-    requiredPermissions: ['PROCESS_STEP'], formKey: 'phieu-phe-duyet', displayOrder: 11,
-    enabled: true, version: 3,
+    formKey: 'phieu-phe-duyet', displayOrder: 11, lifecycleStatus: 'ACTIVE', version: 3,
   };
   const referenceData = {
     surfaces: [{ value: 'DOSSIER_DETAIL', label: 'Chi tiết hồ sơ' }],
@@ -57,13 +56,13 @@ describe('ActionStudioService', () => {
 
   it('updates a policy with If-Match and actor then refreshes its cache', () => {
     seed();
-    service.saveAvailability({ ...policy, enabled: false }, 'Lê Văn Cường').subscribe();
+    service.saveAvailability({ ...policy, lifecycleStatus: 'DISABLED' }, 'Lê Văn Cường').subscribe();
     const request = http.expectOne(`${base}/availability-policies/AP-01`);
     expect(request.request.method).toBe('PUT');
     expect(request.request.headers.get('If-Match')).toBe('3');
     expect(request.request.headers.get('X-QTKHCN-Actor')).toContain('L%C3%AA%20V%C4%83n%20C%C6%B0%E1%BB%9Dng');
-    request.flush({ ...policy, enabled: false, version: 4 });
-    expect(service.availabilityPolicies()[0].enabled).toBe(false);
+    request.flush({ ...policy, lifecycleStatus: 'DISABLED', version: 4 });
+    expect(service.availabilityPolicies()[0].lifecycleStatus).toBe('DISABLED');
     expect(service.availabilityPolicies()[0].version).toBe(4);
   });
 
@@ -83,6 +82,64 @@ describe('ActionStudioService', () => {
     expect(service.availabilityPolicies()).toHaveLength(0);
   });
 
+  it('deletes multiple policies in one versioned request and updates the cache', () => {
+    const second = { ...policy, id: 'AP-02', version: 7 };
+    service.load().subscribe();
+    http.expectOne(base).flush({
+      definitions: [definition], presentations: [presentation], availabilityPolicies: [policy, second],
+      exceptionPolicies: [], processes: [], referenceData,
+    });
+
+    service.removeAvailabilityBulk([policy, second], 'admin').subscribe();
+    const request = http.expectOne(`${base}/availability-policies/bulk-delete`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ items: [{ id: 'AP-01', version: 3 }, { id: 'AP-02', version: 7 }] });
+    request.flush({ deletedCount: 2, deletedIds: ['AP-01', 'AP-02'] });
+
+    expect(service.availabilityPolicies()).toEqual([]);
+  });
+
+  it('falls back to existing DELETE endpoints when an older backend returns 405', () => {
+    const second = { ...policy, id: 'AP-02', version: 7 };
+    service.load().subscribe();
+    http.expectOne(base).flush({
+      definitions: [definition], presentations: [presentation], availabilityPolicies: [policy, second],
+      exceptionPolicies: [], processes: [], referenceData,
+    });
+
+    service.removeAvailabilityBulk([policy, second], 'admin').subscribe((result) =>
+      expect(result.deletedIds).toEqual(['AP-01', 'AP-02']));
+    http.expectOne(`${base}/availability-policies/bulk-delete`)
+      .flush(null, { status: 405, statusText: 'Method Not Allowed' });
+    const deletes = http.match((request) => request.method === 'DELETE');
+    expect(deletes.map((request) => request.request.headers.get('If-Match'))).toEqual(['3', '7']);
+    deletes.forEach((request) => request.flush(null));
+
+    expect(service.availabilityPolicies()).toEqual([]);
+  });
+
+  it('updates multiple policy statuses in one versioned request and refreshes the cache', () => {
+    const second = { ...policy, id: 'AP-02', version: 7 };
+    service.load().subscribe();
+    http.expectOne(base).flush({
+      definitions: [definition], presentations: [presentation], availabilityPolicies: [policy, second],
+      exceptionPolicies: [], processes: [], referenceData,
+    });
+
+    service.setAvailabilityStatusBulk([policy, second], false, 'admin').subscribe();
+    const request = http.expectOne(`${base}/availability-policies/bulk-status`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ enabled: false, items: [
+      { id: 'AP-01', version: 3 }, { id: 'AP-02', version: 7 },
+    ] });
+    request.flush({ updatedCount: 2, updatedPolicies: [
+      { ...policy, lifecycleStatus: 'DISABLED', version: 4 },
+      { ...second, lifecycleStatus: 'DISABLED', version: 8 },
+    ] });
+
+    expect(service.availabilityPolicies().every((item) => item.lifecycleStatus === 'DISABLED')).toBe(true);
+  });
+
   it('uses backend simulation and reconcile instead of local seed resolution', () => {
     const context = {
       surface: 'DOSSIER_DETAIL' as const, processCode: 'RD01.01', taskDefinitionKey: 't2',
@@ -92,12 +149,12 @@ describe('ActionStudioService', () => {
     const simulate = http.expectOne(`${base}/simulate`);
     expect(simulate.request.method).toBe('POST');
     expect(simulate.request.body).toEqual(context);
-    simulate.flush([{ ...definition, ...presentation, visible: true, enabled: false, policyId: 'AP-01', reasons: ['Thiếu quyền'], formKey: null }]);
+    simulate.flush([{ ...definition, ...presentation, visible: true, enabled: false, policyId: 'AP-01', policyVersion: 3, reasons: ['Thiếu quyền'], formKey: null }]);
 
-    service.reconcile('RD01.01').subscribe((rows) => expect(rows[0].status).toBe('missing'));
+    service.reconcile('RD01.01').subscribe((rows) => expect(rows[0].status).toBe('MISSING_POLICY'));
     const reconcile = http.expectOne((request) => request.url === `${base}/reconcile` && request.params.get('processCode') === 'RD01.01');
     expect(reconcile.request.method).toBe('GET');
-    reconcile.flush([{ processCode: 'RD01.01', stepKey: 't2', stepName: 'Thẩm định', outcome: 'APPROVE', actionCode: 'APPROVE_STEP', status: 'missing', policyId: null, reason: 'Thiếu' }]);
+    reconcile.flush([{ processCode: 'RD01.01', stepKey: 't2', stepName: 'Thẩm định', outcome: 'APPROVE', actionCode: 'APPROVE_STEP', status: 'MISSING_POLICY', policyId: null, reason: 'Thiếu' }]);
   });
 
   it('keeps action and presentation versions aligned after status mutation', () => {
@@ -108,6 +165,17 @@ describe('ActionStudioService', () => {
     request.flush({ ...definition, active: false, version: 3 });
     expect(service.definitions()[0].active).toBe(false);
     expect(service.presentations()[0].version).toBe(3);
+  });
+
+  it('resets presentation with optimistic locking and refreshes both caches', () => {
+    seed();
+    service.resetPresentation(presentation, 'admin').subscribe();
+    const request = http.expectOne(`${base}/actions/APPROVE_STEP/presentation/reset`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.headers.get('If-Match')).toBe('2');
+    request.flush({ ...presentation, label: 'Đồng ý duyệt', icon: 'thunderbolt', version: 3 });
+    expect(service.presentations()[0].version).toBe(3);
+    expect(service.definitions()[0].version).toBe(3);
   });
 
   function seed(): void {

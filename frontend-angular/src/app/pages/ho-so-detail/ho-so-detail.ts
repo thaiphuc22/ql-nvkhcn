@@ -1,10 +1,10 @@
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, signal, viewChild, viewChildren } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { combineLatest, throwError } from 'rxjs';
+import { combineLatest, forkJoin, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 import { NzAlertModule } from 'ng-zorro-antd/alert';
@@ -21,6 +21,8 @@ import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzResultModule } from 'ng-zorro-antd/result';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
+import { NzStepsModule } from 'ng-zorro-antd/steps';
+import { NzTabsModule } from 'ng-zorro-antd/tabs';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
 import { AuthService } from '../../core/auth/auth.service';
@@ -40,9 +42,14 @@ import { HoSoService } from '../../core/services/ho-so.service';
 import { MyTaskService } from '../../core/services/my-task.service';
 import { TaskAvailableAction } from '../../core/models/task-action';
 import { TaskActionService } from '../../core/services/task-action.service';
-import { PERMISSION_LABEL, SimulatedAction, type DossierStatus as PolicyDossierStatus } from '../../core/models/action-studio';
-import { ActionStudioService } from '../../core/services/action-studio.service';
+import { SimulatedAction } from '../../core/models/action-studio';
+import { DossierActionService } from '../../core/services/dossier-action.service';
 import { EformService } from '../../core/services/eform.service';
+import {
+  HoiDongCandidateService,
+  UNG_VIEN_HOI_DONG_KEY,
+  type FormOption,
+} from '../../core/services/hoi-dong-candidate.service';
 import { SelectableProcessResponse } from '../../core/models/process-definition';
 import { ProcessDefinitionService } from '../../core/services/process-definition.service';
 import { BpmnViewerComponent } from '../../shared/bpmn-viewer/bpmn-viewer';
@@ -61,17 +68,12 @@ const STEP_COLOR: Record<StepStatus, string> = {
   PENDING: 'default', CURRENT: 'processing', DONE: 'success', REJECTED: 'error', SKIPPED: 'warning',
 };
 
-/** Chưa có nguồn permission thật theo user (chỉ có roleCodes, xem D9) — cấp sẵn toàn bộ danh mục
- * quyền cho user đã đăng nhập, cùng cách WorkflowDemoIdentityProvider cấp PROCESS_STEP cho mọi
- * identity ở backend. RBAC thật vẫn do allowedRoleCodes/candidateGroups của policy quyết định. */
-const ALL_PERMISSIONS = Object.keys(PERMISSION_LABEL);
-
 @Component({
   selector: 'app-ho-so-detail',
   imports: [
     DatePipe, FormsModule, NzAlertModule, NzButtonModule, NzCardModule, NzDescriptionsModule, NzEmptyModule,
     NzGridModule, NzIconModule, NzInputModule, NzModalModule, NzPopconfirmModule, NzResultModule, NzSelectModule,
-    NzSpinModule, NzTagModule,
+    NzSpinModule, NzStepsModule, NzTabsModule, NzTagModule,
     FormRendererComponent, BpmnViewerComponent,
   ],
   templateUrl: './ho-so-detail.html',
@@ -81,8 +83,10 @@ export class HoSoDetailPage {
   private readonly service = inject(HoSoService);
   private readonly myTaskService = inject(MyTaskService);
   private readonly taskActionService = inject(TaskActionService);
-  private readonly actionStudioService = inject(ActionStudioService);
+  private readonly dossierActionApi = inject(DossierActionService);
   private readonly eformService = inject(EformService);
+  private readonly hoiDongCandidates = inject(HoiDongCandidateService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly processDefinitionService = inject(ProcessDefinitionService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -112,8 +116,17 @@ export class HoSoDetailPage {
   /** Biểu mẫu gắn theo `TaskAvailableAction.formKey` cho hành động task thật (khác `actionForm`,
    * vốn chỉ phục vụ xem trước ở luồng dossier-level `runDossierAction`/SUBMIT). */
   readonly taskActionForm = signal<ReturnType<EformService['getForm']>>(undefined);
+  readonly taskActionBundleForms = signal<Array<{ namespace: string; title: string; required: boolean;
+    mode: 'VIEW' | 'EDIT'; schema: unknown; data: Record<string, unknown> }>>([]);
+  readonly activeBundleItem = signal(0);
   readonly taskActionFormLoading = signal(false);
+  /**
+   * Options động cho các trường khai `valuesKey` (xem `FormComponent.valuesKey`). Nạp theo yêu cầu
+   * khi biểu mẫu thực sự cần, không phải mỗi lần mở hồ sơ — chỉ QĐ thành lập HĐXD dùng tới.
+   */
+  readonly formValueSources = signal<Record<string, FormOption[]>>({});
   readonly taskActionFormRenderer = viewChild<FormRendererComponent>('taskActionFormRenderer');
+  readonly taskActionBundleRenderers = viewChildren<FormRendererComponent>('bundleFormRenderer');
   readonly bpmnOpen = signal(false);
   readonly bpmnLoading = signal(false);
   readonly bpmnXml = signal<string | null>(null);
@@ -128,6 +141,10 @@ export class HoSoDetailPage {
   readonly taskKey = signal<string | null>(null);
   readonly availableActions = signal<TaskAvailableAction[]>([]);
   readonly actionsLoading = signal(false);
+  readonly actionsError = signal<string | null>(null);
+
+  /** Vai trò lấy từ identity-service; gọi lỗi thì nút thao tác tính với danh sách rỗng — phải nói ra. */
+  readonly identityUnavailable = this.auth.identityUnavailable;
 
   readonly currentStep = computed(() => {
     const dossier = this.item();
@@ -165,6 +182,18 @@ export class HoSoDetailPage {
         this.taskKey.set(key && key.trim() ? key.trim() : null);
         this.load(decodeURIComponent(params.get('id') ?? ''));
       });
+
+    // Vai trò của user nạp BẤT ĐỒNG BỘ từ identity-service (Shell gọi
+    // AuthService.refreshCurrentUser()), nên hồ sơ có thể load xong TRƯỚC khi biết roleCodes —
+    // khi đó simulate chạy với danh sách vai trò rỗng và nút thao tác biến mất oan. Effect này
+    // chạy lại simulate đúng một lần nữa ngay khi vai trò về.
+    let lastRoleKey: string | null = null;
+    effect(() => {
+      const roleKey = [...(this.auth.user()?.roleCodes ?? [])].sort().join(',');
+      const changed = lastRoleKey !== null && lastRoleKey !== roleKey;
+      lastRoleKey = roleKey;
+      if (changed && this.item()) this.loadDossierActions();
+    });
   }
 
   load(id: string): void {
@@ -232,26 +261,23 @@ export class HoSoDetailPage {
   private loadDossierActions(): void {
     const dossier = this.item();
     const user = this.auth.user();
-    if (!dossier || !user) {
+    // Hồ sơ đang chạy workflow chỉ render action từ task-centric API phía backend. Simulation này
+    // được giữ riêng cho action trước khi khởi chạy quy trình (SUBMIT/support ở trạng thái nháp).
+    if (!dossier || !user || dossier.trangThai === 'PROCESSING' || dossier.trangThai === 'START_PENDING') {
       this.policyActions.set([]);
+      this.actionsError.set(null);
       return;
     }
     this.actionsLoading.set(true);
-    this.actionStudioService.simulate({
-      surface: 'DOSSIER_DETAIL',
-      processCode: dossier.quyTrinh || '__UNASSIGNED__',
-      taskDefinitionKey: this.currentStep()?.taskDefinitionKey || '__NO_TASK__',
-      dossierStatus: this.policyStatus(dossier.trangThai),
-      roleCodes: user.roleCodes,
-      permissions: ALL_PERMISSIONS,
-      isAdmin: user.isAdmin,
-    }).subscribe({
-      next: (actions) => {
-        this.policyActions.set(actions);
+    this.actionsError.set(null);
+    this.dossierActionApi.available(dossier.id).subscribe({
+      next: (response) => {
+        this.policyActions.set(response.actions);
         this.actionsLoading.set(false);
       },
-      error: () => {
+      error: (error: HttpErrorResponse) => {
         this.policyActions.set([]);
+        this.actionsError.set(this.errorText(error, 'Không thể tải các thao tác khả dụng'));
         this.actionsLoading.set(false);
       },
     });
@@ -298,14 +324,46 @@ export class HoSoDetailPage {
     this.selectedOutcome.set(outcome);
     this.actionNote.set('');
     this.taskActionForm.set(undefined);
+    this.taskActionBundleForms.set([]);
+    this.activeBundleItem.set(0);
     this.actionOpen.set(true);
-    const formKey = this.selectedAction()?.formKey;
+    const action = this.selectedAction();
+    const bundle = action?.formBundle;
+    if (action && bundle?.items.length) {
+      const key = this.taskKey();
+      if (!key) return;
+      const items = [...bundle.items].sort((a, b) => a.displayOrder - b.displayOrder);
+      this.taskActionFormLoading.set(true);
+      forkJoin({ forms: forkJoin(items.map((item) => this.eformService.loadOne(item.formKey, item.formVersion))),
+        submissions: this.taskActionService.formSubmissions(key) }).subscribe({
+        next: ({ forms, submissions }) => {
+          this.taskActionBundleForms.set(items.map((item, index) => {
+            const restored = submissions.find((submission) =>
+              submission.outputNamespace === item.outputNamespace)?.data;
+            return {
+              namespace: item.outputNamespace, title: item.displayTitle || forms[index]?.ten || item.formKey,
+              required: item.required, mode: item.mode, schema: forms[index]?.schema,
+              data: restored && typeof restored === 'object' ? restored as Record<string, unknown> : {},
+            };
+          }));
+          forms.forEach((form) => this.loadValueSources(form?.schema));
+          this.taskActionFormLoading.set(false);
+        },
+        error: (error: HttpErrorResponse) => {
+          this.taskActionFormLoading.set(false);
+          this.message.error(this.errorText(error, 'Không thể tải Form Bundle'));
+        },
+      });
+      return;
+    }
+    const formKey = action?.formKey;
     if (!formKey) return;
     this.taskActionFormLoading.set(true);
     this.eformService.loadOne(formKey).subscribe({
       next: (form) => {
         this.taskActionForm.set(form);
         this.taskActionFormLoading.set(false);
+        this.loadValueSources(form?.schema);
       },
       error: (error: HttpErrorResponse) => {
         this.taskActionFormLoading.set(false);
@@ -315,12 +373,58 @@ export class HoSoDetailPage {
   }
 
   closeAction(): void {
+    this.saveBundleDrafts();
     this.actionOpen.set(false);
     this.taskActionForm.set(undefined);
+    this.taskActionBundleForms.set([]);
+    this.activeBundleItem.set(0);
+  }
+
+  selectBundleItem(index: number): void {
+    const last = this.taskActionBundleForms().length - 1;
+    this.activeBundleItem.set(Math.max(0, Math.min(index, last)));
+  }
+
+  private saveBundleDrafts(): void {
+    const key = this.taskKey();
+    const action = this.selectedAction();
+    if (!key || !action?.formBundle?.allowDraft) return;
+    const renderers = this.taskActionBundleRenderers();
+    this.taskActionBundleForms().forEach((form, index) => {
+      if (form.mode !== 'EDIT' || !renderers[index]) return;
+      this.taskActionService.saveFormDraft(key, { actionCode: action.actionCode,
+        expectedPolicyId: action.policyId, expectedPolicyVersion: action.policyVersion,
+        outputNamespace: form.namespace, data: renderers[index].submit().data }).subscribe({
+        error: () => this.message.warning(`Không lưu được bản nháp ${form.title}.`),
+      });
+    });
+  }
+
+  /**
+   * Chỉ gọi identity-service khi schema thật sự khai `valuesKey` tương ứng — biểu mẫu thường không
+   * cần và không nên trả giá bằng một request thừa mỗi lần mở modal hành động.
+   */
+  private loadValueSources(schema: unknown): void {
+    if (!this.schemaUsesValuesKey(schema, UNG_VIEN_HOI_DONG_KEY)) return;
+    this.hoiDongCandidates
+      .candidates()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((options) =>
+        this.formValueSources.update((prev) => ({ ...prev, [UNG_VIEN_HOI_DONG_KEY]: options })),
+      );
+  }
+
+  private schemaUsesValuesKey(schema: unknown, key: string): boolean {
+    if (Array.isArray(schema)) return schema.some((item) => this.schemaUsesValuesKey(item, key));
+    if (!schema || typeof schema !== 'object') return false;
+    const node = schema as Record<string, unknown>;
+    if (node['valuesKey'] === key) return true;
+    return Object.values(node).some((child) => this.schemaUsesValuesKey(child, key));
   }
 
   runDossierAction(action: SimulatedAction): void {
     if (action.outcome === 'SUBMIT') {
+      this.formAction.set(action);
       this.submitOpen.set(true);
       this.loadSelectableProcesses();
       return;
@@ -352,13 +456,6 @@ export class HoSoDetailPage {
     return action.tone === 'primary' ? 'primary' : 'default';
   }
 
-  private policyStatus(status: DossierStatus): PolicyDossierStatus {
-    if (status === 'PROCESSING' || status === 'START_PENDING') return 'processing';
-    if (status === 'APPROVED') return 'approved';
-    if (status === 'REJECTED' || status === 'CANCELLED') return 'rejected';
-    return 'draft';
-  }
-
   /** Nạp danh sách quy trình mỗi lần mở dialog — quy trình mới deploy phải thấy được ngay, không
    * chờ reload trang. */
   private loadSelectableProcesses(): void {
@@ -383,17 +480,32 @@ export class HoSoDetailPage {
   submit(): void {
     const dossier = this.item();
     const process = this.submitProcess();
-    if (!dossier || !process) return;
+    const policy = this.formAction();
+    if (this.saving()) return;
+    if (!dossier) {
+      this.message.error('Không còn dữ liệu hồ sơ để gửi duyệt. Hãy tải lại trang.');
+      return;
+    }
+    if (!process) {
+      this.message.warning('Vui lòng chọn một quy trình đã deploy.');
+      return;
+    }
+    if (!policy?.policyId || policy.policyVersion == null) {
+      this.message.error('Luật hiển thị action Gửi duyệt chưa có mã hoặc phiên bản. Hãy tải lại trang để nạp luật mới nhất.');
+      this.loadDossierActions();
+      return;
+    }
     this.saving.set(true);
-    const actor = this.auth.user()?.hoTen ?? 'Người dùng hệ thống';
     // `quyTrinh` mang thẳng `bpmnProcessId`. Backend engine tra đúng chuỗi này trước, chỉ fallback
     // `replace('.','_')` cho hồ sơ cũ lưu dạng "RD01.01" — xem CamundaReliableWorkflowEngine.start().
-    this.service
-      .submit(dossier.id, { quyTrinh: process.bpmnProcessId, quyTrinhTen: process.name }, actor)
+    this.dossierActionApi
+      .execute(dossier.id, { actionCode: 'SUBMIT', expectedPolicyId: policy.policyId,
+        expectedPolicyVersion: policy.policyVersion, processCode: process.bpmnProcessId, processName: process.name })
       .subscribe({
-        next: (updated) => {
-          this.item.set(updated); this.submitOpen.set(false); this.saving.set(false);
-          this.message.success(`Đã gửi duyệt hồ sơ ${updated.id} vào quy trình ${process.bpmnProcessId}.`);
+        next: () => {
+          this.submitOpen.set(false); this.saving.set(false);
+          this.message.success(`Đã gửi duyệt hồ sơ ${dossier.id} vào quy trình ${process.bpmnProcessId}.`);
+          this.load(dossier.id);
         },
         error: (error: HttpErrorResponse) => { this.saving.set(false); this.message.error(this.errorText(error, 'Gửi duyệt thất bại')); },
       });
@@ -406,7 +518,20 @@ export class HoSoDetailPage {
     const note = this.actionNote().trim();
     if (!dossier || !key || !action || (action.requiresReason && !note)) return;
     let formData: Record<string, unknown> = {};
-    if (action.formKey) {
+    if (action.formBundle?.items.length) {
+      const renderers = this.taskActionBundleRenderers();
+      const forms = this.taskActionBundleForms();
+      if (renderers.length !== forms.length) return;
+      for (let index = 0; index < forms.length; index++) {
+        const result = renderers[index].submit();
+        if (forms[index].required && Object.keys(result.errors).length) {
+          this.selectBundleItem(index);
+          this.message.error(`Vui lòng kiểm tra biểu mẫu ${forms[index].title}.`);
+          return;
+        }
+        formData[forms[index].namespace] = result.data;
+      }
+    } else if (action.formKey) {
       const renderer = this.taskActionFormRenderer();
       if (!renderer) return;
       const result = renderer.submit();
@@ -421,6 +546,8 @@ export class HoSoDetailPage {
       requestId: this.taskActionService.newRequestId(),
       taskKey: key,
       actionCode: action.actionCode,
+      expectedPolicyId: action.policyId,
+      expectedPolicyVersion: action.policyVersion,
       comment: note || null,
       formData,
       expectedTaskState: 'ACTIVE',

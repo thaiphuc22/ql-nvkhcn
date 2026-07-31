@@ -58,3 +58,10 @@
 a { cursor: pointer; }
 textarea { margin-top: 6px; }
 @media (max-width: 900px) { .hsd-header { flex-wrap: wrap; } .hsd-actions { width: 100%; padding-left: 40px; justify-content: flex-start; } }
+.hsd-form-bundle { display: flex; flex-direction: column; gap: 16px; max-height: 62vh; overflow: auto; padding-right: 4px; }
+.hsd-form-bundle nz-steps { padding: 4px 8px 8px; }
+.hsd-bundle-item { padding: 14px; border: 1px solid #eaecf0; border-radius: 10px; background: #fff; }
+.hsd-bundle-item h4 { margin: 0 0 12px; }
+.hsd-bundle-item h4 span { color: #d92d20; }
+.hsd-bundle-navigation { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.hsd-bundle-navigation span { color: #667085; font-size: 13px; }
