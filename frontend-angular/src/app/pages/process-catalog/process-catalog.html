@@ -6,6 +6,10 @@
         <span nz-icon nzType="reload"></span>
         Tải lại
       </button>
+      <button nz-button nzType="default" (click)="syncFromCamunda()" [nzLoading]="syncing()">
+        <span nz-icon nzType="cloud-download"></span>
+        Đồng bộ từ Camunda
+      </button>
       <button nz-button nzType="primary" (click)="openImportModal()">
         <span nz-icon nzType="upload"></span>
         Nhập từ .bpmn
@@ -19,6 +23,44 @@
 
   @if (errorMessage()) {
     <nz-alert nzType="error" nzShowIcon [nzMessage]="errorMessage()" class="pc-alert"></nz-alert>
+  }
+
+  @if (syncResult(); as sync) {
+    <nz-alert
+      class="pc-alert"
+      [nzType]="sync.failures.length ? 'warning' : 'success'"
+      nzShowIcon
+      nzCloseable
+      (nzOnClose)="dismissSyncResult()"
+      [nzMessage]="
+        'Đồng bộ từ Camunda: quét ' + sync.scanned + ' quy trình · nhập mới ' + sync.imported +
+        ' · catalog đã có sẵn ' + sync.alreadyKnown
+      "
+      [nzDescription]="syncDetail"
+    ></nz-alert>
+    <ng-template #syncDetail>
+      @for (warning of sync.warnings; track warning) {
+        <p class="pc-sync-line">{{ warning }}</p>
+      }
+      @for (item of sync.importedProcesses; track item.versionId) {
+        <p class="pc-sync-line">
+          <code>{{ item.bpmnProcessId }}</code> v{{ item.version }} — {{ item.name }}
+          @if (!item.newCatalog) {
+            <span class="pc-sync-muted">(version mới của quy trình đã có)</span>
+          }
+        </p>
+      }
+      @for (failure of sync.failures; track failure.bpmnProcessId) {
+        <p class="pc-sync-line pc-sync-failure">
+          <code>{{ failure.bpmnProcessId }}</code> — {{ failure.message }}
+        </p>
+      }
+      @if (!sync.imported && !sync.failures.length && !sync.warnings.length) {
+        <p class="pc-sync-line pc-sync-muted">
+          Không có quy trình nào mới trên Camunda — catalog đã đầy đủ.
+        </p>
+      }
+    </ng-template>
   }
 
   <div nz-row [nzGutter]="14" class="pc-stats">
@@ -124,10 +166,11 @@
             <th nzWidth="200px">Mã quy trình (BPMN)</th>
             <th>Tên quy trình</th>
             <th nzWidth="110px" nzAlign="center">Phiên bản</th>
+            <th nzWidth="130px" nzAlign="center">Nguồn</th>
             <th nzWidth="140px" nzAlign="center">Trạng thái</th>
             <th nzWidth="150px" nzAlign="center">Instance đang chạy</th>
             <th nzWidth="180px">Cập nhật lúc</th>
-            <th nzWidth="110px" nzAlign="center">Thao tác</th>
+            <th nzWidth="190px" nzAlign="center">Thao tác</th>
           </tr>
         </thead>
         <tbody>
@@ -136,6 +179,15 @@
               <td><code>{{ row.bpmnProcessId }}</code></td>
               <td>{{ row.name }}</td>
               <td nzAlign="center"><strong>v{{ row.latestVersion }}</strong></td>
+              <td nzAlign="center">
+                @if (row.source === 'EXTERNAL') {
+                  <nz-tag nzColor="purple" title="Deploy thẳng lên Camunda, app hút về — không qua kiểm tra BPMN của app.">
+                    Ngoài app
+                  </nz-tag>
+                } @else {
+                  <nz-tag nzColor="blue">Từ app</nz-tag>
+                }
+              </td>
               <td nzAlign="center"><nz-tag nzColor="success">{{ row.status }}</nz-tag></td>
               <td nzAlign="center">
                 @if (loadingInstanceCounts()) {
@@ -153,16 +205,149 @@
               <td>{{ row.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
               <td nzAlign="center">
                 <button nz-button nzType="link" nzSize="small" (click)="viewDetail(row)">Xem chi tiết</button>
+                <button nz-button nzType="link" nzSize="small" (click)="openReadiness(row)"
+                  title="Kiểm tra biểu mẫu, vai trò, luật hành động và service task trước khi có hồ sơ chạy vào">
+                  Đối soát
+                </button>
               </td>
             </tr>
           } @empty {
-            <tr><td colspan="7"><nz-empty nzNotFoundContent="Chưa có quy trình nào được deploy."></nz-empty></td></tr>
+            <tr><td colspan="8"><nz-empty nzNotFoundContent="Chưa có quy trình nào được deploy."></nz-empty></td></tr>
           }
         </tbody>
       </nz-table>
     </nz-tab>
   </nz-tabs>
 </div>
+
+<nz-drawer
+  [nzVisible]="readinessDrawerOpen()"
+  [nzTitle]="'Đối soát quy trình · ' + (readinessProcess()?.bpmnProcessId ?? '')"
+  [nzWidth]="840"
+  (nzOnClose)="closeReadinessDrawer()"
+>
+  <ng-container *nzDrawerContent>
+    @if (readinessLoading()) {
+      <div class="pc-drawer-loading">Đang đối soát…</div>
+    } @else if (readinessError(); as message) {
+      <nz-alert nzType="error" nzShowIcon [nzMessage]="message" class="pc-alert"></nz-alert>
+    } @else if (readiness(); as report) {
+      <div class="pc-readiness-head">
+        <div>
+          <strong>{{ report.name }}</strong>
+          <div class="pc-instance-muted"><code>{{ report.bpmnProcessId }}</code> · v{{ report.camundaVersion }}</div>
+        </div>
+        <nz-tag [nzColor]="readinessColor(report.status)">{{ readinessLabel(report.status) }}</nz-tag>
+      </div>
+
+      <nz-alert
+        class="pc-alert"
+        nzType="info"
+        nzShowIcon
+        nzMessage="Bảng này chỉ chẩn đoán, không chặn gì"
+        nzDescription="Quy trình vẫn deploy và chạy được kể cả khi có dòng đỏ. Mục đích là nói ra hồ sơ sẽ hỏng ở đâu trước khi có hồ sơ thật chạy vào."
+      ></nz-alert>
+
+      @for (note of report.notes; track note) {
+        <p class="pc-sync-line pc-sync-muted">{{ note }}</p>
+      }
+
+      <h4 class="pc-readiness-section">Bước người dùng xử lý ({{ report.userTasks.length }})</h4>
+      <nz-table #readinessUserTable [nzData]="report.userTasks" nzSize="small" [nzShowPagination]="false">
+        <thead>
+          <tr>
+            <th nzWidth="190px">Bước</th>
+            <th nzWidth="170px">Biểu mẫu</th>
+            <th nzWidth="150px">Vai trò xử lý</th>
+            <th>Vấn đề</th>
+            <th nzWidth="120px" nzAlign="center">Trạng thái</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (task of readinessUserTable.data; track task.elementId) {
+            <tr>
+              <td>
+                <strong>{{ task.name }}</strong>
+                <div class="pc-instance-muted"><code>{{ task.elementId }}</code></div>
+              </td>
+              <td>
+                @if (task.formKey) {
+                  <code>{{ task.formKey }}</code>
+                  @if (!task.formExists) { <nz-tag nzColor="error">không tồn tại</nz-tag> }
+                } @else {
+                  <span class="pc-instance-muted">chưa gắn</span>
+                }
+              </td>
+              <td>
+                @for (group of task.candidateGroups; track group) {
+                  <nz-tag [nzColor]="task.unknownRoleCodes.includes(group) ? 'error' : 'blue'">{{ group }}</nz-tag>
+                } @empty {
+                  @if (task.dynamicAssignment) {
+                    <span class="pc-instance-muted">phân công động</span>
+                  } @else {
+                    <span class="pc-instance-muted">—</span>
+                  }
+                }
+              </td>
+              <td>
+                @for (issue of task.issues; track issue) {
+                  <p class="pc-sync-line">{{ issue }}</p>
+                } @empty {
+                  <span class="pc-instance-muted">Không có</span>
+                }
+                @if (task.boundActions.length) {
+                  <div class="pc-instance-muted">Nút đã ghim: {{ task.boundActions.join(', ') }}</div>
+                }
+              </td>
+              <td nzAlign="center">
+                <nz-tag [nzColor]="readinessColor(task.status)">{{ readinessLabel(task.status) }}</nz-tag>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5"><nz-empty nzNotFoundContent="Quy trình không có user task nào."></nz-empty></td></tr>
+          }
+        </tbody>
+      </nz-table>
+
+      @if (report.serviceTasks.length) {
+        <h4 class="pc-readiness-section">Tác vụ hệ thống ({{ report.serviceTasks.length }})</h4>
+        <nz-table #readinessServiceTable [nzData]="report.serviceTasks" nzSize="small" [nzShowPagination]="false">
+          <thead>
+            <tr>
+              <th nzWidth="190px">Tác vụ</th>
+              <th nzWidth="240px">Job type</th>
+              <th>Vấn đề</th>
+              <th nzWidth="120px" nzAlign="center">Trạng thái</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (task of readinessServiceTable.data; track task.elementId) {
+              <tr>
+                <td>
+                  <strong>{{ task.name }}</strong>
+                  <div class="pc-instance-muted"><code>{{ task.elementId }}</code></div>
+                </td>
+                <td>
+                  @if (task.jobType) { <code>{{ task.jobType }}</code> } @else {
+                    <span class="pc-instance-muted">chưa khai</span>
+                  }
+                </td>
+                <td>
+                  @if (task.issue) { {{ task.issue }} } @else {
+                    <span class="pc-instance-muted">Có worker đang lắng nghe</span>
+                  }
+                </td>
+                <td nzAlign="center">
+                  <nz-tag [nzColor]="readinessColor(task.status)">{{ readinessLabel(task.status) }}</nz-tag>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      }
+    }
+  </ng-container>
+</nz-drawer>
 
 <nz-drawer
   [nzVisible]="instanceDrawerOpen()"

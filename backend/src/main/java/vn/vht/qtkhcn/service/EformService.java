@@ -9,7 +9,9 @@ import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.vht.qtkhcn.domain.Eform;
+import vn.vht.qtkhcn.domain.EformVersion;
 import vn.vht.qtkhcn.repository.EformRepository;
+import vn.vht.qtkhcn.repository.EformVersionRepository;
 import vn.vht.qtkhcn.web.dto.EformDtos.CreateEformRequest;
 import vn.vht.qtkhcn.web.dto.EformDtos.EformResponse;
 import vn.vht.qtkhcn.web.dto.EformDtos.UpdateMetaRequest;
@@ -21,10 +23,12 @@ public class EformService {
             Set.of("Soạn thảo", "Góp ý", "Nhận xét", "Thẩm định", "Phê duyệt");
 
     private final EformRepository repository;
+    private final EformVersionRepository versionRepository;
     private final ObjectMapper objectMapper;
 
-    public EformService(EformRepository repository, ObjectMapper objectMapper) {
+    public EformService(EformRepository repository, EformVersionRepository versionRepository, ObjectMapper objectMapper) {
         this.repository = repository;
+        this.versionRepository = versionRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -36,6 +40,13 @@ public class EformService {
     @Transactional(readOnly = true)
     public EformResponse get(String key) {
         return toResponse(find(key));
+    }
+
+    @Transactional(readOnly = true)
+    public EformResponse getVersion(String key, long version) {
+        return toResponse(versionRepository.findByFormKeyAndVersion(key, version)
+                .orElseThrow(() -> new NoSuchElementException(
+                        "Không tìm thấy phiên bản biểu mẫu: " + key + "@" + version)));
     }
 
     @Transactional
@@ -56,6 +67,7 @@ public class EformService {
         entity.setUpdatedBy(actorOrDefault(actor));
         entity.setUpdatedAt(now);
         entity = repository.saveAndFlush(entity);
+        snapshot(entity);
         return toResponse(entity);
     }
 
@@ -69,6 +81,7 @@ public class EformService {
         entity.setLoai(request.loai());
         touch(entity, actor);
         entity = repository.saveAndFlush(entity);
+        snapshot(entity);
         return toResponse(entity);
     }
 
@@ -79,6 +92,7 @@ public class EformService {
         entity.setSchemaJson(writeSchema(request.schema()));
         touch(entity, actor);
         entity = repository.saveAndFlush(entity);
+        snapshot(entity);
         return toResponse(entity);
     }
 
@@ -133,5 +147,35 @@ public class EformService {
         }
         return new EformResponse(entity.getKey(), entity.getTen(), entity.getMoTa(), entity.getLoai(), schema,
                 entity.getVersion(), entity.getUpdatedBy(), entity.getUpdatedAt(), entity.getCreatedAt());
+    }
+
+    private EformResponse toResponse(EformVersion entity) {
+        return new EformResponse(entity.getFormKey(), entity.getTen(), entity.getMoTa(), entity.getLoai(),
+                readSchema(entity.getSchemaJson(), entity.getFormKey()), entity.getVersion(),
+                entity.getCreatedBy(), entity.getCreatedAt(), entity.getCreatedAt());
+    }
+
+    private Object readSchema(String schemaJson, String key) {
+        try {
+            return objectMapper.readValue(schemaJson, Object.class);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("schema lưu trong DB không hợp lệ: " + key);
+        }
+    }
+
+    private void snapshot(Eform entity) {
+        String revisionKey = entity.getKey() + ":" + entity.getVersion();
+        if (versionRepository.existsById(revisionKey)) return;
+        EformVersion revision = new EformVersion();
+        revision.setRevisionKey(revisionKey);
+        revision.setFormKey(entity.getKey());
+        revision.setVersion(entity.getVersion());
+        revision.setTen(entity.getTen());
+        revision.setMoTa(entity.getMoTa());
+        revision.setLoai(entity.getLoai());
+        revision.setSchemaJson(entity.getSchemaJson());
+        revision.setCreatedBy(entity.getUpdatedBy());
+        revision.setCreatedAt(entity.getUpdatedAt());
+        versionRepository.save(revision);
     }
 }

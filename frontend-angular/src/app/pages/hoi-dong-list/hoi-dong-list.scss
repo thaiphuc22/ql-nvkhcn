@@ -1,0 +1,12 @@
+.hdl-page { display: grid; gap: 16px; }
+.hdl-header { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+.hdl-header h2 { margin: 0; }
+.hdl-count { color: #6b7785; font-size: 13px; }
+.hdl-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.hdl-alert { margin-bottom: 0; }
+.hdl-filters { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 12px; background: #fff; border: 1px solid #e8edf2; border-radius: 8px; }
+.hdl-search { width: min(280px, 100%); } .hdl-filters nz-select { width: 170px; } .hdl-count { margin-left: auto; }
+.hdl-truncate { max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hdl-mission-name { font-weight: 500; }
+.hdl-mission-sub { color: #6b7785; display: block; }
+@media (max-width: 767px) { .hdl-header { flex-direction: column; align-items: stretch; } .hdl-actions { justify-content: flex-start; } .hdl-count { margin-left: 0; width: 100%; } }

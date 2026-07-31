@@ -35,6 +35,16 @@ Nếu Figma báo ID manifest đã tồn tại/không hợp lệ, chọn **Plugin
 
 Plugin dùng `pluginData` và tên collection/page để chạy lại an toàn. Các node do người dùng tự tạo không bị xóa.
 
+## UBCK design system
+
+Nhóm action **UBCK design system** tạo một library độc lập, không ghi đè foundations hoặc components VHT:
+
+- **1. UBCK Foundations**: tạo 4 variable collections (`UBCK Primitives`, `UBCK Semantic Light`, `UBCK Semantic Dark`, `UBCK Dimensions`), mỗi collection dùng một mode để tương thích gói Figma Starter, cùng 12 text styles và 3 effect styles.
+- **2. UBCK Components**: tạo 20 component families native gồm Button, Input, Select, Checkbox, Radio, Toggle, Avatar, Badge, Tag, Card, Tabs, Breadcrumb, Message, Dialog, Drawer, Tooltip, Progress, Skeleton, Table và Paginator.
+- **Build UBCK library**: chạy Foundations rồi Components theo đúng thứ tự.
+
+Nguồn UBCK được đọc từ source map của các package Angular đã build trong `UI-ubck`, chủ yếu là `@khcn-core/theme` và `@khcn-core/ui` phiên bản `0.0.1-v21`. Có thể chạy lại các action để đồng bộ; plugin chỉ thay các node mang namespace `ubck/*`.
+
 ## Nguồn chuẩn
 
 - `webapp/src/branding/tokens.css`

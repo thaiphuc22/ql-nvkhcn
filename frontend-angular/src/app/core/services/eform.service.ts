@@ -54,8 +54,11 @@ export class EformService {
 
   /** Tải đúng 1 biểu mẫu và nạp vào cache — dùng khi vào thẳng trang designer (route con), lúc
    * danh sách chưa chắc đã tải (ví dụ mở lại tab/deep-link). */
-  loadOne(key: string): Observable<FormMeta> {
-    return this.http.get<EformResponse>(`${BASE_URL}/${encodeURIComponent(key)}`).pipe(
+  loadOne(key: string, version?: number | null): Observable<FormMeta> {
+    const url = version == null
+      ? `${BASE_URL}/${encodeURIComponent(key)}`
+      : `${BASE_URL}/${encodeURIComponent(key)}/versions/${version}`;
+    return this.http.get<EformResponse>(url).pipe(
       map(toMeta),
       tap((meta) => this.upsertCache(meta)),
     );

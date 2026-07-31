@@ -31,6 +31,15 @@ public class ThanhVienHoiDong {
     @Column(name = "ho_ten", nullable = false)
     private String hoTen;
 
+    /**
+     * Định danh tài khoản (email viết thường) — cùng hệ với {@code X-QTKHCN-User-Id},
+     * {@code WorkflowTaskProjection.assignee} và {@code candidate_users}, để danh sách hội đồng đưa
+     * thẳng vào {@code candidateUsers} của user task được. NULL với hội đồng chỉ ghi họ tên (dữ liệu
+     * trước V11) — khi đó bước họp hội đồng rơi về hành vi cũ theo {@code candidateGroups}.
+     */
+    @Column(name = "user_id", length = 128)
+    private String userId;
+
     @Column(name = "vai_tro_trong_hoi_dong")
     private String vaiTroTrongHoiDong;
 }

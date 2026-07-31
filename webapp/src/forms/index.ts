@@ -105,10 +105,26 @@ export function emptySchema(key: string, ten: string): unknown {
   }
 }
 
-/** Đếm số trường nhập liệu (component có `key`) — bỏ qua text tĩnh. */
+interface CountableComp {
+  key?: string
+  type?: string
+  components?: CountableComp[]
+}
+
+/** Đếm số trường nhập liệu (component có `key`) — bỏ qua text tĩnh; đệ quy qua `group`
+ *  (container thuần, field con vẫn tính là trường của biểu mẫu). */
+function countIn(comps: CountableComp[]): number {
+  let n = 0
+  for (const c of comps) {
+    if (c.type === 'group' && Array.isArray(c.components)) n += countIn(c.components)
+    else if (c.key) n += 1
+  }
+  return n
+}
+
 export function countFields(schema: unknown): number {
-  const comps = (schema as { components?: { key?: string }[] })?.components
-  return Array.isArray(comps) ? comps.filter((c) => !!c.key).length : 0
+  const comps = (schema as { components?: CountableComp[] })?.components
+  return Array.isArray(comps) ? countIn(comps) : 0
 }
 
 const TIEU_CHI: Record<string, string> = {

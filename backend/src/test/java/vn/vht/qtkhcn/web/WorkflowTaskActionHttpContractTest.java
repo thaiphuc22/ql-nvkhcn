@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.List;
 import java.util.UUID;
+import java.time.OffsetDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -21,6 +22,7 @@ import vn.vht.qtkhcn.service.WorkflowTaskActionService;
 import vn.vht.qtkhcn.web.dto.TaskActionDtos.AvailableActionResponse;
 import vn.vht.qtkhcn.web.dto.TaskActionDtos.AvailableActionsResponse;
 import vn.vht.qtkhcn.web.dto.TaskActionDtos.ExecuteActionResponse;
+import vn.vht.qtkhcn.web.dto.TaskActionDtos.FormSubmissionResponse;
 
 class WorkflowTaskActionHttpContractTest {
     private WorkflowTaskActionService service;
@@ -35,7 +37,8 @@ class WorkflowTaskActionHttpContractTest {
     @Test void listsServerFilteredAvailableActions() throws Exception {
         when(service.available("2001", "pm@example.com")).thenReturn(new AvailableActionsResponse(
                 "2001", "1001", "Task_1", List.of(new AvailableActionResponse(
-                        "APPROVE_STEP", "Đồng ý duyệt", "primary", false, false, true, "phieu-phe-duyet"))));
+                        "APPROVE_STEP", "Đồng ý duyệt", "check", "PRIMARY", "primary", 10, null,
+                        false, false, true, "phieu-phe-duyet", "AP-01", 3))));
 
         mvc.perform(get("/api/tasks/2001/available-actions")
                         .header("X-QTKHCN-User-Id", "pm@example.com"))
@@ -71,9 +74,36 @@ class WorkflowTaskActionHttpContractTest {
                 .andExpect(jsonPath("$.code").value("IDENTITY_FORBIDDEN"));
     }
 
+    @Test void savesAndLoadsFormDraftsPerBundleItem() throws Exception {
+        UUID id = UUID.randomUUID();
+        var response = new FormSubmissionResponse(id, "2001", "Task_1", "AP-01", 2,
+                "phieu-phe-duyet", 4L, "approval", "APPROVE_STEP", java.util.Map.of("score", 9),
+                "DRAFT", OffsetDateTime.parse("2026-07-30T09:00:00Z"), null);
+        when(service.saveDraft(eq("2001"), any(), eq("pm@example.com"))).thenReturn(response);
+        when(service.submissions("2001", "pm@example.com")).thenReturn(List.of(response));
+
+        mvc.perform(post("/api/tasks/2001/form-submissions/draft")
+                        .header("X-QTKHCN-User-Id", "pm@example.com")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"actionCode":"APPROVE_STEP","expectedPolicyId":"AP-01",
+                                 "expectedPolicyVersion":3,"outputNamespace":"approval",
+                                 "data":{"score":9}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DRAFT"))
+                .andExpect(jsonPath("$.outputNamespace").value("approval"));
+
+        mvc.perform(get("/api/tasks/2001/form-submissions")
+                        .header("X-QTKHCN-User-Id", "pm@example.com"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].data.score").value(9));
+    }
+
     private static String body(UUID id, String taskKey) {
         return """
                 {"requestId":"%s","taskKey":"%s","actionCode":"APPROVE_STEP",
+                 "expectedPolicyId":"AP-01","expectedPolicyVersion":3,
                  "comment":"ok","formData":{},"expectedTaskState":"ACTIVE"}
                 """.formatted(id, taskKey);
     }

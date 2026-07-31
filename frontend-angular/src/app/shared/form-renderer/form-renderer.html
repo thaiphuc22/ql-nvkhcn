@@ -1,12 +1,27 @@
 <div class="vht-form">
-  @for (c of components(); track (c.id ?? c.key ?? $index)) {
+  <ng-container *ngTemplateOutlet="compList; context: { $implicit: components() }"></ng-container>
+</div>
+
+<!-- ④ `group`: container thuần (viền tuỳ chọn qua showOutline + nhãn), field con dùng
+     chung formData/derived/errors với cấp cha (không có namespace dữ liệu riêng), nên
+     đệ quy lại chính template này cho `c.components ?? []`. -->
+<ng-template #compList let-list>
+  @for (c of list; track (c.id ?? c.key ?? $index)) {
     @if (!isHidden(c)) {
-      @if (c.type === 'dynamiclist') {
+      @if (c.type === 'group') {
+        <div class="ff-group" [class.ff-group-outline]="c.showOutline">
+          @if (c.label) {
+            <div class="ff-group-label">{{ c.label }}</div>
+          }
+          <ng-container *ngTemplateOutlet="compList; context: { $implicit: c.components ?? [] }"></ng-container>
+        </div>
+      } @else if (c.type === 'dynamiclist') {
         <app-form-dynamic-list
           [comp]="c"
           [rows]="listRows(c)"
           [rootCtx]="derived().ctx"
           [errors]="fieldErrorsMap()"
+          [valueSources]="valueSources()"
           errPrefix=""
           (rowsChange)="c.key && setValue(c, $event)"
         ></app-form-dynamic-list>
@@ -15,10 +30,11 @@
           [comp]="c"
           [value]="fieldValue(c)"
           [error]="fieldError(c)"
-          [disabled]="isComputed(c) || c.readonly === true"
+          [valueSources]="valueSources()"
+          [disabled]="readonly() || isComputed(c) || c.readonly === true"
           (valueChange)="setValue(c, $event)"
         ></app-form-field>
       }
     }
   }
-</div>
+</ng-template>

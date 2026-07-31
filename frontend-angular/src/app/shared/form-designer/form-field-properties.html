@@ -44,12 +44,54 @@
         </div>
       }
 
+      @if (isLabelOnly()) {
+        <div class="fpr-section">
+          <div class="fpr-section-title">Chung</div>
+          <div class="fpr-field">
+            <div class="fpr-label">Nhãn hiển thị</div>
+            <input nz-input [ngModel]="draftLabel()" (ngModelChange)="draftLabel.set($event)" (blur)="commitLabel()" />
+          </div>
+        </div>
+      }
+
+      @if (isImage()) {
+        <div class="fpr-section">
+          <div class="fpr-section-title">Nội dung ảnh</div>
+          <div class="fpr-field">
+            <div class="fpr-label">Nguồn ảnh (URL hoặc data URI)</div>
+            <input
+              nz-input
+              placeholder="https://... hoặc data:image/png;base64,..."
+              [ngModel]="draftSource()"
+              (ngModelChange)="draftSource.set($event)"
+              (blur)="commitSource()"
+            />
+          </div>
+        </div>
+      }
+
+      @if (isDatetime()) {
+        <div class="fpr-section">
+          <div class="fpr-section-title">Kiểu ngày giờ</div>
+          <nz-radio-group [ngModel]="field()!.subtype ?? 'date'" (ngModelChange)="commitSubtype($event)">
+            <label nz-radio-button nzValue="date">Ngày</label>
+            <label nz-radio-button nzValue="time">Giờ</label>
+            <label nz-radio-button nzValue="datetime">Ngày &amp; giờ</label>
+          </nz-radio-group>
+        </div>
+      }
+
       @if (isTextOrHtml()) {
         <div class="fpr-section">
           <div class="fpr-section-title">Nội dung</div>
           <div class="fpr-field">
-            <div class="fpr-label">{{ field()!.type === 'text' ? 'Văn bản (Markdown)' : 'Mã HTML' }}</div>
-            <textarea nz-input [rows]="5" [ngModel]="draftText()" (ngModelChange)="draftText.set($event)" (blur)="commitText()" [class.fpr-mono]="field()!.type === 'html'"></textarea>
+            @if (field()!.type === 'text') {
+              <div class="fpr-label">Văn bản (Markdown)</div>
+              <textarea nz-input [rows]="5" [ngModel]="draftText()" (ngModelChange)="draftText.set($event)" (blur)="commitText()"></textarea>
+            } @else {
+              <div class="fpr-label">Mã HTML</div>
+              <textarea nz-input [rows]="5" class="fpr-mono" [ngModel]="draftContent()" (ngModelChange)="draftContent.set($event)" (blur)="commitContent()"></textarea>
+            }
           </div>
         </div>
       }

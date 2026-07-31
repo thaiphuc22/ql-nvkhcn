@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [string]$ReleaseRoot = 'C:\Users\phuctd7\qtkhcn-demo\current',
-    [int]$HoSoServicePort = 8093
+    [int]$HoSoServicePort = 8093,
+    [int]$IdentityServicePort = 8095
 )
 
 $ErrorActionPreference = 'Stop'
@@ -28,14 +29,19 @@ if ($health.status -ne 'UP') { throw "Ho So service readiness is '$($health.stat
 Invoke-RestMethod -Uri "http://127.0.0.1:$HoSoServicePort/api/ho-so" `
     -Headers @{ Authorization = "Bearer $env:QTKHCN_HO_SO_SERVICE_TOKEN" } -TimeoutSec 10 | Out-Null
 
+$identityHealth = Invoke-RestMethod -Uri "http://127.0.0.1:$IdentityServicePort/actuator/health/readiness" -TimeoutSec 5
+if ($identityHealth.status -ne 'UP') { throw "Identity service readiness is '$($identityHealth.status)'." }
+
 $env:DEMO_STATIC_ROOT = $distRoot.Replace('\', '/')
 $env:QTKHCN_HO_SO_UPSTREAM = "127.0.0.1:$HoSoServicePort"
+$env:QTKHCN_IDENTITY_UPSTREAM = "127.0.0.1:$IdentityServicePort"
 
 & caddy validate --config $caddyfile --adapter caddyfile
 if ($LASTEXITCODE -ne 0) { throw 'Caddy validation failed.' }
 
 Write-Host 'Caddy is serving the demo at http://127.0.0.1:8443' -ForegroundColor Green
 Write-Host "NV KHCN/Ho So API -> $env:QTKHCN_HO_SO_UPSTREAM (mandatory)" -ForegroundColor Cyan
+Write-Host "Identity API (Phan he 2) -> $env:QTKHCN_IDENTITY_UPSTREAM (mandatory)" -ForegroundColor Cyan
 Write-Host 'Workflow/task API -> 127.0.0.1:8090' -ForegroundColor Cyan
 Write-Host 'Keep this terminal open. Press Ctrl+C to stop the proxy.'
 & caddy run --config $caddyfile --adapter caddyfile

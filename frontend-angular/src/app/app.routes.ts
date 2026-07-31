@@ -1,7 +1,6 @@
 import { Routes } from '@angular/router';
 import { Shell } from './layout/shell';
 import { LoginPage } from './pages/login/login';
-import { PlaceholderPage } from './pages/placeholder/placeholder';
 import { HoSoListPage } from './pages/ho-so-list/ho-so-list';
 import { ProcessCatalogPage } from './pages/process-catalog/process-catalog';
 import { ProcessDetailPage } from './pages/process-detail/process-detail';
@@ -48,6 +47,21 @@ export const routes: Routes = [
         data: { title: 'Chi tiết Nhiệm vụ KHCN', app: 'qlnvkhcn' },
       },
       { path: 'ho-so', component: HoSoListPage, data: { title: 'Danh sách Hồ sơ KHCN', app: 'qlnvkhcn' } },
+      {
+        path: 'hoi-dong',
+        loadComponent: () => import('./pages/hoi-dong-list/hoi-dong-list').then((module) => module.HoiDongListPage),
+        data: { title: 'Quản lý Hội đồng', app: 'qlnvkhcn' },
+      },
+      {
+        path: 'hoi-dong/moi',
+        loadComponent: () => import('./pages/hoi-dong-form/hoi-dong-form').then((module) => module.HoiDongFormPage),
+        data: { title: 'Tạo mới Hội đồng', app: 'qlnvkhcn' },
+      },
+      {
+        path: 'hoi-dong/:id/sua',
+        loadComponent: () => import('./pages/hoi-dong-form/hoi-dong-form').then((module) => module.HoiDongFormPage),
+        data: { title: 'Sửa Hội đồng', app: 'qlnvkhcn' },
+      },
       {
         path: 'ho-so/tao-moi',
         loadComponent: () => import('./pages/ho-so-create/ho-so-create').then((module) => module.HoSoCreatePage),
@@ -126,15 +140,21 @@ export const routes: Routes = [
       },
       {
         path: 'phan-he/PH2/co-cau-to-chuc',
-        component: PlaceholderPage,
+        loadComponent: () => import('./pages/org-management/org-management').then((module) => module.OrgManagementPage),
         data: { title: 'Quản trị đơn vị', app: 'he-thong' },
       },
       {
         path: 'phan-he/PH2/nguoi-dung',
-        component: PlaceholderPage,
+        loadComponent: () =>
+          import('./pages/user-management/user-management').then((module) => module.UserManagementPage),
         data: { title: 'Quản trị người dùng', app: 'he-thong' },
       },
-      { path: 'phan-he/PH2/phan-quyen', component: PlaceholderPage, data: { title: 'Phân quyền', app: 'he-thong' } },
+      {
+        path: 'phan-he/PH2/phan-quyen',
+        loadComponent: () =>
+          import('./pages/role-permission/role-permission').then((module) => module.RolePermissionPage),
+        data: { title: 'Phân quyền', app: 'he-thong' },
+      },
       {
         path: 'phan-he/PH3/bieu-mau',
         loadComponent: () => import('./pages/form-library/form-library').then((module) => module.FormLibraryPage),

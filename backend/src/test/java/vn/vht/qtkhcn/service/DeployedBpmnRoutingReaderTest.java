@@ -2,6 +2,7 @@ package vn.vht.qtkhcn.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -12,6 +13,7 @@ import vn.vht.qtkhcn.domain.ProcessDefinitionCatalog;
 import vn.vht.qtkhcn.domain.ProcessDefinitionVersion;
 import vn.vht.qtkhcn.repository.ProcessDefinitionCatalogRepository;
 import vn.vht.qtkhcn.repository.ProcessDefinitionVersionRepository;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ProcessRoutingResponse;
 
 class DeployedBpmnRoutingReaderTest {
     @Test
@@ -96,5 +98,91 @@ class DeployedBpmnRoutingReaderTest {
 
         assertThat(routing.steps()).extracting(step -> step.key()).containsExactly("T01", "T02");
         assertThat(routing.steps()).extracting(step -> step.key()).doesNotContain("");
+    }
+
+    /**
+     * Tên biến điều khiển phải đọc được từ conditionExpression, không chỉ giá trị: đây là thứ
+     * {@code WorkflowTaskActionRouting} cần để quy trình người dùng tự vẽ bấm nút xong rẽ đúng nhánh.
+     *
+     * <p>Nhánh {@code khong_dong_y} của Gateway_6 là <b>default flow</b> nên KHÔNG có
+     * conditionExpression — không có gì để đọc ra tên biến, và đó là đúng: chọn default flow là việc
+     * của Zeebe khi không điều kiện nào khớp, không phải việc set biến.
+     */
+    @Test
+    void gatewayConditionsYieldBothTheVariableNameAndTheOutcomeValue() throws Exception {
+        var routing = parseRd0101();
+
+        var task6 = routing.steps().stream().filter(step -> step.key().equals("Task_6")).findFirst().orElseThrow();
+        assertThat(task6.branches()).filteredOn(branch -> branch.variable() != null)
+                .extracting(branch -> branch.outcome())
+                .containsExactlyInAnyOrder("dong_y_bo_sung", "hieu_chinh");
+        assertThat(task6.branches()).filteredOn(branch -> branch.variable() != null)
+                .allSatisfy(branch -> assertThat(branch.variable()).isEqualTo("ketQuaThamDinh"));
+        assertThat(task6.branches()).filteredOn(branch -> branch.outcome().equals("khong_dong_y"))
+                .singleElement().satisfies(branch -> assertThat(branch.variable()).isNull());
+    }
+
+    @Test
+    void actionVariablesMapsBpmnOutcomesOntoActionCodes() {
+        ProcessDefinitionCatalog catalog = new ProcessDefinitionCatalog();
+        catalog.setId(UUID.randomUUID());
+        catalog.setBpmnProcessId("quy_trinh_moi");
+        catalog.setName("Quy trình mới");
+        ProcessDefinitionVersion version = new ProcessDefinitionVersion();
+        version.setCamundaProcessDefinitionKey(4242L);
+        version.setBpmnXml("""
+                <?xml version="1.0" encoding="UTF-8"?>
+                <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                    xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Defs_1">
+                  <bpmn:process id="quy_trinh_moi" name="Quy trình mới" isExecutable="true">
+                    <bpmn:userTask id="Duyet" name="Duyệt hồ sơ"><bpmn:extensionElements>
+                      <zeebe:assignmentDefinition candidateGroups="CQ_KHCN" />
+                    </bpmn:extensionElements><bpmn:outgoing>F1</bpmn:outgoing></bpmn:userTask>
+                    <bpmn:exclusiveGateway id="G1" name="Kết quả?" />
+                    <bpmn:endEvent id="Xong" name="Hoàn tất" />
+                    <bpmn:endEvent id="TuChoi" name="Kết thúc — từ chối" />
+                    <bpmn:sequenceFlow id="F1" sourceRef="Duyet" targetRef="G1" />
+                    <bpmn:sequenceFlow id="F2" name="Đồng ý" sourceRef="G1" targetRef="Xong">
+                      <bpmn:conditionExpression>= ketQuaDuyet = "dong_y"</bpmn:conditionExpression>
+                    </bpmn:sequenceFlow>
+                    <bpmn:sequenceFlow id="F3" name="Từ chối" sourceRef="G1" targetRef="TuChoi">
+                      <bpmn:conditionExpression>= ketQuaDuyet = "khong_dong_y"</bpmn:conditionExpression>
+                    </bpmn:sequenceFlow>
+                  </bpmn:process>
+                </bpmn:definitions>
+                """);
+        var catalogs = mock(ProcessDefinitionCatalogRepository.class);
+        var versions = mock(ProcessDefinitionVersionRepository.class);
+        when(catalogs.findByBpmnProcessId("quy_trinh_moi")).thenReturn(java.util.Optional.of(catalog));
+        when(versions.findFirstByCatalogIdOrderByCamundaVersionDesc(catalog.getId()))
+                .thenReturn(java.util.Optional.of(version));
+
+        var variables = new DeployedBpmnRoutingReader(catalogs, versions)
+                .actionVariables("quy_trinh_moi", "Duyet");
+
+        assertThat(variables).containsOnlyKeys("APPROVE_STEP", "REJECT_STEP");
+        assertThat(variables.get("APPROVE_STEP")).containsEntry("ketQuaDuyet", "dong_y");
+        assertThat(variables.get("REJECT_STEP")).containsEntry("ketQuaDuyet", "khong_dong_y");
+    }
+
+    /** Quy trình chưa vào catalog thì trả rỗng, KHÔNG ném — đường gọi là thao tác duyệt của người dùng. */
+    @Test
+    void actionVariablesReturnsEmptyForAProcessThatIsNotInTheCatalogYet() {
+        var reader = new DeployedBpmnRoutingReader(mock(ProcessDefinitionCatalogRepository.class),
+                mock(ProcessDefinitionVersionRepository.class));
+
+        assertThat(reader.actionVariables("chua_co", "Duyet")).isEmpty();
+    }
+
+    private static ProcessRoutingResponse parseRd0101() throws Exception {
+        ProcessDefinitionCatalog catalog = new ProcessDefinitionCatalog();
+        catalog.setId(UUID.randomUUID());
+        catalog.setBpmnProcessId("RD01_01");
+        catalog.setName("Xét duyệt Chủ trương cấp Cơ sở");
+        ProcessDefinitionVersion version = new ProcessDefinitionVersion();
+        version.setBpmnXml(Files.readString(Path.of("src/main/resources/processes/rd0101.bpmn"),
+                StandardCharsets.UTF_8));
+        return new DeployedBpmnRoutingReader(mock(ProcessDefinitionCatalogRepository.class),
+                mock(ProcessDefinitionVersionRepository.class)).parse(catalog, version);
     }
 }

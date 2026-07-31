@@ -1,7 +1,9 @@
 package vn.vht.qtkhcn.camunda;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.response.ProcessDefinition;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -17,13 +19,24 @@ public class CamundaReliableWorkflowEngine implements ReliableWorkflowEngine {
         this.client = client;
     }
 
+    /**
+     * {@code processCode} được hiểu THẲNG là `bpmnProcessId`, để quy trình do người dùng tự vẽ (id
+     * bất kỳ, kể cả có dấu `_` thật) khởi động được mà không phải theo quy ước đặt tên nào.
+     *
+     * Fallback `replace('.','_')` giữ lại CHỈ vì dữ liệu cũ: `HoSo.quyTrinh` của các hồ sơ tạo trước
+     * 2026-07-28 lưu dạng `"RD01.01"` trong khi BPMN id là `RD01_01`. Bỏ fallback này sẽ làm mọi hồ
+     * sơ cũ không gửi duyệt lại được. Chỉ chạy lượt tra thứ hai khi chuỗi thực sự khác nhau.
+     */
     @Override
     public StartedProcess start(String processCode, String businessKey, UUID requestId,
             Map<String, Object> variables) {
-        String bpmnProcessId = processCode.replace('.', '_');
-        var definitions = client.newProcessDefinitionSearchRequest()
-                .filter(f -> f.processDefinitionId(bpmnProcessId).isLatestVersion(true))
-                .page(p -> p.limit(2)).send().join().items();
+        var definitions = findLatestByProcessId(processCode);
+        if (definitions.size() != 1) {
+            String legacyProcessId = processCode.replace('.', '_');
+            if (!legacyProcessId.equals(processCode)) {
+                definitions = findLatestByProcessId(legacyProcessId);
+            }
+        }
         if (definitions.size() != 1) {
             throw new ProcessNotActiveException("Khong co dung mot process active cho " + processCode);
         }
@@ -52,6 +65,12 @@ public class CamundaReliableWorkflowEngine implements ReliableWorkflowEngine {
         var instance = instances.getFirst();
         return Optional.of(new StartedProcess(String.valueOf(instance.getProcessInstanceKey()),
                 instance.getProcessDefinitionId(), instance.getProcessDefinitionVersion()));
+    }
+
+    private List<ProcessDefinition> findLatestByProcessId(String bpmnProcessId) {
+        return client.newProcessDefinitionSearchRequest()
+                .filter(f -> f.processDefinitionId(bpmnProcessId).isLatestVersion(true))
+                .page(p -> p.limit(2)).send().join().items();
     }
 
     public static class ProcessNotActiveException extends RuntimeException {

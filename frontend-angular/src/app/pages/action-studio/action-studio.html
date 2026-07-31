@@ -46,19 +46,37 @@
           <nz-option [nzValue]="true" nzLabel="Đang bật"></nz-option><nz-option [nzValue]="false" nzLabel="Đang tắt"></nz-option>
         </nz-select>
         <span class="as-spacer"></span>
+        @if (selectedPolicies().length) {
+          <span>Đã chọn {{ selectedPolicies().length }}</span>
+          <button nz-button [nzLoading]="updatingPolicyStatus()" (click)="setSelectedPoliciesStatus(true)">
+            Bật đã chọn
+          </button>
+          <button nz-button [nzLoading]="updatingPolicyStatus()" (click)="setSelectedPoliciesStatus(false)">
+            Tắt đã chọn
+          </button>
+          <button nz-button nzDanger [nzLoading]="deletingPolicies()" nz-popconfirm
+            [nzPopconfirmTitle]="'Xóa ' + selectedPolicies().length + ' luật đã chọn?'"
+            nzPopconfirmPlacement="bottom" (nzOnConfirm)="removeSelectedPolicies()">
+            <span nz-icon nzType="delete"></span> Xóa đã chọn
+          </button>
+        }
         <button nz-button nzType="primary" (click)="openNewPolicy()"><span nz-icon nzType="plus"></span> Thêm luật</button>
       </div>
       <nz-table #policyTable [nzData]="filteredPolicies()" nzSize="small" [nzPageSize]="10" nzTableLayout="fixed">
-        <thead><tr><th nzWidth="120px">Mã luật</th><th nzWidth="190px">Hành động</th><th>Ngữ cảnh áp dụng</th><th nzWidth="170px">Vai trò / quyền</th><th nzWidth="155px">Biểu mẫu</th><th nzWidth="75px">Bật</th><th nzWidth="105px"></th></tr></thead>
+        <thead><tr><th nzWidth="48px"><label nz-checkbox [nzChecked]="allFilteredPoliciesSelected()"
+          [nzIndeterminate]="someFilteredPoliciesSelected()"
+          (nzCheckedChange)="setAllFilteredPoliciesSelected($event)"></label></th><th nzWidth="120px">Mã luật</th><th nzWidth="190px">Hành động</th><th>Ngữ cảnh áp dụng</th><th nzWidth="170px">Vai trò / quyền</th><th nzWidth="155px">Biểu mẫu</th><th nzWidth="75px">Bật</th><th nzWidth="105px"></th></tr></thead>
         <tbody>
           @for (item of policyTable.data; track item.id) {
             <tr>
+              <td><label nz-checkbox [nzChecked]="selectedPolicyIds().has(item.id)"
+                (nzCheckedChange)="setPolicySelected(item.id, $event)"></label></td>
               <td><code>{{ item.id }}</code><div class="as-muted">Ưu tiên {{ item.displayOrder }}</div></td>
               <td><strong>{{ actionName(item.actionCode) }}</strong><div><nz-tag>{{ item.actionCode }}</nz-tag></div></td>
               <td><div>{{ item.surface ? surfaceLabel[item.surface] : 'Mọi bề mặt' }} · {{ processName(item.processCode) }}</div><div class="as-muted">{{ item.taskDefinitionKey || 'Mọi bước' }} · {{ item.dossierStatus ? statusLabel[item.dossierStatus] : 'Mọi trạng thái' }}</div></td>
-              <td><div>{{ item.allowedRoleCodes.length ? item.allowedRoleCodes.join(', ') : 'Mọi vai trò' }}</div><div class="as-muted">{{ item.requiredPermissions.join(', ') || 'Không yêu cầu quyền' }}</div></td>
+              <td><div>{{ item.allowedRoleCodes.length ? item.allowedRoleCodes.join(', ') : 'Mọi vai trò' }}</div><nz-tag [nzColor]="policyStatusColor[item.lifecycleStatus]">{{ policyStatusLabel[item.lifecycleStatus] }}</nz-tag></td>
               <td>{{ item.formKey || '—' }}</td>
-              <td><nz-switch nzSize="small" [ngModel]="item.enabled" (ngModelChange)="togglePolicy(item, $event)"></nz-switch></td>
+              <td><nz-switch nzSize="small" [ngModel]="item.lifecycleStatus === 'ACTIVE'" (ngModelChange)="togglePolicy(item, $event)"></nz-switch></td>
               <td><button nz-button nzType="link" nzSize="small" (click)="editPolicy(item)"><span nz-icon nzType="edit"></span></button><button nz-button nzType="link" nzDanger nzSize="small" nz-popconfirm nzPopconfirmTitle="Xóa luật này?" (nzOnConfirm)="removePolicy(item)"><span nz-icon nzType="delete"></span></button></td>
             </tr>
           }
@@ -149,15 +167,45 @@
         <label>Mã luật<input nz-input [ngModel]="d.id" (ngModelChange)="patchPolicy('id', $event)" /></label>
         <div class="as-field"><span class="as-field-title">Hành động</span><nz-select [ngModel]="d.actionCode" (ngModelChange)="patchPolicy('actionCode', $event)">@for (item of store.definitions(); track item.actionCode) {<nz-option [nzValue]="item.actionCode" [nzLabel]="item.actionName"></nz-option>}</nz-select></div>
         <div class="as-field"><span class="as-field-title">Bề mặt</span><nz-select nzAllowClear [ngModel]="d.surface" (ngModelChange)="patchPolicy('surface', $event)">@for (item of surfaces(); track item.value) {<nz-option [nzValue]="item.value" [nzLabel]="item.label"></nz-option>}</nz-select></div>
-        <div class="as-field"><span class="as-field-title">Quy trình</span><nz-select nzAllowClear [ngModel]="d.processCode" (ngModelChange)="patchPolicy('processCode', $event)">@for (process of store.processes(); track process.code) {<nz-option [nzValue]="process.code" [nzLabel]="process.code + ' · ' + process.name"></nz-option>}</nz-select></div>
+        <div class="as-field"><span class="as-field-title">Quy trình / phiên bản</span><nz-select nzAllowClear [ngModel]="d.processCode" (ngModelChange)="selectPolicyProcess($event)">@for (process of store.processes(); track process.code) {<nz-option [nzValue]="process.code" [nzLabel]="process.code + ' v' + (process.processVersion || '?') + ' · ' + process.name"></nz-option>}</nz-select></div>
         <div class="as-field"><span class="as-field-title">Bước hiện tại</span><nz-select nzAllowClear [ngModel]="d.taskDefinitionKey" (ngModelChange)="patchPolicy('taskDefinitionKey', $event || null)" nzPlaceHolder="Để trống = mọi bước">@for (step of policySteps(d.processCode); track step.key) {<nz-option [nzValue]="step.key" [nzLabel]="step.key + ' · ' + step.name"></nz-option>}</nz-select></div>
         <div class="as-field"><span class="as-field-title">Trạng thái</span><nz-select nzAllowClear [ngModel]="d.dossierStatus" (ngModelChange)="patchPolicy('dossierStatus', $event)">@for (item of statuses(); track item.value) {<nz-option [nzValue]="item.value" [nzLabel]="item.label"></nz-option>}</nz-select></div>
         <div class="as-field wide"><span class="as-field-title">Vai trò được phép</span><nz-select nzMode="multiple" [ngModel]="d.allowedRoleCodes" (ngModelChange)="patchPolicy('allowedRoleCodes', $event)">@for (item of roles(); track item.value) {<nz-option [nzValue]="item.value" [nzLabel]="item.value + ' · ' + item.label"></nz-option>}</nz-select></div>
-        <div class="as-field wide"><span class="as-field-title">Quyền bắt buộc</span><nz-select nzMode="multiple" [ngModel]="d.requiredPermissions" (ngModelChange)="patchPolicy('requiredPermissions', $event)">@for (item of permissions(); track item.value) {<nz-option [nzValue]="item.value" [nzLabel]="item.label"></nz-option>}</nz-select></div>
-        <div class="as-field"><span class="as-field-title">Biểu mẫu</span><nz-select nzAllowClear [ngModel]="d.formKey" (ngModelChange)="patchPolicy('formKey', $event)">@for (item of forms(); track item.value) {<nz-option [nzValue]="item.value" [nzLabel]="item.label"></nz-option>}</nz-select></div>
         <label>Thứ tự<input nz-input type="number" [ngModel]="d.displayOrder" (ngModelChange)="patchPolicy('displayOrder', +$event)" /></label>
         <label class="wide">Biểu thức điều kiện<input nz-input [ngModel]="d.conditionExpression" (ngModelChange)="patchPolicy('conditionExpression', $event)" /></label>
-        <label class="as-switch-label wide"><span>Kích hoạt luật</span><nz-switch [ngModel]="d.enabled" (ngModelChange)="patchPolicy('enabled', $event)"></nz-switch></label>
+        <label>Nhãn override<input nz-input [ngModel]="d.displayLabel" (ngModelChange)="patchPolicy('displayLabel', $event || null)" /></label>
+        <label>Icon override<input nz-input [ngModel]="d.displayIcon" (ngModelChange)="patchPolicy('displayIcon', $event || null)" /></label>
+        <div class="as-field"><span class="as-field-title">Nhóm UI override</span><nz-select nzAllowClear [ngModel]="d.uiGroup" (ngModelChange)="patchPolicy('uiGroup', $event)">@for (key of groups; track key) {<nz-option [nzValue]="key" [nzLabel]="groupLabel[key]"></nz-option>}</nz-select></div>
+        <div class="as-field"><span class="as-field-title">Tone override</span><nz-select nzAllowClear [ngModel]="d.tone" (ngModelChange)="patchPolicy('tone', $event)">@for (key of tones; track key) {<nz-option [nzValue]="key" [nzLabel]="toneLabel[key]"></nz-option>}</nz-select></div>
+        <label class="wide">Hướng dẫn override<textarea nz-input rows="2" [ngModel]="d.helpText" (ngModelChange)="patchPolicy('helpText', $event || null)"></textarea></label>
+        <div class="as-field wide as-bundle"><div class="as-bundle-title"><span class="as-field-title">Form Bundle</span><button nz-button nzSize="small" (click)="addBundleItem()">Thêm biểu mẫu</button></div>
+          <div class="as-form-grid as-bundle-config">
+            <div class="as-field"><span class="as-field-title">Chế độ hiển thị</span><nz-select [ngModel]="d.formBundle?.displayMode || 'STEPPER'" (ngModelChange)="patchBundle({ displayMode: $event })"><nz-option nzValue="STEPPER" nzLabel="Tuần tự (Stepper)"></nz-option><nz-option nzValue="TABS" nzLabel="Thẻ (Tabs)"></nz-option></nz-select></div>
+            <div class="as-field"><span class="as-field-title">Chính sách hoàn thành</span><nz-select [ngModel]="d.formBundle?.completionPolicy || 'ALL_REQUIRED_VALID'" (ngModelChange)="patchBundle({ completionPolicy: $event })"><nz-option nzValue="ALL_REQUIRED_VALID" nzLabel="Tất cả form bắt buộc hợp lệ"></nz-option></nz-select></div>
+            <label class="as-switch-label"><span>Cho phép lưu nháp</span><nz-switch [ngModel]="d.formBundle?.allowDraft || false" (ngModelChange)="patchBundle({ allowDraft: $event })"></nz-switch></label>
+            <label>Phiên bản Bundle<input nz-input type="number" min="1" [ngModel]="d.formBundle?.version || 1" (ngModelChange)="patchBundle({ version: +$event })" /></label>
+          </div>
+          <div class="as-bundle-copy"><nz-select nzAllowClear nzPlaceHolder="Chọn luật nguồn" [ngModel]="bundleCopySourceId()" (ngModelChange)="bundleCopySourceId.set($event)">@for (policy of store.availabilityPolicies(); track policy.id) {@if (policy.id !== d.id && policy.formBundle) {<nz-option [nzValue]="policy.id" [nzLabel]="policy.id + ' · ' + actionName(policy.actionCode)"></nz-option>}}</nz-select><button nz-button (click)="copyBundle()"><span nz-icon nzType="copy"></span> Sao chép Bundle</button></div>
+          <div cdkDropList class="as-bundle-list" (cdkDropListDropped)="dropBundleItem($event)">
+            @for (form of d.formBundle?.items || []; track $index; let i = $index) {
+              <div cdkDrag class="as-bundle-item">
+                <div class="as-bundle-handle" cdkDragHandle><span nz-icon nzType="holder"></span><strong>Biểu mẫu #{{ i + 1 }}</strong><span class="as-spacer"></span><button nz-button nzType="text" nzDanger (click)="removeBundleItem(i)"><span nz-icon nzType="delete"></span></button></div>
+                <div class="as-form-grid">
+                  <div class="as-field"><span class="as-field-title">Biểu mẫu</span><nz-select [ngModel]="form.formKey" (ngModelChange)="patchBundleItem(i, { formKey: $event })">@for (option of forms(); track option.value) {<nz-option [nzValue]="option.value" [nzLabel]="option.label"></nz-option>}</nz-select></div>
+                  <label>Phiên bản eForm<input nz-input type="number" min="1" placeholder="Hiện hành" [ngModel]="form.formVersion" (ngModelChange)="patchBundleItem(i, { formVersion: $event ? +$event : null })" /></label>
+                  <label>Tiêu đề bước<input nz-input [ngModel]="form.displayTitle" (ngModelChange)="patchBundleItem(i, { displayTitle: $event || null })" /></label>
+                  <label>Output namespace<input nz-input [ngModel]="form.outputNamespace" (ngModelChange)="patchBundleItem(i, { outputNamespace: $event })" /></label>
+                  <div class="as-field"><span class="as-field-title">Chế độ</span><nz-select [ngModel]="form.mode" (ngModelChange)="patchBundleItem(i, { mode: $event })"><nz-option nzValue="EDIT" nzLabel="Nhập liệu"></nz-option><nz-option nzValue="VIEW" nzLabel="Chỉ xem"></nz-option></nz-select></div>
+                  <label>Thứ tự<input nz-input type="number" min="1" [ngModel]="form.displayOrder" (ngModelChange)="patchBundleItem(i, { displayOrder: +$event })" /></label>
+                  <label class="as-switch-label"><span>Bắt buộc</span><nz-switch [ngModel]="form.required" (ngModelChange)="patchBundleItem(i, { required: $event })"></nz-switch></label>
+                  <label class="as-switch-label"><span>Cho phép bỏ qua</span><nz-switch [ngModel]="form.skippable" (ngModelChange)="patchBundleItem(i, { skippable: $event })"></nz-switch></label>
+                  <label class="wide">Điều kiện tham gia Bundle<input nz-input placeholder="Ví dụ: dossier.requiresCouncil = true" [ngModel]="form.conditionExpression" (ngModelChange)="patchBundleItem(i, { conditionExpression: $event || null })" /></label>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+        <div class="as-field wide"><span class="as-field-title">Vòng đời luật</span><nz-select [ngModel]="d.lifecycleStatus" (ngModelChange)="patchPolicy('lifecycleStatus', $event)"><nz-option nzValue="DRAFT" nzLabel="Bản nháp"></nz-option><nz-option nzValue="ACTIVE" nzLabel="Đang hoạt động"></nz-option><nz-option nzValue="DISABLED" nzLabel="Đã vô hiệu"></nz-option><nz-option nzValue="INVALID" nzLabel="Không còn hợp lệ"></nz-option></nz-select></div>
       </div>
       <div class="as-drawer-actions"><button nz-button (click)="policyDraft.set(null)">Hủy</button><button nz-button nzType="primary" (click)="savePolicy()"><span nz-icon nzType="save"></span> Lưu luật</button></div>
     }
@@ -188,5 +236,5 @@
     <label>Sắc thái<nz-select [ngModel]="d.tone" (ngModelChange)="patchPresentation('tone', $event)">@for (key of tones; track key) {<nz-option [nzValue]="key" [nzLabel]="toneLabel[key]"></nz-option>}</nz-select></label>
     <label>Thứ tự<input nz-input type="number" [ngModel]="d.order" (ngModelChange)="patchPresentation('order', +$event)" /></label>
     <label>Hướng dẫn<textarea nz-input rows="3" [ngModel]="d.helpText" (ngModelChange)="patchPresentation('helpText', $event)"></textarea></label>
-  </div><div class="as-drawer-actions"><button nz-button (click)="presentationDraft.set(null)">Hủy</button><button nz-button nzType="primary" (click)="savePresentation()">Lưu trình bày</button></div>}</ng-container>
+  </div><div class="as-drawer-actions"><button nz-button nzDanger (click)="resetPresentation()">Khôi phục mặc định</button><button nz-button (click)="presentationDraft.set(null)">Hủy</button><button nz-button nzType="primary" (click)="savePresentation()">Lưu trình bày</button></div>}</ng-container>
 </nz-drawer>

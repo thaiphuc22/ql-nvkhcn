@@ -28,7 +28,8 @@
           } @else {
             @for (action of availableActions(); track action.actionCode) {
               <button nz-button [nzType]="action.tone === 'primary' ? 'primary' : 'default'"
-                [nzDanger]="action.tone === 'danger'" (click)="openAction(action.actionCode)">
+                [nzDanger]="action.tone === 'danger'" [title]="action.helpText || ''"
+                (click)="openAction(action.actionCode)">
                 {{ action.label }}
               </button>
             }
@@ -38,6 +39,14 @@
     </header>
 
     @if (errorMessage()) { <nz-alert nzType="error" nzShowIcon [nzMessage]="errorMessage()"></nz-alert> }
+    @if (actionsError()) {
+      <nz-alert nzType="error" nzShowIcon nzMessage="Không thể tải các thao tác hồ sơ"
+        [nzDescription]="actionsError()"></nz-alert>
+    }
+    @if (identityUnavailable()) {
+      <nz-alert nzType="warning" nzShowIcon nzMessage="Chưa nạp được vai trò của bạn từ identity-service"
+        nzDescription="Các nút thao tác đang được tính với danh sách vai trò RỖNG nên có thể thiếu. Kiểm tra identity-service rồi tải lại trang."></nz-alert>
+    }
     @if (dossier.trangThai === 'DRAFT') {
       <nz-alert nzType="warning" nzShowIcon nzMessage="Hồ sơ ở trạng thái Khởi tạo — chưa vào quy trình."
         nzDescription="Bấm “Gửi duyệt” để hồ sơ bắt đầu luồng phê duyệt."></nz-alert>
@@ -137,8 +146,9 @@
             @for (hoiDong of dossier.hoiDongXetDuyet; track hoiDong.id) {
               <div class="hsd-hoidong">
                 <div class="hsd-hoidong-header">
+                  <code>{{ hoiDong.maHoiDong }}</code>
                   <nz-tag nzColor="blue">Cấp {{ hoiDongCapLabel[hoiDong.cap] }}</nz-tag>
-                  <small>Sinh tự động sau bước {{ hoiDong.sourceTaskDefinitionKey }} · {{ hoiDong.createdAt | date:'dd/MM/yyyy HH:mm' }}</small>
+                  <small>{{ hoiDong.sourceTaskDefinitionKey ? 'Sinh tự động sau bước ' + hoiDong.sourceTaskDefinitionKey : 'Tạo thủ công' }} · {{ hoiDong.createdAt | date:'dd/MM/yyyy HH:mm' }}</small>
                 </div>
                 @if (hoiDong.canCuPhapLy) { <p class="hsd-hoidong-cancu"><strong>Căn cứ:</strong> {{ hoiDong.canCuPhapLy }}</p> }
                 <table class="hsd-hoidong-table">
@@ -181,13 +191,34 @@
   </div>
 
   <nz-modal [nzVisible]="submitOpen()" nzTitle="Gửi duyệt hồ sơ" nzOkText="Gửi duyệt" nzCancelText="Hủy"
-    [nzOkLoading]="saving()" [nzOkDisabled]="!submitProcess()?.supported" (nzOnCancel)="submitOpen.set(false)" (nzOnOk)="submit()">
+    [nzOkLoading]="saving()" [nzOkDisabled]="selectableLoading() || !submitProcess() || saving()"
+    (nzOnCancel)="submitOpen.set(false)" (nzOnOk)="submit()">
     <ng-container *nzModalContent>
+      <p>Hồ sơ <code>{{ dossier.id }}</code> sẽ đi vào quy trình:</p>
+      <nz-select style="width: 100%" nzPlaceHolder="Chọn quy trình đã deploy" nzShowSearch
+        [nzLoading]="selectableLoading()" [ngModel]="selectedProcessId()"
+        (ngModelChange)="selectedProcessId.set($event)">
+        @for (process of selectableProcesses(); track process.bpmnProcessId) {
+          <nz-option [nzValue]="process.bpmnProcessId"
+            [nzLabel]="process.name + ' · ' + process.bpmnProcessId + ' (v' + process.latestVersion + ')'"></nz-option>
+        }
+      </nz-select>
+
+      @if (selectableError(); as error) {
+        <nz-alert class="hsd-submit-alert" nzType="error" nzShowIcon [nzMessage]="error"></nz-alert>
+      } @else if (!selectableLoading() && !selectableProcesses().length) {
+        <nz-alert class="hsd-submit-alert" nzType="warning" nzShowIcon
+          nzMessage="Chưa có quy trình nào được deploy. Vào /quy-trinh để tạo và deploy BPMN trước."></nz-alert>
+      }
+
       @if (submitProcess(); as process) {
-        <p>Hồ sơ <code>{{ dossier.id }}</code> sẽ đi vào quy trình:</p>
-        <nz-card nzSize="small"><strong>{{ process.code }} · {{ process.name }}</strong></nz-card>
-        @if (!process.supported) { <nz-alert nzType="warning" nzShowIcon nzMessage="Backend hiện mới hỗ trợ gửi duyệt RD01.01."></nz-alert> }
-      } @else { <nz-alert nzType="warning" nzShowIcon nzMessage="Loại hồ sơ này chưa có quy trình gửi duyệt được hỗ trợ."></nz-alert> }
+        @if (!process.userTaskCount) {
+          <nz-alert class="hsd-submit-alert" nzType="warning" nzShowIcon
+            nzMessage="Quy trình này không có bước xử lý (userTask) nào — hồ sơ sẽ chạy tới cuối mà không sinh việc cho ai."></nz-alert>
+        }
+        <nz-alert class="hsd-submit-alert" nzType="info" nzShowIcon
+          nzMessage="Hệ thống không kiểm tra quy trình có phù hợp loại hồ sơ hay không — hãy chọn đúng."></nz-alert>
+      }
     </ng-container>
   </nz-modal>
 
@@ -197,11 +228,60 @@
     (nzOnCancel)="closeAction()" (nzOnOk)="applyAction()">
     <ng-container *nzModalContent>
       @if (currentStep(); as current) { <p>Bước hiện tại: <strong>{{ current.ten }}</strong></p> }
-      @if (selectedAction()?.formKey) {
+      @if (selectedAction()?.formBundle?.items?.length) {
+        @if (taskActionFormLoading()) {
+          <div class="hsd-loading"><nz-spin nzSimple></nz-spin></div>
+        } @else {
+          <div class="hsd-form-bundle">
+            @if (taskActionBundleForms().length > 1 && selectedAction()?.formBundle?.displayMode === 'TABS') {
+              <nz-tabs
+                [nzSelectedIndex]="activeBundleItem()"
+                (nzSelectedIndexChange)="selectBundleItem($event)"
+              >
+                @for (form of taskActionBundleForms(); track form.namespace) {
+                  <nz-tab [nzTitle]="form.title"></nz-tab>
+                }
+              </nz-tabs>
+            } @else if (taskActionBundleForms().length > 1) {
+              <nz-steps [nzCurrent]="activeBundleItem()" nzSize="small">
+                @for (form of taskActionBundleForms(); track form.namespace) {
+                  <nz-step [nzTitle]="form.title"></nz-step>
+                }
+              </nz-steps>
+            }
+            @for (form of taskActionBundleForms(); track form.namespace; let i = $index) {
+              <section class="hsd-bundle-item"
+                [hidden]="taskActionBundleForms().length > 1 && i !== activeBundleItem()">
+                <h4>{{ i + 1 }}. {{ form.title }} @if (form.required) {<span>*</span>}</h4>
+                @if (form.mode === 'VIEW') {<nz-tag>Chỉ xem</nz-tag>}
+                <app-form-renderer #bundleFormRenderer [schema]="form.schema" [data]="form.data"
+                  [readonly]="form.mode === 'VIEW'"
+                  [valueSources]="formValueSources()"></app-form-renderer>
+              </section>
+            }
+            @if (taskActionBundleForms().length > 1
+                && selectedAction()?.formBundle?.displayMode === 'STEPPER') {
+              <div class="hsd-bundle-navigation">
+                <button nz-button type="button"
+                  [disabled]="activeBundleItem() === 0"
+                  (click)="selectBundleItem(activeBundleItem() - 1)">Trước</button>
+                <span>Bước {{ activeBundleItem() + 1 }}/{{ taskActionBundleForms().length }}</span>
+                <button nz-button nzType="primary" type="button"
+                  [disabled]="activeBundleItem() === taskActionBundleForms().length - 1"
+                  (click)="selectBundleItem(activeBundleItem() + 1)">Tiếp</button>
+              </div>
+            }
+          </div>
+        }
+      } @else if (selectedAction()?.formKey) {
         @if (taskActionFormLoading()) {
           <div class="hsd-loading"><nz-spin nzSimple></nz-spin></div>
         } @else if (taskActionForm(); as form) {
-          <app-form-renderer #taskActionFormRenderer [schema]="form.schema"></app-form-renderer>
+          <app-form-renderer
+            #taskActionFormRenderer
+            [schema]="form.schema"
+            [valueSources]="formValueSources()"
+          ></app-form-renderer>
         }
       }
       <label for="action-note">Ý kiến {{ selectedAction()?.requiresReason ? '(bắt buộc)' : '(không bắt buộc)' }}</label>

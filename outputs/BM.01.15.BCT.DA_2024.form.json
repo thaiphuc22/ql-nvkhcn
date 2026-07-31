@@ -1,0 +1,548 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.9.0",
+  "exporter": {
+    "name": "Camunda Web Modeler",
+    "version": "c72e043"
+  },
+  "schemaVersion": 19,
+  "id": "Form_BM_01_15_BCT_DA_2024",
+  "components": [
+    {
+      "type": "html",
+      "id": "Html_1389",
+      "content": "<div style=\"padding:10px 12px;background:#f4f7fb;border-left:4px solid #0f62fe\"><strong>Chế độ hiển thị:</strong> Nhập và kiểm tra dữ liệu ở chế độ soạn thảo. Bật <em>Xem văn bản hoàn chỉnh</em> để xem bản trình bày.</div>",
+      "layout": {
+        "row": "Row_1390",
+        "columns": null
+      }
+    },
+    {
+      "type": "checkbox",
+      "id": "Field_1391",
+      "key": "cheDoXemVanBan",
+      "label": "Xem văn bản hoàn chỉnh",
+      "defaultValue": false,
+      "layout": {
+        "row": "Row_1392",
+        "columns": null
+      }
+    },
+    {
+      "type": "group",
+      "id": "Group_1393",
+      "label": "Thông tin soạn thảo",
+      "showOutline": true,
+      "conditional": {
+        "hide": "=cheDoXemVanBan = true"
+      },
+      "components": [
+        {
+          "type": "html",
+          "id": "Html_1383",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">Thông tin báo cáo</div>",
+          "layout": {
+            "row": "Row_1384",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_835",
+          "key": "donViBanHanh",
+          "label": "Đơn vị ban hành/chủ trì",
+          "layout": {
+            "row": "Row_836",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_837",
+          "key": "soVanBan",
+          "label": "Số văn bản",
+          "layout": {
+            "row": "Row_838",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_839",
+          "key": "diaDanh",
+          "label": "Địa danh",
+          "layout": {
+            "row": "Row_840",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          },
+          "defaultValue": "Hà Nội"
+        },
+        {
+          "type": "datetime",
+          "id": "Field_841",
+          "key": "ngayVanBan",
+          "label": "Ngày văn bản",
+          "layout": {
+            "row": "Row_842",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          },
+          "subtype": "date"
+        },
+        {
+          "type": "textfield",
+          "id": "Field_843",
+          "key": "nguoiKy",
+          "label": "Họ tên người ký",
+          "layout": {
+            "row": "Row_844",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_845",
+          "key": "chucDanhKy",
+          "label": "Chức danh người ký",
+          "layout": {
+            "row": "Row_846",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_847",
+          "key": "tenDuAn",
+          "label": "Tên dự án",
+          "layout": {
+            "row": "Row_848",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_849",
+          "key": "nhomDuAn",
+          "label": "Nhóm/phân loại dự án",
+          "layout": {
+            "row": "Row_850",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_851",
+          "key": "capQuyetDinhChuTruong",
+          "label": "Cấp quyết định chủ trương đầu tư",
+          "layout": {
+            "row": "Row_852",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_853",
+          "key": "capQuyetDinhDauTu",
+          "label": "Cấp quyết định đầu tư",
+          "layout": {
+            "row": "Row_854",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_855",
+          "key": "chuDauTu",
+          "label": "Chủ đầu tư",
+          "layout": {
+            "row": "Row_856",
+            "columns": null
+          },
+          "defaultValue": "Tập đoàn Công nghiệp - Viễn thông Quân đội"
+        },
+        {
+          "type": "textfield",
+          "id": "Field_857",
+          "key": "daiDienChuDauTu",
+          "label": "Đại diện chủ đầu tư",
+          "layout": {
+            "row": "Row_858",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_859",
+          "key": "donViThucHien",
+          "label": "Cơ quan, đơn vị thực hiện dự án",
+          "layout": {
+            "row": "Row_860",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_861",
+          "key": "doiTuongThuHuong",
+          "label": "Đối tượng thụ hưởng",
+          "layout": {
+            "row": "Row_862",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_863",
+          "key": "hinhThucQuanLy",
+          "label": "Hình thức quản lý dự án",
+          "layout": {
+            "row": "Row_864",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_865",
+          "key": "diaDiemThucHien",
+          "label": "Địa điểm thực hiện dự án",
+          "layout": {
+            "row": "Row_866",
+            "columns": null
+          }
+        },
+        {
+          "type": "number",
+          "id": "Field_867",
+          "key": "tongMucDauTu",
+          "label": "Tổng mức đầu tư (VNĐ)",
+          "layout": {
+            "row": "Row_868",
+            "columns": null
+          },
+          "validate": {
+            "required": true,
+            "min": 0
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_869",
+          "key": "tongMucDauTuBangChu",
+          "label": "Tổng mức đầu tư bằng chữ",
+          "layout": {
+            "row": "Row_870",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_871",
+          "key": "nguonVon",
+          "label": "Nguồn vốn",
+          "layout": {
+            "row": "Row_872",
+            "columns": null
+          },
+          "defaultValue": "Quỹ phát triển KHCN Viettel"
+        },
+        {
+          "type": "datetime",
+          "id": "Field_873",
+          "key": "ngayBatDau",
+          "label": "Ngày bắt đầu dự kiến",
+          "layout": {
+            "row": "Row_874",
+            "columns": null
+          },
+          "subtype": "date"
+        },
+        {
+          "type": "datetime",
+          "id": "Field_875",
+          "key": "ngayKetThuc",
+          "label": "Ngày kết thúc dự kiến",
+          "layout": {
+            "row": "Row_876",
+            "columns": null
+          },
+          "subtype": "date"
+        },
+        {
+          "type": "textfield",
+          "id": "Field_877",
+          "key": "hinhThucDauTu",
+          "label": "Hình thức đầu tư",
+          "layout": {
+            "row": "Row_878",
+            "columns": null
+          },
+          "defaultValue": "Dự án đầu tư mua sắm hỗ trợ KHCN"
+        },
+        {
+          "type": "textfield",
+          "id": "Field_879",
+          "key": "linhVucHoiDong",
+          "label": "Lĩnh vực Hội đồng chuyên ngành",
+          "layout": {
+            "row": "Row_880",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_881",
+          "key": "canCuPhapLy",
+          "label": "Căn cứ pháp lý",
+          "layout": {
+            "row": "Row_882",
+            "columns": null
+          }
+        },
+        {
+          "type": "html",
+          "id": "Html_1385",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">Phần 1. Tài liệu và tổ chức thẩm định</div>",
+          "layout": {
+            "row": "Row_1386",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_883",
+          "key": "hoSoTaiLieu",
+          "label": "Hồ sơ, tài liệu thẩm định",
+          "layout": {
+            "row": "Row_884",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_885",
+          "key": "canCuThamDinh",
+          "label": "Căn cứ pháp lý để thẩm định",
+          "layout": {
+            "row": "Row_886",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_887",
+          "key": "keHoachBoTriVon",
+          "label": "Kế hoạch bố trí vốn",
+          "layout": {
+            "row": "Row_888",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_889",
+          "key": "nganhLinhVuc",
+          "label": "Ngành, lĩnh vực đề nghị thẩm định",
+          "layout": {
+            "row": "Row_890",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_891",
+          "key": "thongTinChungBoSung",
+          "label": "Thông tin chung bổ sung",
+          "layout": {
+            "row": "Row_892",
+            "columns": null
+          }
+        },
+        {
+          "type": "html",
+          "id": "Html_1387",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">Phần 2. Ý kiến thẩm định</div>",
+          "layout": {
+            "row": "Row_1388",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_893",
+          "key": "thamDinhCoQuan",
+          "label": "Thẩm định của các cơ quan, đơn vị",
+          "layout": {
+            "row": "Row_894",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_895",
+          "key": "danhGiaTiepThu",
+          "label": "Đánh giá nội dung tiếp thu, giải trình hoặc bảo lưu",
+          "layout": {
+            "row": "Row_896",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_897",
+          "key": "yKienChuaThongNhat",
+          "label": "Ý kiến chưa thống nhất",
+          "layout": {
+            "row": "Row_898",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_899",
+          "key": "yKienHoiDong",
+          "label": "Ý kiến Hội đồng KHCN chuyên ngành",
+          "layout": {
+            "row": "Row_900",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_901",
+          "key": "deXuatKienNghi",
+          "label": "Đề xuất, kiến nghị",
+          "layout": {
+            "row": "Row_902",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "dynamiclist",
+          "id": "List_909",
+          "key": "tongHopYKien",
+          "label": "Phụ lục ý kiến và giải trình",
+          "showOutline": true,
+          "components": [
+            {
+              "type": "textarea",
+              "id": "Field_903",
+              "key": "yKien",
+              "label": "Ý kiến Hội đồng chuyên ngành",
+              "layout": {
+                "row": "Row_904",
+                "columns": null
+              }
+            },
+            {
+              "type": "textarea",
+              "id": "Field_905",
+              "key": "giaiTrinh",
+              "label": "Giải trình của đơn vị chủ trì",
+              "layout": {
+                "row": "Row_906",
+                "columns": null
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_907",
+              "key": "thamChieu",
+              "label": "Tham chiếu văn bản",
+              "layout": {
+                "row": "Row_908",
+                "columns": null
+              }
+            }
+          ],
+          "layout": {
+            "row": "Row_910",
+            "columns": null
+          }
+        },
+        {
+          "type": "dynamiclist",
+          "id": "List_915",
+          "key": "thanhVienHoiDongKy",
+          "label": "Thành viên Hội đồng ký",
+          "showOutline": true,
+          "components": [
+            {
+              "type": "textfield",
+              "id": "Field_911",
+              "key": "hoTen",
+              "label": "Họ tên",
+              "layout": {
+                "row": "Row_912",
+                "columns": null
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_913",
+              "key": "vaiTro",
+              "label": "Vai trò",
+              "layout": {
+                "row": "Row_914",
+                "columns": null
+              }
+            }
+          ],
+          "layout": {
+            "row": "Row_916",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_917",
+          "key": "noiNhan",
+          "label": "Nơi nhận",
+          "layout": {
+            "row": "Row_918",
+            "columns": null
+          }
+        }
+      ],
+      "layout": {
+        "row": "Row_1394",
+        "columns": null
+      }
+    },
+    {
+      "type": "html",
+      "id": "Html_1395",
+      "content": "<style>.bm-page{max-width:900px;margin:0 auto;padding:34px 48px;background:#fff;color:#111;font:17px/1.48 \"Times New Roman\",serif;box-sizing:border-box}.bm-code{text-align:right;font-size:13px}.bm-head{text-align:center}.bm-head strong{display:block}.bm-rule{display:inline-block;width:150px;border-top:1px solid #111}.bm-title{text-align:center;font-size:20px;font-weight:700;margin:24px 0}.bm-page h3{font-size:17px;margin:18px 0 8px}.bm-page p{margin:4px 0;text-align:justify;white-space:pre-line}.value:empty:after{content:\"................................\"}@media(max-width:680px){.bm-page{padding:18px 14px;font-size:15px}}</style><article class=\"bm-page\"><div class=\"bm-code\">BM.01.15.BCT.DA_2024</div><header class=\"bm-head\"><strong>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong><strong>Độc lập - Tự do - Hạnh phúc</strong><span class=\"bm-rule\"></span></header><div class=\"bm-title\">BÁO CÁO THÔNG QUA CHỦ TRƯƠNG ĐẦU TƯ DỰ ÁN</div><section><h3>Thông tin báo cáo</h3><p><strong>Đơn vị ban hành/chủ trì:</strong> <span class=\"value\">{{donViBanHanh}}</span></p><p><strong>Số văn bản:</strong> <span class=\"value\">{{soVanBan}}</span></p><p><strong>Địa danh:</strong> <span class=\"value\">{{diaDanh}}</span></p><p><strong>Ngày văn bản:</strong> <span class=\"value\">{{ngayVanBan}}</span></p><p><strong>Họ tên người ký:</strong> <span class=\"value\">{{nguoiKy}}</span></p><p><strong>Chức danh người ký:</strong> <span class=\"value\">{{chucDanhKy}}</span></p><p><strong>Tên dự án:</strong> <span class=\"value\">{{tenDuAn}}</span></p><p><strong>Nhóm/phân loại dự án:</strong> <span class=\"value\">{{nhomDuAn}}</span></p><p><strong>Cấp quyết định chủ trương đầu tư:</strong> <span class=\"value\">{{capQuyetDinhChuTruong}}</span></p><p><strong>Cấp quyết định đầu tư:</strong> <span class=\"value\">{{capQuyetDinhDauTu}}</span></p><p><strong>Chủ đầu tư:</strong> <span class=\"value\">{{chuDauTu}}</span></p><p><strong>Đại diện chủ đầu tư:</strong> <span class=\"value\">{{daiDienChuDauTu}}</span></p><p><strong>Cơ quan, đơn vị thực hiện dự án:</strong> <span class=\"value\">{{donViThucHien}}</span></p><p><strong>Đối tượng thụ hưởng:</strong> <span class=\"value\">{{doiTuongThuHuong}}</span></p><p><strong>Hình thức quản lý dự án:</strong> <span class=\"value\">{{hinhThucQuanLy}}</span></p><p><strong>Địa điểm thực hiện dự án:</strong> <span class=\"value\">{{diaDiemThucHien}}</span></p><p><strong>Tổng mức đầu tư (VNĐ):</strong> <span class=\"value\">{{tongMucDauTu}}</span></p><p><strong>Tổng mức đầu tư bằng chữ:</strong> <span class=\"value\">{{tongMucDauTuBangChu}}</span></p><p><strong>Nguồn vốn:</strong> <span class=\"value\">{{nguonVon}}</span></p><p><strong>Ngày bắt đầu dự kiến:</strong> <span class=\"value\">{{ngayBatDau}}</span></p><p><strong>Ngày kết thúc dự kiến:</strong> <span class=\"value\">{{ngayKetThuc}}</span></p><p><strong>Hình thức đầu tư:</strong> <span class=\"value\">{{hinhThucDauTu}}</span></p><p><strong>Lĩnh vực Hội đồng chuyên ngành:</strong> <span class=\"value\">{{linhVucHoiDong}}</span></p><p><strong>Căn cứ pháp lý:</strong> <span class=\"value\">{{canCuPhapLy}}</span></p></section><section><h3>Phần 1. Tài liệu và tổ chức thẩm định</h3><p><strong>Hồ sơ, tài liệu thẩm định:</strong> <span class=\"value\">{{hoSoTaiLieu}}</span></p><p><strong>Căn cứ pháp lý để thẩm định:</strong> <span class=\"value\">{{canCuThamDinh}}</span></p><p><strong>Kế hoạch bố trí vốn:</strong> <span class=\"value\">{{keHoachBoTriVon}}</span></p><p><strong>Ngành, lĩnh vực đề nghị thẩm định:</strong> <span class=\"value\">{{nganhLinhVuc}}</span></p><p><strong>Thông tin chung bổ sung:</strong> <span class=\"value\">{{thongTinChungBoSung}}</span></p></section><section><h3>Phần 2. Ý kiến thẩm định</h3><p><strong>Thẩm định của các cơ quan, đơn vị:</strong> <span class=\"value\">{{thamDinhCoQuan}}</span></p><p><strong>Đánh giá nội dung tiếp thu, giải trình hoặc bảo lưu:</strong> <span class=\"value\">{{danhGiaTiepThu}}</span></p><p><strong>Ý kiến chưa thống nhất:</strong> <span class=\"value\">{{yKienChuaThongNhat}}</span></p><p><strong>Ý kiến Hội đồng KHCN chuyên ngành:</strong> <span class=\"value\">{{yKienHoiDong}}</span></p><p><strong>Đề xuất, kiến nghị:</strong> <span class=\"value\">{{deXuatKienNghi}}</span></p><p><strong>Phụ lục ý kiến và giải trình:</strong> <span class=\"value\">{{tongHopYKien}}</span></p><p><strong>Thành viên Hội đồng ký:</strong> <span class=\"value\">{{thanhVienHoiDongKy}}</span></p><p><strong>Nơi nhận:</strong> <span class=\"value\">{{noiNhan}}</span></p></section></article>",
+      "conditional": {
+        "hide": "=cheDoXemVanBan != true"
+      },
+      "layout": {
+        "row": "Row_1396",
+        "columns": null
+      }
+    }
+  ],
+  "type": "default"
+}

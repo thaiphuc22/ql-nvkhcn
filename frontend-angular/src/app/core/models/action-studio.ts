@@ -4,6 +4,7 @@ export type ActionUiGroup = 'PRIMARY' | 'MORE' | 'EXCEPTION';
 export type ActionTone = 'primary' | 'default' | 'danger' | 'warning';
 export type DossierStatus = 'draft' | 'processing' | 'approved' | 'rejected';
 export type RouteOutcome = 'SUBMIT' | 'APPROVE' | 'RETURN' | 'REJECT';
+export type ActionPolicyStatus = 'DRAFT' | 'ACTIVE' | 'DISABLED' | 'INVALID';
 
 export interface ActionDefinition {
   actionCode: string;
@@ -33,15 +34,31 @@ export interface ActionAvailabilityPolicy {
   actionCode: string;
   surface: ActionSurface | null;
   processCode: string | null;
+  processVersion?: number | null;
   taskDefinitionKey: string | null;
   dossierStatus: DossierStatus | null;
   allowedRoleCodes: string[];
-  requiredPermissions: string[];
   formKey?: string | null;
   conditionExpression?: string;
   displayOrder: number;
-  enabled: boolean;
+  lifecycleStatus: ActionPolicyStatus;
   version?: number;
+  displayLabel?: string | null;
+  displayIcon?: string | null;
+  uiGroup?: ActionUiGroup | null;
+  tone?: ActionTone | null;
+  helpText?: string | null;
+  formBundle?: ActionFormBundle | null;
+}
+
+export interface ActionFormBundleItem {
+  formKey: string; formVersion?: number | null; displayOrder: number; displayTitle?: string | null;
+  required: boolean; mode: 'VIEW' | 'EDIT'; skippable: boolean; conditionExpression?: string | null;
+  outputNamespace: string;
+}
+export interface ActionFormBundle {
+  displayMode: 'STEPPER' | 'TABS'; allowDraft: boolean; completionPolicy: 'ALL_REQUIRED_VALID';
+  version?: number | null; items: ActionFormBundleItem[];
 }
 
 export interface ActionStudioCatalogOption {
@@ -94,6 +111,7 @@ export interface ProcessRouting {
   code: string;
   name: string;
   steps: ProcessStep[];
+  processVersion?: number | null;
 }
 
 export interface SimulationContext {
@@ -104,6 +122,8 @@ export interface SimulationContext {
   roleCodes: string[];
   permissions: string[];
   isAdmin: boolean;
+  processVersion?: number | null;
+  businessContext?: Record<string, unknown>;
 }
 
 export interface SimulatedAction extends ActionDefinition, ActionPresentation {
@@ -112,6 +132,8 @@ export interface SimulatedAction extends ActionDefinition, ActionPresentation {
   policyId: string | null;
   reasons: string[];
   formKey: string | null;
+  policyVersion: number | null;
+  formBundle?: ActionFormBundle | null;
 }
 
 export const ACTION_TYPE_LABEL: Record<ActionType, string> = {
@@ -177,25 +199,25 @@ export const ACTION_PRESENTATIONS: ActionPresentation[] = ACTION_DEFINITIONS.map
   helpText: a.actionType === 'EXCEPTION' ? 'Hành động Chi tiết cần được kiểm soát và phê duyệt riêng.' : undefined,
 }));
 
-const policy = (id: string, actionCode: string, status: DossierStatus | null, permission: string, order: number, extra: Partial<ActionAvailabilityPolicy> = {}): ActionAvailabilityPolicy => ({
+const policy = (id: string, actionCode: string, status: DossierStatus | null, order: number, extra: Partial<ActionAvailabilityPolicy> = {}): ActionAvailabilityPolicy => ({
   id, actionCode, surface: 'DOSSIER_DETAIL', processCode: null, taskDefinitionKey: null, dossierStatus: status,
-  allowedRoleCodes: [], requiredPermissions: [permission], formKey: null, displayOrder: order, enabled: true, ...extra,
+  allowedRoleCodes: [], formKey: null, displayOrder: order, lifecycleStatus: 'ACTIVE', ...extra,
 });
 
 export const AVAILABILITY_POLICIES: ActionAvailabilityPolicy[] = [
-  policy('AP-01', 'SUBMIT', 'draft', 'SUBMIT_DOSSIER', 10, { allowedRoleCodes: ['PM', 'PA', 'NNC'], formKey: 'phieu-chu-truong', conditionExpression: 'dossier.docsComplete = true' }),
-  policy('AP-06', 'APPROVE_STEP', 'processing', 'PROCESS_STEP', 21, { formKey: 'phieu-phe-duyet', conditionExpression: 'user in currentStep.candidateGroups' }),
-  policy('AP-07', 'RETURN_STEP', 'processing', 'PROCESS_STEP', 22, { formKey: 'phieu-y-kien', conditionExpression: 'user in currentStep.candidateGroups' }),
-  policy('AP-08', 'REJECT_STEP', 'processing', 'PROCESS_STEP', 23, { formKey: 'phieu-y-kien', conditionExpression: 'user in currentStep.candidateGroups' }),
-  policy('AP-03', 'ADD_COMMENT', null, 'ADD_COMMENT', 60, { formKey: 'phieu-y-kien' }),
-  policy('AP-04', 'DOWNLOAD_DOSSIER', null, 'DOWNLOAD_DOCUMENT', 61),
-  policy('AP-05', 'VIEW_HISTORY', null, 'VIEW_AUDIT', 62),
-  policy('AP-BPMN-RD01.01-t1-SUBMIT', 'SUBMIT', 'draft', 'SUBMIT_DOSSIER', 5, { processCode: 'RD01.01', taskDefinitionKey: 't1', formKey: 'phieu-chu-truong' }),
-  policy('AP-BPMN-RD01.01-t2-APPROVE', 'APPROVE_STEP', 'processing', 'PROCESS_STEP', 11, { processCode: 'RD01.01', taskDefinitionKey: 't2', formKey: 'phieu-phe-duyet' }),
-  policy('AP-BPMN-RD01.01-t2-RETURN', 'RETURN_STEP', 'processing', 'PROCESS_STEP', 12, { processCode: 'RD01.01', taskDefinitionKey: 't2', formKey: 'phieu-y-kien' }),
-  policy('AP-BPMN-RD01.01-t2-REJECT', 'REJECT_STEP', 'processing', 'PROCESS_STEP', 13, { processCode: 'RD01.01', taskDefinitionKey: 't2', formKey: 'phieu-y-kien' }),
-  policy('AP-BPMN-RD01.01-t3-APPROVE', 'APPROVE_STEP', 'processing', 'PROCESS_STEP', 11, { processCode: 'RD01.01', taskDefinitionKey: 't3' }),
-  policy('AP-BPMN-RD01.01-t9-ORPHAN', 'APPROVE_STEP', 'processing', 'PROCESS_STEP', 11, { processCode: 'RD01.01', taskDefinitionKey: 't9', formKey: 'phieu-phe-duyet' }),
+  policy('AP-01', 'SUBMIT', 'draft', 10, { allowedRoleCodes: ['PM', 'PA', 'NNC'], formKey: 'phieu-chu-truong', conditionExpression: 'dossier.docsComplete = true' }),
+  policy('AP-06', 'APPROVE_STEP', 'processing', 21, { formKey: 'phieu-phe-duyet', conditionExpression: 'user in currentStep.candidateGroups' }),
+  policy('AP-07', 'RETURN_STEP', 'processing', 22, { formKey: 'phieu-y-kien', conditionExpression: 'user in currentStep.candidateGroups' }),
+  policy('AP-08', 'REJECT_STEP', 'processing', 23, { formKey: 'phieu-y-kien', conditionExpression: 'user in currentStep.candidateGroups' }),
+  policy('AP-03', 'ADD_COMMENT', null, 60, { formKey: 'phieu-y-kien' }),
+  policy('AP-04', 'DOWNLOAD_DOSSIER', null, 61),
+  policy('AP-05', 'VIEW_HISTORY', null, 62),
+  policy('AP-BPMN-RD01.01-t1-SUBMIT', 'SUBMIT', 'draft', 5, { processCode: 'RD01.01', taskDefinitionKey: 't1', formKey: 'phieu-chu-truong' }),
+  policy('AP-BPMN-RD01.01-t2-APPROVE', 'APPROVE_STEP', 'processing', 11, { processCode: 'RD01.01', taskDefinitionKey: 't2', formKey: 'phieu-phe-duyet' }),
+  policy('AP-BPMN-RD01.01-t2-RETURN', 'RETURN_STEP', 'processing', 12, { processCode: 'RD01.01', taskDefinitionKey: 't2', formKey: 'phieu-y-kien' }),
+  policy('AP-BPMN-RD01.01-t2-REJECT', 'REJECT_STEP', 'processing', 13, { processCode: 'RD01.01', taskDefinitionKey: 't2', formKey: 'phieu-y-kien' }),
+  policy('AP-BPMN-RD01.01-t3-APPROVE', 'APPROVE_STEP', 'processing', 11, { processCode: 'RD01.01', taskDefinitionKey: 't3' }),
+  policy('AP-BPMN-RD01.01-t9-ORPHAN', 'APPROVE_STEP', 'processing', 11, { processCode: 'RD01.01', taskDefinitionKey: 't9', formKey: 'phieu-phe-duyet' }),
 ];
 
 export const EXCEPTION_POLICIES: ExceptionPolicy[] = [

@@ -1,0 +1,1 @@
+package vn.vht.qtkhcn.identity.repository; import org.springframework.data.jpa.repository.JpaRepository; import vn.vht.qtkhcn.identity.domain.DataScopeType; public interface DataScopeTypeRepository extends JpaRepository<DataScopeType,String>{}

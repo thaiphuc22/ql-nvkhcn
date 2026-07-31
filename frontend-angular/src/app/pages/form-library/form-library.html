@@ -76,6 +76,7 @@
     nzOkText="Tạo & mở designer"
     nzCancelText="Huỷ"
     [nzOkLoading]="creating()"
+    [nzOkDisabled]="keyTaken()"
     (nzOnOk)="submitCreate()"
     (nzOnCancel)="createOpen.set(false)"
   >
@@ -90,6 +91,15 @@
           [ngModel]="formKey()"
           (ngModelChange)="formKey.set($event)"
         />
+        @if (formKeyPreview()) {
+          <div class="fl-key-hint" [class.fl-key-hint-error]="keyTaken()">
+            @if (keyTaken()) {
+              Mã <code>{{ formKeyPreview() }}</code> đã được dùng — đổi tên hoặc nhập mã khác.
+            } @else {
+              Mã sẽ dùng: <code>{{ formKeyPreview() }}</code>
+            }
+          </div>
+        }
         <label>Loại</label>
         <nz-select nzAllowClear placeholder="Chọn loại" [ngModel]="formLoai()" (ngModelChange)="formLoai.set($event)">
           @for (l of loaiOptions; track l) {

@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, effect, input, signal, untracked } from '@angular/core';
 
 import { componentsOf, idOf, type FormComponent } from '../../core/models/eform';
@@ -17,13 +18,20 @@ import { FormFieldComponent } from './form-field';
 @Component({
   selector: 'app-form-renderer',
   standalone: true,
-  imports: [FormFieldComponent, FormDynamicListComponent],
+  imports: [NgTemplateOutlet, FormFieldComponent, FormDynamicListComponent],
   templateUrl: './form-renderer.html',
   styleUrl: './form-renderer.scss',
 })
 export class FormRendererComponent {
   readonly schema = input.required<unknown>();
   readonly data = input<Record<string, unknown>>({});
+  readonly readonly = input(false);
+  /**
+   * Danh mục options động, tra theo `valuesKey` của từng component (cơ chế chuẩn form-js: options
+   * lấy từ input data của form chứ không nằm trong schema). Tách khỏi `data` vì `data` là GIÁ TRỊ
+   * khởi tạo của biểu mẫu và được ghi đè mỗi lần người dùng nhập — danh mục thì không.
+   */
+  readonly valueSources = input<Record<string, { value: string; label: string }[]>>({});
 
   private readonly formData = signal<Record<string, unknown>>({});
   private readonly errors = signal<Record<string, string>>({});
@@ -69,7 +77,7 @@ export class FormRendererComponent {
   }
 
   setValue(c: FormComponent, value: unknown): void {
-    if (!c.key) return;
+    if (this.readonly() || !c.key) return;
     const key = c.key;
     this.formData.update((prev) => ({ ...prev, [key]: value }));
     this.errors.update((prev) => {

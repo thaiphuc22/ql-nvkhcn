@@ -44,6 +44,12 @@ describe('EformService HTTP integration', () => {
     expect(service.list().map((f) => f.key).sort()).toEqual(['phieu-nhan-xet', 'phieu-y-kien']);
   });
 
+  it('loads the immutable version requested by a form bundle', () => {
+    service.loadOne('phieu-y-kien', 3).subscribe();
+    http.expectOne('/api/eform/phieu-y-kien/versions/3')
+      .flush(response({ key: 'phieu-y-kien', version: 3 }));
+  });
+
   it('creates a form with an empty schema and actor header', () => {
     service.addForm({ key: 'phieu-moi', ten: 'Phiếu mới', loai: 'Góp ý' }, 'Người kiểm thử').subscribe();
     const request = http.expectOne('/api/eform');

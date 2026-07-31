@@ -30,9 +30,10 @@ describe('TaskActionService', () => {
       processInstanceKey: '2251799813697704',
       taskDefinitionKey: 'Task_1',
       actions: [{
-        actionCode: 'APPROVE_STEP', label: 'Đồng ý duyệt', tone: 'primary',
+        actionCode: 'APPROVE_STEP', label: 'Đồng ý duyệt', icon: 'check', uiGroup: 'PRIMARY', tone: 'primary',
+        displayOrder: 10, helpText: null,
         requiresReason: false, requiresEvidence: false, requiresConfirm: true,
-        formKey: 'phieu-phe-duyet',
+        formKey: 'phieu-phe-duyet', policyId: 'AP-01', policyVersion: 3,
       }],
     };
     service.availableActions(response.taskKey).subscribe((result) => expect(result).toEqual(response));
@@ -45,6 +46,7 @@ describe('TaskActionService', () => {
   it('posts an action request with the locked contract fields and returns the async result', () => {
     const body: TaskActionRequest = {
       requestId: 'a5f0c2f0-0000-4000-8000-000000000001', taskKey: '2251799813697711', actionCode: 'RETURN_STEP',
+      expectedPolicyId: 'AP-02', expectedPolicyVersion: 4,
       comment: 'Thiếu phụ lục tài chính', formData: { yKien: 'Bổ sung phụ lục' }, expectedTaskState: 'ACTIVE',
     };
     const result: TaskActionResult = {
@@ -64,6 +66,7 @@ describe('TaskActionService', () => {
       requestId: 'a5f0c2f0-0000-4000-8000-000000000002',
       taskKey: 'stale-task-key',
       actionCode: 'APPROVE_STEP' as const,
+      expectedPolicyId: 'AP-01', expectedPolicyVersion: 3,
       comment: null,
       formData: undefined as unknown as Record<string, unknown>,
       expectedTaskState: 'ACTIVE',
@@ -81,5 +84,24 @@ describe('TaskActionService', () => {
     const second = service.newRequestId();
     expect(first).not.toBe(second);
     expect(first).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it('saves and reloads a namespaced Form Bundle draft', () => {
+    const draft = {
+      actionCode: 'APPROVE_STEP' as const, expectedPolicyId: 'AP-01', expectedPolicyVersion: 3,
+      outputNamespace: 'approval', data: { score: 9 },
+    };
+    service.saveFormDraft('2001', draft).subscribe();
+    const save = http.expectOne(`${base}/2001/form-submissions/draft`);
+    expect(save.request.method).toBe('POST');
+    expect(save.request.body).toEqual(draft);
+    save.flush({ id: '1', taskKey: '2001', taskDefinitionKey: 'Task_1', policyId: 'AP-01',
+      bundleVersion: 1, formKey: 'form-1', formVersion: 2, outputNamespace: 'approval',
+      actionCode: 'APPROVE_STEP', data: { score: 9 }, status: 'DRAFT', createdAt: '2026-07-30T09:00:00Z', completedAt: null });
+
+    service.formSubmissions('2001').subscribe((items) => expect(items[0].status).toBe('DRAFT'));
+    const load = http.expectOne(`${base}/2001/form-submissions`);
+    expect(load.request.method).toBe('GET');
+    load.flush([{ status: 'DRAFT' }]);
   });
 });

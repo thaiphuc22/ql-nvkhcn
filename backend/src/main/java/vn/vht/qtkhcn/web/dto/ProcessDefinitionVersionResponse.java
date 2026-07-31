@@ -3,6 +3,7 @@ package vn.vht.qtkhcn.web.dto;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
+import vn.vht.qtkhcn.domain.ProcessDefinitionSource;
 import vn.vht.qtkhcn.domain.ProcessDefinitionStatus;
 import vn.vht.qtkhcn.domain.ProcessDefinitionVersion;
 
@@ -14,6 +15,7 @@ public record ProcessDefinitionVersionResponse(
         long camundaDeploymentKey,
         long camundaProcessDefinitionKey,
         ProcessDefinitionStatus status,
+        ProcessDefinitionSource source,
         String importedBy,
         OffsetDateTime importedAt,
         String bpmnXml,
@@ -22,7 +24,8 @@ public record ProcessDefinitionVersionResponse(
     public static ProcessDefinitionVersionResponse from(ProcessDefinitionVersion version) {
         return new ProcessDefinitionVersionResponse(version.getId(), version.getCamundaVersion(),
                 version.getResourceName(), version.getChecksumSha256(), version.getCamundaDeploymentKey(),
-                version.getCamundaProcessDefinitionKey(), version.getStatus(), version.getImportedBy(),
-                version.getImportedAt(), version.getBpmnXml(), List.copyOf(version.getWarnings()));
+                version.getCamundaProcessDefinitionKey(), version.getStatus(), version.getSource(),
+                version.getImportedBy(), version.getImportedAt(), version.getBpmnXml(),
+                List.copyOf(version.getWarnings()));
     }
 }

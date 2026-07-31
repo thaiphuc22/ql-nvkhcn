@@ -145,8 +145,7 @@ public class CamundaWorkflowRuntimeEventReader implements WorkflowRuntimeEventRe
             // Without the job key the projected task cannot be executed safely. Search is eventually
             // consistent, so skip it and let the scheduled collector retry on the next cycle.
             if (job == null) continue;
-            var taskMetadata = metadata.resolve(element.getProcessDefinitionKey(),
-                    element.getProcessDefinitionId(), element.getElementId());
+            var taskMetadata = metadata.resolve(element.getProcessDefinitionKey(), element.getElementId());
             if (element.getStartDate() != null) {
                 result.add(jobBackedTaskEvent(element, job, taskMetadata,
                         WorkflowRuntimeEvent.EventType.TASK_CREATED, element.getStartDate(), "created"));

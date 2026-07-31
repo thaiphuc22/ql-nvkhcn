@@ -43,25 +43,39 @@ public interface WorkflowTaskProjectionRepository extends JpaRepository<Workflow
             @Param("hoSoId") String hoSoId,
             @Param("userId") String userId);
 
+    /**
+     * Vai trò chỉ mở việc khi task KHÔNG chỉ đích danh ai. Trước đây ba vế nối bằng OR thuần, nên một
+     * task họp Hội đồng khai {@code candidateGroups="HDXD"} hiện trong worklist của mọi người giữ vai
+     * trò HDXD — kể cả hồ sơ họ không thuộc hội đồng. Nay {@code assignee}/{@code candidateUsers} là
+     * lớp THU HẸP: có mặt thì chỉ đúng những người đó thấy; vắng mặt thì giữ nguyên hành vi cũ theo
+     * vai trò (điều kiện sống còn để hồ sơ/instance cũ — chưa gắn userId — không bị kẹt).
+     */
     @Query("""
             select distinct task from WorkflowTaskProjection task
             left join task.candidateUsers candidateUser
             left join task.candidateGroups candidateGroup
             where task.state = vn.vht.qtkhcn.hoso.domain.WorkflowTaskProjection.State.ACTIVE
-              and (task.assignee = :userId or candidateUser = :userId or candidateGroup in :roleCodes)
+              and (task.assignee = :userId
+                   or candidateUser = :userId
+                   or (task.assignee is null and task.candidateUsers is empty
+                       and candidateGroup in :roleCodes))
             order by task.dueAt asc, task.createdAt asc, task.taskKey asc
             """)
     List<WorkflowTaskProjection> findActiveForUserOrGroups(
             @Param("userId") String userId,
             @Param("roleCodes") Set<String> roleCodes);
 
+    /** Cùng luật thu hẹp như {@link #findActiveForUserOrGroups}, giới hạn trong một hồ sơ. */
     @Query("""
             select distinct task from WorkflowTaskProjection task
             left join task.candidateUsers candidateUser
             left join task.candidateGroups candidateGroup
             where task.state = vn.vht.qtkhcn.hoso.domain.WorkflowTaskProjection.State.ACTIVE
               and task.hoSoId = :hoSoId
-              and (task.assignee = :userId or candidateUser = :userId or candidateGroup in :roleCodes)
+              and (task.assignee = :userId
+                   or candidateUser = :userId
+                   or (task.assignee is null and task.candidateUsers is empty
+                       and candidateGroup in :roleCodes))
             order by task.dueAt asc, task.createdAt asc, task.taskKey asc
             """)
     List<WorkflowTaskProjection> findActiveByHoSoIdForUserOrGroups(

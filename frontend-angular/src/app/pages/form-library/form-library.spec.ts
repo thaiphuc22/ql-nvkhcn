@@ -73,7 +73,7 @@ describe('FormLibraryPage', () => {
     expect(TestBed.inject(EformService).getForm('phieu-kiem-thu')).toBeTruthy();
   });
 
-  it('surfaces a backend conflict when creating a duplicate key', () => {
+  it('blocks a key already in the loaded library without calling the backend', () => {
     const fixture = create();
     const router = TestBed.inject(Router);
     const navigateSpy = vi.spyOn(router, 'navigate');
@@ -81,12 +81,39 @@ describe('FormLibraryPage', () => {
 
     cmp.formTen.set('Phiếu nhận xét');
     cmp.formKey.set('phieu-nhan-xet');
+
+    expect(cmp.keyTaken()).toBe(true);
+    cmp.submitCreate();
+
+    expect(navigateSpy).not.toHaveBeenCalled();
+    http.expectNone('/api/eform');
+  });
+
+  it('surfaces a backend conflict when the cache is stale (key created concurrently elsewhere)', () => {
+    const fixture = create();
+    const router = TestBed.inject(Router);
+    const navigateSpy = vi.spyOn(router, 'navigate');
+    const cmp = fixture.componentInstance;
+
+    // Not in the locally loaded list, so the client-side check passes — the 409 below
+    // simulates another tab/user creating the same key just before this request lands.
+    cmp.formTen.set('Phiếu vừa được tạo ở nơi khác');
+    cmp.formKey.set('phieu-vua-duoc-tao');
+    expect(cmp.keyTaken()).toBe(false);
     cmp.submitCreate();
 
     http.expectOne('/api/eform')
-      .flush({ message: 'Mã biểu mẫu đã tồn tại: phieu-nhan-xet' }, { status: 409, statusText: 'Conflict' });
+      .flush({ message: 'Mã biểu mẫu đã tồn tại: phieu-vua-duoc-tao' }, { status: 409, statusText: 'Conflict' });
 
     expect(navigateSpy).not.toHaveBeenCalled();
+  });
+
+  it('previews the auto-generated key before the Mã field is touched', () => {
+    const fixture = create();
+    const cmp = fixture.componentInstance;
+
+    cmp.formTen.set('Phiếu đánh giá tiến độ');
+    expect(cmp.formKeyPreview()).toBe('phieu-danh-gia-tien-do');
   });
 
   it('removes a form from the library after the backend confirms', () => {

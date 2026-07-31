@@ -1,0 +1,442 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.9.0",
+  "exporter": {
+    "name": "Camunda Web Modeler",
+    "version": "c72e043"
+  },
+  "schemaVersion": 19,
+  "id": "Form_BM_02_09_PNX_DT_2024",
+  "components": [
+    {
+      "type": "html",
+      "id": "Html_1876",
+      "content": "<div style=\"padding:10px 12px;background:#f4f7fb;border-left:4px solid #0f62fe\"><strong>Chế độ hiển thị:</strong> Nhập và kiểm tra dữ liệu ở chế độ soạn thảo. Bật <em>Xem văn bản hoàn chỉnh</em> để xem bản trình bày.</div>",
+      "layout": {
+        "row": "Row_1875",
+        "columns": null
+      }
+    },
+    {
+      "type": "checkbox",
+      "id": "Field_1877",
+      "key": "cheDoXemVanBan",
+      "label": "Xem văn bản hoàn chỉnh",
+      "defaultValue": false,
+      "layout": {
+        "row": "Row_1878",
+        "columns": null
+      }
+    },
+    {
+      "type": "group",
+      "id": "Group_1879",
+      "label": "Thông tin soạn thảo",
+      "showOutline": true,
+      "conditional": {
+        "hide": "=cheDoXemVanBan = true"
+      },
+      "components": [
+        {
+          "type": "html",
+          "id": "Html_1868",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">Thông tin người nhận xét</div>",
+          "layout": {
+            "row": "Row_1867",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1015",
+          "key": "diaDanh",
+          "label": "Địa danh",
+          "layout": {
+            "row": "Row_1016",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          },
+          "defaultValue": "Hà Nội"
+        },
+        {
+          "type": "datetime",
+          "id": "Field_1017",
+          "key": "ngayVanBan",
+          "label": "Ngày văn bản",
+          "layout": {
+            "row": "Row_1018",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          },
+          "subtype": "date"
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1019",
+          "key": "soVanBan",
+          "label": "Số văn bản",
+          "layout": {
+            "row": "Row_1020",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1021",
+          "key": "nguoiKy",
+          "label": "Họ tên người ký",
+          "layout": {
+            "row": "Row_1022",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1023",
+          "key": "chucDanhKy",
+          "label": "Chức danh người ký",
+          "layout": {
+            "row": "Row_1024",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1025",
+          "key": "nguoiNhanXet",
+          "label": "Họ và tên người nhận xét",
+          "layout": {
+            "row": "Row_1026",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1027",
+          "key": "capBacChucVu",
+          "label": "Cấp bậc, chức vụ",
+          "layout": {
+            "row": "Row_1028",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1029",
+          "key": "donViCongTac",
+          "label": "Đơn vị công tác",
+          "layout": {
+            "row": "Row_1030",
+            "columns": null
+          }
+        },
+        {
+          "type": "select",
+          "id": "Field_1031",
+          "key": "vaiTroHoiDong",
+          "label": "Vai trò trong Hội đồng",
+          "layout": {
+            "row": "Row_1032",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          },
+          "values": [
+            {
+              "value": "chu_tich",
+              "label": "Chủ tịch Hội đồng"
+            },
+            {
+              "value": "pho_chu_tich",
+              "label": "Phó Chủ tịch Hội đồng"
+            },
+            {
+              "value": "phan_bien",
+              "label": "Ủy viên phản biện"
+            },
+            {
+              "value": "thu_ky",
+              "label": "Ủy viên, Thư ký khoa học"
+            },
+            {
+              "value": "uy_vien",
+              "label": "Ủy viên Hội đồng"
+            }
+          ]
+        },
+        {
+          "type": "html",
+          "id": "Html_1870",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">Thông tin đề tài</div>",
+          "layout": {
+            "row": "Row_1869",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1033",
+          "key": "tenNhiemVu",
+          "label": "Tên đề tài",
+          "layout": {
+            "row": "Row_1034",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1035",
+          "key": "maNhiemVu",
+          "label": "Mã đề tài",
+          "layout": {
+            "row": "Row_1036",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1037",
+          "key": "donViChuTri",
+          "label": "Đơn vị chủ trì",
+          "layout": {
+            "row": "Row_1038",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1039",
+          "key": "chuNhiemHoTen",
+          "label": "Cá nhân đăng ký chủ nhiệm đề tài",
+          "layout": {
+            "row": "Row_1040",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1041",
+          "key": "linhVuc",
+          "label": "Lĩnh vực",
+          "layout": {
+            "row": "Row_1042",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "html",
+          "id": "Html_1872",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">Ý kiến nhận xét</div>",
+          "layout": {
+            "row": "Row_1871",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_1043",
+          "key": "mucTieu",
+          "label": "Đánh giá về mục tiêu",
+          "layout": {
+            "row": "Row_1044",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_1045",
+          "key": "tongQuan",
+          "label": "Tổng quan tình hình nghiên cứu",
+          "layout": {
+            "row": "Row_1046",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_1047",
+          "key": "noiDungPhuongPhap",
+          "label": "Nội dung, phương pháp nghiên cứu và kỹ thuật sử dụng",
+          "layout": {
+            "row": "Row_1048",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_1049",
+          "key": "sanPham",
+          "label": "Sản phẩm khoa học và công nghệ",
+          "layout": {
+            "row": "Row_1050",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_1051",
+          "key": "khaNangUngDung",
+          "label": "Khả năng ứng dụng kết quả",
+          "layout": {
+            "row": "Row_1052",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_1053",
+          "key": "keHoachKinhPhi",
+          "label": "Tính khả thi của kế hoạch và kinh phí",
+          "layout": {
+            "row": "Row_1054",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_1055",
+          "key": "nangLuc",
+          "label": "Năng lực đơn vị và cá nhân tham gia",
+          "layout": {
+            "row": "Row_1056",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "html",
+          "id": "Html_1874",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">Đánh giá tổng hợp</div>",
+          "layout": {
+            "row": "Row_1873",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_1057",
+          "key": "matManh",
+          "label": "Mặt mạnh của đề tài",
+          "layout": {
+            "row": "Row_1058",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_1059",
+          "key": "matYeu",
+          "label": "Mặt yếu của đề tài",
+          "layout": {
+            "row": "Row_1060",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_1061",
+          "key": "kienNghiSuaDoi",
+          "label": "Kiến nghị bổ sung, sửa đổi thuyết minh và kinh phí",
+          "layout": {
+            "row": "Row_1062",
+            "columns": null
+          }
+        },
+        {
+          "type": "select",
+          "id": "Field_1063",
+          "key": "dongYThucHien",
+          "label": "Đồng ý cho phép thực hiện đề tài",
+          "layout": {
+            "row": "Row_1064",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          },
+          "values": [
+            {
+              "value": "dong_y",
+              "label": "Đồng ý"
+            },
+            {
+              "value": "dong_y_co_dieu_kien",
+              "label": "Đồng ý có điều kiện"
+            },
+            {
+              "value": "khong_dong_y",
+              "label": "Không đồng ý"
+            }
+          ]
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1065",
+          "key": "nguoiKyNhanXet",
+          "label": "Người nhận xét ký tên",
+          "layout": {
+            "row": "Row_1066",
+            "columns": null
+          }
+        }
+      ],
+      "layout": {
+        "row": "Row_1880",
+        "columns": null
+      }
+    },
+    {
+      "type": "html",
+      "id": "Html_1881",
+      "content": "<style>.bm-page{max-width:900px;margin:0 auto;padding:34px 48px;background:#fff;color:#111;font:17px/1.48 \"Times New Roman\",serif;box-sizing:border-box}.bm-head{text-align:center}.bm-head .nation{font-weight:700;text-transform:uppercase}.bm-head .motto{font-weight:700}.bm-rule{display:inline-block;width:150px;border-top:1px solid #111}.bm-title{text-align:center;font-size:20px;font-weight:700;margin:24px 0}.bm-code{text-align:right;font-size:13px}.bm-page h3{font-size:17px;margin:18px 0 8px}.bm-page p{margin:4px 0;text-align:justify;white-space:pre-line}.value:empty:after{content:\"................................\";font-weight:400}@media(max-width:680px){.bm-page{padding:18px 14px;font-size:15px}}</style><article class=\"bm-page\"><div class=\"bm-code\">BM.02.09.PNX.DT_2024</div><header class=\"bm-head\"><div class=\"nation\">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div><div class=\"motto\">Độc lập - Tự do - Hạnh phúc</div><span class=\"bm-rule\"></span></header><div class=\"bm-title\">PHIẾU NHẬN XÉT CỦA THÀNH VIÊN HỘI ĐỒNG XÉT DUYỆT ĐỀ TÀI KHCN CẤP TẬP ĐOÀN</div><section><h3>Thông tin người nhận xét</h3><p><strong>Địa danh:</strong> <span class=\"value\">{{diaDanh}}</span></p><p><strong>Ngày văn bản:</strong> <span class=\"value\">{{ngayVanBan}}</span></p><p><strong>Số văn bản:</strong> <span class=\"value\">{{soVanBan}}</span></p><p><strong>Họ tên người ký:</strong> <span class=\"value\">{{nguoiKy}}</span></p><p><strong>Chức danh người ký:</strong> <span class=\"value\">{{chucDanhKy}}</span></p><p><strong>Họ và tên người nhận xét:</strong> <span class=\"value\">{{nguoiNhanXet}}</span></p><p><strong>Cấp bậc, chức vụ:</strong> <span class=\"value\">{{capBacChucVu}}</span></p><p><strong>Đơn vị công tác:</strong> <span class=\"value\">{{donViCongTac}}</span></p><p><strong>Vai trò trong Hội đồng:</strong> <span class=\"value\">{{vaiTroHoiDong}}</span></p></section><section><h3>Thông tin đề tài</h3><p><strong>Tên đề tài:</strong> <span class=\"value\">{{tenNhiemVu}}</span></p><p><strong>Mã đề tài:</strong> <span class=\"value\">{{maNhiemVu}}</span></p><p><strong>Đơn vị chủ trì:</strong> <span class=\"value\">{{donViChuTri}}</span></p><p><strong>Cá nhân đăng ký chủ nhiệm đề tài:</strong> <span class=\"value\">{{chuNhiemHoTen}}</span></p><p><strong>Lĩnh vực:</strong> <span class=\"value\">{{linhVuc}}</span></p></section><section><h3>Ý kiến nhận xét</h3><p><strong>Đánh giá về mục tiêu:</strong> <span class=\"value\">{{mucTieu}}</span></p><p><strong>Tổng quan tình hình nghiên cứu:</strong> <span class=\"value\">{{tongQuan}}</span></p><p><strong>Nội dung, phương pháp nghiên cứu và kỹ thuật sử dụng:</strong> <span class=\"value\">{{noiDungPhuongPhap}}</span></p><p><strong>Sản phẩm khoa học và công nghệ:</strong> <span class=\"value\">{{sanPham}}</span></p><p><strong>Khả năng ứng dụng kết quả:</strong> <span class=\"value\">{{khaNangUngDung}}</span></p><p><strong>Tính khả thi của kế hoạch và kinh phí:</strong> <span class=\"value\">{{keHoachKinhPhi}}</span></p><p><strong>Năng lực đơn vị và cá nhân tham gia:</strong> <span class=\"value\">{{nangLuc}}</span></p></section><section><h3>Đánh giá tổng hợp</h3><p><strong>Mặt mạnh của đề tài:</strong> <span class=\"value\">{{matManh}}</span></p><p><strong>Mặt yếu của đề tài:</strong> <span class=\"value\">{{matYeu}}</span></p><p><strong>Kiến nghị bổ sung, sửa đổi thuyết minh và kinh phí:</strong> <span class=\"value\">{{kienNghiSuaDoi}}</span></p><p><strong>Đồng ý cho phép thực hiện đề tài:</strong> <span class=\"value\">{{dongYThucHien}}</span></p><p><strong>Người nhận xét ký tên:</strong> <span class=\"value\">{{nguoiKyNhanXet}}</span></p></section></article>",
+      "conditional": {
+        "hide": "=cheDoXemVanBan != true"
+      },
+      "layout": {
+        "row": "Row_1882",
+        "columns": null
+      }
+    }
+  ],
+  "type": "default"
+}

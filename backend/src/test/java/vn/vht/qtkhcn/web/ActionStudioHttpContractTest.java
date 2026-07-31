@@ -31,6 +31,8 @@ import vn.vht.qtkhcn.service.ActionStudioService;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ActionResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.AuditResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.PresentationResponse;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.BulkDeleteAvailabilityResponse;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.BulkStatusAvailabilityResponse;
 
 class ActionStudioHttpContractTest {
     private AnnotationConfigWebApplicationContext context;
@@ -73,6 +75,23 @@ class ActionStudioHttpContractTest {
                 .andExpect(jsonPath("$.version").value(5));
 
         verify(service).updatePresentation(eq("APPROVE_STEP"), any(), eq(4L), eq("alice"));
+    }
+
+    @Test
+    void resetPresentationRoutesIfMatchAndActor() throws Exception {
+        when(service.resetPresentation("APPROVE_STEP", 4L, "alice"))
+                .thenReturn(new PresentationResponse("APPROVE_STEP", "Đồng ý duyệt", "thunderbolt",
+                        "PRIMARY", "primary", 11, null, 5));
+
+        mvc.perform(post("/api/action-studio/actions/APPROVE_STEP/presentation/reset")
+                        .header("X-QTKHCN-Dev-Key", "dev-local-only")
+                        .header("X-QTKHCN-Actor", "alice")
+                        .header("If-Match", "4"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tone").value("primary"))
+                .andExpect(jsonPath("$.version").value(5));
+
+        verify(service).resetPresentation("APPROVE_STEP", 4L, "alice");
     }
 
     @Test
@@ -121,6 +140,43 @@ class ActionStudioHttpContractTest {
                 .andExpect(jsonPath("$[0].entityId").value("AP-01"))
                 .andExpect(jsonPath("$[0].action").value("UPDATE"))
                 .andExpect(jsonPath("$[0].actor").value("alice"));
+    }
+
+    @Test
+    void bulkDeleteAvailabilityAcceptsVersionedItemsAndReturnsDeletedIds() throws Exception {
+        when(service.deleteAvailabilityBulk(any(), eq("alice")))
+                .thenReturn(new BulkDeleteAvailabilityResponse(2, List.of("AP-01", "AP-02")));
+
+        mvc.perform(post("/api/action-studio/availability-policies/bulk-delete")
+                        .header("X-QTKHCN-Dev-Key", "dev-local-only")
+                        .header("X-QTKHCN-Actor", "alice")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"items":[{"id":"AP-01","version":3},{"id":"AP-02","version":7}]}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.deletedCount").value(2))
+                .andExpect(jsonPath("$.deletedIds[1]").value("AP-02"));
+
+        verify(service).deleteAvailabilityBulk(any(), eq("alice"));
+    }
+
+    @Test
+    void bulkStatusAvailabilityAcceptsTargetStatusAndVersionedItems() throws Exception {
+        when(service.setAvailabilityStatusBulk(any(), eq("alice")))
+                .thenReturn(new BulkStatusAvailabilityResponse(2, List.of()));
+
+        mvc.perform(post("/api/action-studio/availability-policies/bulk-status")
+                        .header("X-QTKHCN-Dev-Key", "dev-local-only")
+                        .header("X-QTKHCN-Actor", "alice")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"enabled":false,"items":[{"id":"AP-01","version":3},{"id":"AP-02","version":7}]}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.updatedCount").value(2));
+
+        verify(service).setAvailabilityStatusBulk(any(), eq("alice"));
     }
 
     @Configuration

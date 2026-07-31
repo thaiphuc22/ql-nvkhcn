@@ -1,4 +1,4 @@
-import { Component, computed, input, output, signal } from '@angular/core';
+import { Component, OnInit, computed, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -8,6 +8,7 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
+import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { NzSwitchModule } from 'ng-zorro-antd/switch';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
@@ -21,7 +22,15 @@ import { type FormComponent } from '../../core/models/eform';
 // native làm). Ô chữ/số commit khi blur (mỗi field 1 lần undo, không mất focus khi
 // gõ) — component này được `form-designer.ts` remount mỗi khi đổi field chọn/undo/
 // redo (khớp `key={selectedField.id}#{selVersion}` của bản gốc React), nên state cục
-// bộ (draft*) chỉ cần khởi tạo MỘT LẦN trong constructor từ `field()` hiện tại.
+// bộ (draft*) chỉ cần khởi tạo MỘT LẦN mỗi lần remount, không cần effect.
+//
+// QUAN TRỌNG: việc khởi tạo đó phải nằm trong ngOnInit(), KHÔNG phải ở field
+// initializer/constructor (bug thật đã xảy ra ở đây). `field` là input signal — Angular chỉ gán
+// giá trị binding cho input signal SAU KHI constructor đã chạy xong; đọc `this.field()` trong field
+// initializer luôn thấy giá trị mặc định `null`, bất kể template truyền field nào. Hệ quả: toàn bộ
+// panel luôn hiện rỗng cho MỌI field đã có sẵn giá trị (khoá dữ liệu, nhãn, mô tả, text/html,
+// biểu thức FEEL, FEEL ẩn-hiện, validate) — chỉ đúng khi người dùng tự gõ mới. `ngOnInit()` chạy sau
+// khi Angular đã set `field` từ binding nên đọc đúng.
 
 export interface EditFieldEvent {
   field: FormComponent;
@@ -57,6 +66,9 @@ const KEYED = new Set(['textfield', 'textarea', 'number', 'datetime', 'expressio
 const REQUIREABLE = new Set(['textfield', 'textarea', 'number', 'datetime', 'filepicker', 'checkbox', 'checklist', 'radio', 'select', 'taglist', 'dynamiclist']);
 const OPTIONED = new Set(['select', 'radio', 'checklist', 'taglist']);
 const TEXTLEN = new Set(['textfield', 'textarea']);
+// Có nhãn hiển thị nhưng KHÔNG có key dữ liệu riêng (khớp `LABELED_NON_INPUTS` của
+// @bpmn-io/form-js-editor, trừ `group`/`dynamiclist` đã có mục riêng ở trên).
+const LABEL_ONLY = new Set(['button', 'table']);
 
 function emptyToUndef(v: string): string | undefined {
   return v.trim() === '' ? undefined : v;
@@ -68,11 +80,11 @@ function numOr(v: unknown): number | null {
 @Component({
   selector: 'app-form-field-properties',
   standalone: true,
-  imports: [FormsModule, NzButtonModule, NzDividerModule, NzEmptyModule, NzIconModule, NzInputModule, NzInputNumberModule, NzPopconfirmModule, NzSwitchModule, NzTagModule],
+  imports: [FormsModule, NzButtonModule, NzDividerModule, NzEmptyModule, NzIconModule, NzInputModule, NzInputNumberModule, NzPopconfirmModule, NzRadioModule, NzSwitchModule, NzTagModule],
   templateUrl: './form-field-properties.html',
   styleUrl: './form-field-properties.scss',
 })
-export class FormFieldPropertiesComponent {
+export class FormFieldPropertiesComponent implements OnInit {
   readonly field = input<FormComponent | null>(null);
   readonly edit = output<EditFieldEvent>();
   readonly remove = output<FormComponent>();
@@ -90,22 +102,45 @@ export class FormFieldPropertiesComponent {
   readonly isNumber = computed(() => this.field()?.type === 'number');
   readonly isTextLen = computed(() => TEXTLEN.has(this.field()?.type ?? ''));
   readonly isOptioned = computed(() => OPTIONED.has(this.field()?.type ?? ''));
+  readonly isLabelOnly = computed(() => LABEL_ONLY.has(this.field()?.type ?? ''));
+  readonly isImage = computed(() => this.field()?.type === 'image');
+  readonly isDatetime = computed(() => this.field()?.type === 'datetime');
 
   // Draft locale — instance này được remount mỗi lần đổi field chọn (key ở
-  // form-designer.ts), nên khởi tạo 1 lần từ field() hiện tại là đủ, không cần effect.
-  readonly draftKey = signal(this.field()?.key ?? '');
-  readonly draftLabel = signal(this.field()?.label ?? '');
-  readonly draftDescription = signal(this.field()?.description ?? '');
-  readonly draftText = signal(this.field()?.text ?? '');
-  readonly draftExpression = signal(this.field()?.expression ?? '');
-  readonly draftHide = signal(this.field()?.conditional?.hide ?? '');
-  readonly draftMin = signal(numOr(this.field()?.validate?.min));
-  readonly draftMax = signal(numOr(this.field()?.validate?.max));
-  readonly draftMinLength = signal(numOr(this.field()?.validate?.minLength));
-  readonly draftMaxLength = signal(numOr(this.field()?.validate?.maxLength));
-  readonly draftOptions = signal<{ value: string; label: string }[]>(
-    Array.isArray(this.field()?.values) ? this.field()!.values!.map((o) => ({ ...o })) : [],
-  );
+  // form-designer.ts). Khởi tạo giá trị ban đầu ở ngOnInit() (không phải ở đây — xem ghi chú đầu
+  // file), nên tại chỗ khai báo chỉ đặt giá trị rỗng/mặc định trung tính.
+  readonly draftKey = signal('');
+  readonly draftLabel = signal('');
+  readonly draftDescription = signal('');
+  readonly draftText = signal('');
+  /** Nội dung khối HTML tĩnh — type `html` dùng `field.content`, KHÁC `field.text` (markdown của
+   * type `text`). Tách signal riêng để không lẫn 2 quy ước khác nhau trong cùng 1 ô nhập. */
+  readonly draftContent = signal('');
+  readonly draftSource = signal('');
+  readonly draftExpression = signal('');
+  readonly draftHide = signal('');
+  readonly draftMin = signal<number | null>(null);
+  readonly draftMax = signal<number | null>(null);
+  readonly draftMinLength = signal<number | null>(null);
+  readonly draftMaxLength = signal<number | null>(null);
+  readonly draftOptions = signal<{ value: string; label: string }[]>([]);
+
+  ngOnInit(): void {
+    const f = this.field();
+    this.draftKey.set(f?.key ?? '');
+    this.draftLabel.set(f?.label ?? '');
+    this.draftDescription.set(f?.description ?? '');
+    this.draftText.set(f?.text ?? '');
+    this.draftContent.set(f?.content ?? '');
+    this.draftSource.set(f?.source ?? '');
+    this.draftExpression.set(f?.expression ?? '');
+    this.draftHide.set(f?.conditional?.hide ?? '');
+    this.draftMin.set(numOr(f?.validate?.min));
+    this.draftMax.set(numOr(f?.validate?.max));
+    this.draftMinLength.set(numOr(f?.validate?.minLength));
+    this.draftMaxLength.set(numOr(f?.validate?.maxLength));
+    this.draftOptions.set(Array.isArray(f?.values) ? f!.values!.map((o) => ({ ...o })) : []);
+  }
 
   emitEdit(prop: string, value: unknown): void {
     const f = this.field();
@@ -123,6 +158,15 @@ export class FormFieldPropertiesComponent {
   }
   commitText(): void {
     this.emitEdit('text', this.draftText());
+  }
+  commitContent(): void {
+    this.emitEdit('content', this.draftContent());
+  }
+  commitSource(): void {
+    this.emitEdit('source', emptyToUndef(this.draftSource()));
+  }
+  commitSubtype(value: string): void {
+    this.emitEdit('subtype', value);
   }
   commitExpression(): void {
     this.emitEdit('expression', this.draftExpression());

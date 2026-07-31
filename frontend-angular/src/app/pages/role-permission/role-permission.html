@@ -1,0 +1,342 @@
+<div class="rp-page">
+  <div class="rp-header">
+    <h2>
+      <span nz-icon nzType="safety-certificate" class="rp-header-icon"></span>
+      Phân quyền
+    </h2>
+  </div>
+
+  <nz-tabs [nzSelectedIndex]="activeTabIndex()" (nzSelectedIndexChange)="onTabChange($event)">
+    <nz-tab nzTitle="Vai trò">
+      @if (rolesError(); as err) {
+        <div class="rp-error">{{ err }}</div>
+      }
+      <div class="rp-tab-actions">
+        <button nz-button nzType="primary" (click)="openCreateRole()">
+          <span nz-icon nzType="plus"></span>
+          Thêm vai trò
+        </button>
+      </div>
+      <div class="rp-card">
+        <nz-table #roleTable [nzData]="roles()" [nzLoading]="rolesLoading()" nzSize="middle" [nzShowPagination]="roles().length > 10">
+          <thead>
+            <tr>
+              <th nzWidth="160px">Mã</th>
+              <th>Tên vai trò</th>
+              <th nzWidth="120px">Loại</th>
+              <th nzWidth="180px">Ứng dụng</th>
+              <th nzWidth="100px" nzAlign="center">Số quyền</th>
+              <th nzWidth="110px">Trạng thái</th>
+              <th nzWidth="140px">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of roleTable.data; track r.id) {
+              <tr>
+                <td><code>{{ r.code }}</code></td>
+                <td>{{ r.name }}</td>
+                <td>{{ r.kind }}</td>
+                <td>{{ appName(r.appCode) }}</td>
+                <td nzAlign="center">{{ r.permissionCodes.length }}</td>
+                <td>
+                  @if (r.active) {
+                    <nz-tag nzColor="success">Hoạt động</nz-tag>
+                  } @else {
+                    <nz-tag>Ngừng</nz-tag>
+                  }
+                </td>
+                <td>
+                  <button nz-button nzSize="small" nz-tooltip nzTooltipTitle="Sửa" (click)="openEditRole(r)">
+                    <span nz-icon nzType="edit"></span>
+                  </button>
+                  <button
+                    nz-button
+                    nzSize="small"
+                    nzDanger
+                    nz-tooltip
+                    nzTooltipTitle="Xoá"
+                    nz-popconfirm
+                    nzPopconfirmTitle="Xoá vai trò này? Thao tác này không thể hoàn tác."
+                    nzOkText="Xoá"
+                    nzCancelText="Huỷ"
+                    (nzOnConfirm)="removeRole(r)"
+                  >
+                    <span nz-icon nzType="delete"></span>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      </div>
+    </nz-tab>
+
+    <nz-tab nzTitle="Ma trận phân quyền">
+      @if (rolesError(); as err) {
+        <div class="rp-error">{{ err }}</div>
+      }
+      @if (permissionsError(); as err) {
+        <div class="rp-error">{{ err }}</div>
+      }
+
+      <div class="rp-matrix-toolbar">
+        <label class="rp-matrix-field">
+          <span>Ứng dụng</span>
+          <nz-select
+            nzShowSearch
+            [ngModel]="matrixAppCode()"
+            (ngModelChange)="onMatrixAppChange($event)"
+            [nzLoading]="appsLoading()"
+            [nzDisabled]="matrixSaving() || matrixDirtyCount() > 0"
+          >
+            @for (app of apps(); track app.code) {
+              <nz-option [nzValue]="app.code" [nzLabel]="app.name"></nz-option>
+            }
+          </nz-select>
+        </label>
+        <label class="rp-matrix-field">
+          <span>Vai trò</span>
+          <nz-select
+            nzShowSearch
+            [ngModel]="matrixRoleCode()"
+            (ngModelChange)="onMatrixRoleChange($event)"
+            [nzLoading]="rolesLoading()"
+            [nzDisabled]="!matrixAppCode() || matrixSaving() || matrixDirtyCount() > 0"
+          >
+            @for (r of matrixRoleOptions(); track r.code) {
+              <nz-option [nzValue]="r.code" [nzLabel]="r.code + ' — ' + r.name"></nz-option>
+            }
+          </nz-select>
+        </label>
+        <label class="rp-matrix-field">
+          <span>Tìm chức năng</span>
+          <input
+            nz-input
+            placeholder="Mã hoặc tên chức năng"
+            [disabled]="!matrixRoleCode() || matrixSaving()"
+            [ngModel]="matrixFeatureQuery()"
+            (ngModelChange)="matrixFeatureQuery.set($event)"
+          />
+        </label>
+        <div class="rp-matrix-actions">
+          @if (matrixDirtyCount() > 0) {
+            <nz-tag nzColor="warning">{{ matrixDirtyCount() }} chức năng chưa lưu</nz-tag>
+            <button nz-button (click)="discardMatrixChanges()" [disabled]="matrixSaving()">Hoàn tác</button>
+          }
+          <button
+            nz-button
+            nzType="primary"
+            [nzLoading]="matrixSaving()"
+            [disabled]="!matrixRoleCode() || matrixDirtyCount() === 0"
+            (click)="saveMatrix()"
+          >
+            <span nz-icon nzType="save"></span>
+            Lưu ma trận
+          </button>
+        </div>
+      </div>
+
+      @if (matrixRole(); as role) {
+        <div class="rp-matrix-hint">
+          Đang cấu hình quyền cho ứng dụng <strong>{{ matrixApp()?.name }}</strong>,
+          vai trò <strong>{{ role.name }}</strong> (<code>{{ role.code }}</code>).
+          Gạt công tắc để bật/tắt cả chức năng cho vai trò này; tick checkbox trong thẻ để cấp
+          từng quyền. Thay đổi chỉ ghi xuống khi bấm <strong>Lưu ma trận</strong>.
+        </div>
+      }
+
+      @if (!matrixAppCode()) {
+        <div class="rp-card rp-matrix-empty">Vui lòng chọn ứng dụng để tiếp tục.</div>
+      } @else if (!matrixRoleCode()) {
+        <div class="rp-card rp-matrix-empty">Vui lòng chọn vai trò thuộc ứng dụng.</div>
+      } @else {
+        <div class="rp-feature-grid">
+          @for (f of filteredMatrixFeatures(); track f.code) {
+            <div class="rp-feature-card" [class.rp-feature-card-dirty]="isFeatureDirty(f.code)">
+              <div class="rp-feature-card-header">
+                <nz-switch
+                  [ngModel]="isFeatureEnabled(f.code)"
+                  (ngModelChange)="toggleFeatureEnabled(f.code, $event)"
+                ></nz-switch>
+                <span class="rp-feature-card-title">
+                  <span class="rp-feature-card-name">{{ f.name }}</span>
+                  <code class="rp-feature-card-code">{{ f.code }}</code>
+                </span>
+                <span class="rp-feature-card-tools">
+                  <button
+                    nz-button
+                    nzType="text"
+                    nzSize="small"
+                    disabled
+                    nz-tooltip
+                    nzTooltipTitle="Lịch sử thay đổi — chưa hỗ trợ"
+                  >
+                    <span nz-icon nzType="history"></span>
+                  </button>
+                  <button
+                    nz-button
+                    nzType="text"
+                    nzSize="small"
+                    nz-tooltip
+                    nzTooltipTitle="Sửa chi tiết"
+                    (click)="openMatrixDetail(f.code)"
+                  >
+                    <span nz-icon nzType="edit"></span>
+                  </button>
+                </span>
+              </div>
+              <div class="rp-feature-card-body">
+                <span class="rp-feature-card-label">Phân quyền</span>
+                <div class="rp-feature-card-perms">
+                  @for (p of permissions(); track p.code) {
+                    <label nz-checkbox nz-tooltip [nzTooltipTitle]="p.name"
+                      [ngModel]="isMatrixCellChecked(f.code, p.code)"
+                      (ngModelChange)="toggleMatrixGridCell(f.code, p.code)"
+                    >{{ p.name }}</label>
+                  }
+                </div>
+              </div>
+            </div>
+          } @empty {
+            <div class="rp-card rp-matrix-empty">Không có chức năng nào khớp bộ lọc.</div>
+          }
+        </div>
+      }
+    </nz-tab>
+
+    <nz-tab nzTitle="Nhật ký">
+      @if (auditLogError(); as err) {
+        <div class="rp-error">{{ err }}</div>
+      }
+      <div class="rp-card">
+        <nz-table #auditTable [nzData]="auditLog()" [nzLoading]="auditLogLoading()" nzSize="middle" [nzPageSize]="20">
+          <thead>
+            <tr>
+              <th nzWidth="170px">Thời điểm</th>
+              <th nzWidth="180px">Sự kiện</th>
+              <th>Đối tượng</th>
+              <th>Chi tiết</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (a of auditTable.data; track a.id) {
+              <tr>
+                <td>{{ a.occurredAt | date: 'dd/MM/yyyy HH:mm:ss' }}</td>
+                <td><nz-tag>{{ a.eventType }}</nz-tag></td>
+                <td>{{ a.entityType }} — {{ a.entityId }}</td>
+                <td>{{ a.details || '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      </div>
+    </nz-tab>
+  </nz-tabs>
+
+  <nz-modal
+    [nzVisible]="roleModalOpen()"
+    [nzTitle]="editingRole() ? 'Sửa vai trò' : 'Thêm vai trò'"
+    [nzWidth]="760"
+    nzOkText="Lưu"
+    nzCancelText="Huỷ"
+    [nzOkLoading]="roleSaving()"
+    (nzOnOk)="submitRole()"
+    (nzOnCancel)="closeRoleModal()"
+  >
+    <ng-container *nzModalContent>
+      <div class="rp-form">
+        <label>Mã vai trò <span class="rp-required">*</span></label>
+        <input nz-input placeholder="VD: PM" [ngModel]="roleFormCode()" (ngModelChange)="roleFormCode.set($event)" />
+        <label>Tên vai trò <span class="rp-required">*</span></label>
+        <input nz-input placeholder="VD: Chủ nhiệm đề tài" [ngModel]="roleFormName()" (ngModelChange)="roleFormName.set($event)" />
+        <label>Ứng dụng <span class="rp-required">*</span></label>
+        <nz-select nzPlaceHolder="Chọn ứng dụng" [ngModel]="roleFormAppCode()" (ngModelChange)="onRoleFormAppChange($event)">
+          @for (app of apps(); track app.code) {
+            <nz-option [nzValue]="app.code" [nzLabel]="app.name"></nz-option>
+          }
+        </nz-select>
+        <label>Loại</label>
+        <nz-select [ngModel]="roleFormKind()" (ngModelChange)="roleFormKind.set($event)">
+          @for (k of roleKindOptions; track k) {
+            <nz-option [nzLabel]="k" [nzValue]="k"></nz-option>
+          }
+        </nz-select>
+        <label>Ma trận quyền theo tính năng</label>
+        <div class="rp-matrix-wrap">
+          <table class="rp-matrix">
+            <thead>
+              <tr>
+                <th class="rp-matrix-feature">Tính năng</th>
+                @for (p of permissions(); track p.code) {
+                  <th class="rp-matrix-perm" [nz-tooltip]="p.name">{{ p.code }}</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (f of roleFormFeatures(); track f.code) {
+                <tr>
+                  <td class="rp-matrix-feature">
+                    <span class="rp-matrix-feature-name">{{ f.name }}</span>
+                    <span class="rp-matrix-feature-group">{{ f.group }}</span>
+                  </td>
+                  @for (p of permissions(); track p.code) {
+                    <td class="rp-matrix-perm" nzAlign="center">
+                      <label
+                        nz-checkbox
+                        [ngModel]="isMatrixChecked(f.code, p.code)"
+                        (ngModelChange)="toggleMatrixCell(f.code, p.code)"
+                      ></label>
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <label class="rp-switch-row">
+          <span>Hoạt động</span>
+          <nz-switch [ngModel]="roleFormActive()" (ngModelChange)="roleFormActive.set($event)"></nz-switch>
+        </label>
+      </div>
+    </ng-container>
+  </nz-modal>
+
+  <nz-drawer
+    [nzVisible]="matrixDetailFeatureCode() !== null"
+    [nzTitle]="'Sửa — ' + (matrixDetailFeature()?.name ?? '')"
+    [nzWidth]="420"
+    (nzOnClose)="closeMatrixDetail()"
+  >
+    <ng-container *nzDrawerContent>
+      @if (matrixDetailFeature(); as feature) {
+        <div class="rp-detail">
+          <div class="rp-detail-row">
+            <span class="rp-detail-label">Chức năng</span>
+            <span>{{ feature.name }} (<code>{{ feature.code }}</code>)</span>
+          </div>
+          <div class="rp-detail-row">
+            <span class="rp-detail-label">Vai trò</span>
+            <span>{{ matrixRole()?.name }} (<code>{{ matrixRole()?.code }}</code>)</span>
+          </div>
+          <div class="rp-detail-row">
+            <span class="rp-detail-label">Bật/tắt</span>
+            <nz-switch
+              [ngModel]="isFeatureEnabled(feature.code)"
+              (ngModelChange)="toggleFeatureEnabled(feature.code, $event)"
+            ></nz-switch>
+          </div>
+          <div class="rp-detail-row rp-detail-row-column">
+            <span class="rp-detail-label">Quyền đã cấp</span>
+            <div class="rp-detail-tags">
+              @for (p of matrixDetailGrantedPermissions(); track p.code) {
+                <nz-tag nzColor="processing">{{ p.name }}</nz-tag>
+              } @empty {
+                <span class="rp-detail-empty">Chưa cấp quyền nào.</span>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </ng-container>
+  </nz-drawer>
+</div>

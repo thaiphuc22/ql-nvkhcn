@@ -1,0 +1,1 @@
+package vn.vht.qtkhcn.hoso.security; public class IdentityServiceUnavailableException extends RuntimeException{public IdentityServiceUnavailableException(String message,Throwable cause){super(message,cause);}}

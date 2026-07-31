@@ -1,4 +1,4 @@
-import { Component, ViewChild, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, ViewChild, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 
@@ -10,6 +10,7 @@ import { NzResultModule } from 'ng-zorro-antd/result';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
 
 import { AuthService } from '../../core/auth/auth.service';
+import { parseImportedFormJson } from '../../core/models/eform-import';
 import { EformService } from '../../core/services/eform.service';
 import { FormDesignerComponent } from '../../shared/form-designer/form-designer';
 
@@ -30,6 +31,7 @@ const ROUTE_BASE = '/phan-he/PH3/bieu-mau';
 })
 export class FormDesignerPage {
   @ViewChild(FormDesignerComponent) private designer?: FormDesignerComponent;
+  @ViewChild('jsonFileInput') private jsonFileInput?: ElementRef<HTMLInputElement>;
 
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -44,6 +46,7 @@ export class FormDesignerPage {
    * "Không tìm thấy" trước khi dữ liệu thật kịp về. */
   readonly loading = signal(true);
   readonly saving = signal(false);
+  readonly importing = signal(false);
   readonly notFound = signal(false);
 
   constructor() {
@@ -106,6 +109,48 @@ export class FormDesignerPage {
         this.message.error(error?.error?.message ?? 'Không lưu được thiết kế biểu mẫu.');
       },
     });
+  }
+
+  chooseJsonFile(): void {
+    const input = this.jsonFileInput?.nativeElement;
+    if (!input) return;
+    input.value = '';
+    input.click();
+  }
+
+  importJson(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+
+    const runImport = (): Promise<void> => this.loadJsonFile(file);
+    if (this.designer?.isDirty()) {
+      this.modal.confirm({
+        nzTitle: 'Thay thế thiết kế chưa lưu?',
+        nzContent: 'Import JSON sẽ thay thế toàn bộ thiết kế hiện tại. Thay đổi chưa lưu sẽ bị mất.',
+        nzOkText: 'Import và thay thế',
+        nzOkDanger: true,
+        nzCancelText: 'Huỷ',
+        nzOnOk: runImport,
+      });
+      return;
+    }
+    void runImport();
+  }
+
+  private async loadJsonFile(file: File): Promise<void> {
+    if (!this.designer) return;
+    this.importing.set(true);
+    try {
+      const schema = parseImportedFormJson(await file.text(), file.size);
+      await this.designer.importSchema(schema);
+      this.message.success(`Đã import "${file.name}". Bấm “Lưu thiết kế” để ghi nhận thay đổi.`);
+    } catch (error) {
+      this.message.error(error instanceof Error ? error.message : 'Không import được tệp JSON.');
+    } finally {
+      this.importing.set(false);
+    }
   }
 
   private actor(): string {

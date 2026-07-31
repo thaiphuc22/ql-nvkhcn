@@ -14,6 +14,7 @@ import {
   ClockCircleOutline,
   CloseCircleOutline,
   CloseOutline,
+  CloudDownloadOutline,
   ColumnHeightOutline,
   CopyOutline,
   DashboardOutline,
@@ -77,6 +78,7 @@ import {
   ToolOutline,
   UndoOutline,
   UnorderedListOutline,
+  UploadOutline,
   UserOutline,
   WarningOutline,
   ArrowLeftOutline,
@@ -180,6 +182,7 @@ export const EFORM_ICONS = [
   TagsOutline,
   UndoOutline,
   UnorderedListOutline,
+  UploadOutline,
 ];
 
 export const NHIEM_VU_ICONS = [ArrowLeftOutline, FileAddOutline, FileExcelOutline, FilePdfOutline, FileZipOutline, FolderOpenOutline];
@@ -191,3 +194,16 @@ export const NHIEM_VU_ICONS = [ArrowLeftOutline, FileAddOutline, FileExcelOutlin
  * chưa đăng ký (icon tile SystemCard + nút Cấu hình/Kết nối).
  */
 export const INTEGRATION_ICONS = [BankOutline, SafetyCertificateOutline, SettingOutline, ShoppingCartOutline];
+
+/**
+ * Icon dùng ở màn Danh mục quy trình (`/quy-trinh`) — cùng lý do với các nhóm trên: chưa có nhóm
+ * nào đăng ký `reload`/`upload`/`plus`/`search`, nên trước đây `nz-icon` phải fetch SVG động qua
+ * HTTP. `cloud-download` là icon của nút "Đồng bộ từ Camunda".
+ */
+export const PROCESS_CATALOG_ICONS = [
+  CloudDownloadOutline,
+  PlusOutline,
+  ReloadOutline,
+  SearchOutline,
+  UploadOutline,
+];

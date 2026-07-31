@@ -94,7 +94,9 @@ class BundledBpmnDeployedConsistencyTest {
                 .thenReturn(new CamundaDeploymentService.DeploymentResult(
                         fakeProcessDefinitionKey, expectedProcessId, 1, fakeProcessDefinitionKey, resourceName));
 
-        var service = new ProcessDefinitionService(validator, deploymentService, catalogRepository, versionRepository);
+        var service = new ProcessDefinitionService(validator, deploymentService, catalogRepository, versionRepository,
+                mock(DeployedBpmnRoutingReader.class),
+                mock(org.springframework.context.ApplicationEventPublisher.class));
         service.publishValidated(validated, "ci-bpmn-drift-check");
 
         // Buộc round-trip qua Postgres thật (không đọc lại từ persistence-context cache trong JVM) —

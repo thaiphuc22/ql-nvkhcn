@@ -181,3 +181,20 @@
   margin: 0 0 12px;
   color: var(--vht-ink-2);
 }
+.pc-sync-line { margin: 0 0 4px; font-size: 13px; }
+.pc-sync-line:last-child { margin-bottom: 0; }
+.pc-sync-muted { color: #758295; }
+.pc-sync-failure { color: #cf1322; }
+
+.pc-readiness-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.pc-readiness-section {
+  margin: 20px 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+}

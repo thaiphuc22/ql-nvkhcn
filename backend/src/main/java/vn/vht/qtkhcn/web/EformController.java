@@ -38,6 +38,11 @@ public class EformController {
         return service.get(key);
     }
 
+    @GetMapping("/{key}/versions/{version}")
+    public EformResponse getVersion(@PathVariable String key, @PathVariable long version) {
+        return service.getVersion(key, version);
+    }
+
     @PostMapping
     public ResponseEntity<EformResponse> create(@Valid @RequestBody CreateEformRequest request,
             @RequestHeader(value = "X-QTKHCN-Actor", required = false) String actor) {

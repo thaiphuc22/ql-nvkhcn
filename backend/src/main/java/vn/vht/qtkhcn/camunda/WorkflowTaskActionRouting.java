@@ -4,9 +4,24 @@ import java.util.Map;
 import java.util.Set;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import vn.vht.qtkhcn.service.DeployedBpmnRoutingReader;
 import vn.vht.qtkhcn.service.TaskActionException;
 
-/** Control-variable contract consumed by gateways immediately following RD01.01/RD02.02 user tasks. */
+/**
+ * Biến điều khiển gửi vào Zeebe khi người dùng bấm một nút duyệt, để gateway ngay sau user task rẽ
+ * đúng nhánh.
+ *
+ * <p>Hai nguồn, theo thứ tự:
+ * <ol>
+ *   <li><b>Bảng cứng RD01.01 / RD02.02</b> bên dưới — giữ nguyên vì hai quy trình bundled này đã
+ *       được nghiệm thu runtime thật và có sắc thái mà BPMN không nói ra được (vd Task_6 duyệt là
+ *       {@code dong_y_bo_sung} chứ không phải {@code dong_y}; RD02.02 cố ý fail-closed RETURN_STEP).</li>
+ *   <li><b>Suy từ chính BPMN đã deploy</b> ({@link DeployedBpmnRoutingReader#actionVariables}) cho mọi
+ *       quy trình khác. Trước Lát 3, nhánh này là {@code default -> Map.of()} + {@code default -> false},
+ *       nghĩa là quy trình người dùng tự vẽ bấm nút xong KHÔNG set biến nào và không bao giờ trả lại
+ *       được — đúng gap E trong {@code .harness/state/active-task.md}.</li>
+ * </ol>
+ */
 @Component
 public class WorkflowTaskActionRouting {
     private static final Set<String> ACTIONS = Set.of("APPROVE_STEP", "RETURN_STEP", "REJECT_STEP");
@@ -25,13 +40,22 @@ public class WorkflowTaskActionRouting {
      */
     private static final Set<String> RD02_02_RETURNABLE = Set.of();
 
+    private final DeployedBpmnRoutingReader routingReader;
+
+    public WorkflowTaskActionRouting(DeployedBpmnRoutingReader routingReader) {
+        this.routingReader = routingReader;
+    }
+
     public boolean supports(String processDefinitionId, String taskDefinitionKey, String actionCode) {
         if (!ACTIONS.contains(actionCode)) return false;
         if (!"RETURN_STEP".equals(actionCode)) return true;
         return switch (processDefinitionId) {
             case "RD01_01" -> RD01_01_RETURNABLE.contains(taskDefinitionKey);
             case "RD02_02" -> RD02_02_RETURNABLE.contains(taskDefinitionKey);
-            default -> false;
+            // Cùng nguyên tắc fail-closed như RD02.02: chỉ cho phép "Yêu cầu điều chỉnh" khi BPMN
+            // THẬT SỰ có nhánh gateway rẽ theo nó. Không có nhánh mà vẫn cho bấm thì task vẫn hoàn
+            // tất qua đúng 1 outgoing flow, tức RETURN_STEP im lặng biến thành APPROVE_STEP.
+            default -> derived(processDefinitionId, taskDefinitionKey).containsKey("RETURN_STEP");
         };
     }
 
@@ -49,7 +73,7 @@ public class WorkflowTaskActionRouting {
         return Map.copyOf(result);
     }
 
-    private static Map<String, Object> routingVariables(String processDefinitionId, String elementId,
+    private Map<String, Object> routingVariables(String processDefinitionId, String elementId,
             String actionCode) {
         // Element id trùng tên giữa các quy trình (cả RD01_01 lẫn RD02_02 đều có "Task_6") nên PHẢI
         // phân nhánh theo processDefinitionId trước — nếu không, action ở RD02.02 sẽ set biến điều
@@ -57,8 +81,17 @@ public class WorkflowTaskActionRouting {
         return switch (processDefinitionId) {
             case "RD01_01" -> rd0101(elementId, actionCode);
             case "RD02_02" -> rd0202(elementId, actionCode);
-            default -> Map.of();
+            default -> derived(processDefinitionId, elementId).getOrDefault(actionCode, Map.of());
         };
+    }
+
+    /**
+     * Biến điều khiển đọc từ chính BPMN đã deploy. Map rỗng khi quy trình chưa có trong catalog hoặc
+     * nhánh gateway không viết dạng {@code = <biến> = "<giá trị>"} — khi đó user task vẫn hoàn tất
+     * bình thường, chỉ là không có biến nào để rẽ (đúng với BPMN một nhánh, không có gateway).
+     */
+    private Map<String, Map<String, Object>> derived(String processDefinitionId, String elementId) {
+        return routingReader.actionVariables(processDefinitionId, elementId);
     }
 
     private static Map<String, Object> rd0101(String elementId, String actionCode) {

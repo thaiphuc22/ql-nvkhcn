@@ -6,7 +6,10 @@ import jakarta.persistence.EntityNotFoundException;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -62,6 +65,39 @@ public class HoiDongXetDuyetService {
                 .toList();
     }
 
+    /**
+     * Danh sách định danh tài khoản của hội đồng — nguồn cho {@code candidateUsers} của các user task
+     * họp hội đồng. Thành viên chưa gắn tài khoản (QĐ chỉ ghi họ tên) bị loại thay vì đẩy chuỗi rỗng
+     * xuống dưới; danh sách rỗng là tín hiệu hợp lệ, nghĩa là "không thu hẹp được, cứ theo vai trò".
+     */
+    public List<String> userIdTheoCap(String hoSoId, HoiDongCap cap) {
+        return thanhVienTheoCap(hoSoId, cap).stream()
+                .map(ThanhVienHoiDong::getUserId)
+                .filter(userId -> userId != null && !userId.isBlank())
+                .distinct()
+                .toList();
+    }
+
+    /**
+     * Dịch {@code candidateGroups} của một user task thành danh sách người thật của ĐÚNG hồ sơ đó.
+     *
+     * <p>Đây là nơi duy nhất trong hệ thống biết "nhóm HDXD ứng với hội đồng cấp Cơ sở, HDXD_TD ứng
+     * với cấp Tập đoàn" — backend chỉ chuyển tiếp nguyên si candidateGroups đọc từ Camunda và không
+     * cần biết gì về RD02.02. Nhóm không phải hội đồng bị bỏ qua; kết quả rỗng nghĩa là bước này
+     * không thu hẹp được và giữ nguyên phạm vi theo vai trò (fail-open có chủ đích cho hồ sơ cũ,
+     * xem luật thu hẹp ở {@code WorkflowTaskProjectionRepository}).</p>
+     */
+    public List<String> candidateUsersTheoNhom(String hoSoId, Collection<String> candidateGroups) {
+        if (candidateGroups == null || candidateGroups.isEmpty()) return List.of();
+        return candidateGroups.stream()
+                .map(HoiDongCap::theoRoleCode)
+                .flatMap(Optional::stream)
+                .distinct()
+                .flatMap(cap -> userIdTheoCap(hoSoId, cap).stream())
+                .distinct()
+                .toList();
+    }
+
     private HoiDongXetDuyet sinh(String hoSoId, HoiDongCap cap, String taskDefinitionKey, String tenCap,
             String fileSlug) {
         var existing = hoiDongRepository
@@ -97,6 +133,7 @@ public class HoiDongXetDuyetService {
     private static HoiDongXetDuyet build(String hoSoId, HoiDongCap cap, String taskDefinitionKey, JsonNode form) {
         HoiDongXetDuyet hoiDong = new HoiDongXetDuyet();
         hoiDong.setHoSoId(hoSoId);
+        hoiDong.setMaHoiDong(maHoiDongTuDong(hoSoId, cap));
         hoiDong.setCap(cap);
         hoiDong.setSourceTaskDefinitionKey(taskDefinitionKey);
         hoiDong.setCanCuPhapLy(blankToNull(text(form, "canCuPhapLy")));
@@ -105,6 +142,9 @@ public class HoiDongXetDuyetService {
             ThanhVienHoiDong member = new ThanhVienHoiDong();
             member.setHoiDong(hoiDong);
             member.setHoTen(text(item, "hoTen"));
+            // Chuẩn hoá về chữ thường ngay tại đây: mọi phép so khớp downstream (authorize(),
+            // truy vấn worklist) đều so chuỗi thô với X-QTKHCN-User-Id vốn đã được lowercase.
+            member.setUserId(blankToNull(text(item, "userId").toLowerCase(Locale.ROOT)));
             member.setVaiTroTrongHoiDong(blankToNull(text(item, "vaiTroTrongHoiDong")));
             hoiDong.getThanhVien().add(member);
         }
@@ -150,6 +190,12 @@ public class HoiDongXetDuyetService {
         catch (Exception invalid) {
             throw new IllegalStateException("DossierStep.formDataJson khong hop le.", invalid);
         }
+    }
+
+    /** Mã hội đồng cho luồng tự sinh — không có form nhập, nên suy ra từ hoSoId + cấp (ổn định qua các lần retry). */
+    private static String maHoiDongTuDong(String hoSoId, HoiDongCap cap) {
+        String goc = hoSoId.startsWith("HS-") ? "HD-" + hoSoId.substring(3) : "HD-" + hoSoId;
+        return goc + (cap == HoiDongCap.CO_SO ? "-CS" : "-TD");
     }
 
     private static String text(JsonNode node, String name) { return node.path(name).asText("").trim(); }

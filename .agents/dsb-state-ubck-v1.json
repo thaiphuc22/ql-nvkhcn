@@ -1,0 +1,10 @@
+{
+  "runId": "ubck-v1",
+  "phase": "phase4",
+  "step": "static-validation",
+  "source": "UI-ubck/*-0.0.1-v21",
+  "collections": ["UBCK Primitives", "UBCK Semantic Light", "UBCK Semantic Dark", "UBCK Dimensions"],
+  "componentFamilies": ["Button", "Input", "Select", "Checkbox", "Radio", "Toggle", "Avatar", "Badge", "Tag", "Card", "Tabs", "Breadcrumb", "Message", "Dialog", "Drawer", "Tooltip", "Progress", "Skeleton", "Table", "Paginator"],
+  "completedSteps": ["phase0", "phase1", "phase2", "phase3", "phase4-static"],
+  "pendingValidations": ["foundations-runtime", "components-runtime"]
+}

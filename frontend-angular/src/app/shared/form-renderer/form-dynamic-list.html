@@ -17,6 +17,7 @@
             [comp]="child"
             [value]="fieldValue(view, child)"
             [error]="fieldError(view, child)"
+            [valueSources]="valueSources()"
             [disabled]="isComputed(child) || child.readonly === true"
             (valueChange)="child.key && updateCell(view.index, child.key, $event)"
           ></app-form-field>

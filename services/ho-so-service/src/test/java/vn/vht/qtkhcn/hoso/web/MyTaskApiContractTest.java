@@ -27,12 +27,14 @@ class MyTaskApiContractTest {
 
     private static final String AUTHORIZATION = "Bearer test-service-token";
     private MyTaskQueryService service;
+    private DemoIdentityProvider identities;
     private MockMvc mvc;
 
     @BeforeEach
     void setUp() {
         service = mock(MyTaskQueryService.class);
-        mvc = MockMvcBuilders.standaloneSetup(new MyTaskQueryController(service, new DemoIdentityProvider()))
+        identities = mock(DemoIdentityProvider.class);
+        mvc = MockMvcBuilders.standaloneSetup(new MyTaskQueryController(service, identities))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .addFilters(new InternalServiceTokenFilter("test-service-token"))
                 .build();
@@ -41,6 +43,7 @@ class MyTaskApiContractTest {
     @Test
     void returnsTheActiveTaskContractAndPassesTrustedIdentityToServerSideFilter() throws Exception {
         DemoIdentity identity = new DemoIdentity("pm@example.com", Set.of("PM", "PA", "NNC"), false);
+        when(identities.resolve(" PM@EXAMPLE.COM ")).thenReturn(identity);
         when(service.findActiveTasks(identity)).thenReturn(List.of(task()));
 
         mvc.perform(get("/api/my-tasks")
@@ -63,6 +66,7 @@ class MyTaskApiContractTest {
 
     @Test
     void requiresIdentityInsteadOfAllowingAQueryParameterToImpersonateAnotherUser() throws Exception {
+        when(identities.resolve(null)).thenThrow(new IllegalArgumentException("X-QTKHCN-User-Id is required."));
         mvc.perform(get("/api/my-tasks").queryParam("userId", "pm@example.com")
                         .header(HttpHeaders.AUTHORIZATION, AUTHORIZATION))
                 .andExpect(status().isBadRequest())
@@ -72,6 +76,7 @@ class MyTaskApiContractTest {
     @Test
     void returnsTheCurrentUsersActiveTaskForADossier() throws Exception {
         DemoIdentity identity = new DemoIdentity("pm@example.com", Set.of("PM", "PA", "NNC"), false);
+        when(identities.resolve(" PM@EXAMPLE.COM ")).thenReturn(identity);
         when(service.findActiveTaskForHoSo(identity, "HS-2026-001")).thenReturn(Optional.of(task()));
 
         mvc.perform(get("/api/ho-so/HS-2026-001/active-task")
@@ -87,6 +92,7 @@ class MyTaskApiContractTest {
     @Test
     void returnsNotFoundWhenTheDossierHasNoActiveTaskForTheCurrentUser() throws Exception {
         DemoIdentity identity = new DemoIdentity("pm@example.com", Set.of("PM", "PA", "NNC"), false);
+        when(identities.resolve("pm@example.com")).thenReturn(identity);
         when(service.findActiveTaskForHoSo(identity, "HS-2026-999")).thenReturn(Optional.empty());
 
         mvc.perform(get("/api/ho-so/HS-2026-999/active-task")
@@ -104,12 +110,14 @@ class MyTaskApiContractTest {
 
     @Test
     void rejectsAnUnknownIdentityInsteadOfTreatingItsSelfDeclaredRolesAsTrusted() throws Exception {
+        when(identities.resolve("attacker@example.com")).thenThrow(
+                new vn.vht.qtkhcn.hoso.security.UnknownDemoIdentityException("Identity is not active or allowed."));
         mvc.perform(get("/api/my-tasks")
                         .header(HttpHeaders.AUTHORIZATION, AUTHORIZATION)
                         .header(MyTaskQueryController.USER_ID_HEADER, "attacker@example.com")
                         .header("X-QTKHCN-Role-Codes", "PM"))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("Demo identity is not allowed."));
+                .andExpect(jsonPath("$.message").value("Identity is not active or allowed."));
     }
 
     private static MyTaskResponse task() {

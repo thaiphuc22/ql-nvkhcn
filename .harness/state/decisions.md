@@ -262,6 +262,24 @@ Service Quy trình theo D20 và cập nhật Hồ sơ chỉ qua workflow event p
 
 ---
 
+## D22 — Phân hệ 2 là identity-service độc lập, không dựng IdP tạm
+
+**Date**: 2026-07-29
+
+**Decision**: User/Role/Permission/Organization/Assignment/Audit thuộc service Spring Boot độc lập
+`services/identity-service`, sở hữu database PostgreSQL `qtkhcn_identity`. Trong đợt này người dùng được
+quản lý local; không dựng Keycloak hay IdP thay thế. `backend` và `ho-so-service` vẫn nhận danh tính từ
+`X-QTKHCN-User-Id`, nhưng tra role/permission qua internal API có service token của identity-service.
+
+**Rationale**: mô hình local cho phép thay ba catalog demo trùng lặp bằng một nguồn sự thật mà không tạo
+hạ tầng sẽ phải bỏ đi khi VHT cung cấp SSO chính thức. Model user local giữ điểm nối email/mã nhân viên để
+liên kết danh tính ngoài về sau.
+
+**Status**: LOCKED, BACKEND IMPLEMENTED. OQ-021 vẫn MỞ: quyết định này chỉ mở khóa quản lý
+user/role/permission; đăng nhập SSO thật và JWT resource-server vẫn chờ endpoint/protocol của VHT.
+
+---
+
 ## Open decisions blocking Foundation 1 (Project Scaffold)
 
 **RESOLVED 2026-07-15** — backend language/framework (D14), domain database engine (D15), and the Camunda 8 *dev-environment* deployment model (D16) are now locked above. Foundation 1 is unblocked for scaffold work; see `DELIVERY_STATE.md`.
@@ -269,5 +287,11 @@ Service Quy trình theo D20 và cập nhật Hồ sơ chỉ qua workflow event p
 Still open (do not guess — ask again before depending on these):
 
 - **Camunda 8 *production* deployment model** — Self-Managed on internal Kubernetes vs. Camunda SaaS for production is still undecided; D16 only locks the local dev environment. `camunda-design.md` topology diagram assumes Self-Managed (separate `qlnvkhcn`/`camunda`/`iam` namespaces) but this is not confirmed for production.
+  - **Update (session 2026-07-23, NOT LOCKED — đang cân nhắc):** khách hàng xác nhận đã mua Camunda Self-Managed **Enterprise** license. Production topology cụ thể — single-node (kiểu D16 nhưng scale-up) vs. **cluster hoá** Zeebe/Elasticsearch qua Kubernetes/Helm (`camunda-platform-helm`) — vẫn đang cân nhắc, chưa chốt.
+    - **Phân công vận hành**: nếu triển khai, đội hạ tầng của khách hàng vận hành cluster; QTKHCN team chỉ ở vai trò support — sửa code/cấu hình khi cần, không tự thiết kế/vận hành Helm/K8s.
+    - **Trade-off đã trình bày cho khách**: cluster giải quyết single-point-of-failure, cho phép rolling upgrade không downtime, scale ngang khi tải tăng (Phase 2 RD03/RD04) — đổi lại partition count gần như là quyết định một chiều (Zeebe không đổi được sau khi cluster đã chạy) và tăng chi phí/độ phức tạp vận hành. Không cluster thì đơn giản/rẻ hơn nhưng có SPOF và nâng cấp version cần downtime toàn hệ thống.
+    - **Nếu chọn cluster, việc cần chuẩn bị phía backend**: `spring-zeebe-starter` (D14) phải trỏ gateway qua endpoint load-balanced (không hardcode 1 broker), có retry/backoff cho leader election lại, và job worker phải idempotent (Zeebe có thể redeliver job khi broker failover).
+    - **License Enterprise cũng mở khoá Web Modeler + Optimize** (trước đó bị chặn vì Enterprise-only, xem thêm license note dưới) — không đổi khuyến nghị giữ canvas tự build (`bpmn-js` + `webapp/src/bpmn/khcn*Module.ts`) làm công cụ chính cho business user, vì Web Modeler không có SDK nhúng tuỳ biến RBAC/lint/nhãn tiếng Việt.
+    - **Còn thiếu để chốt**: (a) version + edition Camunda 8 chính xác khách đã mua, để pin `zeebe-bpmn-moddle`/`bpmn-js-properties-panel` (D7) và `spring-zeebe-starter` (D14) đúng bản tương thích; (b) xác nhận điều khoản unified licensing áp dụng từ Camunda 8.6 (toàn bộ Self-Managed distribution yêu cầu production license, không chỉ Web Modeler/Optimize) có áp dụng cho cluster production của khách hay không — nguồn: [Camunda 8 Docs — Licenses](https://docs.camunda.io/docs/reference/licenses/), [Camunda blog 2024-04 licensing update](https://camunda.com/blog/2024/04/licensing-update-camunda-8-self-managed/).
 - **SSO/IAM protocol** (`OQ-021`) — OIDC vs SAML, and which VHT IAM product, undecided. Blocks real F5 (Auth) and the server-side half of F3 (RBAC enforcement). Backend scaffold (D14) uses a temporary JWT stub until this is resolved.
 - Related open questions tracked in `docs/req/ENGINE-NFR-requirements.md` and `docs/req/RTM.md`: `OQ-002` (rework flow), `OQ-006` (NFR/RBAC granularity + numeric SLA targets), `OQ-009` (5-system sync model), `OQ-020` (AI-Agent integration scope), `OQ-CAM-COMPONENTS` (which Camunda components are bundled).

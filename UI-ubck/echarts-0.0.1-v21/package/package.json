@@ -1,0 +1,29 @@
+{
+  "name": "@khcn-core/echarts",
+  "version": "0.0.1-v21",
+  "main": "./fesm2022/ubck-core-echarts.mjs",
+  "module": "fesm2022/khcn-core-echarts.mjs",
+  "typings": "types/khcn-core-echarts.d.ts",
+  "files": [
+    "*"
+  ],
+  "peerDependencies": {
+    "@angular/common": "21.2.5",
+    "@angular/core": "21.2.5",
+    "echarts": "^6.0.0"
+  },
+  "dependencies": {
+    "tslib": "2.8.1"
+  },
+  "sideEffects": false,
+  "exports": {
+    "./package.json": {
+      "default": "./package.json"
+    },
+    ".": {
+      "types": "./types/khcn-core-echarts.d.ts",
+      "default": "./fesm2022/khcn-core-echarts.mjs"
+    }
+  },
+  "type": "module"
+}

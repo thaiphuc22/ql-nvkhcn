@@ -49,8 +49,7 @@ public class CamundaWorkflowTaskRuntime {
                 .send().join().items();
         if (jobs.isEmpty() || !JOB_BACKED_USER_TASK.equals(jobs.getFirst().getType())) return Optional.empty();
         var job = jobs.getFirst();
-        var taskMetadata = metadata.resolve(job.getProcessDefinitionKey(),
-                job.getProcessDefinitionId(), job.getElementId());
+        var taskMetadata = metadata.resolve(job.getProcessDefinitionKey(), job.getElementId());
         return Optional.of(new TaskSnapshot(taskKey, String.valueOf(job.getProcessInstanceKey()),
                 job.getProcessDefinitionId(), job.getElementId(), taskMetadata.name(), taskMetadata.assignee(),
                 Set.copyOf(taskMetadata.candidateUsers()), Set.copyOf(taskMetadata.candidateGroups()),

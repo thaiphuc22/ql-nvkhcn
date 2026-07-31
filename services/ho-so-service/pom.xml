@@ -74,6 +74,34 @@
       <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
     </dependency>
+    <!--
+      Luật "candidateUsers thu hẹp candidateGroups" (WorkflowTaskProjectionRepository) là logic JPQL
+      thuần — không có cách nào kiểm bằng mock, mà lại là lớp chặn duy nhất giữ cho task họp Hội đồng
+      của một hồ sơ không hiện ra với mọi người giữ vai trò HDXD. Đây là test dùng DB đầu tiên của
+      module này; dựng Postgres thật qua Testcontainers (đúng mẫu đã dùng ở module backend cho
+      BundledBpmnDeployedConsistencyTest) thay vì H2, vì `is empty` trên collection + Flyway phải chạy
+      đúng engine production.
+    -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers-junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers-postgresql</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
