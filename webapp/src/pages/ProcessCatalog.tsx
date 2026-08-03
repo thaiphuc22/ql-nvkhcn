@@ -14,7 +14,12 @@ import {
   Upload,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { InboxOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons'
+import {
+  InboxOutlined,
+  PlusOutlined,
+  UploadOutlined,
+  PartitionOutlined,
+} from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import {
   NHOM,
@@ -23,12 +28,97 @@ import {
   type ProcessDef,
   type ProcessStatus,
 } from '../data/processes'
+import { RD_GROUPS, stageOfRd } from '../data/processLifecycle'
 import { useProcesses } from '../store/ProcessContext'
 import { usePermissions } from '../store/AuthContext'
-import { PageHeader, StatCard, ProcessStatusTag, FilterBar, EntityTable, LIST_SCROLL_Y } from '../components/ui'
+import {
+  PageHeader,
+  StatCard,
+  ProcessStatusTag,
+  FilterBar,
+  EntityTable,
+  LIST_SCROLL_Y,
+  ViewModeToggle,
+  useCatalogViewMode,
+} from '../components/ui'
+import ProcessMapView from '../components/ProcessMapView'
 import HelpButton from '../components/HelpButton'
 
-const { Text } = Typography
+const { Text, Paragraph } = Typography
+
+function ProcessCard({
+  p,
+  onOpen,
+}: {
+  p: ProcessDef
+  onOpen: () => void
+}) {
+  const stage = stageOfRd(p.nhom)
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onOpen()
+        }
+      }}
+      style={{
+        height: '100%',
+        borderRadius: 8,
+        border: '1px solid var(--vht-border, #e8e8e8)',
+        background: '#fff',
+        padding: '16px 18px',
+        cursor: 'pointer',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+        transition: 'border-color 0.2s, box-shadow 0.2s, transform 0.2s',
+      }}
+      onMouseEnter={(e) => {
+        const el = e.currentTarget
+        el.style.borderColor = stage?.color ?? '#1677ff'
+        el.style.boxShadow = '0 4px 14px rgba(0,0,0,0.08)'
+        el.style.transform = 'translateY(-2px)'
+      }}
+      onMouseLeave={(e) => {
+        const el = e.currentTarget
+        el.style.borderColor = 'var(--vht-border, #e8e8e8)'
+        el.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'
+        el.style.transform = 'translateY(0)'
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+        <Text code style={{ fontSize: 12 }}>{p.ma}</Text>
+        <ProcessStatusTag status={p.trangThai} />
+      </div>
+      <Text strong style={{ fontSize: 14, lineHeight: 1.35 }}>{p.ten}</Text>
+      <Text type="secondary" style={{ fontSize: 12 }}>
+        {p.nhom} · {NHOM[p.nhom] ?? p.nhom}
+        {stage ? ` · ${stage.label}` : ''}
+      </Text>
+      <Paragraph type="secondary" ellipsis={{ rows: 2 }} style={{ fontSize: 12, marginBottom: 0, flex: 1 }}>
+        {p.moTa}
+      </Paragraph>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          borderTop: '1px solid #f0f0f0',
+          paddingTop: 8,
+          marginTop: 4,
+          fontSize: 12,
+        }}
+      >
+        <Text type="secondary">v{curVer(p)}</Text>
+        <Text type="secondary">{p.instances > 0 ? `${p.instances} instance` : '—'}</Text>
+      </div>
+    </div>
+  )
+}
 
 export default function ProcessCatalog() {
   const { message } = App.useApp()
@@ -40,6 +130,7 @@ export default function ProcessCatalog() {
   const [q, setQ] = useState('')
   const [fNhom, setFNhom] = useState<string>()
   const [fStatus, setFStatus] = useState<ProcessStatus>()
+  const [viewMode, setViewMode] = useCatalogViewMode('qtkhcn.view.quy-trinh', 'list')
 
   const [createOpen, setCreateOpen] = useState(false)
   const [form] = Form.useForm()
@@ -62,6 +153,18 @@ export default function ProcessCatalog() {
       return true
     })
   }, [list, q, fNhom, fStatus])
+
+  const mapStats = useMemo(() => {
+    const out: Record<string, { count: number; running: number }> = {}
+    for (const g of RD_GROUPS) {
+      const items = list.filter((p) => p.nhom === g.code)
+      out[g.code] = {
+        count: items.length,
+        running: items.reduce((s, p) => s + p.instances, 0),
+      }
+    }
+    return out
+  }, [list])
 
   function submitCreate() {
     form.validateFields().then((values) => {
@@ -100,6 +203,12 @@ export default function ProcessCatalog() {
       ),
     },
     { title: 'Nhóm', dataIndex: 'nhom', width: 90, render: (v: string) => <Text>{v}</Text> },
+    {
+      title: 'Giai đoạn',
+      key: 'stage',
+      width: 110,
+      render: (_, r) => stageOfRd(r.nhom)?.label ?? '—',
+    },
     {
       title: 'Phiên bản', key: 'ver', width: 100, align: 'center',
       render: (_, r) => <Text strong>v{curVer(r)}</Text>,
@@ -150,24 +259,88 @@ export default function ProcessCatalog() {
       </Row>
 
       <FilterBar
-        search={{ placeholder: 'Tìm theo mã hoặc tên quy trình...', onChange: setQ }}
-        selects={[
-          { key: 'nhom', placeholder: 'Tất cả nhóm', value: fNhom, onChange: setFNhom, width: 220,
-            options: Object.entries(NHOM).map(([k, v]) => ({ value: k, label: `${k} · ${v}` })) },
-          { key: 'status', placeholder: 'Tất cả trạng thái', value: fStatus, onChange: setFStatus,
-            options: (Object.keys(STATUS_META) as ProcessStatus[]).map((k) => ({ value: k, label: STATUS_META[k].label })) },
-        ]}
-        right={<Text type="secondary">{rows.length}/{list.length} quy trình</Text>}
+        search={
+          viewMode === 'map'
+            ? undefined
+            : { placeholder: 'Tìm theo mã hoặc tên quy trình...', onChange: setQ }
+        }
+        selects={
+          viewMode === 'map'
+            ? undefined
+            : [
+                {
+                  key: 'nhom',
+                  placeholder: 'Tất cả nhóm',
+                  value: fNhom,
+                  onChange: setFNhom,
+                  width: 220,
+                  options: Object.entries(NHOM).map(([k, v]) => ({ value: k, label: `${k} · ${v}` })),
+                },
+                {
+                  key: 'status',
+                  placeholder: 'Tất cả trạng thái',
+                  value: fStatus,
+                  onChange: setFStatus,
+                  options: (Object.keys(STATUS_META) as ProcessStatus[]).map((k) => ({
+                    value: k,
+                    label: STATUS_META[k].label,
+                  })),
+                },
+              ]
+        }
+        right={
+          <Space>
+            {viewMode !== 'map' && (
+              <Text type="secondary">{rows.length}/{list.length} quy trình</Text>
+            )}
+            <ViewModeToggle value={viewMode} onChange={setViewMode} />
+          </Space>
+        }
       />
 
-      <EntityTable<ProcessDef>
-        rowKey="ma"
-        columns={columns}
-        dataSource={rows}
-        onRowClick={(record) => navigate(`${routeBase}/${encodeURIComponent(record.ma)}`)}
-        emptyText="Không có quy trình khớp bộ lọc."
-        scroll={{ y: LIST_SCROLL_Y }}
-      />
+      {viewMode === 'list' && (
+        <EntityTable<ProcessDef>
+          rowKey="ma"
+          columns={columns}
+          dataSource={rows}
+          onRowClick={(record) => navigate(`${routeBase}/${encodeURIComponent(record.ma)}`)}
+          emptyText="Không có quy trình khớp bộ lọc."
+          scroll={{ y: LIST_SCROLL_Y }}
+        />
+      )}
+
+      {viewMode === 'grid' && (
+        rows.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 48, color: '#8593a3' }}>
+            <PartitionOutlined style={{ fontSize: 40, marginBottom: 12 }} />
+            <br />
+            <Text type="secondary">Không có quy trình khớp bộ lọc.</Text>
+          </div>
+        ) : (
+          <Row gutter={[16, 16]}>
+            {rows.map((p) => (
+              <Col key={p.ma} xs={24} sm={12} lg={8} xl={6}>
+                <ProcessCard
+                  p={p}
+                  onOpen={() => navigate(`${routeBase}/${encodeURIComponent(p.ma)}`)}
+                />
+              </Col>
+            ))}
+          </Row>
+        )
+      )}
+
+      {viewMode === 'map' && (
+        <ProcessMapView
+          statsByRd={mapStats}
+          activeRd={fNhom}
+          onSelectGroup={(g) => {
+            setViewMode('list')
+            setFNhom(g.code)
+          }}
+          subtitle="Bấm một nhóm RD để lọc danh sách quy trình thuộc nhóm đó."
+        />
+      )}
 
       <Modal
         open={createOpen}

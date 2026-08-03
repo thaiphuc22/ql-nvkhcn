@@ -1,5 +1,30 @@
 # Active Task
 
+**Last updated**: 2026-07-31
+**Agent role**: Frontend implementer (branch `tranngdt`)
+
+---
+
+## ★ CURRENT — Toggle View (Grid / List / Process Map) — DONE 2026-07-31
+
+**Bối cảnh**: User góp ý bố trí danh mục phân hệ cần Chế độ xem linh hoạt:
+Grid (thẻ) · List (bảng) · Process Map (10 nhóm RD theo vòng đời
+Đề xuất → Tuyển chọn → Thực hiện → Nghiệm thu → Chuyển giao). Áp dụng luôn
+cho màn quản lý quy trình và người dùng.
+
+**Đã làm**:
+- `data/processLifecycle.ts` — 5 giai đoạn + 10 nhóm RD01–RD10.
+- `components/ui/ViewModeToggle.tsx` + `useCatalogViewMode` (persist localStorage).
+- `components/ProcessMapView.tsx` — swimlane dataflow.
+- `SubsystemList` (`/danh-sach-phan-he`), `ProcessCatalog` (`/quy-trinh`),
+  `UserManagement` (`/phan-he/PH2/nguoi-dung`) — đủ 3 chế độ xem.
+- Bổ sung seed NHOM RD07/RD09/RD10 trong `processes.ts`.
+
+**Chưa**: click-through trình duyệt; OrgStructure/RolePermission chưa gắn toggle
+(khác kiểu tree/matrix).
+
+---
+
 ## ★ DONE + RUNTIME VERIFIED — Fix "không thấy action nào" trên HS-2026-025 — regression từ refactor Ma trận phân quyền — 2026-07-31 (owner Claude)
 
 **Yêu cầu user:** kiểm tra `http://localhost:4200/ho-so/HS-2026-025` đăng nhập `pm@example.com`,

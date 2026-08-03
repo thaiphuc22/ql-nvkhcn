@@ -45,6 +45,7 @@ export interface ProcessDef {
   bpmnXml?: string
 }
 
+/** 10 nhóm nghiệp vụ — đồng bộ docs/req + processLifecycle.ts */
 export const NHOM: Record<string, string> = {
   RD01: 'Xét duyệt Chủ trương',
   RD02: 'Xét duyệt NV KHCN',
@@ -52,7 +53,10 @@ export const NHOM: Record<string, string> = {
   RD04: 'Điều chỉnh NV KHCN',
   RD05: 'Nghiệm thu',
   RD06: 'Quyết toán',
+  RD07: 'Danh mục dịch vụ, SP nghiên cứu',
   RD08: 'Sở hữu trí tuệ',
+  RD09: 'Quản lý, tổng hợp thông tin',
+  RD10: 'Lưu trữ hồ sơ, văn bản pháp lý',
 }
 
 export const STATUS_META: Record<
@@ -375,9 +379,27 @@ export const seedProcesses: ProcessDef[] = [
     versions: [],
   },
   {
+    ma: 'RD07', ten: 'Quản lý danh mục dịch vụ, sản phẩm nghiên cứu', nhom: 'RD07',
+    trangThai: 'planned', instances: 0, capNhat: '—',
+    moTa: 'Pha 2 — danh mục SPDV / sản phẩm nghiên cứu gắn nhiệm vụ.',
+    versions: [],
+  },
+  {
     ma: 'RD08', ten: 'Quản lý sở hữu trí tuệ', nhom: 'RD08',
     trangThai: 'draft', instances: 0, capNhat: '2026-06-14',
     moTa: 'Đăng ký SHTT (bài báo, sáng chế), công nghệ lõi — thiếu luồng phê duyệt (OQ-014).',
     versions: [{ v: '0.1', date: '2026-06-14', note: 'Nháp — thiếu tác nhân/luồng' }],
+  },
+  {
+    ma: 'RD09', ten: 'Quản lý, tổng hợp thông tin KHCN', nhom: 'RD09',
+    trangThai: 'planned', instances: 0, capNhat: '—',
+    moTa: 'Pha 2 — tổng hợp báo cáo / thông tin điều hành.',
+    versions: [],
+  },
+  {
+    ma: 'RD10', ten: 'Lưu trữ hồ sơ, tài liệu, văn bản pháp lý KHCN', nhom: 'RD10',
+    trangThai: 'planned', instances: 0, capNhat: '—',
+    moTa: 'Pha 1 (kế hoạch) — kho lưu trữ hồ sơ pháp lý gắn vòng đời nhiệm vụ.',
+    versions: [],
   },
 ]

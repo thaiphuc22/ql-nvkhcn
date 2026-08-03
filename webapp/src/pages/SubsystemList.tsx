@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { Typography, Row, Col, Space, Button, Dropdown, Tooltip } from "antd";
+import { Typography, Row, Col, Space, Button, Dropdown, Tooltip, Tag } from "antd";
+import type { ColumnsType } from "antd/es/table";
 import {
   HomeOutlined,
   SafetyOutlined,
@@ -17,7 +18,15 @@ import {
   ArrowRightOutlined,
   PlusOutlined,
 } from "@ant-design/icons";
-import { PageHeader, StatCard, FilterBar } from "../components/ui";
+import {
+  PageHeader,
+  StatCard,
+  FilterBar,
+  EntityTable,
+  ViewModeToggle,
+  useCatalogViewMode,
+} from "../components/ui";
+import ProcessMapView from "../components/ProcessMapView";
 import { usePermissions } from "../store/AuthContext";
 import {
   DANH_SACH_PHAN_HE,
@@ -27,7 +36,9 @@ import {
   type PhanHeStatus,
   type PhanHePermissions,
 } from "../data/phanHe";
+import { RD_GROUPS } from "../data/processLifecycle";
 import { openAppRoute } from "../utils/navigation";
+import { useProcesses } from "../store/ProcessContext";
 
 const { Text, Paragraph } = Typography;
 
@@ -398,6 +409,11 @@ function PhanHeCard({
    ================================================================ */
 export default function SubsystemList() {
   const perms = usePermissions();
+  const { list: processes } = useProcesses();
+  const [viewMode, setViewMode] = useCatalogViewMode(
+    "qtkhcn.view.phan-he",
+    "grid",
+  );
 
   // filter states
   const [search, setSearch] = useState("");
@@ -485,6 +501,85 @@ export default function SubsystemList() {
     [],
   );
 
+  const mapStats = useMemo(() => {
+    const out: Record<string, { count: number; running: number }> = {};
+    for (const g of RD_GROUPS) {
+      const items = processes.filter((p) => p.nhom === g.code);
+      out[g.code] = {
+        count: items.length,
+        running: items.reduce((s, p) => s + p.instances, 0),
+      };
+    }
+    return out;
+  }, [processes]);
+
+  const listColumns: ColumnsType<(typeof filtered)[number]> = [
+    {
+      title: "Mã",
+      dataIndex: "id",
+      width: 80,
+      render: (v: string) => <Text code>{v}</Text>,
+    },
+    {
+      title: "Phân hệ",
+      dataIndex: "ten",
+      render: (v: string, r) => (
+        <Space>
+          <span style={{ color: r.color, fontSize: 16 }}>
+            {ICON_MAP[r.icon] ?? <AppstoreOutlined />}
+          </span>
+          <div>
+            <div style={{ fontWeight: 600 }}>{v}</div>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {r.moTa}
+            </Text>
+          </div>
+        </Space>
+      ),
+    },
+    {
+      title: "Trạng thái",
+      dataIndex: "_status",
+      width: 160,
+      render: (s: PhanHeStatus) => {
+        const m = STATUS_META[s];
+        return <Tag color={m.color}>{m.label}</Tag>;
+      },
+    },
+    {
+      title: "Modules",
+      key: "modules",
+      width: 90,
+      align: "center",
+      render: (_, r) => r.modules.length,
+    },
+    {
+      title: "",
+      key: "pin",
+      width: 70,
+      align: "right",
+      render: (_, r) => (
+        <Tooltip title={pinnedIds.includes(r.id) ? "Bỏ ghim" : "Ghim"}>
+          <Button
+            type="text"
+            size="small"
+            icon={
+              pinnedIds.includes(r.id) ? (
+                <PushpinFilled style={{ color: r.color }} />
+              ) : (
+                <PushpinOutlined />
+              )
+            }
+            onClick={(e) => {
+              e.stopPropagation();
+              handleTogglePin(r.id);
+            }}
+          />
+        </Tooltip>
+      ),
+    },
+  ];
+
   const renderSection = (
     title: string,
     subtitle: string,
@@ -533,7 +628,7 @@ export default function SubsystemList() {
   ] as const;
 
   return (
-    <div style={{ maxWidth: 1120, margin: "0 auto" }}>
+    <div style={{ maxWidth: viewMode === 'map' ? 1280 : 1120, margin: "0 auto" }}>
       <PageHeader
         title="Danh sách Phân hệ"
         breadcrumb={[{ label: "Danh sách Phân hệ" }]}
@@ -566,94 +661,128 @@ export default function SubsystemList() {
         </Col>
       </Row>
 
-      {/* ── Thanh lọc + tìm kiếm ── */}
+      {/* ── Thanh lọc + tìm kiếm + View toggle ── */}
       <FilterBar
-        search={{
-          placeholder: "Tìm phân hệ... (hỗ trợ không dấu)",
-          value: search,
-          onChange: setSearch,
-          width: 280,
-        }}
+        search={
+          viewMode === "map"
+            ? undefined
+            : {
+                placeholder: "Tìm phân hệ... (hỗ trợ không dấu)",
+                value: search,
+                onChange: setSearch,
+                width: 280,
+              }
+        }
         left={
-          <Space size={4} wrap>
-            {FILTER_OPTIONS.map((f) => (
-              <Button
-                key={f.key}
-                type={filter === f.key ? "primary" : "default"}
-                onClick={() => setFilter(f.key)}
-              >
-                {f.label}
-                <span
-                  style={{
-                    marginLeft: 6,
-                    fontSize: 11,
-                    background:
-                      filter === f.key ? "rgba(255,255,255,0.25)" : "#f0f0f0",
-                    padding: "0 6px",
-                    borderRadius: 10,
-                  }}
+          viewMode === "map" ? undefined : (
+            <Space size={4} wrap>
+              {FILTER_OPTIONS.map((f) => (
+                <Button
+                  key={f.key}
+                  type={filter === f.key ? "primary" : "default"}
+                  onClick={() => setFilter(f.key)}
                 >
-                  {f.count}
-                </span>
-              </Button>
-            ))}
-          </Space>
+                  {f.label}
+                  <span
+                    style={{
+                      marginLeft: 6,
+                      fontSize: 11,
+                      background:
+                        filter === f.key ? "rgba(255,255,255,0.25)" : "#f0f0f0",
+                      padding: "0 6px",
+                      borderRadius: 10,
+                    }}
+                  >
+                    {f.count}
+                  </span>
+                </Button>
+              ))}
+            </Space>
+          )
         }
         right={
-          <Text type="secondary">
-            {filtered.length}/{totalCount} phân hệ
-          </Text>
+          <Space>
+            {viewMode !== "map" && (
+              <Text type="secondary">
+                {filtered.length}/{totalCount} phân hệ
+              </Text>
+            )}
+            <ViewModeToggle value={viewMode} onChange={setViewMode} />
+          </Space>
         }
       />
 
-      {/* ── Pinned section ── */}
-      {renderSection("📌 Đã ghim", "Truy cập nhanh", pinned)}
+      {viewMode === "map" && (
+        <ProcessMapView
+          statsByRd={mapStats}
+          subtitle="Tổng quan luồng dữ liệu 10 nhóm nghiệp vụ KHCN theo vòng đời dự án. Bấm nhóm để mở Danh mục quy trình."
+          onSelectGroup={() => openAppRoute("/quy-trinh")}
+        />
+      )}
 
-      {/* ── All remaining ── */}
-      {filter === "all"
-        ? renderSection("📋 Tất cả phân hệ", "Toàn bộ danh sách", remaining)
-        : remaining.length > 0 && (
-            <Row gutter={[16, 16]}>
-              {remaining.map((ph) => (
-                <Col key={ph.id} xs={24} sm={12} lg={8}>
-                  <PhanHeCard
-                    ph={ph}
-                    status={ph._status}
-                    pinned={pinnedIds.includes(ph.id)}
-                    onTogglePin={() => handleTogglePin(ph.id)}
-                    onNavigate={handleNavigate}
-                  />
-                </Col>
-              ))}
-            </Row>
-          )}
-
-      {/* ── Empty state ── */}
-      {filtered.length === 0 && (
-        <div
-          style={{
-            textAlign: "center",
-            padding: "80px 20px",
-            color: "#8593a3",
+      {viewMode === "list" && (
+        <EntityTable<(typeof filtered)[number]>
+          rowKey="id"
+          columns={listColumns}
+          dataSource={
+            filter === "all" ? [...pinned, ...remaining] : filtered
+          }
+          onRowClick={(record) => {
+            if (record._status === "active") handleNavigate(record.route);
           }}
-        >
-          <ExperimentOutlined
-            style={{ fontSize: 48, marginBottom: 16, color: "#c7cfda" }}
-          />
-          <br />
-          <Text type="secondary">Không tìm thấy phân hệ nào phù hợp.</Text>
-          <br />
-          <Button
-            type="link"
-            onClick={() => {
-              setSearch("");
-              setFilter("all");
-            }}
-            style={{ marginTop: 8 }}
-          >
-            Xóa bộ lọc
-          </Button>
-        </div>
+          emptyText="Không tìm thấy phân hệ nào phù hợp."
+        />
+      )}
+
+      {viewMode === "grid" && (
+        <>
+          {renderSection("📌 Đã ghim", "Truy cập nhanh", pinned)}
+
+          {filter === "all"
+            ? renderSection("📋 Tất cả phân hệ", "Toàn bộ danh sách", remaining)
+            : remaining.length > 0 && (
+                <Row gutter={[16, 16]}>
+                  {remaining.map((ph) => (
+                    <Col key={ph.id} xs={24} sm={12} lg={8}>
+                      <PhanHeCard
+                        ph={ph}
+                        status={ph._status}
+                        pinned={pinnedIds.includes(ph.id)}
+                        onTogglePin={() => handleTogglePin(ph.id)}
+                        onNavigate={handleNavigate}
+                      />
+                    </Col>
+                  ))}
+                </Row>
+              )}
+
+          {filtered.length === 0 && (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "80px 20px",
+                color: "#8593a3",
+              }}
+            >
+              <ExperimentOutlined
+                style={{ fontSize: 48, marginBottom: 16, color: "#c7cfda" }}
+              />
+              <br />
+              <Text type="secondary">Không tìm thấy phân hệ nào phù hợp.</Text>
+              <br />
+              <Button
+                type="link"
+                onClick={() => {
+                  setSearch("");
+                  setFilter("all");
+                }}
+                style={{ marginTop: 8 }}
+              >
+                Xóa bộ lọc
+              </Button>
+            </div>
+          )}
+        </>
       )}
 
       {/* ── Request-access placeholder ── */}
