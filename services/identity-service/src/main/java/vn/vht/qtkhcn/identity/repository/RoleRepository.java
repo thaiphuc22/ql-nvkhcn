@@ -1,0 +1,1 @@
+package vn.vht.qtkhcn.identity.repository; import java.util.*; import org.springframework.data.jpa.repository.JpaRepository; import vn.vht.qtkhcn.identity.domain.Role; public interface RoleRepository extends JpaRepository<Role,UUID>{Optional<Role> findByCodeIgnoreCase(String code); boolean existsByCodeIgnoreCase(String code);}

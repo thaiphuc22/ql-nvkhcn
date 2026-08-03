@@ -1,0 +1,495 @@
+@if (warnings().length > 0) {
+  <nz-alert
+    [nzType]="warningsHaveError() ? 'error' : 'warning'"
+    nzShowIcon
+    class="amr-alert"
+    [nzMessage]="'Phân tích ma trận: ' + warnings().length + ' cảnh báo (' + warningsErrorCount() + ' lỗi)'"
+    [nzDescription]="amrSlotWarningsTpl"
+  ></nz-alert>
+  <ng-template #amrSlotWarningsTpl>
+    @if (slotWarnings().length > 0) {
+      <ul class="amr-warning-list">
+        @for (w of slotWarnings(); track $index) {
+          <li>{{ w.message }}</li>
+        }
+      </ul>
+    } @else {
+      <span class="amr-hint">Xem chi tiết ở biểu tượng cảnh báo từng dòng.</span>
+    }
+  </ng-template>
+}
+
+<div class="amr-card">
+  <div class="amr-card-head">
+    <span class="amr-card-title">
+      <span nz-icon nzType="solution"></span>
+      Bảng luật ánh xạ (first-match theo ưu tiên)
+    </span>
+    <div class="amr-toolbar">
+      <nz-select nzSize="small" class="amr-filter" [ngModel]="filterSlot()" (ngModelChange)="filterSlot.set($event)">
+        <nz-option nzValue="all" nzLabel="Tất cả loại phê duyệt"></nz-option>
+        @for (s of activeSlots(); track s.code) {
+          <nz-option [nzValue]="s.code" [nzLabel]="s.ten"></nz-option>
+        }
+      </nz-select>
+      <nz-select
+        nzSize="small"
+        class="amr-filter amr-filter--narrow"
+        [ngModel]="filterEnabled()"
+        (ngModelChange)="filterEnabled.set($event)"
+      >
+        <nz-option nzValue="all" nzLabel="Tất cả trạng thái"></nz-option>
+        <nz-option nzValue="on" nzLabel="Đang bật"></nz-option>
+        <nz-option nzValue="off" nzLabel="Đang tắt"></nz-option>
+      </nz-select>
+      <button nz-button nzType="primary" nzSize="small" (click)="openCreate()">
+        <span nz-icon nzType="plus"></span>
+        Thêm luật
+      </button>
+      <button nz-button nzSize="small" (click)="simDrawerOpen.set(true)">
+        <span nz-icon nzType="thunderbolt"></span>
+        Mô phỏng
+      </button>
+    </div>
+  </div>
+
+  @if (rules().length === 0) {
+    <nz-empty [nzNotFoundContent]="amrEmptyTpl" class="amr-empty">
+      <ng-template #amrEmptyTpl>
+        Chưa có luật ánh xạ nào.<br />
+        Bấm <strong>"Thêm luật"</strong> để tạo luật đầu tiên.
+      </ng-template>
+      <button nz-button nzType="primary" (click)="openCreate()">
+        <span nz-icon nzType="plus"></span>
+        Thêm luật
+      </button>
+    </nz-empty>
+  } @else {
+    <nz-table #table [nzData]="filteredRules()" [nzPageSize]="10" [nzShowPagination]="filteredRules().length > 10" nzSize="small">
+      <thead>
+        <tr>
+          <th nzWidth="52px" nz-tooltip nzTooltipTitle="Số càng nhỏ càng ưu tiên. Luật đầu tiên khớp điều kiện sẽ thắng (first-match).">#</th>
+          <th>Luật</th>
+          <th>Điều kiện</th>
+          <th>Kết quả phân công</th>
+          <th nzWidth="64px">Bật</th>
+          <th nzWidth="160px"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of table.data; track r.id; let i = $index) {
+          <tr [class.amr-slot-separator]="rowSlotChangedFrom(i)">
+            <td><span class="amr-priority">{{ r.priority }}</span></td>
+            <td>
+              <div class="amr-rule-name">
+                <strong>{{ r.ten }}</strong>
+                @if (warningsFor(r.id).length > 0) {
+                  <span
+                    nz-icon
+                    nzType="warning"
+                    nz-tooltip
+                    [nzTooltipTitle]="amrRuleWarningTpl"
+                    [class.amr-warn-error]="hasErrorWarning(r.id)"
+                    [class.amr-warn-warning]="!hasErrorWarning(r.id)"
+                  ></span>
+                  <ng-template #amrRuleWarningTpl>
+                    @for (w of warningsFor(r.id); track $index) {
+                      <div>• {{ w.message }}</div>
+                    }
+                  </ng-template>
+                }
+              </div>
+              <div class="amr-slot-tag">{{ slotLabel(r.slot) }}</div>
+            </td>
+            <td>
+              @if (isWildcard(r)) {
+                <nz-tag nzColor="orange">Mọi hồ sơ</nz-tag>
+              } @else {
+                <span class="amr-condition">{{ conditionSummary(r) }}</span>
+              }
+            </td>
+            <td>
+              <div class="amr-targets">
+                @for (t of visibleTargets(r); track $index) {
+                  <span
+                    class="amr-target"
+                    [class.amr-target--group]="t.type === 'GROUP'"
+                    [class.amr-target--user]="t.type === 'USER'"
+                    >{{ describeTarget(t) }}</span
+                  >
+                }
+                @if (overflowCount(r) > 0) {
+                  <nz-tag nz-tooltip [nzTooltipTitle]="amrOverflowTpl">+{{ overflowCount(r) }}</nz-tag>
+                  <ng-template #amrOverflowTpl>
+                    @for (t of overflowTargets(r); track $index) {
+                      <div>{{ describeTarget(t) }}</div>
+                    }
+                  </ng-template>
+                }
+              </div>
+              <div class="amr-mode">{{ modeLabel[r.assignment.mode] }}</div>
+            </td>
+            <td>
+              <nz-switch [ngModel]="r.enabled" (ngModelChange)="toggle(r.id, $event)"></nz-switch>
+            </td>
+            <td>
+              <button nz-button nzType="text" nzSize="small" nz-tooltip nzTooltipTitle="Sửa" (click)="openEdit(r)">
+                <span nz-icon nzType="edit"></span>
+              </button>
+              <button nz-button nzType="text" nzSize="small" nz-tooltip nzTooltipTitle="Nhân bản" (click)="cloneRule(r)">
+                <span nz-icon nzType="copy"></span>
+              </button>
+              <button nz-button nzType="text" nzSize="small" nz-tooltip nzTooltipTitle="Lịch sử" (click)="openHistory(r.id)">
+                <span nz-icon nzType="history"></span>
+              </button>
+              <button nz-button nzType="text" nzSize="small" nzDanger nz-tooltip nzTooltipTitle="Xoá" (click)="confirmRemoveRule(r)">
+                <span nz-icon nzType="delete"></span>
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+    @if (filteredRules().length === 0) {
+      <nz-empty nzNotFoundContent="Không có luật nào khớp bộ lọc."></nz-empty>
+    }
+  }
+</div>
+
+<div class="amr-card amr-delegation-card">
+  <div class="amr-card-head">
+    <span class="amr-card-title">
+      <span nz-icon nzType="swap"></span>
+      Uỷ quyền / Thay thế tạm thời (theo hiệu lực)
+    </span>
+  </div>
+  <p class="amr-delegation-hint">
+    Uỷ quyền được áp <strong>lên trên</strong> kết quả resolve — Workflow không biết. Ví dụ dưới đang
+    hiệu lực sẽ tự chuyển công việc của người uỷ quyền sang người nhận.
+  </p>
+  @if (delegations().length === 0) {
+    <nz-empty nzNotFoundContent="Chưa có uỷ quyền nào"></nz-empty>
+  } @else {
+    @for (d of delegations(); track d.id) {
+      <div class="amr-delegation-row">
+        <nz-tag nzColor="volcano">{{ userNameById(d.fromUserId) }}</nz-tag>
+        <span nz-icon nzType="swap"></span>
+        <nz-tag nzColor="green">{{ userNameById(d.toUserId) }}</nz-tag>
+        <span class="amr-hint">{{ d.from }} → {{ d.to }} · {{ d.lyDo }}</span>
+      </div>
+    }
+  }
+</div>
+
+<nz-drawer
+  [nzVisible]="simDrawerOpen()"
+  [nzTitle]="amrSimTitle"
+  [nzWidth]="480"
+  (nzOnClose)="simDrawerOpen.set(false)"
+>
+  <ng-template #amrSimTitle>
+    <span nz-icon nzType="thunderbolt"></span>
+    Mô phỏng (Simulation)
+  </ng-template>
+  <ng-container *nzDrawerContent>
+    <app-approval-simulation-panel [rules]="rules()"></app-approval-simulation-panel>
+  </ng-container>
+</nz-drawer>
+
+<nz-drawer
+  [nzVisible]="!!historyRuleId()"
+  [nzTitle]="amrHistoryTitle"
+  [nzWidth]="720"
+  (nzOnClose)="historyRuleId.set(null)"
+>
+  <ng-template #amrHistoryTitle>
+    <span nz-icon nzType="history"></span>
+    Lịch sử luật ánh xạ
+  </ng-template>
+  <ng-container *nzDrawerContent>
+    <div class="amr-history-section">
+      <span class="amr-history-title">Lịch sử Phiên bản</span>
+      @if (historyRows().length === 0) {
+        <nz-empty nzNotFoundContent="Chưa có lịch sử phiên bản." class="amr-history-empty"></nz-empty>
+      } @else {
+        <nz-table #versionTable [nzData]="historyRows()" [nzShowPagination]="false" nzSize="small" class="amr-history-table">
+          <thead>
+            <tr>
+              <th nzWidth="90px">Phiên bản</th>
+              <th nzWidth="90px">Ngày</th>
+              <th nzWidth="150px">Người cập nhật</th>
+              <th>Ghi chú</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (v of versionTable.data; track v.id) {
+              <tr>
+                <td>
+                  <nz-tag [nzColor]="v.isCurrent ? 'green' : 'default'">v{{ v.version }}</nz-tag>
+                  @if (v.isCurrent) {
+                    <span class="amr-hint">(hiện tại)</span>
+                  }
+                </td>
+                <td><span class="amr-hint">{{ v.capNhat }}</span></td>
+                <td>{{ v.nguoiCapNhat }}</td>
+                <td>{{ v.changeNote }}</td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      }
+    </div>
+
+    <div class="amr-history-section">
+      <span class="amr-history-title">Nhật ký Thay đổi</span>
+      @if (historyAudit().length === 0) {
+        <nz-empty nzNotFoundContent="Chưa có nhật ký thay đổi." class="amr-history-empty"></nz-empty>
+      } @else {
+        <nz-table
+          #auditTable
+          [nzData]="historyAudit()"
+          [nzShowPagination]="historyAudit().length > 10"
+          [nzPageSize]="10"
+          nzSize="small"
+          class="amr-history-table"
+        >
+          <thead>
+            <tr>
+              <th nzWidth="150px">Thời gian</th>
+              <th nzWidth="130px">Hành động</th>
+              <th nzWidth="80px">Phiên bản</th>
+              <th nzWidth="150px">Người thực hiện</th>
+              <th>Chi tiết</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (a of auditTable.data; track a.id) {
+              <tr>
+                <td><span class="amr-hint">{{ a.timestamp }}</span></td>
+                <td><nz-tag [nzColor]="auditActionColor[a.action]">{{ auditActionLabel[a.action] }}</nz-tag></td>
+                <td><nz-tag>v{{ a.version }}</nz-tag></td>
+                <td>{{ a.actor }}</td>
+                <td>{{ a.detail }}</td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      }
+    </div>
+  </ng-container>
+</nz-drawer>
+
+<nz-drawer
+  [nzVisible]="modalOpen()"
+  [nzTitle]="editing() ? 'Sửa luật ánh xạ' : 'Thêm luật ánh xạ'"
+  [nzWidth]="960"
+  [nzFooter]="amrEditFooter"
+  (nzOnClose)="modalOpen.set(false)"
+>
+  <ng-container *nzDrawerContent>
+    <div nz-row [nzGutter]="[16, 16]">
+      <div nz-col [nzXs]="24" [nzLg]="15">
+        <div class="amr-form-card">
+          <div class="amr-form-card-title">Thông tin luật</div>
+
+          <label class="amr-label">Tên luật <span class="amr-required">*</span></label>
+          <input
+            nz-input
+            placeholder="VD: Phê duyệt — Tập đoàn, ngân sách > 5 tỷ"
+            [ngModel]="formTen()"
+            (ngModelChange)="formTen.set($event)"
+          />
+
+          <div class="amr-form-row">
+            <div>
+              <label class="amr-label">Loại phê duyệt</label>
+              <nz-select class="amr-block" [ngModel]="formSlot()" (ngModelChange)="formSlot.set($event)">
+                @for (s of activeSlots(); track s.code) {
+                  <nz-option [nzValue]="s.code" [nzLabel]="s.ten"></nz-option>
+                }
+              </nz-select>
+            </div>
+            <div>
+              <label class="amr-label">Ưu tiên</label>
+              <nz-input-number class="amr-block" [nzMin]="1" [ngModel]="formPriority()" (ngModelChange)="formPriority.set($event ?? 1)"></nz-input-number>
+            </div>
+            <div>
+              <label class="amr-label">Kích hoạt</label>
+              <div>
+                <nz-switch [ngModel]="formEnabled()" (ngModelChange)="formEnabled.set($event)"></nz-switch>
+              </div>
+            </div>
+          </div>
+          <span class="amr-hint">Số ưu tiên nhỏ hơn sẽ được xét trước theo cơ chế first-match.</span>
+
+          <nz-divider class="amr-divider"></nz-divider>
+          <div class="amr-form-card-title">Điều kiện áp dụng</div>
+          @if (condDraft().items.length === 0) {
+            <nz-alert
+              nzType="warning"
+              nzShowIcon
+              class="amr-cond-alert"
+              nzMessage="Rule đang khớp mọi hồ sơ trong loại phê duyệt đã chọn"
+              nzDescription="Thêm điều kiện nếu rule này không phải fallback."
+            ></nz-alert>
+          }
+          <div class="amr-presets">
+            <span class="amr-hint">Thêm nhanh:</span>
+            @for (p of conditionPresets; track p.label) {
+              <button nz-button nzSize="small" (click)="addConditionPreset(p.make)">{{ p.label }}</button>
+            }
+          </div>
+          <app-condition-builder [value]="condDraft()" (valueChange)="condDraft.set($event)"></app-condition-builder>
+
+          <nz-divider class="amr-divider"></nz-divider>
+          <div class="amr-form-card-title">Action sẽ hiện cho ai</div>
+          @if (targetPresets().length > 0) {
+            <div class="amr-presets">
+              <span class="amr-hint">Thêm nhanh:</span>
+              @for (p of targetPresets(); track p.roleCode) {
+                <button nz-button nzSize="small" (click)="addTargetPreset(p.roleCode)">{{ p.label }}</button>
+              }
+            </div>
+          }
+          <app-assignment-builder
+            [value]="asgDraft()"
+            [issues]="assignmentTargetIssues()"
+            (valueChange)="asgDraft.set($event)"
+          ></app-assignment-builder>
+        </div>
+      </div>
+
+      <div nz-col [nzXs]="24" [nzLg]="9">
+        <div class="amr-form-card">
+          <div class="amr-form-card-title">Bản xem trước</div>
+
+          <div class="amr-preview-tags">
+            <nz-tag nzColor="purple">{{ slotLabel(formSlot()) }}</nz-tag>
+            <nz-tag>Ưu tiên #{{ formPriority() }}</nz-tag>
+            <nz-tag [nzColor]="formEnabled() ? 'green' : 'default'">{{ formEnabled() ? 'Đang bật' : 'Đang tắt' }}</nz-tag>
+          </div>
+
+          <p class="amr-preview-name"><strong>{{ formTen().trim() || 'Luật chưa đặt tên' }}</strong></p>
+
+          <nz-alert
+            [nzType]="!formEnabled() ? 'warning' : !assignmentHasTarget() ? 'error' : 'success'"
+            nzShowIcon
+            [nzMessage]="actionSummary()"
+          ></nz-alert>
+
+          <div class="amr-preview-block">
+            <span class="amr-hint">Điều kiện áp dụng</span>
+            <p class="amr-preview-text">{{ conditionPreview() }}</p>
+          </div>
+
+          <div class="amr-preview-block">
+            <span class="amr-hint">Action sẽ hiện cho ai</span>
+            <p class="amr-preview-text">{{ assignmentPreview() }}</p>
+            <nz-tag>Chế độ: {{ modeLabel[asgDraft().mode] }}</nz-tag>
+            @if (assignmentHasGroupTarget()) {
+              <span class="amr-hint amr-preview-note">
+                Runtime sẽ resolve thành candidateUsers theo thành viên nhóm và uỷ quyền hiện hành.
+              </span>
+            }
+          </div>
+
+          <nz-divider class="amr-divider"></nz-divider>
+
+          <nz-alert
+            [nzType]="previewHasError() ? 'error' : previewWarnings().length > 0 ? 'warning' : 'success'"
+            nzShowIcon
+            [nzMessage]="previewWarnings().length > 0 ? 'Kiểm tra nhanh' : 'Rule đã đủ thông tin cơ bản'"
+            [nzDescription]="amrPreviewWarningsTpl"
+          ></nz-alert>
+          <ng-template #amrPreviewWarningsTpl>
+            @if (previewWarnings().length > 0) {
+              <ul class="amr-warning-list">
+                @for (w of previewWarnings(); track $index) {
+                  <li [class.amr-warn-text-error]="w.level === 'error'">{{ w.message }}</li>
+                }
+              </ul>
+            } @else {
+              <span class="amr-hint">Có thể lưu hoặc tiếp tục tinh chỉnh điều kiện/phân công.</span>
+            }
+          </ng-template>
+
+          @if (draftShadowedRules().length > 0) {
+            <nz-alert
+              nzType="warning"
+              nzShowIcon
+              [nzMessage]="'Luật này sẽ che khuất ' + draftShadowedRules().length + ' luật ưu tiên thấp hơn cùng slot'"
+              [nzDescription]="amrShadowedTpl"
+            ></nz-alert>
+            <ng-template #amrShadowedTpl>
+              <ul class="amr-warning-list">
+                @for (r of draftShadowedRules(); track r.id) {
+                  <li>{{ r.ten }} (ưu tiên #{{ r.priority }})</li>
+                }
+              </ul>
+            </ng-template>
+          }
+
+          <nz-divider class="amr-divider"></nz-divider>
+
+          <div>
+            <span class="amr-hint">Thử với hồ sơ mẫu</span>
+            <div class="amr-quicksim-row">
+              <nz-select nzSize="small" class="amr-quicksim-cap" [ngModel]="draftSimCap()" (ngModelChange)="draftSimCap.set($event)">
+                <nz-option nzValue="CS" nzLabel="Cơ sở"></nz-option>
+                <nz-option nzValue="TD" nzLabel="Tập đoàn"></nz-option>
+              </nz-select>
+              <nz-input-number
+                nzSize="small"
+                class="amr-quicksim-budget"
+                [nzMin]="0"
+                [nzStep]="1000000000"
+                [ngModel]="draftSimBudget()"
+                (ngModelChange)="draftSimBudget.set($event ?? 0)"
+                [nzFormatter]="formatVnd"
+                [nzParser]="parseVnd"
+              ></nz-input-number>
+            </div>
+            @if (formSlot() === 'HOI_DONG') {
+              <nz-select
+                nzSize="small"
+                class="amr-block amr-quicksim-hd"
+                [ngModel]="draftSimLoaiHD()"
+                (ngModelChange)="draftSimLoaiHD.set($event)"
+              >
+                @for (entry of loaiHoiDongEntries; track entry.key) {
+                  <nz-option [nzValue]="entry.key" [nzLabel]="entry.value"></nz-option>
+                }
+              </nz-select>
+            }
+            <button nz-button nzType="dashed" nzSize="small" nzBlock class="amr-quicksim-run" (click)="runDraftSim()">
+              <span nz-icon nzType="thunderbolt"></span>
+              Chạy thử
+            </button>
+
+            @if (draftSimResult(); as sr) {
+              <div class="amr-quicksim-result">
+                @if (sr.matchedRule?.id === draftRule().id) {
+                  <nz-alert nzType="success" nzShowIcon nzMessage="Luật này khớp và thắng với hồ sơ mẫu" [nzDescription]="sr.reason"></nz-alert>
+                } @else if (sr.matchedRule) {
+                  <nz-alert
+                    nzType="warning"
+                    nzShowIcon
+                    [nzMessage]="'Luật &quot;' + sr.matchedRule.ten + '&quot; (ưu tiên #' + sr.matchedRule.priority + ') thắng, không phải luật đang soạn'"
+                    [nzDescription]="sr.reason"
+                  ></nz-alert>
+                } @else {
+                  <nz-alert nzType="warning" nzShowIcon nzMessage="Không có luật nào khớp hồ sơ mẫu trong slot này"></nz-alert>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</nz-drawer>
+
+<ng-template #amrEditFooter>
+  <button nz-button (click)="modalOpen.set(false)">Huỷ</button>
+  <button nz-button nzType="primary" (click)="saveRule()">Lưu</button>
+</ng-template>

@@ -1,0 +1,126 @@
+@switch (comp().type) {
+  @case ('text') {
+    <div class="ff-text">
+      @for (block of markdownBlocks(); track $index) {
+        @switch (block.kind) {
+          @case ('h4') {
+            <h4 class="ff-heading">
+              @for (run of block.runs; track $index) {
+                @if (run.bold) { <strong>{{ run.text }}</strong> } @else { <span>{{ run.text }}</span> }
+              }
+            </h4>
+          }
+          @case ('h5') {
+            <h5 class="ff-heading">
+              @for (run of block.runs; track $index) {
+                @if (run.bold) { <strong>{{ run.text }}</strong> } @else { <span>{{ run.text }}</span> }
+              }
+            </h5>
+          }
+          @default {
+            <p class="ff-paragraph">
+              @for (run of block.runs; track $index) {
+                @if (run.bold) { <strong>{{ run.text }}</strong> } @else { <span>{{ run.text }}</span> }
+              }
+            </p>
+          }
+        }
+      }
+    </div>
+  }
+
+  @case ('html') {
+    <div [class]="'ff-html ' + htmlScopeClass()" [innerHTML]="sanitizedHtml()"></div>
+  }
+
+  @case ('image') {
+    @if (comp().source) {
+      <img class="ff-image" [src]="comp().source" [alt]="comp().label ?? ''" />
+    }
+  }
+
+  @case ('separator') {
+    <nz-divider></nz-divider>
+  }
+
+  @case ('spacer') {
+    <div class="ff-spacer"></div>
+  }
+
+  @case ('expression') {
+    @if (comp().label) {
+      <div class="ff-field">
+        <div class="ff-label">{{ comp().label }}</div>
+        <input nz-input [value]="expressionDisplay()" disabled readonly />
+      </div>
+    }
+  }
+
+  @default {
+    <div class="ff-field">
+      @if (showLabelOnTop() && comp().label) {
+        <div class="ff-label">
+          {{ comp().label }}
+          @if (required()) { <span class="ff-required">*</span> }
+        </div>
+      }
+
+      @switch (comp().type) {
+        @case ('textfield') {
+          <input nz-input [ngModel]="textValue()" (ngModelChange)="emit($event)" [nzStatus]="error() ? 'error' : ''" [disabled]="disabled()" />
+        }
+        @case ('textarea') {
+          <textarea nz-input [rows]="3" [ngModel]="textValue()" (ngModelChange)="emit($event)" [nzStatus]="error() ? 'error' : ''" [disabled]="disabled()"></textarea>
+        }
+        @case ('number') {
+          <nz-input-number class="ff-block" [ngModel]="numberValue()" (ngModelChange)="emit($event === null ? undefined : $event)" [nzStatus]="error() ? 'error' : ''" [disabled]="disabled()"></nz-input-number>
+        }
+        @case ('checkbox') {
+          <label nz-checkbox [ngModel]="boolValue()" (ngModelChange)="emit($event)" [nzDisabled]="disabled()">{{ comp().label }}</label>
+        }
+        @case ('checklist') {
+          <div class="ff-checklist">
+            @for (o of options(); track o.value) {
+              <label nz-checkbox [ngModel]="listValue().includes(o.value)" (ngModelChange)="toggleListValue(o.value, $event)" [nzDisabled]="disabled()">{{ o.label }}</label>
+            }
+          </div>
+        }
+        @case ('radio') {
+          <nz-radio-group [ngModel]="value()" (ngModelChange)="emit($event)" [nzDisabled]="disabled()">
+            @for (o of options(); track o.value) {
+              <label nz-radio [nzValue]="o.value">{{ o.label }}</label>
+            }
+          </nz-radio-group>
+        }
+        @case ('select') {
+          <nz-select class="ff-block" nzAllowClear [ngModel]="value()" (ngModelChange)="emit($event)" [nzStatus]="error() ? 'error' : ''" [nzDisabled]="disabled()">
+            @for (o of options(); track o.value) {
+              <nz-option [nzLabel]="o.label" [nzValue]="o.value"></nz-option>
+            }
+          </nz-select>
+        }
+        @case ('taglist') {
+          <nz-select class="ff-block" nzMode="multiple" [ngModel]="listValue()" (ngModelChange)="emit($event)" [nzStatus]="error() ? 'error' : ''" [nzDisabled]="disabled()">
+            @for (o of options(); track o.value) {
+              <nz-option [nzLabel]="o.label" [nzValue]="o.value"></nz-option>
+            }
+          </nz-select>
+        }
+        @case ('datetime') {
+          @if (comp().subtype === 'time') {
+            <nz-time-picker class="ff-block" [ngModel]="dateValue()" (ngModelChange)="onDateChange($event)" [nzStatus]="error() ? 'error' : ''" [nzDisabled]="disabled()"></nz-time-picker>
+          } @else {
+            <nz-date-picker class="ff-block" [nzShowTime]="comp().subtype === 'datetime'" [ngModel]="dateValue()" (ngModelChange)="onDateChange($event)" [nzStatus]="error() ? 'error' : ''" [nzDisabled]="disabled()"></nz-date-picker>
+          }
+        }
+        @default {
+          <nz-alert nzType="warning" nzShowIcon [nzMessage]="'Loại trường chưa hỗ trợ: \'' + comp().type + '\''"></nz-alert>
+        }
+      }
+
+      @if (error()) {
+        <div class="ff-error">{{ error() }}</div>
+      }
+    </div>
+  }
+}

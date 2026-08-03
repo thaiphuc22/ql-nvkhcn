@@ -1,0 +1,33 @@
+.fdl-wrap {
+  margin-bottom: 16px;
+}
+
+.fdl-label {
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.fdl-required {
+  color: #ff4d4f;
+  margin-left: 4px;
+}
+
+.fdl-row {
+  position: relative;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  padding: 12px 12px 0;
+  margin-bottom: 8px;
+}
+
+.fdl-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.fdl-error {
+  color: #ff4d4f;
+  font-size: 12px;
+  margin-top: 4px;
+}

@@ -1,0 +1,68 @@
+.imfe-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.imfe-field-card {
+  border: 1px solid var(--vht-border);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--vht-surface-2, #fafafa);
+}
+
+.imfe-field-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.imfe-field-index {
+  font-size: 12px;
+}
+
+.imfe-field-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.imfe-control-label {
+  font-size: 11px;
+  color: var(--vht-ink-2);
+  display: block;
+  margin-bottom: 2px;
+}
+
+.imfe-input-warning {
+  border-color: #faad14 !important;
+}
+
+.imfe-value-mapping {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--vht-border);
+}
+
+.imfe-vm-title {
+  font-size: 12px;
+}
+
+.imfe-vm-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+  align-items: flex-start;
+}
+
+.imfe-vm-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.imfe-add-btn {
+  width: 100%;
+}

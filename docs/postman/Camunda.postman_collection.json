@@ -1,0 +1,3269 @@
+{
+  "info": {
+    "_postman_id": "2ac5fade-267f-45cd-afd4-e6bfd0ca82c2",
+    "name": "Camunda",
+    "description": "# QTKHCN ↔ Camunda 8.9 — bộ test đầy đủ\n\nSinh từ **OpenAPI spec sống** của engine (`http://localhost:8080/v3/api-docs`, 200 endpoint) nên không path nào là phỏng đoán. Phần backend đọc từ controller trong repo.\n\n## Dùng thế nào\n\n1. Import kèm environment `QTKHCN-local.postman_environment.json`, chọn nó ở góc phải.\n2. Chạy folder `00` trước — engine chưa sống thì mọi thứ khác vô nghĩa.\n3. Trong mỗi folder, request đánh số ① ② ③ phải chạy theo thứ tự: chúng **tự chuyền biến** (`processDefinitionKey`, `processInstanceKey`, `userTaskKey`…) cho nhau. Không cần copy tay key nào.\n\n## Quy ước\n\n- **⚠️** = request GHI DỮ LIỆU hoặc phá trạng thái. Đọc description trước khi bấm.\n- Request không có ⚠️ đều read-only.\n- Mở tab **Console** (Ctrl+Alt+C) — phần lớn thông tin hữu ích in ra đó, không phải ở body.\n\n## Kịch bản test use case \"Đồng bộ quy trình từ Camunda\"\n\n| Muốn kiểm | Làm gì |\n|---|---|\n| Đường hạnh phúc | `02 → Deploy BPMN` (đổi `<bpmn:process id>` thành id mới) rồi `09/A → ②` ⇒ `imported = 1`, `newCatalog = true` |\n| Idempotency | Chạy `09/A → ②` hai lần ⇒ lần 2 `imported = 0` |\n| Cảnh báo quét bị cắt | Đặt env `maxScan = 1`, chạy `09/A → ②` ⇒ `warnings[]` có nội dung |\n| Lỗi toàn lượt | `docker stop orchestration`, chạy `09/A → ②` ⇒ HTTP lỗi, KHÔNG phải 200 + `failures[]` |\n| Thiếu auth | Xoá header dev key ⇒ 401 kèm message tiếng Việt |\n| Scaffold luật | Sau đồng bộ, `09/B → Đối soát` xem quy trình mới đã có luật chưa |\n\nTài liệu đầy đủ: `docs/arch/api-camunda-dong-bo-quy-trinh.md` và `docs/arch/sequence-dong-bo-quy-trinh-tu-camunda.md`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "17277787"
+  },
+  "item": [
+    {
+      "name": "00 · Sức khoẻ engine — chạy đầu tiên",
+      "description": "Bốn request này trả lời \"engine có sống không, tôi là ai\" trước khi debug bất cứ thứ gì khác. Nếu request đầu tiên đã đỏ thì mọi thứ phía dưới vô nghĩa — kiểm tra `docker ps` trước.",
+      "item": [
+        {
+          "name": "Topology — engine sống chưa?",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{camundaBase}}/v2/topology",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "topology"
+              ]
+            },
+            "description": "Chạy request này TRƯỚC TIÊN. Đỏ = engine chưa lên, đừng debug tiếp."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "const t = pm.response.json();",
+                  "console.log('Cluster size:', t.clusterSize, '| Gateway:', t.gatewayVersion);",
+                  "pm.test('Có ít nhất 1 broker', () => pm.expect(t.brokers).to.have.length.above(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{camundaBase}}/v2/status",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "status"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tôi là ai (authentication/me) — 401 là ĐÚNG ở dev",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{camundaBase}}/v2/authentication/me",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "authentication",
+                "me"
+              ]
+            },
+            "description": "## 401 ở đây KHÔNG phải lỗi, đừng \"sửa\" bằng cách gắn Bearer token.\n\nEngine dev chạy chế độ **API không bảo vệ** — mọi endpoint `/v2` khác đều `200` mà không cần header nào. Kiểm chứng 2026-07-28:\n\n| Thử | Kết quả |\n|---|---|\n| `/v2/topology`, `/v2/license`, `.../search` không header | `200` |\n| endpoint này, không header | `401` |\n| endpoint này + `Bearer` rỗng / `Bearer abc123` / basic `demo:demo` | `401` cả ba |\n\nĐây là endpoint DUY NHẤT bắt buộc có principal — nó trả lời \"tôi là ai\". Chưa cắm identity provider thì không có \"ai\" để trả. Gắn token vào không đổi được gì vì không có nơi nào cấp token.\n\n**Khi nào request này mới `200`:** sau khi bật authentication trên engine (`docker-compose-full.yaml` với Keycloak/Identity). Đó là việc hạ tầng, phụ thuộc quyết định OQ-021 (SSO/IAM) còn đang mở — không phải việc cấu hình trong Postman."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const c = pm.response.code;",
+                  "console.log('Status', c, pm.response.text().slice(0, 300));",
+                  "pm.test('401 khi chưa bật OIDC = ĐÚNG; 200 = engine đã bật auth', function () {",
+                  "    pm.expect([200, 401, 403], 'mã lạ ⇒ engine đổi cấu hình').to.include(c);",
+                  "});",
+                  "if (c === 200) console.log('→ Engine ĐÃ bật authentication. Điền biến {{bearer}} cho các request khác.');",
+                  "else console.log('→ Engine chưa bật authentication — đúng như mong đợi ở dev. Không cần sửa gì.');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "License",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{camundaBase}}/v2/license",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "license"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "01 · Process definitions — lõi của use case \"Đồng bộ\"",
+      "description": "Hai request đầu chính là hai API mà `CamundaProcessDefinitionLookup` gọi. Request 1 tự lưu `processDefinitionKey` + `bpmnProcessId` cho mọi request sau — chạy nó trước.",
+      "item": [
+        {
+          "name": "① Search — bản mới nhất của mọi quy trình",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/process-definitions/search",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "process-definitions",
+                "search"
+              ]
+            },
+            "description": "= `lookup.listLatest(MAX_SCAN)`.\n\n`limit` khớp `MAX_SCAN` trong `DeployedProcessImportService`. Filter hợp lệ khác: processDefinitionId, processDefinitionKey, name, resourceName, version, versionTag, tenantId, hasStartForm.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filter\": {\n    \"isLatestVersion\": true\n  },\n  \"page\": {\n    \"limit\": {{maxScan}}\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "const b = pm.response.json(), items = b.items || [], page = b.page || {};",
+                  "console.log('Engine có', page.totalItems, 'quy trình | lấy về', items.length);",
+                  "items.forEach(i => console.log('  -', i.processDefinitionId, 'v' + i.version, i.processDefinitionKey));",
+                  "if (items.length) {",
+                  "    pm.collectionVariables.set('processDefinitionKey', items[0].processDefinitionKey);",
+                  "    pm.collectionVariables.set('bpmnProcessId', items[0].processDefinitionId);",
+                  "    console.log('→ đã lưu processDefinitionKey =', items[0].processDefinitionKey);",
+                  "}",
+                  "pm.test('Lượt quét không bị cắt theo MAX_SCAN', () =>",
+                  "    pm.expect(page.totalItems, 'lớn hơn số lấy về ⇒ app trả warnings[]').to.be.at.most(items.length));",
+                  "pm.test('Search KHÔNG trả deploymentKey (lý do writer ghi 0)', () =>",
+                  "    items.length && pm.expect(items[0]).to.not.have.property('deploymentKey'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "② Get XML",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/xml"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/process-definitions/{{processDefinitionKey}}/xml",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "process-definitions",
+                "{{processDefinitionKey}}",
+                "xml"
+              ]
+            },
+            "description": "= `lookup.fetchXml(key)`. Trả BPMN XML thô, KHÔNG bọc JSON.\n\nTham số là khoá số, không phải bpmnProcessId. Thiếu XML ⇒ quy trình vào catalog nhưng `DeployedBpmnRoutingReader` không dựng được bước nào."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('Là BPMN XML', () => pm.expect(pm.response.text()).to.include('<bpmn:definitions'));",
+                  "const n = (pm.response.text().match(/<bpmn:userTask/g) || []).length;",
+                  "console.log('Số userTask trong BPMN:', n);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get process definition (metadata)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{camundaBase}}/v2/process-definitions/{{processDefinitionKey}}",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "process-definitions",
+                "{{processDefinitionKey}}"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get start form",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{camundaBase}}/v2/process-definitions/{{processDefinitionKey}}/form",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "process-definitions",
+                "{{processDefinitionKey}}",
+                "form"
+              ]
+            },
+            "description": "404 nếu process không gắn start form — bình thường với quy trình RD."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('Status', pm.response.code);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search theo bpmnProcessId cụ thể",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/process-definitions/search",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "process-definitions",
+                "search"
+              ]
+            },
+            "description": "Xem TẤT CẢ version của một quy trình — dùng khi nghi ngờ deploy ra version mới mà app vẫn dùng bản cũ.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filter\": {\n    \"processDefinitionId\": \"{{bpmnProcessId}}\"\n  },\n  \"sort\": [\n    {\n      \"field\": \"version\",\n      \"order\": \"DESC\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "const it = pm.response.json().items || [];",
+                  "console.log('Các version của', pm.collectionVariables.get('bpmnProcessId') + ':', it.map(i => 'v' + i.version).join(', '));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Thống kê element instances",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/process-definitions/{{processDefinitionKey}}/statistics/element-instances",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "process-definitions",
+                "{{processDefinitionKey}}",
+                "statistics",
+                "element-instances"
+              ]
+            },
+            "description": "Bao nhiêu instance đang đứng ở mỗi element — bản đồ nhiệt của quy trình.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filter\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 · Deploy BPMN/DMN — tạo dữ liệu để test đồng bộ",
+      "description": "**Đây là cách tạo tình huống \"quy trình vẽ ngoài app\"** — deploy thẳng lên engine, không qua QTKHCN. Sau khi deploy ở đây, chạy `POST /api/process-definitions/sync-from-camunda` ở folder 09 mới thấy `imported > 0`. Không có bước này thì đồng bộ luôn trả `imported = 0` và bạn tưởng tính năng hỏng.",
+      "item": [
+        {
+          "name": "⚠️ Deploy BPMN (multipart)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{camundaBase}}/v2/deployments",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "deployments"
+              ]
+            },
+            "description": "**GHI DỮ LIỆU LÊN ENGINE.** Field name bắt buộc là `resources` (type = File).\n\nDeploy lại cùng file không đổi ⇒ engine giữ nguyên version. Sửa 1 ký tự ⇒ version mới.\n\nMẹo tạo quy trình HOÀN TOÀN mới để test `newCatalog = true`: copy file .bpmn, đổi `<bpmn:process id=\"...\">` thành id chưa từng có, rồi deploy.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "resources",
+                  "type": "file",
+                  "src": "c:/Users/phuctd7/ql-nvkhcn/backend/src/main/resources/processes/rd0101.bpmn",
+                  "description": "Đổi sang file .bpmn bất kỳ. Có thể thêm nhiều dòng resources."
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "const d = pm.response.json();",
+                  "console.log('deploymentKey =', d.deploymentKey);",
+                  "(d.deployments || []).forEach(x => {",
+                  "    const p = x.processDefinition;",
+                  "    if (p) { console.log('  deploy:', p.processDefinitionId, 'v' + p.version, p.processDefinitionKey);",
+                  "             pm.collectionVariables.set('processDefinitionKey', p.processDefinitionKey);",
+                  "             pm.collectionVariables.set('bpmnProcessId', p.processDefinitionId); }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "⚠️ Deploy DMN (multipart)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{camundaBase}}/v2/deployments",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "deployments"
+              ]
+            },
+            "description": "Cùng endpoint với BPMN — Camunda phân loại theo đuôi file.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "resources",
+                  "type": "file",
+                  "src": "c:/Users/phuctd7/ql-nvkhcn/backend/src/main/resources/processes/rd0202-routing.dmn"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "console.log(pm.response.text().slice(0, 500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "⚠️⚠️ XOÁ resource đã deploy",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{camundaBase}}/v2/resources/{{resourceKey}}/deletion",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "resources",
+                "{{resourceKey}}",
+                "deletion"
+              ]
+            },
+            "description": "## Request PHÁ DỮ LIỆU mạnh nhất trong collection.\n\nXoá hẳn resource khỏi engine **và mọi process instance đang chạy của nó**. Không hoàn tác được.\n\nDùng `{{resourceKey}}` — biến RIÊNG, cố ý **không** nối vào `{{processDefinitionKey}}` để một cú bấm nhầm không xoá đúng quy trình mà các folder khác vừa lấy về. Phải tự điền key muốn xoá.\n\n404 `no resource found` = key không tồn tại → **không xoá gì cả**, an toàn."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('Status', pm.response.code, pm.response.text().slice(0, 200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 · Process instances — chạy thử một hồ sơ",
+      "description": "Khởi tạo và theo dõi instance. Biến control của dự án (`maHoSo`, `cap`…) đặt ở `variables` — nhớ nguyên tắc D3: Camunda chỉ giữ biến điều phối, KHÔNG giữ dữ liệu nghiệp vụ.",
+      "item": [
+        {
+          "name": "① Start instance",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/process-instances",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "process-instances"
+              ]
+            },
+            "description": "Dùng `processDefinitionId` (= bpmnProcessId) để engine tự lấy bản mới nhất, hoặc `processDefinitionKey` để ghim đúng một version.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"processDefinitionId\": \"{{bpmnProcessId}}\",\n  \"variables\": {\n    \"maHoSo\": \"HS-POSTMAN-001\",\n    \"cap\": \"CAP_VIEN\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "const r = pm.response.json();",
+                  "pm.collectionVariables.set('processInstanceKey', r.processInstanceKey);",
+                  "console.log('→ processInstanceKey =', r.processInstanceKey);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "② Search instances đang chạy",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/process-instances/search",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "process-instances",
+                "search"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filter\": {\n    \"state\": \"ACTIVE\"\n  },\n  \"page\": {\n    \"limit\": 50\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "const it = pm.response.json().items || [];",
+                  "console.log('Instance ACTIVE:', it.length);",
+                  "it.slice(0, 10).forEach(i => console.log('  -', i.processDefinitionId, i.processInstanceKey));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get instance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{camundaBase}}/v2/process-instances/{{processInstanceKey}}",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "process-instances",
+                "{{processInstanceKey}}"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sequence flows đã đi qua",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{camundaBase}}/v2/process-instances/{{processInstanceKey}}/sequence-flows",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "process-instances",
+                "{{processInstanceKey}}",
+                "sequence-flows"
+              ]
+            },
+            "description": "Instance đã rẽ nhánh nào — dùng khi routing không như mong đợi."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Element instances của instance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{camundaBase}}/v2/process-instances/{{processInstanceKey}}/statistics/element-instances",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "process-instances",
+                "{{processInstanceKey}}",
+                "statistics",
+                "element-instances"
+              ]
+            },
+            "description": "Instance đang ĐỨNG Ở ĐÂU."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Call hierarchy",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{camundaBase}}/v2/process-instances/{{processInstanceKey}}/call-hierarchy",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "process-instances",
+                "{{processInstanceKey}}",
+                "call-hierarchy"
+              ]
+            },
+            "description": "Cây parent/child khi có call activity."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Incidents của instance",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/process-instances/{{processInstanceKey}}/incidents/search",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "process-instances",
+                "{{processInstanceKey}}",
+                "incidents",
+                "search"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "⚠️ Cancel instance",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/process-instances/{{processInstanceKey}}/cancellation",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "process-instances",
+                "{{processInstanceKey}}",
+                "cancellation"
+              ]
+            },
+            "description": "**Huỷ vĩnh viễn.** Dọn instance rác sau khi test.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('Status', pm.response.code);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 · User tasks — bước phê duyệt",
+      "description": "Bước người dùng bấm nút. QTKHCN không dùng Tasklist mặc định mà render form riêng, nên các API này là thứ backend gọi qua `CamundaWorkflowTaskRuntime`.",
+      "item": [
+        {
+          "name": "① Search task đang chờ",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/user-tasks/search",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "user-tasks",
+                "search"
+              ]
+            },
+            "description": "Lọc thêm: `candidateGroup` (= mã vai trò trong roles.ts), `assignee`, `processInstanceKey`, `elementId`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filter\": {\n    \"state\": \"CREATED\"\n  },\n  \"page\": {\n    \"limit\": 50\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "const it = pm.response.json().items || [];",
+                  "console.log('Task đang chờ:', it.length);",
+                  "it.slice(0, 10).forEach(t => console.log('  -', t.elementId, '| key', t.userTaskKey, '| assignee', t.assignee));",
+                  "if (it.length) { pm.collectionVariables.set('userTaskKey', it[0].userTaskKey);",
+                  "                 console.log('→ userTaskKey =', it[0].userTaskKey); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Task theo instance vừa tạo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/user-tasks/search",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "user-tasks",
+                "search"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filter\": {\n    \"processInstanceKey\": \"{{processInstanceKey}}\",\n    \"state\": \"CREATED\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "const it = pm.response.json().items || [];",
+                  "if (it.length) pm.collectionVariables.set('userTaskKey', it[0].userTaskKey);",
+                  "console.log('Task của instance:', it.map(t => t.elementId).join(', '));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get task",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{camundaBase}}/v2/user-tasks/{{userTaskKey}}",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "user-tasks",
+                "{{userTaskKey}}"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Form của task",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{camundaBase}}/v2/user-tasks/{{userTaskKey}}/form",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "user-tasks",
+                "{{userTaskKey}}",
+                "form"
+              ]
+            },
+            "description": "Trả Camunda Form gắn qua `formKey`. Liên quan trực tiếp tới bug binding eForm — so cái này với form mà Action Studio nghĩ là đang gắn."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('Status', pm.response.code, pm.response.text().slice(0, 400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Biến nhìn thấy ở task",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/user-tasks/{{userTaskKey}}/variables/search",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "user-tasks",
+                "{{userTaskKey}}",
+                "variables",
+                "search"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "console.log(JSON.stringify(pm.response.json().items, null, 2));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Nhận việc (assign)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/user-tasks/{{userTaskKey}}/assignment",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "user-tasks",
+                "{{userTaskKey}}",
+                "assignment"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assignee\": \"demo\",\n  \"allowOverride\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('Status', pm.response.code);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Trả việc (unassign)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{camundaBase}}/v2/user-tasks/{{userTaskKey}}/assignee",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "user-tasks",
+                "{{userTaskKey}}",
+                "assignee"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('Status', pm.response.code);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "⚠️ Hoàn thành task",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/user-tasks/{{userTaskKey}}/completion",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "user-tasks",
+                "{{userTaskKey}}",
+                "completion"
+              ]
+            },
+            "description": "**Đẩy instance sang bước sau.** Biến trong `variables` là biến điều phối quyết định routing — tên phải khớp expression trên sequence flow của BPMN.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"variables\": {\n    \"ketQua\": \"DONG_Y\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('Status', pm.response.code, pm.response.text().slice(0, 300));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Lịch sử thao tác của task",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/user-tasks/{{userTaskKey}}/audit-logs/search",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "user-tasks",
+                "{{userTaskKey}}",
+                "audit-logs",
+                "search"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05 · DMN — bảng quyết định",
+      "description": "Dự án nối nhiều bảng DMN thành chuỗi (xem `DmnCamundaGateway`). Evaluate trực tiếp ở đây để tách bạch \"bảng sai\" với \"app truyền input sai\".",
+      "item": [
+        {
+          "name": "① Search decision definitions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/decision-definitions/search",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "decision-definitions",
+                "search"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filter\": {},\n  \"page\": {\n    \"limit\": 50\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "const it = pm.response.json().items || [];",
+                  "it.forEach(d => console.log('  -', d.decisionDefinitionId, 'v' + d.version, d.decisionDefinitionKey));",
+                  "if (it.length) { pm.collectionVariables.set('decisionDefinitionKey', it[0].decisionDefinitionKey);",
+                  "                 pm.collectionVariables.set('decisionDefinitionId', it[0].decisionDefinitionId); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "② Evaluate decision",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/decision-definitions/evaluation",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "decision-definitions",
+                "evaluation"
+              ]
+            },
+            "description": "Sửa `variables` cho khớp input column của bảng. Output rỗng thường là do thiếu đúng một input chứ không phải bảng hỏng.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decisionDefinitionId\": \"{{decisionDefinitionId}}\",\n  \"variables\": {\n    \"cap\": \"CAP_VIEN\",\n    \"giaTri\": 500000000\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "const r = pm.response.json();",
+                  "console.log('output =', JSON.stringify(r.output));",
+                  "(r.evaluatedDecisions || []).forEach(d => console.log('  bảng', d.decisionDefinitionId, '→', JSON.stringify(d.output)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DMN XML",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{camundaBase}}/v2/decision-definitions/{{decisionDefinitionKey}}/xml",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "decision-definitions",
+                "{{decisionDefinitionKey}}",
+                "xml"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Lịch sử evaluate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/decision-instances/search",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "decision-instances",
+                "search"
+              ]
+            },
+            "description": "Bảng đã chạy thật ra kết quả gì trong các instance trước.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filter\": {},\n  \"page\": {\n    \"limit\": 20\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "06 · Chẩn đoán — incidents & jobs",
+      "description": "Mở folder này khi hồ sơ \"đứng im không rõ lý do\". Gần như luôn là incident hoặc job không có worker.",
+      "item": [
+        {
+          "name": "① Incidents đang mở",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/incidents/search",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "incidents",
+                "search"
+              ]
+            },
+            "description": "**Nơi đầu tiên cần nhìn khi hồ sơ đứng im.**",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filter\": {\n    \"state\": \"ACTIVE\"\n  },\n  \"page\": {\n    \"limit\": 50\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "const it = pm.response.json().items || [];",
+                  "console.log('Incident ACTIVE:', it.length);",
+                  "it.forEach(i => console.log('  -', i.errorType, '|', i.errorMessage, '| instance', i.processInstanceKey));",
+                  "if (it.length) pm.collectionVariables.set('incidentKey', it[0].incidentKey);",
+                  "pm.test('Không có incident nào đang mở', () => pm.expect(it).to.be.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Resolve incident",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{camundaBase}}/v2/incidents/{{incidentKey}}/resolution",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "incidents",
+                "{{incidentKey}}",
+                "resolution"
+              ]
+            },
+            "description": "Chỉ resolve SAU KHI đã sửa nguyên nhân (biến sai, worker chưa chạy) — không thì incident quay lại ngay."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('Status', pm.response.code);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "② Jobs đang chờ worker",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/jobs/search",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "jobs",
+                "search"
+              ]
+            },
+            "description": "Job `CREATED` tồn đọng lâu = **không có worker nào đăng ký `type` đó**. So `type` ở đây với `@JobWorker(type=...)` trong backend.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filter\": {\n    \"state\": \"CREATED\"\n  },\n  \"page\": {\n    \"limit\": 50\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "const it = pm.response.json().items || [];",
+                  "const byType = {};",
+                  "it.forEach(j => byType[j.type] = (byType[j.type] || 0) + 1);",
+                  "console.log('Job chờ theo type:', JSON.stringify(byType, null, 2));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Thống kê job theo type",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/jobs/statistics/by-types",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "jobs",
+                "statistics",
+                "by-types"
+              ]
+            },
+            "description": "`filter.from` và `filter.to` **bắt buộc** (dù OpenAPI không đánh dấu required) — thiếu là 400 `No filter provided`. Hai biến thời gian do pre-request script của collection tự sinh, không phải điền tay.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filter\": {\n    \"from\": \"{{from7d}}\",\n    \"to\": \"{{nowIso}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Thống kê job toàn cục",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{camundaBase}}/v2/jobs/statistics/global?from={{from7d}}&to={{nowIso}}",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "jobs",
+                "statistics",
+                "global"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{from7d}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{nowIso}}"
+                }
+              ]
+            },
+            "description": "`from` và `to` là **query param bắt buộc** (ISO date-time) — thiếu là 400 `Required parameter 'from' is not present`."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Job lỗi",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/jobs/statistics/errors",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "jobs",
+                "statistics",
+                "errors"
+              ]
+            },
+            "description": "Khác hai request trên: `jobType` cũng **bắt buộc**. Đổi sang job type cần soi.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filter\": {\n    \"from\": \"{{from7d}}\",\n    \"to\": \"{{nowIso}}\",\n    \"jobType\": \"io.camunda.zeebe:userTask\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "⚠️ Activate job thủ công",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/jobs/activation",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "jobs",
+                "activation"
+              ]
+            },
+            "description": "**Cướp job khỏi worker thật.** Đổi `type` thành job type cần soi. Dùng để xem payload engine đang đưa cho worker.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"io.camunda.zeebe:userTask\",\n  \"maxJobsToActivate\": 1,\n  \"timeout\": 10000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "console.log(JSON.stringify(pm.response.json(), null, 2).slice(0, 1500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Complete job thủ công",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/jobs/{{jobKey}}/completion",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "jobs",
+                "{{jobKey}}",
+                "completion"
+              ]
+            },
+            "description": "Gỡ kẹt khi worker chưa viết xong. Đặt `{{jobKey}}` từ kết quả activation.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"variables\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('Status', pm.response.code);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "07 · Biến & element instances",
+      "description": "Kiểm chứng nguyên tắc D3: Camunda **chỉ** giữ biến điều phối (`maHoSo`, `cap`…). Thấy dữ liệu nghiệp vụ ở đây là vi phạm kiến trúc, không phải tính năng.",
+      "item": [
+        {
+          "name": "Search biến",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/variables/search",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "variables",
+                "search"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filter\": {\n    \"processInstanceKey\": \"{{processInstanceKey}}\"\n  },\n  \"page\": {\n    \"limit\": 100\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "const it = pm.response.json().items || [];",
+                  "it.forEach(v => console.log('  -', v.name, '=', String(v.value).slice(0, 120)));",
+                  "pm.test('Không có biến nào chứa dữ liệu nghiệp vụ nặng (D3)', function () {",
+                  "    const big = it.filter(v => String(v.value || '').length > 500);",
+                  "    pm.expect(big.map(v => v.name), 'biến quá lớn ⇒ nghi ngờ nhồi business data').to.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Element instances",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/element-instances/search",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "element-instances",
+                "search"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filter\": {\n    \"processInstanceKey\": \"{{processInstanceKey}}\"\n  },\n  \"page\": {\n    \"limit\": 100\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "const it = pm.response.json().items || [];",
+                  "it.forEach(e => console.log('  -', e.elementId, '|', e.type, '|', e.state));",
+                  "if (it.length) pm.collectionVariables.set('elementInstanceKey', it[0].elementInstanceKey);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "⚠️ Set biến trên element instance",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/element-instances/{{elementInstanceKey}}/variables",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "element-instances",
+                "{{elementInstanceKey}}",
+                "variables"
+              ]
+            },
+            "description": "**Sửa biến của instance đang chạy.** Cách nhanh nhất để test nhánh routing mà không phải chạy lại cả quy trình.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"variables\": {\n    \"cap\": \"CAP_TAP_DOAN\"\n  },\n  \"local\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('Status', pm.response.code);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Evaluate FEEL expression",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/expression/evaluation",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "expression",
+                "evaluation"
+              ]
+            },
+            "description": "Thử expression trên sequence flow TRƯỚC khi sửa BPMN. Sai cú pháp FEEL là nguyên nhân routing hỏng phổ biến nhất.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"expression\": \"= cap = \\\"CAP_VIEN\\\"\",\n  \"variables\": {\n    \"cap\": \"CAP_VIEN\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "console.log('Kết quả:', JSON.stringify(pm.response.json()));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "08 · Message & signal",
+      "description": "Đánh thức instance đang chờ message/signal catch event.",
+      "item": [
+        {
+          "name": "Publish message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/messages/publication",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "messages",
+                "publication"
+              ]
+            },
+            "description": "`correlationKey` phải khớp expression correlation trong BPMN.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"ten-message\",\n  \"correlationKey\": \"{{bpmnProcessId}}\",\n  \"timeToLive\": 60000,\n  \"variables\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('Status', pm.response.code, pm.response.text().slice(0, 300));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Correlate message (chờ kết quả)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/messages/correlation",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "messages",
+                "correlation"
+              ]
+            },
+            "description": "Khác `publication`: đợi và trả về instance nào đã nhận.\n\n**404 `Expected to find subscription` là câu trả lời HỢP LỆ** — không instance nào đang chờ message tên đó. Chạy `Message subscriptions đang chờ` trước để lấy đúng tên thay cho `ten-message`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"ten-message\",\n  \"correlationKey\": \"{{bpmnProcessId}}\",\n  \"variables\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('Status', pm.response.code, pm.response.text().slice(0, 300));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Broadcast signal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/signals/broadcast",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "signals",
+                "broadcast"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"signalName\": \"ten-signal\",\n  \"variables\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log('Status', pm.response.code);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Message subscriptions đang chờ",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{camundaBase}}/v2/message-subscriptions/search",
+              "host": [
+                "{{camundaBase}}"
+              ],
+              "path": [
+                "v2",
+                "message-subscriptions",
+                "search"
+              ]
+            },
+            "description": "Instance đang chờ message NÀO — kiểm tra trước khi publish để khỏi bắn sai tên.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "const it = pm.response.json().items || [];",
+                  "it.forEach(s => console.log('  - chờ message:', s.messageName, '| key', s.correlationKey));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "09 · QTKHCN backend (:8090)",
+      "description": "API của app. **Mọi request cần header `X-QTKHCN-Dev-Key`** — collection tự chèn qua pre-request script, chỉ cho request tới `{{appBase}}`, không rò key sang Camunda.",
+      "item": [
+        {
+          "name": "A · Quy trình & Đồng bộ",
+          "description": "Use case chính. Chạy 1 → 2 → 3 → 4 theo thứ tự.",
+          "item": [
+            {
+              "name": "① Catalog TRƯỚC đồng bộ",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{appBase}}/api/process-definitions",
+                  "host": [
+                    "{{appBase}}"
+                  ],
+                  "path": [
+                    "api",
+                    "process-definitions"
+                  ]
+                },
+                "description": "Baseline. Thiếu header dev key ⇒ 401 (DevApiKeyFilter) — collection tự chèn."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "const b = pm.response.json();",
+                      "pm.collectionVariables.set('catalogCountBefore', b.length);",
+                      "console.log('Catalog trước:', b.length, 'quy trình');",
+                      "if (b.length) { pm.collectionVariables.set('catalogBpmnProcessId', b[0].bpmnProcessId);",
+                      "                pm.collectionVariables.set('catalogId', b[0].id); }"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "② ⚠️ ĐỒNG BỘ TỪ CAMUNDA (ghi dữ liệu)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-QTKHCN-Actor",
+                    "value": "{{actor}}",
+                    "description": "RFC 5987: UTF-8''<percent-encoded>. Bỏ trống ⇒ importedBy = 'dev-api-key'."
+                  }
+                ],
+                "url": {
+                  "raw": "{{appBase}}/api/process-definitions/sync-from-camunda",
+                  "host": [
+                    "{{appBase}}"
+                  ],
+                  "path": [
+                    "api",
+                    "process-definitions",
+                    "sync-from-camunda"
+                  ]
+                },
+                "description": "**Request trung tâm.** Body rỗng.\n\nChạy lần 2 phải cho `imported = 0` — idempotency theo `camundaProcessDefinitionKey`.\n\nLỗi TỪNG quy trình nằm trong `failures[]` mà HTTP vẫn 200. Chỉ khi bước QUÉT engine hỏng mới trả HTTP lỗi."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "const r = pm.response.json();",
+                      "console.log('scanned      =', r.scanned);",
+                      "console.log('imported     =', r.imported);",
+                      "console.log('alreadyKnown =', r.alreadyKnown);",
+                      "console.log('failures     =', JSON.stringify(r.failures));",
+                      "console.log('warnings     =', JSON.stringify(r.warnings));",
+                      "r.importedProcesses.forEach(p => console.log('  + nhập:', p.bpmnProcessId, 'v' + p.version, p.newCatalog ? '(catalog MỚI)' : '(version mới)'));",
+                      "pm.test('Đủ 6 trường ProcessSyncResponse', () =>",
+                      "    ['scanned','imported','alreadyKnown','importedProcesses','failures','warnings'].forEach(k => pm.expect(r).to.have.property(k)));",
+                      "pm.test('scanned = imported + alreadyKnown + failures', () =>",
+                      "    pm.expect(r.imported + r.alreadyKnown + r.failures.length).to.eql(r.scanned));",
+                      "pm.test('Không quy trình nào nhập lỗi', () =>",
+                      "    pm.expect(r.failures, JSON.stringify(r.failures)).to.be.an('array').that.is.empty);",
+                      "if (r.importedProcesses.length) pm.collectionVariables.set('importedBpmnProcessId', r.importedProcesses[0].bpmnProcessId);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "③ Catalog SAU đồng bộ",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{appBase}}/api/process-definitions",
+                  "host": [
+                    "{{appBase}}"
+                  ],
+                  "path": [
+                    "api",
+                    "process-definitions"
+                  ]
+                },
+                "description": ""
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "const after = pm.response.json();",
+                      "const before = Number(pm.collectionVariables.get('catalogCountBefore'));",
+                      "console.log('Catalog sau:', after.length, '(trước:', before + ')');",
+                      "pm.test('Catalog không giảm', () => pm.expect(after.length).to.be.at.least(before));",
+                      "const id = pm.collectionVariables.get('importedBpmnProcessId');",
+                      "if (id) pm.test('Đã có trong catalog: ' + id, () => pm.expect(after.map(p => p.bpmnProcessId)).to.include(id));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "④ Chọn được khi gửi duyệt chưa?",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{appBase}}/api/process-definitions/selectable",
+                  "host": [
+                    "{{appBase}}"
+                  ],
+                  "path": [
+                    "api",
+                    "process-definitions",
+                    "selectable"
+                  ]
+                },
+                "description": "**Mục đích cuối của use case.** Hút về mà không chọn được thì coi như chưa xong."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "const l = pm.response.json();",
+                      "console.log('Chọn được:', l.map(p => p.bpmnProcessId).join(', '));",
+                      "const id = pm.collectionVariables.get('importedBpmnProcessId');",
+                      "if (id) pm.test('Chọn được: ' + id, () => pm.expect(l.map(p => p.bpmnProcessId)).to.include(id));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Đối soát một quy trình (readiness)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{appBase}}/api/process-definitions/by-bpmn-process-id/{{catalogBpmnProcessId}}/readiness",
+                  "host": [
+                    "{{appBase}}"
+                  ],
+                  "path": [
+                    "api",
+                    "process-definitions",
+                    "by-bpmn-process-id",
+                    "{{catalogBpmnProcessId}}",
+                    "readiness"
+                  ]
+                },
+                "description": "Quy trình nhập về thiếu form / thiếu luật / service task không worker — hiện ở đây. Importer CỐ Ý không lint lúc nhập, chẩn đoán dồn về màn này.\n\nDùng `{{catalogBpmnProcessId}}` (lấy từ CATALOG của app) chứ **không** phải `{{bpmnProcessId}}` (lấy từ ENGINE) — quy trình có trên engine mà chưa đồng bộ về thì endpoint này trả 404, và đó là đúng.\n\n## 404 mà body KHÔNG có trường `message`?\n\nĐó là 404 của Spring vì **không khớp route**, nghĩa là backend đang chạy JAR CŨ chưa có endpoint này — không phải quy trình thiếu dữ liệu. Phân biệt:\n\n| Body | Nghĩa |\n|---|---|\n| `{\"message\":\"Không tìm thấy…\"}` | Route có, dữ liệu không có ⇒ lỗi nghiệp vụ thật |\n| `{\"timestamp\":…,\"error\":\"Not Found\"}` | Route KHÔNG có ⇒ **JAR cũ, cần build + restart backend** |\n\nKiểm nhanh: gọi thử một đường dẫn bịa (`.../khong-ton-tai`). Ra cùng hình dạng body thì đúng là JAR cũ."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "console.log(JSON.stringify(pm.response.json(), null, 2).slice(0, 2000));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Chi tiết theo bpmnProcessId",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{appBase}}/api/process-definitions/by-bpmn-process-id/{{bpmnProcessId}}",
+                  "host": [
+                    "{{appBase}}"
+                  ],
+                  "path": [
+                    "api",
+                    "process-definitions",
+                    "by-bpmn-process-id",
+                    "{{bpmnProcessId}}"
+                  ]
+                },
+                "description": ""
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "const d = pm.response.json(); pm.collectionVariables.set('catalogId', d.id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Các version của một quy trình",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{appBase}}/api/process-definitions/{{catalogId}}/versions",
+                  "host": [
+                    "{{appBase}}"
+                  ],
+                  "path": [
+                    "api",
+                    "process-definitions",
+                    "{{catalogId}}",
+                    "versions"
+                  ]
+                },
+                "description": "Kiểm `source`: `EXTERNAL` = hút từ Camunda, khác = deploy qua app."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "const v = pm.response.json();",
+                      "v.forEach(x => console.log('  - v' + x.camundaVersion, '|', x.source, '|', x.status, '| by', x.importedBy));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Instance đang chạy (toàn bộ)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{appBase}}/api/process-definitions/running-instances",
+                  "host": [
+                    "{{appBase}}"
+                  ],
+                  "path": [
+                    "api",
+                    "process-definitions",
+                    "running-instances"
+                  ]
+                },
+                "description": ""
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Import BPMN qua app (multipart)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-QTKHCN-Actor",
+                    "value": "{{actor}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{appBase}}/api/process-definitions/import",
+                  "host": [
+                    "{{appBase}}"
+                  ],
+                  "path": [
+                    "api",
+                    "process-definitions",
+                    "import"
+                  ]
+                },
+                "description": "**Đường tạo BPMN thứ hai** (đối trọng với Đồng bộ). Ghi `source` khác `EXTERNAL`. Field name là `file`.",
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": "c:/Users/phuctd7/ql-nvkhcn/backend/src/main/resources/processes/rd0101.bpmn"
+                    }
+                  ]
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "console.log('Status', pm.response.code, pm.response.text().slice(0, 600));"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "B · Action Studio & Task",
+          "description": "Luật hiển thị nút. Sau khi đồng bộ, `DeployedProcessPolicyScaffolder` tự sinh luật AFTER_COMMIT — nhưng kết quả KHÔNG về response đồng bộ, phải xem ở đây.",
+          "item": [
+            {
+              "name": "Cấu hình Action Studio",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{appBase}}/api/action-studio",
+                  "host": [
+                    "{{appBase}}"
+                  ],
+                  "path": [
+                    "api",
+                    "action-studio"
+                  ]
+                },
+                "description": ""
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Đối soát BPMN ↔ luật",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{appBase}}/api/action-studio/reconcile?processCode={{bpmnProcessId}}",
+                  "host": [
+                    "{{appBase}}"
+                  ],
+                  "path": [
+                    "api",
+                    "action-studio",
+                    "reconcile"
+                  ],
+                  "query": [
+                    {
+                      "key": "processCode",
+                      "value": "{{bpmnProcessId}}"
+                    }
+                  ]
+                },
+                "description": "Chỗ nhìn ra quy trình vừa hút về đã có luật hành động chưa.\n\n`processCode` là **bắt buộc** — thiếu là 400 Bad Request."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "console.log(JSON.stringify(pm.response.json(), null, 2).slice(0, 2000));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Sinh luật còn thiếu từ BPMN",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-QTKHCN-Actor",
+                    "value": "{{actor}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{appBase}}/api/action-studio/reconcile/{{bpmnProcessId}}/scaffold",
+                  "host": [
+                    "{{appBase}}"
+                  ],
+                  "path": [
+                    "api",
+                    "action-studio",
+                    "reconcile",
+                    "{{bpmnProcessId}}",
+                    "scaffold"
+                  ]
+                },
+                "description": "Chạy lại thủ công khi scaffold tự động lúc đồng bộ thất bại. Tất định — chạy lại vô hại."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "console.log('createdCount =', pm.response.json().createdCount);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Mô phỏng hành động",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{appBase}}/api/action-studio/simulate",
+                  "host": [
+                    "{{appBase}}"
+                  ],
+                  "path": [
+                    "api",
+                    "action-studio",
+                    "simulate"
+                  ]
+                },
+                "description": "**Cả 7 trường đều bắt buộc** (`SimulationRequest`): surface, processCode, taskDefinitionKey, dossierStatus, roleCodes[], permissions[], isAdmin. Thiếu bất kỳ trường nào là 400.\n\n**Giá trị hợp lệ (kiểm từ `ActionStudioService`):**\n\n- `surface`: `DOSSIER_DETAIL` · `WORKLIST` · `MOBILE` · `ACTION_STUDIO`\n- `dossierStatus`: `draft` · `processing` · `approved` · `rejected` — **chữ thường**, không phải mã kiểu `CHO_DUYET`\n\nĐổi `roleCodes` để xem cùng một bước thì vai trò khác nhau thấy nút gì — cách test RBAC fail-closed mà không phải đăng nhập nhiều tài khoản.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"surface\": \"DOSSIER_DETAIL\",\n  \"processCode\": \"{{bpmnProcessId}}\",\n  \"taskDefinitionKey\": \"Activity_XetDuyet\",\n  \"dossierStatus\": \"processing\",\n  \"roleCodes\": [\n    \"CQ_KHCN\"\n  ],\n  \"permissions\": [],\n  \"isAdmin\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "console.log('Status', pm.response.code, pm.response.text().slice(0, 800));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Nút khả dụng của một task",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-QTKHCN-User-Id",
+                    "value": "{{userId}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{appBase}}/api/tasks/{{userTaskKey}}/available-actions",
+                  "host": [
+                    "{{appBase}}"
+                  ],
+                  "path": [
+                    "api",
+                    "tasks",
+                    "{{userTaskKey}}",
+                    "available-actions"
+                  ]
+                },
+                "description": "**Bắt buộc header `X-QTKHCN-User-Id`** — thiếu là 400 `IDENTITY_REQUIRED`, KHÔNG phải 401. Header này khác `X-QTKHCN-Actor` (chỉ dùng ghi audit).\n\nRBAC fail-closed: danh sách rỗng = vai trò của user này không được bấm gì ở bước đó."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "console.log(JSON.stringify(pm.response.json(), null, 2));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "⚠️ Bấm nút trên task",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-QTKHCN-User-Id",
+                    "value": "{{userId}}"
+                  },
+                  {
+                    "key": "X-QTKHCN-Actor",
+                    "value": "{{actor}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{appBase}}/api/tasks/{{userTaskKey}}/actions",
+                  "host": [
+                    "{{appBase}}"
+                  ],
+                  "path": [
+                    "api",
+                    "tasks",
+                    "{{userTaskKey}}",
+                    "actions"
+                  ]
+                },
+                "description": "**Đẩy hồ sơ sang bước sau qua app** — khác với complete thẳng ở folder 04: đường này đi qua luật hành động và RBAC.\n\n`ExecuteActionRequest` bắt buộc: requestId (UUID — `{{$guid}}` tự sinh mỗi lần bấm, dùng chống double-submit), taskKey, actionCode, formData (object), expectedTaskState. Trả **202 Accepted**, không phải 200.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"requestId\": \"{{$guid}}\",\n  \"taskKey\": \"{{userTaskKey}}\",\n  \"actionCode\": \"DONG_Y\",\n  \"comment\": \"test qua Postman\",\n  \"formData\": {},\n  \"expectedTaskState\": \"CREATED\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "console.log('Status', pm.response.code, pm.response.text().slice(0, 500));"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "C · Các phân hệ khác",
+          "description": "Không thuộc use case đồng bộ nhưng hay cần khi test end-to-end.",
+          "item": [
+            {
+              "name": "Draft quy trình",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{appBase}}/api/process-definition-drafts",
+                  "host": [
+                    "{{appBase}}"
+                  ],
+                  "path": [
+                    "api",
+                    "process-definition-drafts"
+                  ]
+                },
+                "description": "Tự lưu `{{draftId}}` cho request \"Phiên test BPMN\" phía dưới."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "const d = pm.response.json() || [];",
+                      "console.log('Draft:', d.length);",
+                      "if (d.length) { pm.collectionVariables.set('draftId', d[0].id);",
+                      "                console.log('→ draftId =', d[0].id); }",
+                      "else console.log('Chưa có draft ⇒ request Phiên test BPMN sẽ không chạy được.');"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Ma trận phê duyệt — rules",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{appBase}}/api/approval-matrix/rules",
+                  "host": [
+                    "{{appBase}}"
+                  ],
+                  "path": [
+                    "api",
+                    "approval-matrix",
+                    "rules"
+                  ]
+                },
+                "description": ""
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Ma trận phê duyệt — resolve",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{appBase}}/api/approval-matrix/resolve",
+                  "host": [
+                    "{{appBase}}"
+                  ],
+                  "path": [
+                    "api",
+                    "approval-matrix",
+                    "resolve"
+                  ]
+                },
+                "description": "`slot` (không rỗng) và `context` (object, không null) **bắt buộc**; `ngay` tuỳ chọn (`yyyy-MM-dd`, để lấy đúng version rule hiệu lực tại ngày đó).\n\nĐiều kiện nghiệp vụ nằm TRONG `context`, không phải ở cấp gốc.\n\n`{{slotCode}}` do request `Slot phê duyệt` phía trên tự điền — slot không có thật là 404 `Không tìm thấy slot`.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"slot\": \"{{slotCode}}\",\n  \"ngay\": \"2026-07-28\",\n  \"context\": {\n    \"cap\": \"CAP_VIEN\",\n    \"giaTri\": 500000000\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "console.log('Status', pm.response.code, pm.response.text().slice(0, 600));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Slot phê duyệt",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{appBase}}/api/approval-matrix/slots",
+                  "host": [
+                    "{{appBase}}"
+                  ],
+                  "path": [
+                    "api",
+                    "approval-matrix",
+                    "slots"
+                  ]
+                },
+                "description": "Tự lưu `{{slotCode}}` cho request `resolve` phía dưới."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "const s = pm.response.json() || [];",
+                      "console.log('Slot:', s.map(x => x.code).join(', '));",
+                      "const active = s.find(x => x.trangThai === 'active') || s[0];",
+                      "if (active) { pm.collectionVariables.set('slotCode', active.code);",
+                      "              console.log('→ slotCode =', active.code); }"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "DMN rules",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{appBase}}/api/dmn-rules",
+                  "host": [
+                    "{{appBase}}"
+                  ],
+                  "path": [
+                    "api",
+                    "dmn-rules"
+                  ]
+                },
+                "description": ""
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "eForm — danh sách",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{appBase}}/api/eform",
+                  "host": [
+                    "{{appBase}}"
+                  ],
+                  "path": [
+                    "api",
+                    "eform"
+                  ]
+                },
+                "description": "So `key` ở đây với `formKey` trong BPMN (folder 04) để soi bug binding eForm."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                      "console.log('eForm keys:', (pm.response.json() || []).map(f => f.key).join(', '));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Service tasks",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{appBase}}/api/service-tasks",
+                  "host": [
+                    "{{appBase}}"
+                  ],
+                  "path": [
+                    "api",
+                    "service-tasks"
+                  ]
+                },
+                "description": ""
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Service task bindings",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{appBase}}/api/service-tasks/bindings",
+                  "host": [
+                    "{{appBase}}"
+                  ],
+                  "path": [
+                    "api",
+                    "service-tasks",
+                    "bindings"
+                  ]
+                },
+                "description": ""
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Hệ thống tích hợp",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{appBase}}/api/integration-systems",
+                  "host": [
+                    "{{appBase}}"
+                  ],
+                  "path": [
+                    "api",
+                    "integration-systems"
+                  ]
+                },
+                "description": ""
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Giám sát quy trình",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{appBase}}/api/process-monitor",
+                  "host": [
+                    "{{appBase}}"
+                  ],
+                  "path": [
+                    "api",
+                    "process-monitor"
+                  ]
+                },
+                "description": ""
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Phiên test BPMN",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-QTKHCN-Actor",
+                    "value": "{{actor}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{appBase}}/api/bpmn-tests",
+                  "host": [
+                    "{{appBase}}"
+                  ],
+                  "path": [
+                    "api",
+                    "bpmn-tests"
+                  ]
+                },
+                "description": "Chạy quy trình trên engine phụ `bpmn-test-orchestration` (:8092), không đụng engine dev chính.\n\n**Nhận `draftId` (UUID của DRAFT), không phải bpmnProcessId** — lấy từ request \"Draft quy trình\" ngay phía trên (nó tự lưu vào `{{draftId}}`). Chưa có draft nào thì request này không chạy được.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"draftId\": \"{{draftId}}\",\n  \"revision\": 0,\n  \"variables\": {},\n  \"ttlSeconds\": 600\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "console.log('Status', pm.response.code, pm.response.text().slice(0, 500));"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Biến thời gian cho các request thống kê job (from/to là bắt buộc).",
+          "const now = new Date();",
+          "pm.collectionVariables.set('nowIso', now.toISOString());",
+          "pm.collectionVariables.set('from7d', new Date(now.getTime() - 7 * 864e5).toISOString());",
+          "",
+          "// Dev API key CHỈ gửi cho backend app, không bao giờ rò sang Camunda.",
+          "const raw = pm.request.url.toString();",
+          "const appBase = pm.variables.replaceIn('{{appBase}}');",
+          "if (raw.indexOf('{{appBase}}') === 0 || (appBase && raw.indexOf(appBase) === 0)) {",
+          "    pm.request.headers.upsert({ key: 'X-QTKHCN-Dev-Key',",
+          "                                value: pm.variables.replaceIn('{{devApiKey}}') });",
+          "} else {",
+          "    // Camunda: chỉ gắn Bearer khi đã bật OIDC và điền biến {{bearer}}.",
+          "    const t = pm.variables.replaceIn('{{bearer}}');",
+          "    if (t && t !== '{{bearer}}') pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + t });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "processDefinitionKey",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bpmnProcessId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "processInstanceKey",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userTaskKey",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "elementInstanceKey",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "incidentKey",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "jobKey",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "decisionDefinitionKey",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "decisionDefinitionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "catalogId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "draftId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "slotCode",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "catalogBpmnProcessId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "resourceKey",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "nowIso",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "from7d",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "catalogCountBefore",
+      "value": "0",
+      "type": "string"
+    },
+    {
+      "key": "importedBpmnProcessId",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

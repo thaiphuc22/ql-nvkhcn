@@ -1,0 +1,54 @@
+.wl-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.wl-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  h2 {
+    margin: 0;
+  }
+}
+
+.wl-alert {
+  margin-bottom: 0;
+}
+
+.wl-stats {
+  margin: 0;
+}
+
+.wl-stat-card {
+  background: var(--vht-surface);
+  border: 1px solid var(--vht-border);
+  border-radius: var(--vht-radius);
+  padding: 14px 16px;
+}
+
+.wl-stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.wl-stat-value--text {
+  font-size: 18px;
+}
+
+.wl-stat-label {
+  color: var(--vht-ink-2);
+  font-size: 13px;
+}
+
+.wl-title-cell {
+  font-weight: 600;
+}
+
+.wl-subtitle-cell {
+  color: var(--vht-ink-2);
+  font-size: 12px;
+}

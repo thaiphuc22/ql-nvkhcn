@@ -1,0 +1,174 @@
+@if (!selectedProcess()) {
+  <nz-empty nzNotFoundContent="Chưa có metadata service task để đối soát."></nz-empty>
+} @else {
+  <div class="stbt-wrap">
+    <nz-alert
+      nzType="info"
+      nzShowIcon
+      nzMessage="Đối soát theo metadata service task mock"
+      nzDescription="Nguồn BPMN hiện tại là PROCESS_SERVICE_TASKS trong data mock; phase sau có thể thay bằng parser BPMN XML thật mà vẫn giữ contract binding processCode + processVersion + taskDefinitionKey."
+    ></nz-alert>
+
+    <div class="stbt-stats">
+      <div class="stbt-stat-card">
+        <div class="stbt-stat-value">{{ health().processCount }}</div>
+        <div class="stbt-stat-label">Quy trình đối soát</div>
+      </div>
+      <div class="stbt-stat-card">
+        <div class="stbt-stat-value" style="color:#1677ff">{{ health().taskCount }}</div>
+        <div class="stbt-stat-label">Service task BPMN</div>
+      </div>
+      <div class="stbt-stat-card">
+        <div class="stbt-stat-value" [style.color]="health().missingCount ? '#cf1322' : undefined">{{ health().missingCount }}</div>
+        <div class="stbt-stat-label">Thiếu binding</div>
+      </div>
+      @let notReadyCount = health().unfilledCount + health().genericCount + health().orphanCount;
+      <div class="stbt-stat-card">
+        <div class="stbt-stat-value" [style.color]="notReadyCount ? '#fa8c16' : undefined">{{ notReadyCount }}</div>
+        <div class="stbt-stat-label">Chưa sẵn sàng</div>
+      </div>
+    </div>
+
+    <div class="stbt-card">
+      <div class="stbt-card-header">
+        <span nz-typography nzType="secondary" class="stbt-card-title">Binding service task</span>
+        <nz-select
+          class="stbt-process-select"
+          [ngModel]="selectedProcessKey()"
+          (ngModelChange)="selectedProcessKey.set($event)"
+        >
+          @for (opt of processOptions; track opt.value) {
+            <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      @let process = selectedProcess()!;
+      <div class="stbt-tags">
+        <nz-tag nzColor="blue">{{ process.bpmnProcessId }}</nz-tag>
+        <nz-tag>{{ process.status }}</nz-tag>
+        <nz-tag [nzColor]="process.criticalCount ? 'red' : 'default'">{{ process.criticalCount }} critical</nz-tag>
+      </div>
+
+      <nz-table #bindingTable nzSize="small" [nzData]="rows()" [nzScroll]="{ x: '1450px' }" [nzShowPagination]="false">
+        <thead>
+          <tr>
+            <th nzWidth="290px">Service task BPMN</th>
+            <th nzWidth="160px">Trạng thái</th>
+            <th nzWidth="230px">Job type</th>
+            <th nzWidth="300px">Cấu hình đã gắn</th>
+            <th nzWidth="120px">Version</th>
+            <th nzWidth="140px">Binding</th>
+            <th nzWidth="210px">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of bindingTable.data; track row.id) {
+            <tr>
+              <td>
+                <div class="stbt-task-name">
+                  <strong>{{ row.taskName }}</strong>
+                  @if (row.critical) {
+                    <nz-tag nzColor="red">Critical</nz-tag>
+                  } @else {
+                    <nz-tag>Non-critical</nz-tag>
+                  }
+                </div>
+                <div class="stbt-task-key">{{ row.taskDefinitionKey }}</div>
+              </td>
+              <td>
+                @let meta = statusMeta[row.status];
+                <span nz-tooltip [nzTooltipTitle]="row.reason">
+                  <nz-tag [nzColor]="meta.color">{{ meta.label }}</nz-tag>
+                </span>
+              </td>
+              <td>
+                <div>{{ row.jobType }}</div>
+                <div class="stbt-hint-text">{{ row.implementationHint ?? '-' }}</div>
+              </td>
+              <td>
+                @if (!row.definition) {
+                  <span class="stbt-muted">Chưa gắn</span>
+                } @else {
+                  @let defMeta = definitionStatusMeta[row.definition.status];
+                  <div><strong>{{ row.definition.name }}</strong></div>
+                  <div class="stbt-def-sub">
+                    <span class="stbt-hint-text">{{ row.definition.code }}</span>
+                    <nz-tag [nzColor]="defMeta.color">{{ defMeta.label }}</nz-tag>
+                  </div>
+                }
+              </td>
+              <td>
+                @if (row.activeVersion) {
+                  <nz-tag nzColor="green">v{{ row.activeVersion.versionNo }}</nz-tag>
+                } @else {
+                  <span class="stbt-muted">-</span>
+                }
+              </td>
+              <td>
+                @if (row.binding) {
+                  <nz-tag [nzColor]="row.binding.bindingStatus === 'ACTIVE' ? 'green' : 'orange'">{{ row.binding.bindingStatus }}</nz-tag>
+                  <div class="stbt-hint-text">{{ row.binding.updatedAt }}</div>
+                } @else {
+                  <span class="stbt-muted">-</span>
+                }
+              </td>
+              <td>
+                @if (rowCanBind(row)) {
+                  <button nz-button [nzType]="row.binding ? 'default' : 'primary'" nzSize="small" (click)="openBindModal(row)">
+                    <span nz-icon [nzType]="row.binding ? 'swap' : 'link'"></span>
+                    {{ row.binding ? 'Đổi cấu hình' : 'Gắn cấu hình' }}
+                  </button>
+                }
+                @if (row.binding) {
+                  <button nz-button nzDanger nzSize="small" class="stbt-action-btn" (click)="unbind(row)">
+                    <span nz-icon nzType="disconnect"></span>
+                    Bỏ gắn
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </nz-table>
+    </div>
+  </div>
+
+  <nz-modal
+    [nzVisible]="!!bindingRow()"
+    [nzTitle]="bindingRow()?.binding ? 'Đổi cấu hình service task' : 'Gắn cấu hình service task'"
+    (nzOnCancel)="closeBindModal()"
+    (nzOnOk)="confirmBind()"
+    nzOkText="Lưu binding"
+    nzCancelText="Hủy"
+    [nzOkDisabled]="!selectedDefinitionId()"
+  >
+    <ng-container *nzModalContent>
+      @let row = bindingRow();
+      @if (row) {
+        <nz-alert
+          [nzType]="row.critical ? 'warning' : 'info'"
+          nzShowIcon
+          [nzMessage]="row.taskName"
+          [nzDescription]="row.processCode + ' v' + row.processVersion + ' / ' + row.taskDefinitionKey + ' / ' + row.jobType"
+          class="stbt-modal-alert"
+        ></nz-alert>
+      }
+      <nz-select
+        nzShowSearch
+        class="stbt-block"
+        nzPlaceHolder="Chọn cấu hình active hoặc ready"
+        [ngModel]="selectedDefinitionId()"
+        (ngModelChange)="selectedDefinitionId.set($event)"
+      >
+        @for (opt of bindableDefinitionOptions(); track opt.value) {
+          <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+        }
+      </nz-select>
+      <span nz-typography nzType="secondary" class="stbt-modal-hint">
+        Nếu chọn definition chưa active, hệ thống vẫn lưu binding nhưng reconcile sẽ báo "Chưa sẵn sàng" cho tới khi
+        config version được active.
+      </span>
+    </ng-container>
+  </nz-modal>
+}

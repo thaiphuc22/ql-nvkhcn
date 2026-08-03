@@ -1,0 +1,63 @@
+.condb-group {
+  padding: 12px;
+  border: 1px solid var(--vht-border, #eee);
+  border-radius: 8px;
+}
+.condb-group--nested {
+  margin-bottom: 8px;
+  background: var(--vht-surface-2, #fafafa);
+}
+.condb-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.condb-group-head-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.condb-items {
+  padding-left: 4px;
+}
+.condb-leaf {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.condb-nested {
+  margin-bottom: 8px;
+}
+.condb-field {
+  min-width: 180px;
+}
+.condb-operator {
+  min-width: 120px;
+}
+.condb-value {
+  min-width: 180px;
+}
+.condb-value--wide {
+  min-width: 220px;
+}
+.condb-value--narrow {
+  width: 110px;
+}
+.condb-range {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.condb-actions {
+  display: flex;
+  gap: 8px;
+}
+.condb-preview {
+  margin-top: 8px;
+  font-size: 12px;
+}

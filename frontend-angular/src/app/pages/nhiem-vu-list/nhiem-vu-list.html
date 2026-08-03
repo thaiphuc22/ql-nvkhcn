@@ -1,0 +1,58 @@
+<div class="nvl-page">
+  <div class="nvl-header">
+    <div>
+      <h2 nz-typography>Nhiệm vụ KHCN</h2>
+      <div class="nvl-subtitle">Quản lý thực thể nhiệm vụ xuyên suốt các giai đoạn và hồ sơ nghiệp vụ.</div>
+    </div>
+    <div class="nvl-actions">
+      <button nz-button (click)="openDossiers()"><span nz-icon nzType="folder-open"></span> Danh sách hồ sơ</button>
+      <button nz-button nzType="primary" (click)="create()"><span nz-icon nzType="plus"></span> Tạo nhiệm vụ mới</button>
+      <button nz-button (click)="reload()" [nzLoading]="loading()"><span nz-icon nzType="reload"></span></button>
+    </div>
+  </div>
+
+  @if (errorMessage()) {
+    <nz-alert nzType="error" nzShowIcon [nzMessage]="errorMessage()" class="nvl-alert"></nz-alert>
+  }
+
+  <div nz-row [nzGutter]="14" class="nvl-stats">
+    <div nz-col [nzXs]="12" [nzMd]="6"><div class="nvl-stat"><strong>{{ stats().total }}</strong><span>Tổng nhiệm vụ</span></div></div>
+    <div nz-col [nzXs]="12" [nzMd]="6"><div class="nvl-stat blue"><strong>{{ stats().coSo }}</strong><span>Cấp Cơ sở</span></div></div>
+    <div nz-col [nzXs]="12" [nzMd]="6"><div class="nvl-stat purple"><strong>{{ stats().tapDoan }}</strong><span>Cấp Tập đoàn</span></div></div>
+    <div nz-col [nzXs]="12" [nzMd]="6"><div class="nvl-stat red"><strong>{{ stats().hoSo }}</strong><span>Tổng hồ sơ</span></div></div>
+  </div>
+
+  <div class="nvl-filters">
+    <nz-input-group nzPrefixIcon="search" class="nvl-search">
+      <input nz-input placeholder="Tìm mã NV / tên / chủ nhiệm..." [ngModel]="query()" (ngModelChange)="query.set($event)" />
+    </nz-input-group>
+    <nz-select nzAllowClear nzPlaceHolder="Tất cả cấp" [ngModel]="capFilter()" (ngModelChange)="capFilter.set($event)">
+      <nz-option nzValue="CS" nzLabel="Cơ sở"></nz-option>
+      <nz-option nzValue="TD" nzLabel="Tập đoàn"></nz-option>
+    </nz-select>
+    <nz-select nzAllowClear nzPlaceHolder="Tất cả giai đoạn" [ngModel]="stageFilter()" (ngModelChange)="stageFilter.set($event)">
+      @for (option of stageOptions; track option.value) { <nz-option [nzValue]="option.value" [nzLabel]="option.label"></nz-option> }
+    </nz-select>
+    <span class="nvl-count">{{ rows().length }}/{{ rawList().length }} nhiệm vụ</span>
+  </div>
+
+  <nz-table #table [nzData]="rows()" [nzLoading]="loading()" [nzPageSize]="20" nzTableLayout="fixed" [nzScroll]="{ y: '56vh' }">
+    <thead><tr><th nzWidth="140px">Mã NV KHCN</th><th>Tên nhiệm vụ</th><th nzWidth="100px">Cấp</th><th nzWidth="155px">Dự toán</th><th nzWidth="135px">Giai đoạn</th><th nzWidth="90px">Số hồ sơ</th><th nzWidth="70px"></th></tr></thead>
+    <tbody>
+      @for (row of table.data; track row.ma) {
+        <tr class="nvl-row" (click)="open(row)">
+          <td><code>{{ row.ma }}</code></td>
+          <td><div class="nvl-title">{{ row.ten }}</div><div class="nvl-meta">{{ row.chuNhiem }} · {{ row.donViChuTri }}</div></td>
+          <td>{{ capLabel[row.cap] }}</td>
+          <td class="nvl-money">{{ row.duToan || '—' }}</td>
+          <td><nz-tag [nzColor]="stageColor[row.giaiDoan]">{{ stageLabel[row.giaiDoan] }}</nz-tag></td>
+          <td class="nvl-center">{{ dossierCount().get(row.ma) ?? 0 }}</td>
+          <td><button nz-button nzType="text" nzDanger nz-popconfirm
+            [nzPopconfirmTitle]="(dossierCount().get(row.ma) ?? 0) > 0 ? 'Xóa nhiệm vụ và toàn bộ hồ sơ trực thuộc?' : 'Xóa nhiệm vụ này?'"
+            (click)="$event.stopPropagation()" (nzOnConfirm)="delete(row)" [nzLoading]="deletingId() === row.ma"
+            aria-label="Xóa nhiệm vụ"><span nz-icon nzType="delete"></span></button></td>
+        </tr>
+      } @empty { <tr><td colspan="7"><nz-empty nzNotFoundContent="Không có nhiệm vụ khớp bộ lọc."></nz-empty></td></tr> }
+    </tbody>
+  </nz-table>
+</div>

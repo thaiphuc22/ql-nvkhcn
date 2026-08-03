@@ -1,0 +1,138 @@
+.bts-subline {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 13px;
+}
+
+.bts-body {
+  padding: 0 24px 24px;
+}
+
+.bts-loading {
+  display: flex;
+  justify-content: center;
+  padding: 64px 0;
+}
+
+.bts-config-card {
+  max-width: 480px;
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.bts-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  label {
+    font-weight: 500;
+    font-size: 13px;
+  }
+}
+
+.bts-alert {
+  margin-bottom: 8px;
+}
+
+.bts-error-list {
+  margin: -4px 0 8px;
+  padding-left: 20px;
+  color: var(--vht-danger, #cf1322);
+  font-size: 13px;
+}
+
+.bts-descriptions {
+  margin-bottom: 14px;
+}
+
+.bts-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.bts-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(320px, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.bts-diagram {
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.bts-side {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bts-section-title {
+  margin-top: 12px;
+}
+
+.bts-candidate-groups {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.bts-variable-value {
+  font-family: var(--vht-font-mono, monospace);
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.bts-condition-error {
+  border: 1px solid var(--vht-danger, #cf1322);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+
+  .bts-gateway-name {
+    font-weight: 500;
+    margin: 4px 0;
+  }
+}
+
+.bts-flow-list {
+  margin: 0 0 8px;
+  padding-left: 18px;
+  font-size: 13px;
+
+  code {
+    font-size: 12px;
+  }
+}
+
+.bts-flow-vars {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+}
+
+.bts-drawer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.bts-blocked-job {
+  margin-bottom: 12px;
+
+  .bts-alert {
+    margin-bottom: 6px;
+  }
+}
+
+.bts-bypass-hint {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 13px;
+}

@@ -1,0 +1,624 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.9.0",
+  "exporter": {
+    "name": "Camunda Web Modeler",
+    "version": "c72e043"
+  },
+  "schemaVersion": 19,
+  "id": "Form_BM_02_21_HDO_NV_2024",
+  "components": [
+    {
+      "type": "html",
+      "id": "Html_2046",
+      "content": "<div style=\"padding:10px 12px;background:#f4f7fb;border-left:4px solid #0f62fe\"><strong>Chế độ hiển thị:</strong> Nhập và kiểm tra dữ liệu ở chế độ soạn thảo. Bật <em>Xem văn bản hoàn chỉnh</em> để xem bản trình bày.</div>",
+      "layout": {
+        "row": "Row_2045",
+        "columns": null
+      }
+    },
+    {
+      "type": "checkbox",
+      "id": "Field_2047",
+      "key": "cheDoXemVanBan",
+      "label": "Xem văn bản hoàn chỉnh",
+      "defaultValue": false,
+      "layout": {
+        "row": "Row_2048",
+        "columns": null
+      }
+    },
+    {
+      "type": "group",
+      "id": "Group_2049",
+      "label": "Thông tin soạn thảo",
+      "showOutline": true,
+      "conditional": {
+        "hide": "=cheDoXemVanBan = true"
+      },
+      "components": [
+        {
+          "type": "html",
+          "id": "Html_2040",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">Thông tin hợp đồng và các bên</div>",
+          "layout": {
+            "row": "Row_2039",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1663",
+          "key": "diaDanh",
+          "label": "Địa danh",
+          "layout": {
+            "row": "Row_1664",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          },
+          "defaultValue": "Hà Nội"
+        },
+        {
+          "type": "datetime",
+          "id": "Field_1665",
+          "key": "ngayVanBan",
+          "label": "Ngày văn bản",
+          "layout": {
+            "row": "Row_1666",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          },
+          "subtype": "date"
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1667",
+          "key": "soVanBan",
+          "label": "Số văn bản",
+          "layout": {
+            "row": "Row_1668",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1669",
+          "key": "nguoiKy",
+          "label": "Họ tên người ký",
+          "layout": {
+            "row": "Row_1670",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1671",
+          "key": "chucDanhKy",
+          "label": "Chức danh người ký",
+          "layout": {
+            "row": "Row_1672",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1673",
+          "key": "soQuyetDinhPheDuyet",
+          "label": "Số quyết định phê duyệt nhiệm vụ",
+          "layout": {
+            "row": "Row_1674",
+            "columns": null
+          }
+        },
+        {
+          "type": "datetime",
+          "id": "Field_1675",
+          "key": "ngayQuyetDinhPheDuyet",
+          "label": "Ngày quyết định",
+          "layout": {
+            "row": "Row_1676",
+            "columns": null
+          },
+          "subtype": "date"
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1677",
+          "key": "benADaiDien",
+          "label": "Bên A - Người đại diện",
+          "layout": {
+            "row": "Row_1678",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1679",
+          "key": "benAChucVu",
+          "label": "Bên A - Chức vụ",
+          "layout": {
+            "row": "Row_1680",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1681",
+          "key": "benADiaChi",
+          "label": "Bên A - Địa chỉ",
+          "layout": {
+            "row": "Row_1682",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1683",
+          "key": "benADienThoai",
+          "label": "Bên A - Điện thoại",
+          "layout": {
+            "row": "Row_1684",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1685",
+          "key": "benAFax",
+          "label": "Bên A - Fax",
+          "layout": {
+            "row": "Row_1686",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1687",
+          "key": "benAMaSoThue",
+          "label": "Bên A - Mã số thuế",
+          "layout": {
+            "row": "Row_1688",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1689",
+          "key": "benBDonVi",
+          "label": "Bên B - Đơn vị chủ trì",
+          "layout": {
+            "row": "Row_1690",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1691",
+          "key": "benBDiaChi",
+          "label": "Bên B - Địa chỉ",
+          "layout": {
+            "row": "Row_1692",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1693",
+          "key": "benBDienThoai",
+          "label": "Bên B - Điện thoại",
+          "layout": {
+            "row": "Row_1694",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1695",
+          "key": "benBFax",
+          "label": "Bên B - Fax",
+          "layout": {
+            "row": "Row_1696",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1697",
+          "key": "benBSoTaiKhoan",
+          "label": "Bên B - Số tài khoản",
+          "layout": {
+            "row": "Row_1698",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1699",
+          "key": "benBMaSoThue",
+          "label": "Bên B - Mã số thuế",
+          "layout": {
+            "row": "Row_1700",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1701",
+          "key": "chuNhiemHoTen",
+          "label": "Chủ nhiệm nhiệm vụ",
+          "layout": {
+            "row": "Row_1702",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1703",
+          "key": "chuNhiemChucVu",
+          "label": "Chức vụ Chủ nhiệm",
+          "layout": {
+            "row": "Row_1704",
+            "columns": null
+          }
+        },
+        {
+          "type": "html",
+          "id": "Html_2042",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">Điều 1. Giao và nhận thực hiện nhiệm vụ</div>",
+          "layout": {
+            "row": "Row_2041",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1705",
+          "key": "tenNhiemVu",
+          "label": "Tên nhiệm vụ",
+          "layout": {
+            "row": "Row_1706",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1707",
+          "key": "maNhiemVu",
+          "label": "Mã nhiệm vụ",
+          "layout": {
+            "row": "Row_1708",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1709",
+          "key": "donViChuTri",
+          "label": "Đơn vị chủ trì",
+          "layout": {
+            "row": "Row_1710",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1713",
+          "key": "linhVuc",
+          "label": "Lĩnh vực",
+          "layout": {
+            "row": "Row_1714",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "number",
+          "id": "Field_1715",
+          "key": "thoiGianThang",
+          "label": "Thời gian thực hiện (tháng)",
+          "layout": {
+            "row": "Row_1716",
+            "columns": null
+          },
+          "validate": {
+            "required": true,
+            "min": 1
+          }
+        },
+        {
+          "type": "datetime",
+          "id": "Field_1717",
+          "key": "ngayBatDau",
+          "label": "Ngày bắt đầu",
+          "layout": {
+            "row": "Row_1718",
+            "columns": null
+          },
+          "subtype": "date"
+        },
+        {
+          "type": "datetime",
+          "id": "Field_1719",
+          "key": "ngayKetThuc",
+          "label": "Ngày kết thúc",
+          "layout": {
+            "row": "Row_1720",
+            "columns": null
+          },
+          "subtype": "date"
+        },
+        {
+          "type": "number",
+          "id": "Field_1721",
+          "key": "tongKinhPhi",
+          "label": "Tổng kinh phí đã gồm VAT (VNĐ)",
+          "layout": {
+            "row": "Row_1722",
+            "columns": null
+          },
+          "validate": {
+            "required": true,
+            "min": 0
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1723",
+          "key": "kinhPhiBangChu",
+          "label": "Kinh phí bằng chữ",
+          "layout": {
+            "row": "Row_1724",
+            "columns": null
+          }
+        },
+        {
+          "type": "number",
+          "id": "Field_1725",
+          "key": "soLanCapKinhPhi",
+          "label": "Số lần cấp kinh phí",
+          "layout": {
+            "row": "Row_1726",
+            "columns": null
+          },
+          "validate": {
+            "min": 0
+          }
+        },
+        {
+          "type": "dynamiclist",
+          "id": "List_1737",
+          "key": "tienDoCapKinhPhi",
+          "label": "Tiến độ cấp phát kinh phí",
+          "showOutline": true,
+          "components": [
+            {
+              "type": "textfield",
+              "id": "Field_1727",
+              "key": "dot",
+              "label": "Đợt/lần cấp",
+              "layout": {
+                "row": "Row_1728",
+                "columns": null
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_1729",
+              "key": "tyLe",
+              "label": "Tỷ lệ (%)",
+              "layout": {
+                "row": "Row_1730",
+                "columns": null
+              },
+              "validate": {
+                "min": 0,
+                "max": 100
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_1731",
+              "key": "soTien",
+              "label": "Số tiền",
+              "layout": {
+                "row": "Row_1732",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_1733",
+              "key": "bangChu",
+              "label": "Bằng chữ",
+              "layout": {
+                "row": "Row_1734",
+                "columns": null
+              }
+            },
+            {
+              "type": "textarea",
+              "id": "Field_1735",
+              "key": "dieuKien",
+              "label": "Điều kiện cấp",
+              "layout": {
+                "row": "Row_1736",
+                "columns": null
+              }
+            }
+          ],
+          "layout": {
+            "row": "Row_1738",
+            "columns": null
+          }
+        },
+        {
+          "type": "html",
+          "id": "Html_2044",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">Điều 2-5. Quyền, nghĩa vụ và hiệu lực</div>",
+          "layout": {
+            "row": "Row_2043",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_1739",
+          "key": "quyenNghiaVuBenA",
+          "label": "Quyền và nghĩa vụ của Bên A",
+          "layout": {
+            "row": "Row_1740",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_1741",
+          "key": "quyenNghiaVuBenB",
+          "label": "Quyền và nghĩa vụ của Bên B",
+          "layout": {
+            "row": "Row_1742",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_1743",
+          "key": "xuLyTaiChinh",
+          "label": "Xử lý tài chính khi chấm dứt hợp đồng",
+          "layout": {
+            "row": "Row_1744",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_1745",
+          "key": "dieuKhoanChung",
+          "label": "Điều khoản chung",
+          "layout": {
+            "row": "Row_1746",
+            "columns": null
+          }
+        },
+        {
+          "type": "number",
+          "id": "Field_1747",
+          "key": "soTrang",
+          "label": "Số trang hợp đồng",
+          "layout": {
+            "row": "Row_1748",
+            "columns": null
+          },
+          "validate": {
+            "min": 0
+          }
+        },
+        {
+          "type": "number",
+          "id": "Field_1749",
+          "key": "soBan",
+          "label": "Số bản hợp đồng",
+          "layout": {
+            "row": "Row_1750",
+            "columns": null
+          },
+          "validate": {
+            "min": 0
+          },
+          "defaultValue": 6
+        },
+        {
+          "type": "number",
+          "id": "Field_1751",
+          "key": "soBanMoiBen",
+          "label": "Số bản mỗi bên giữ",
+          "layout": {
+            "row": "Row_1752",
+            "columns": null
+          },
+          "validate": {
+            "min": 0
+          },
+          "defaultValue": 3
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1753",
+          "key": "daiDienBenAKy",
+          "label": "Đại diện Bên A ký",
+          "layout": {
+            "row": "Row_1754",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1755",
+          "key": "daiDienDonViChuTriKy",
+          "label": "Đại diện đơn vị chủ trì ký",
+          "layout": {
+            "row": "Row_1756",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1757",
+          "key": "chuNhiemKy",
+          "label": "Chủ nhiệm nhiệm vụ ký",
+          "layout": {
+            "row": "Row_1758",
+            "columns": null
+          }
+        }
+      ],
+      "layout": {
+        "row": "Row_2050",
+        "columns": null
+      }
+    },
+    {
+      "type": "html",
+      "id": "Html_2051",
+      "content": "<style>.bm-page{max-width:900px;margin:0 auto;padding:34px 48px;background:#fff;color:#111;font:17px/1.48 \"Times New Roman\",serif;box-sizing:border-box}.bm-head{text-align:center}.bm-head .nation{font-weight:700;text-transform:uppercase}.bm-head .motto{font-weight:700}.bm-rule{display:inline-block;width:150px;border-top:1px solid #111}.bm-title{text-align:center;font-size:20px;font-weight:700;margin:24px 0}.bm-code{text-align:right;font-size:13px}.bm-page h3{font-size:17px;margin:18px 0 8px}.bm-page p{margin:4px 0;text-align:justify;white-space:pre-line}.value:empty:after{content:\"................................\";font-weight:400}@media(max-width:680px){.bm-page{padding:18px 14px;font-size:15px}}</style><article class=\"bm-page\"><div class=\"bm-code\">BM.02.21.HDO.NV_2024</div><header class=\"bm-head\"><div class=\"nation\">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div><div class=\"motto\">Độc lập - Tự do - Hạnh phúc</div><span class=\"bm-rule\"></span></header><div class=\"bm-title\">HỢP ĐỒNG KHOA HỌC VÀ CÔNG NGHỆ</div><section><h3>Thông tin hợp đồng và các bên</h3><p><strong>Địa danh:</strong> <span class=\"value\">{{diaDanh}}</span></p><p><strong>Ngày văn bản:</strong> <span class=\"value\">{{ngayVanBan}}</span></p><p><strong>Số văn bản:</strong> <span class=\"value\">{{soVanBan}}</span></p><p><strong>Họ tên người ký:</strong> <span class=\"value\">{{nguoiKy}}</span></p><p><strong>Chức danh người ký:</strong> <span class=\"value\">{{chucDanhKy}}</span></p><p><strong>Số quyết định phê duyệt nhiệm vụ:</strong> <span class=\"value\">{{soQuyetDinhPheDuyet}}</span></p><p><strong>Ngày quyết định:</strong> <span class=\"value\">{{ngayQuyetDinhPheDuyet}}</span></p><p><strong>Bên A - Người đại diện:</strong> <span class=\"value\">{{benADaiDien}}</span></p><p><strong>Bên A - Chức vụ:</strong> <span class=\"value\">{{benAChucVu}}</span></p><p><strong>Bên A - Địa chỉ:</strong> <span class=\"value\">{{benADiaChi}}</span></p><p><strong>Bên A - Điện thoại:</strong> <span class=\"value\">{{benADienThoai}}</span></p><p><strong>Bên A - Fax:</strong> <span class=\"value\">{{benAFax}}</span></p><p><strong>Bên A - Mã số thuế:</strong> <span class=\"value\">{{benAMaSoThue}}</span></p><p><strong>Bên B - Đơn vị chủ trì:</strong> <span class=\"value\">{{benBDonVi}}</span></p><p><strong>Bên B - Địa chỉ:</strong> <span class=\"value\">{{benBDiaChi}}</span></p><p><strong>Bên B - Điện thoại:</strong> <span class=\"value\">{{benBDienThoai}}</span></p><p><strong>Bên B - Fax:</strong> <span class=\"value\">{{benBFax}}</span></p><p><strong>Bên B - Số tài khoản:</strong> <span class=\"value\">{{benBSoTaiKhoan}}</span></p><p><strong>Bên B - Mã số thuế:</strong> <span class=\"value\">{{benBMaSoThue}}</span></p><p><strong>Chủ nhiệm nhiệm vụ:</strong> <span class=\"value\">{{chuNhiemHoTen}}</span></p><p><strong>Chức vụ Chủ nhiệm:</strong> <span class=\"value\">{{chuNhiemChucVu}}</span></p></section><section><h3>Điều 1. Giao và nhận thực hiện nhiệm vụ</h3><p><strong>Tên nhiệm vụ:</strong> <span class=\"value\">{{tenNhiemVu}}</span></p><p><strong>Mã nhiệm vụ:</strong> <span class=\"value\">{{maNhiemVu}}</span></p><p><strong>Đơn vị chủ trì:</strong> <span class=\"value\">{{donViChuTri}}</span></p><p><strong>Lĩnh vực:</strong> <span class=\"value\">{{linhVuc}}</span></p><p><strong>Thời gian thực hiện (tháng):</strong> <span class=\"value\">{{thoiGianThang}}</span></p><p><strong>Ngày bắt đầu:</strong> <span class=\"value\">{{ngayBatDau}}</span></p><p><strong>Ngày kết thúc:</strong> <span class=\"value\">{{ngayKetThuc}}</span></p><p><strong>Tổng kinh phí đã gồm VAT (VNĐ):</strong> <span class=\"value\">{{tongKinhPhi}}</span></p><p><strong>Kinh phí bằng chữ:</strong> <span class=\"value\">{{kinhPhiBangChu}}</span></p><p><strong>Số lần cấp kinh phí:</strong> <span class=\"value\">{{soLanCapKinhPhi}}</span></p><p><strong>Tiến độ cấp phát kinh phí:</strong> <span class=\"value\">{{tienDoCapKinhPhi}}</span></p></section><section><h3>Điều 2-5. Quyền, nghĩa vụ và hiệu lực</h3><p><strong>Quyền và nghĩa vụ của Bên A:</strong> <span class=\"value\">{{quyenNghiaVuBenA}}</span></p><p><strong>Quyền và nghĩa vụ của Bên B:</strong> <span class=\"value\">{{quyenNghiaVuBenB}}</span></p><p><strong>Xử lý tài chính khi chấm dứt hợp đồng:</strong> <span class=\"value\">{{xuLyTaiChinh}}</span></p><p><strong>Điều khoản chung:</strong> <span class=\"value\">{{dieuKhoanChung}}</span></p><p><strong>Số trang hợp đồng:</strong> <span class=\"value\">{{soTrang}}</span></p><p><strong>Số bản hợp đồng:</strong> <span class=\"value\">{{soBan}}</span></p><p><strong>Số bản mỗi bên giữ:</strong> <span class=\"value\">{{soBanMoiBen}}</span></p><p><strong>Đại diện Bên A ký:</strong> <span class=\"value\">{{daiDienBenAKy}}</span></p><p><strong>Đại diện đơn vị chủ trì ký:</strong> <span class=\"value\">{{daiDienDonViChuTriKy}}</span></p><p><strong>Chủ nhiệm nhiệm vụ ký:</strong> <span class=\"value\">{{chuNhiemKy}}</span></p></section></article>",
+      "conditional": {
+        "hide": "=cheDoXemVanBan != true"
+      },
+      "layout": {
+        "row": "Row_2052",
+        "columns": null
+      }
+    }
+  ],
+  "type": "default"
+}

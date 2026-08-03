@@ -1,0 +1,21 @@
+<div class="nvc-page">
+  <div class="nvc-header"><button nz-button nzType="text" (click)="cancel()"><span nz-icon nzType="arrow-left"></span></button><div><h2>Tạo Nhiệm vụ KHCN mới</h2><div>Thông tin được lưu trực tiếp vào hệ thống quản lý nhiệm vụ.</div></div></div>
+  <nz-alert nzType="info" nzShowIcon nzMessage="Khởi tạo nhiệm vụ ở giai đoạn Chủ trương" nzDescription="Sau khi tạo, mã NV KHCN được backend tự sinh và nhiệm vụ sẵn sàng để lập hồ sơ nghiệp vụ." />
+  @if (errorMessage()) { <nz-alert nzType="error" nzShowIcon [nzMessage]="errorMessage()"></nz-alert> }
+  <form nz-form nzLayout="vertical" [formGroup]="form" (ngSubmit)="submit()">
+    <div nz-row [nzGutter]="16">
+      <div nz-col [nzXs]="24" [nzLg]="14"><nz-card nzTitle="Thông tin chung nhiệm vụ">
+        <nz-form-item><nz-form-label nzRequired>Tên nhiệm vụ KHCN</nz-form-label><nz-form-control nzErrorTip="Nhập tên nhiệm vụ."><input nz-input formControlName="ten" placeholder="VD: Nghiên cứu, chế tạo module thu phát VHF băng rộng" /></nz-form-control></nz-form-item>
+        <div nz-row [nzGutter]="12"><div nz-col [nzXs]="24" [nzSm]="10"><nz-form-item><nz-form-label nzRequired>Cấp</nz-form-label><nz-form-control><nz-select formControlName="cap"><nz-option nzValue="CS" nzLabel="Cơ sở (RD01.01)"></nz-option><nz-option nzValue="TD" nzLabel="Tập đoàn (RD01.02)"></nz-option></nz-select></nz-form-control></nz-form-item></div><div nz-col [nzXs]="24" [nzSm]="14"><nz-form-item><nz-form-label>Thời gian thực hiện</nz-form-label><nz-form-control><nz-range-picker formControlName="thoiGian" nzMode="month" nzFormat="MM/yyyy"></nz-range-picker></nz-form-control></nz-form-item></div></div>
+        <nz-form-item><nz-form-label nzRequired>Đơn vị chủ trì</nz-form-label><nz-form-control nzErrorTip="Nhập đơn vị chủ trì."><input nz-input formControlName="donViChuTri" placeholder="VD: TT Nghiên cứu Vô tuyến" /></nz-form-control></nz-form-item>
+        <nz-form-item><nz-form-label>Tổng dự toán (PL1–PL6)</nz-form-label><nz-form-control><nz-input-number formControlName="duToan" [nzMin]="0" [nzStep]="1000000" [nzFormatter]="formatter" class="nvc-full"></nz-input-number></nz-form-control></nz-form-item>
+      </nz-card></div>
+      <div nz-col [nzXs]="24" [nzLg]="10"><nz-card nzTitle="Chủ nhiệm đề tài (PM)">
+        <div nz-row [nzGutter]="12"><div nz-col [nzSpan]="8"><nz-form-item><nz-form-label>Học vị</nz-form-label><nz-form-control><nz-select formControlName="chuNhiemHocHamHocVi" nzAllowClear>@for (title of academicTitles; track title) { <nz-option [nzValue]="title" [nzLabel]="title"></nz-option> }</nz-select></nz-form-control></nz-form-item></div><div nz-col [nzSpan]="16"><nz-form-item><nz-form-label nzRequired>Họ tên</nz-form-label><nz-form-control nzErrorTip="Nhập họ tên chủ nhiệm."><input nz-input formControlName="chuNhiemHoTen" /></nz-form-control></nz-form-item></div></div>
+        <nz-form-item><nz-form-label>Mã nhân viên</nz-form-label><nz-form-control><input nz-input formControlName="chuNhiemMaNhanVien" placeholder="VD: VHT0182" /></nz-form-control></nz-form-item>
+        <nz-form-item><nz-form-label>Email</nz-form-label><nz-form-control nzErrorTip="Email không hợp lệ."><input nz-input formControlName="chuNhiemEmail" placeholder="name@viettel.com.vn" /></nz-form-control></nz-form-item>
+      </nz-card></div>
+    </div>
+    <div class="nvc-actions"><button nz-button type="button" (click)="cancel()">Hủy</button><button nz-button nzType="primary" type="submit" [nzLoading]="submitting()"><span nz-icon nzType="save"></span> Tạo nhiệm vụ</button></div>
+  </form>
+</div>

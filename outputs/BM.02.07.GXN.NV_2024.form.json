@@ -1,0 +1,330 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.9.0",
+  "exporter": {
+    "name": "Camunda Web Modeler",
+    "version": "c72e043"
+  },
+  "schemaVersion": 19,
+  "id": "Form_BM_02_07_GXN_NV_2024",
+  "components": [
+    {
+      "type": "html",
+      "id": "Html_1848",
+      "content": "<div style=\"padding:10px 12px;background:#f4f7fb;border-left:4px solid #0f62fe\"><strong>Chế độ hiển thị:</strong> Nhập và kiểm tra dữ liệu ở chế độ soạn thảo. Bật <em>Xem văn bản hoàn chỉnh</em> để xem bản trình bày.</div>",
+      "layout": {
+        "row": "Row_1847",
+        "columns": null
+      }
+    },
+    {
+      "type": "checkbox",
+      "id": "Field_1849",
+      "key": "cheDoXemVanBan",
+      "label": "Xem văn bản hoàn chỉnh",
+      "defaultValue": false,
+      "layout": {
+        "row": "Row_1850",
+        "columns": null
+      }
+    },
+    {
+      "type": "group",
+      "id": "Group_1851",
+      "label": "Thông tin soạn thảo",
+      "showOutline": true,
+      "conditional": {
+        "hide": "=cheDoXemVanBan = true"
+      },
+      "components": [
+        {
+          "type": "html",
+          "id": "Html_1842",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">Thông tin nhiệm vụ và đơn vị chủ trì</div>",
+          "layout": {
+            "row": "Row_1841",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_939",
+          "key": "diaDanh",
+          "label": "Địa danh",
+          "layout": {
+            "row": "Row_940",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          },
+          "defaultValue": "Hà Nội"
+        },
+        {
+          "type": "datetime",
+          "id": "Field_941",
+          "key": "ngayVanBan",
+          "label": "Ngày văn bản",
+          "layout": {
+            "row": "Row_942",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          },
+          "subtype": "date"
+        },
+        {
+          "type": "textfield",
+          "id": "Field_943",
+          "key": "soVanBan",
+          "label": "Số văn bản",
+          "layout": {
+            "row": "Row_944",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_945",
+          "key": "nguoiKy",
+          "label": "Họ tên người ký",
+          "layout": {
+            "row": "Row_946",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_947",
+          "key": "chucDanhKy",
+          "label": "Chức danh người ký",
+          "layout": {
+            "row": "Row_948",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_949",
+          "key": "tenNhiemVu",
+          "label": "Tên nhiệm vụ",
+          "layout": {
+            "row": "Row_950",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_951",
+          "key": "maNhiemVu",
+          "label": "Mã nhiệm vụ",
+          "layout": {
+            "row": "Row_952",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_953",
+          "key": "donViChuTri",
+          "label": "Đơn vị chủ trì",
+          "layout": {
+            "row": "Row_954",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_955",
+          "key": "chuNhiemHoTen",
+          "label": "Cá nhân đăng ký chủ nhiệm nhiệm vụ",
+          "layout": {
+            "row": "Row_956",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_957",
+          "key": "linhVuc",
+          "label": "Lĩnh vực",
+          "layout": {
+            "row": "Row_958",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_959",
+          "key": "chuNhiemHocVi",
+          "label": "Học vị của chủ nhiệm",
+          "layout": {
+            "row": "Row_960",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_961",
+          "key": "chuNhiemChucVu",
+          "label": "Chức vụ của chủ nhiệm",
+          "layout": {
+            "row": "Row_962",
+            "columns": null
+          }
+        },
+        {
+          "type": "html",
+          "id": "Html_1844",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">Tổ chức phối hợp</div>",
+          "layout": {
+            "row": "Row_1843",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_963",
+          "key": "toChucPhoiHop",
+          "label": "Tên tổ chức đăng ký phối hợp",
+          "layout": {
+            "row": "Row_964",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_965",
+          "key": "diaChiPhoiHop",
+          "label": "Địa chỉ",
+          "layout": {
+            "row": "Row_966",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_967",
+          "key": "dienThoaiPhoiHop",
+          "label": "Điện thoại",
+          "layout": {
+            "row": "Row_968",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_969",
+          "key": "noiDungPhoiHop",
+          "label": "Nội dung công việc tham gia",
+          "layout": {
+            "row": "Row_970",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "number",
+          "id": "Field_971",
+          "key": "kinhPhiPhoiHop",
+          "label": "Kinh phí tương ứng (nếu có)",
+          "layout": {
+            "row": "Row_972",
+            "columns": null
+          },
+          "validate": {
+            "min": 0
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_973",
+          "key": "camKet",
+          "label": "Cam kết phối hợp",
+          "layout": {
+            "row": "Row_974",
+            "columns": null
+          },
+          "defaultValue": "Chúng tôi cam đoan sẽ hoàn thành những thủ tục pháp lý do Tập đoàn hướng dẫn về nghĩa vụ và quyền lợi của mỗi bên để thực hiện tốt nhất và đúng thời hạn mục tiêu, nội dung và sản phẩm của nhiệm vụ KHCN khi Hồ sơ trúng tuyển."
+        },
+        {
+          "type": "html",
+          "id": "Html_1846",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">Ký xác nhận</div>",
+          "layout": {
+            "row": "Row_1845",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_975",
+          "key": "nguoiKyChuNhiem",
+          "label": "Cá nhân đăng ký chủ nhiệm",
+          "layout": {
+            "row": "Row_976",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_977",
+          "key": "nguoiKyToChucPhoiHop",
+          "label": "Thủ trưởng tổ chức phối hợp",
+          "layout": {
+            "row": "Row_978",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_979",
+          "key": "nguoiKyToChucChuTri",
+          "label": "Thủ trưởng tổ chức chủ trì",
+          "layout": {
+            "row": "Row_980",
+            "columns": null
+          }
+        }
+      ],
+      "layout": {
+        "row": "Row_1852",
+        "columns": null
+      }
+    },
+    {
+      "type": "html",
+      "id": "Html_1853",
+      "content": "<style>.bm-page{max-width:900px;margin:0 auto;padding:34px 48px;background:#fff;color:#111;font:17px/1.48 \"Times New Roman\",serif;box-sizing:border-box}.bm-head{text-align:center}.bm-head .nation{font-weight:700;text-transform:uppercase}.bm-head .motto{font-weight:700}.bm-rule{display:inline-block;width:150px;border-top:1px solid #111}.bm-title{text-align:center;font-size:20px;font-weight:700;margin:24px 0}.bm-code{text-align:right;font-size:13px}.bm-page h3{font-size:17px;margin:18px 0 8px}.bm-page p{margin:4px 0;text-align:justify;white-space:pre-line}.value:empty:after{content:\"................................\";font-weight:400}@media(max-width:680px){.bm-page{padding:18px 14px;font-size:15px}}</style><article class=\"bm-page\"><div class=\"bm-code\">BM.02.07.GXN.NV_2024</div><header class=\"bm-head\"><div class=\"nation\">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div><div class=\"motto\">Độc lập - Tự do - Hạnh phúc</div><span class=\"bm-rule\"></span></header><div class=\"bm-title\">GIẤY XÁC NHẬN PHỐI HỢP THỰC HIỆN NHIỆM VỤ KHCN</div><section><h3>Thông tin nhiệm vụ và đơn vị chủ trì</h3><p><strong>Địa danh:</strong> <span class=\"value\">{{diaDanh}}</span></p><p><strong>Ngày văn bản:</strong> <span class=\"value\">{{ngayVanBan}}</span></p><p><strong>Số văn bản:</strong> <span class=\"value\">{{soVanBan}}</span></p><p><strong>Họ tên người ký:</strong> <span class=\"value\">{{nguoiKy}}</span></p><p><strong>Chức danh người ký:</strong> <span class=\"value\">{{chucDanhKy}}</span></p><p><strong>Tên nhiệm vụ:</strong> <span class=\"value\">{{tenNhiemVu}}</span></p><p><strong>Mã nhiệm vụ:</strong> <span class=\"value\">{{maNhiemVu}}</span></p><p><strong>Đơn vị chủ trì:</strong> <span class=\"value\">{{donViChuTri}}</span></p><p><strong>Cá nhân đăng ký chủ nhiệm nhiệm vụ:</strong> <span class=\"value\">{{chuNhiemHoTen}}</span></p><p><strong>Lĩnh vực:</strong> <span class=\"value\">{{linhVuc}}</span></p><p><strong>Học vị của chủ nhiệm:</strong> <span class=\"value\">{{chuNhiemHocVi}}</span></p><p><strong>Chức vụ của chủ nhiệm:</strong> <span class=\"value\">{{chuNhiemChucVu}}</span></p></section><section><h3>Tổ chức phối hợp</h3><p><strong>Tên tổ chức đăng ký phối hợp:</strong> <span class=\"value\">{{toChucPhoiHop}}</span></p><p><strong>Địa chỉ:</strong> <span class=\"value\">{{diaChiPhoiHop}}</span></p><p><strong>Điện thoại:</strong> <span class=\"value\">{{dienThoaiPhoiHop}}</span></p><p><strong>Nội dung công việc tham gia:</strong> <span class=\"value\">{{noiDungPhoiHop}}</span></p><p><strong>Kinh phí tương ứng (nếu có):</strong> <span class=\"value\">{{kinhPhiPhoiHop}}</span></p><p><strong>Cam kết phối hợp:</strong> <span class=\"value\">{{camKet}}</span></p></section><section><h3>Ký xác nhận</h3><p><strong>Cá nhân đăng ký chủ nhiệm:</strong> <span class=\"value\">{{nguoiKyChuNhiem}}</span></p><p><strong>Thủ trưởng tổ chức phối hợp:</strong> <span class=\"value\">{{nguoiKyToChucPhoiHop}}</span></p><p><strong>Thủ trưởng tổ chức chủ trì:</strong> <span class=\"value\">{{nguoiKyToChucChuTri}}</span></p></section></article>",
+      "conditional": {
+        "hide": "=cheDoXemVanBan != true"
+      },
+      "layout": {
+        "row": "Row_1854",
+        "columns": null
+      }
+    }
+  ],
+  "type": "default"
+}

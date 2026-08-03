@@ -1,0 +1,103 @@
+<div class="om-page">
+  <div class="om-header">
+    <h2>
+      <span nz-icon nzType="apartment" class="om-header-icon"></span>
+      Quản trị đơn vị
+    </h2>
+    <button nz-button nzType="primary" (click)="openCreate()">
+      <span nz-icon nzType="plus"></span>
+      Thêm đơn vị
+    </button>
+  </div>
+
+  @if (errorMessage(); as err) {
+    <div class="om-error">{{ err }}</div>
+  }
+
+  <div nz-row [nzGutter]="12" class="om-stats">
+    <div nz-col [nzXs]="24" [nzSm]="8">
+      <div class="om-stat-card">
+        <div class="om-stat-value">{{ list().length }}</div>
+        <div class="om-stat-label">Tổng đơn vị</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="om-card">
+    <nz-table #table [nzData]="list()" [nzLoading]="loading()" nzSize="middle" [nzShowPagination]="list().length > 10">
+      <thead>
+        <tr>
+          <th nzWidth="140px">Mã</th>
+          <th>Tên đơn vị</th>
+          <th>Đơn vị cha</th>
+          <th nzWidth="120px">Trạng thái</th>
+          <th nzWidth="140px">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (o of table.data; track o.id) {
+          <tr>
+            <td><code>{{ o.code }}</code></td>
+            <td>{{ o.name }}</td>
+            <td>{{ parentName(o.parentId) }}</td>
+            <td>
+              @if (o.active) {
+                <nz-tag nzColor="success">Hoạt động</nz-tag>
+              } @else {
+                <nz-tag>Ngừng</nz-tag>
+              }
+            </td>
+            <td>
+              <button nz-button nzSize="small" nz-tooltip nzTooltipTitle="Sửa" (click)="openEdit(o)">
+                <span nz-icon nzType="edit"></span>
+              </button>
+              <button
+                nz-button
+                nzSize="small"
+                nzDanger
+                nz-tooltip
+                nzTooltipTitle="Xoá"
+                nz-popconfirm
+                nzPopconfirmTitle="Xoá đơn vị này? Thao tác này không thể hoàn tác."
+                nzOkText="Xoá"
+                nzCancelText="Huỷ"
+                (nzOnConfirm)="remove(o)"
+              >
+                <span nz-icon nzType="delete"></span>
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+  </div>
+
+  <nz-modal
+    [nzVisible]="modalOpen()"
+    [nzTitle]="editing() ? 'Sửa đơn vị' : 'Thêm đơn vị'"
+    nzOkText="Lưu"
+    nzCancelText="Huỷ"
+    [nzOkLoading]="saving()"
+    (nzOnOk)="submit()"
+    (nzOnCancel)="closeModal()"
+  >
+    <ng-container *nzModalContent>
+      <div class="om-form">
+        <label>Mã đơn vị <span class="om-required">*</span></label>
+        <input nz-input placeholder="VD: BAN_KHCN" [ngModel]="formCode()" (ngModelChange)="formCode.set($event)" />
+        <label>Tên đơn vị <span class="om-required">*</span></label>
+        <input nz-input placeholder="VD: Ban Khoa học Công nghệ" [ngModel]="formName()" (ngModelChange)="formName.set($event)" />
+        <label>Đơn vị cha</label>
+        <nz-select nzAllowClear placeholder="Không có (đơn vị gốc)" [ngModel]="formParentId()" (ngModelChange)="formParentId.set($event)">
+          @for (o of parentOptions(); track o.id) {
+            <nz-option [nzLabel]="o.name" [nzValue]="o.id"></nz-option>
+          }
+        </nz-select>
+        <label class="om-switch-row">
+          <span>Hoạt động</span>
+          <nz-switch [ngModel]="formActive()" (ngModelChange)="formActive.set($event)"></nz-switch>
+        </label>
+      </div>
+    </ng-container>
+  </nz-modal>
+</div>

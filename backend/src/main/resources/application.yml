@@ -1,0 +1,90 @@
+# QTKHCN backend — cấu hình dev local (Mốc 2). Trỏ vào stack Camunda + Postgres của Mốc 1
+# (infra/README.md) — chỉnh lại port/credential nếu bạn đổi khác mặc định ở đó.
+
+spring:
+  application:
+    name: qtkhcn-backend
+  datasource:
+    url: jdbc:postgresql://localhost:5432/qtkhcn
+    username: qtkhcn
+    password: qtkhcn-dev-local
+  jpa:
+    hibernate:
+      # Flyway là nguồn chuẩn cho schema (db/migration) — Hibernate CHỈ validate, không tự sinh
+      # DDL, tránh 2 nguồn sự thật về schema.
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+
+server:
+  # Dev services are consumed locally or through the loopback-only Caddy tunnel proxy.
+  address: 127.0.0.1
+  port: 8090
+
+# Camunda 8 Java SDK (camunda-spring-boot-starter, D14) — trỏ vào container `orchestration` của
+# Mốc 1 (infra/README.md). ⚠️ Property path (`camunda.client.*`) CHƯA xác nhận chạy được — xác nhận
+# lại đúng key khi có Maven/JDK; tài liệu chính thức tại thời điểm dùng có thể đổi tên khoá.
+camunda:
+  client:
+    mode: self-managed
+    grpc-address: http://localhost:26500
+    rest-address: http://localhost:8080
+
+# Dev API key stub (security/DevApiKeyFilter.java) — đổi giá trị này khi chạy ngoài máy dev cá nhân,
+# và thay hẳn bằng OIDC/SAML thật khi OQ-021 chốt.
+qtkhcn:
+  dev-api-key: dev-local-only
+  internal:
+    service-token: ${QTKHCN_WORKFLOW_SERVICE_TOKEN:}
+  ho-so:
+    base-url: ${QTKHCN_HO_SO_BASE_URL:http://127.0.0.1:8093}
+    service-token: ${QTKHCN_HO_SO_SERVICE_TOKEN:}
+    # Integration destination for workflow events. Business CRUD is never served by this service.
+  identity:
+    base-url: ${QTKHCN_IDENTITY_BASE_URL:http://127.0.0.1:8095}
+    service-token: ${QTKHCN_IDENTITY_SERVICE_TOKEN:}
+  ai:
+    # auto = OpenAI neu OPENAI_API_KEY co gia tri, neu khong thi dung Gemini khi GEMINI_API_KEY co gia tri.
+    # Dat QTKHCN_AI_PROVIDER=gemini de ep dung Gemini khi ca hai key cung ton tai.
+    provider: ${QTKHCN_AI_PROVIDER:auto}
+    openai:
+      # Real LLM call (OpenAI Chat Completions API) for service task "AI_Summarize" in RD02.02.
+      # Không cấu hình key thì OpenAiSummaryClient trả Optional.empty() và worker dùng fallback text
+      # — tóm tắt AI không được phép chặn luồng phê duyệt thật.
+      base-url: ${QTKHCN_AI_OPENAI_BASE_URL:https://api.openai.com}
+      api-key: ${OPENAI_API_KEY:}
+      model: ${QTKHCN_AI_OPENAI_MODEL:gpt-4o-mini}
+      max-tokens: ${QTKHCN_AI_OPENAI_MAX_TOKENS:512}
+    gemini:
+      base-url: ${QTKHCN_AI_GEMINI_BASE_URL:https://generativelanguage.googleapis.com}
+      api-key: ${GEMINI_API_KEY:}
+      model: ${QTKHCN_AI_GEMINI_MODEL:gemini-flash-latest}
+      max-output-tokens: ${QTKHCN_AI_GEMINI_MAX_OUTPUT_TOKENS:1024}
+  workflow-events:
+    collect-ms: ${QTKHCN_WORKFLOW_EVENT_COLLECT_MS:1000}
+    dispatch-ms: ${QTKHCN_WORKFLOW_EVENT_DISPATCH_MS:1000}
+  cors:
+    # Comma-separated exact origins. Demo sessions add their current HTTPS Runlocal origin through
+    # QTKHCN_CORS_ALLOWED_ORIGINS; do not use a wildcard because these APIs can mutate demo data.
+    allowed-origins: ${QTKHCN_CORS_ALLOWED_ORIGINS:http://localhost:4200}
+  process-import:
+    max-file-size-bytes: 5242880
+  bpmn-test:
+    # Fail-closed by default. Enable only with the dedicated engine from
+    # infra/camunda/docker-compose.bpmn-test.yml; never point these at production Camunda.
+    enabled: true
+    grpc-address: http://localhost:26510
+    rest-address: http://localhost:8092
+    default-ttl-seconds: 900
+    max-ttl-seconds: 3600
+    expiry-scan-ms: 30000
+
+logging:
+  level:
+    vn.vht.qtkhcn: DEBUG

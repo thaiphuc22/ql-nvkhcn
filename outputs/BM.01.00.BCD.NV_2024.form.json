@@ -1,0 +1,734 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.9.0",
+  "exporter": {
+    "name": "Camunda Web Modeler",
+    "version": "c72e043"
+  },
+  "schemaVersion": 19,
+  "id": "Form_0t34ihs",
+  "components": [
+    {
+      "type": "html",
+      "id": "Html_huong_dan_che_do",
+      "content": "<div style=\"padding:10px 12px;background:#f4f7fb;border-left:4px solid #0f62fe\"><strong>Chế độ hiển thị:</strong> Nhập và kiểm tra thông tin ở chế độ soạn thảo. Sau đó bật <em>Xem văn bản hoàn chỉnh</em> để ẩn các ô nhập và xem bản trình bày.</div>",
+      "layout": {
+        "row": "Row_huong_dan_che_do",
+        "columns": null
+      }
+    },
+    {
+      "type": "checkbox",
+      "id": "Field_che_do_xem_van_ban",
+      "key": "cheDoXemVanBan",
+      "label": "Xem văn bản hoàn chỉnh",
+      "description": "Bỏ chọn để quay lại chế độ soạn thảo và chỉnh sửa dữ liệu.",
+      "defaultValue": false,
+      "layout": {
+        "row": "Row_che_do_xem_van_ban",
+        "columns": null
+      }
+    },
+    {
+      "type": "group",
+      "id": "Group_soan_thao",
+      "label": "Thông tin soạn thảo",
+      "showOutline": true,
+      "conditional": {
+        "hide": "=cheDoXemVanBan = true"
+      },
+      "components": [
+        {
+          "type": "html",
+          "id": "official-header-left",
+          "content": "<div style=\"text-align:center;font-family:serif;line-height:1.5\"><strong>TẬP ĐOÀN CÔNG NGHIỆP - VIỄN THÔNG QUÂN ĐỘI</strong><br><span style=\"display:inline-block;border-bottom:1px solid #111;padding:0 28px 4px\">ĐƠN VỊ BÁO CÁO</span></div>",
+          "layout": {
+            "row": "Row_official_header",
+            "columns": 8
+          }
+        },
+        {
+          "type": "html",
+          "id": "official-header-right",
+          "content": "<div style=\"text-align:center;font-family:serif;line-height:1.5\"><strong>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong><br><strong style=\"display:inline-block;border-bottom:1px solid #111;padding:0 24px 4px\">Độc lập - Tự do - Hạnh phúc</strong></div>",
+          "layout": {
+            "row": "Row_official_header",
+            "columns": 8
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "reporting-unit",
+          "key": "donViBaoCao",
+          "label": "T?n ??n v? b?o c?o",
+          "validate": {
+            "required": true
+          },
+          "layout": {
+            "row": "Row_unit_name",
+            "columns": 8
+          }
+        },
+        {
+          "type": "html",
+          "id": "unit-name-preview",
+          "content": "<div style=\"text-align:center;padding-top:28px;font-family:serif\"><strong>{{donViBaoCao}}</strong></div>",
+          "layout": {
+            "row": "Row_unit_name",
+            "columns": 8
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "report-number",
+          "key": "soBaoCao",
+          "label": "",
+          "appearance": {
+            "prefix": "Số:",
+            "suffix": "/BC-…"
+          },
+          "validate": {
+            "required": true
+          },
+          "layout": {
+            "row": "Row_document_line",
+            "columns": 6
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "issue-place",
+          "key": "diaDanh",
+          "label": "",
+          "defaultValue": "H? N?i",
+          "appearance": {
+            "suffix": ", ngày"
+          },
+          "validate": {
+            "required": true
+          },
+          "layout": {
+            "row": "Row_document_line",
+            "columns": 4
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "issue-day",
+          "key": "ngayBaoCao",
+          "label": "",
+          "appearance": {
+            "suffix": "tháng"
+          },
+          "validate": {
+            "required": true,
+            "validationType": "custom",
+            "pattern": "^(0?[1-9]|[12][0-9]|3[01])$"
+          },
+          "layout": {
+            "row": "Row_document_line",
+            "columns": 2
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "issue-month",
+          "key": "thangBaoCao",
+          "label": "",
+          "appearance": {
+            "suffix": "năm"
+          },
+          "validate": {
+            "required": true,
+            "validationType": "custom",
+            "pattern": "^(0?[1-9]|1[0-2])$"
+          },
+          "layout": {
+            "row": "Row_document_line",
+            "columns": 2
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "issue-year",
+          "key": "namBaoCao",
+          "label": "",
+          "validate": {
+            "required": true,
+            "validationType": "custom",
+            "pattern": "^[0-9]{4}$"
+          },
+          "layout": {
+            "row": "Row_document_line",
+            "columns": 2
+          }
+        },
+        {
+          "type": "html",
+          "id": "report-title",
+          "content": "<div style=\"text-align:center;font-family:serif;margin:18px 0 4px\"><div style=\"font-size:22px;font-weight:700\">BÁO CÁO</div><div style=\"font-size:17px;font-weight:700\">Xin chủ trương thực hiện nhiệm vụ</div></div>",
+          "layout": {
+            "row": "Row_report_title",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "mission-name",
+          "key": "tenNhiemVu",
+          "label": "Tên nhiệm vụ xin chủ trương",
+          "validate": {
+            "required": true
+          },
+          "layout": {
+            "row": "Row_mission_name",
+            "columns": null
+          },
+          "appearance": {
+            "prefix": "“",
+            "suffix": "”"
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "direction-basis",
+          "key": "canCuKetLuanChiDao",
+          "label": "Kết luận, chỉ đạo của cấp có thẩm quyền",
+          "description": "Nêu kết luận, chỉ đạo của Thủ trưởng Bộ Quốc phòng, Đảng ủy hoặc cấp có thẩm quyền liên quan.",
+          "layout": {
+            "row": "Row_direction_basis",
+            "columns": null
+          }
+        },
+        {
+          "type": "dynamiclist",
+          "id": "additional-bases",
+          "key": "canCuBoSung",
+          "label": "Các căn cứ bổ sung",
+          "showOutline": true,
+          "components": [
+            {
+              "type": "textarea",
+              "id": "basis-content",
+              "key": "noiDung",
+              "label": "Nội dung căn cứ",
+              "validate": {
+                "required": true
+              },
+              "layout": {
+                "row": "Row_basis_content",
+                "columns": null
+              }
+            }
+          ],
+          "layout": {
+            "row": "Row_additional_bases",
+            "columns": null
+          }
+        },
+        {
+          "type": "separator",
+          "id": "sep-part-1",
+          "layout": {
+            "row": "Row_sep_part_1",
+            "columns": null
+          }
+        },
+        {
+          "type": "html",
+          "id": "part-1-heading",
+          "layout": {
+            "row": "Row_part_1_heading",
+            "columns": null
+          },
+          "content": "<div style=\"text-align:center;font-family:serif;margin-top:20px\"><strong>PHẦN 1</strong><br><strong style=\"font-size:18px\">CƠ SỞ ĐỀ XUẤT</strong></div>"
+        },
+        {
+          "type": "textarea",
+          "id": "necessity",
+          "key": "tinhCanThiet",
+          "label": "1. Tính cần thiết",
+          "description": "Nêu tính cần thiết thực hiện nhiệm vụ.",
+          "validate": {
+            "required": true
+          },
+          "layout": {
+            "row": "Row_necessity",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "political-basis",
+          "key": "coSoChinhTri",
+          "label": "2.1. Cơ sở chính trị",
+          "validate": {
+            "required": true
+          },
+          "layout": {
+            "row": "Row_bases",
+            "columns": 8
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "legal-basis",
+          "key": "coSoPhapLy",
+          "label": "2.2. Cơ sở pháp lý",
+          "validate": {
+            "required": true
+          },
+          "layout": {
+            "row": "Row_bases",
+            "columns": 8
+          }
+        },
+        {
+          "type": "separator",
+          "id": "sep-part-2",
+          "layout": {
+            "row": "Row_sep_part_2",
+            "columns": null
+          }
+        },
+        {
+          "type": "html",
+          "id": "part-2-heading",
+          "layout": {
+            "row": "Row_part_2_heading",
+            "columns": null
+          },
+          "content": "<div style=\"text-align:center;font-family:serif;margin-top:20px\"><strong>PHẦN 2</strong><br><strong style=\"font-size:18px\">NHIỆM VỤ ĐỀ XUẤT</strong></div><h3>1. Kết quả thực hiện</h3>"
+        },
+        {
+          "type": "textarea",
+          "id": "technology-results",
+          "key": "ketQuaCongNgheSanPham",
+          "label": "Kết quả về công nghệ, sản phẩm",
+          "description": "Báo cáo ngắn gọn theo quyết định phê duyệt, giao nhiệm vụ.",
+          "layout": {
+            "row": "Row_results",
+            "columns": 8
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "inherited-results",
+          "key": "noiDungKeThua",
+          "label": "Những nội dung kế thừa cho nhiệm vụ tiếp theo",
+          "layout": {
+            "row": "Row_results",
+            "columns": 8
+          }
+        },
+        {
+          "type": "number",
+          "id": "spent-budget",
+          "key": "kinhPhiDaThucHien",
+          "label": "Kinh phí đã thực hiện (VNĐ)",
+          "validate": {
+            "min": 0
+          },
+          "layout": {
+            "row": "Row_spent_budget",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "other-results",
+          "key": "ketQuaKhac",
+          "label": "Kết quả thực hiện khác",
+          "layout": {
+            "row": "Row_other_results",
+            "columns": null
+          }
+        },
+        {
+          "type": "html",
+          "id": "proposal-heading",
+          "layout": {
+            "row": "Row_proposal_heading",
+            "columns": null
+          },
+          "content": "<h3 style=\"font-family:serif\">2. Nhiệm vụ đề xuất</h3>"
+        },
+        {
+          "type": "select",
+          "id": "mission-type",
+          "key": "loaiNhiemVu",
+          "label": "Loại nhiệm vụ",
+          "validate": {
+            "required": true
+          },
+          "values": [
+            {
+              "value": "de_tai_khcn",
+              "label": "Đề tài khoa học và công nghệ"
+            },
+            {
+              "value": "chuong_trinh",
+              "label": "Chương trình"
+            },
+            {
+              "value": "de_an",
+              "label": "Đề án"
+            },
+            {
+              "value": "khac",
+              "label": "Khác"
+            }
+          ],
+          "layout": {
+            "row": "Row_mission_type",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "objectives",
+          "key": "mucTieu",
+          "label": "Mục tiêu",
+          "validate": {
+            "required": true
+          },
+          "layout": {
+            "row": "Row_objectives",
+            "columns": null
+          }
+        },
+        {
+          "type": "dynamiclist",
+          "id": "products",
+          "key": "sanPham",
+          "label": "Sản phẩm dự kiến",
+          "showOutline": true,
+          "components": [
+            {
+              "type": "textfield",
+              "id": "product-name",
+              "key": "tenSanPham",
+              "label": "Tên sản phẩm",
+              "validate": {
+                "required": true
+              },
+              "layout": {
+                "row": "Row_product_name",
+                "columns": null
+              }
+            },
+            {
+              "type": "textarea",
+              "id": "product-comparison",
+              "key": "soSanhDanhGia",
+              "label": "So sánh và đánh giá",
+              "description": "So sánh với sản phẩm tương đương; đánh giá mức độ hiện đại và khả năng tiếp cận công nghệ mới trên thế giới.",
+              "layout": {
+                "row": "Row_product_comparison",
+                "columns": null
+              }
+            }
+          ],
+          "layout": {
+            "row": "Row_products",
+            "columns": null
+          }
+        },
+        {
+          "type": "number",
+          "id": "duration-months",
+          "key": "thoiGianThucHienThang",
+          "label": "Thời gian thực hiện (tháng)",
+          "validate": {
+            "required": true,
+            "min": 1
+          },
+          "layout": {
+            "row": "Row_schedule",
+            "columns": 4
+          }
+        },
+        {
+          "type": "datetime",
+          "subtype": "date",
+          "id": "planned-start",
+          "key": "ngayBatDauDuKien",
+          "label": "Ngày bắt đầu dự kiến",
+          "validate": {
+            "required": true
+          },
+          "layout": {
+            "row": "Row_schedule",
+            "columns": 6
+          }
+        },
+        {
+          "type": "datetime",
+          "subtype": "date",
+          "id": "planned-end",
+          "key": "ngayKetThucDuKien",
+          "label": "Ngày kết thúc dự kiến",
+          "validate": {
+            "required": true
+          },
+          "layout": {
+            "row": "Row_schedule",
+            "columns": 6
+          }
+        },
+        {
+          "type": "number",
+          "id": "estimated-budget",
+          "key": "kinhPhiDuKien",
+          "label": "Kinh phí dự kiến (VNĐ)",
+          "validate": {
+            "required": true,
+            "min": 0
+          },
+          "layout": {
+            "row": "Row_funding",
+            "columns": 6
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "funding-source",
+          "key": "nguonKinhPhi",
+          "label": "Nguồn kinh phí",
+          "defaultValue": "Quỹ phát triển Khoa học và Công nghệ của Viettel",
+          "validate": {
+            "required": true
+          },
+          "layout": {
+            "row": "Row_funding",
+            "columns": 10
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "budget-basis",
+          "key": "coSoKinhPhiDeXuat",
+          "label": "Cơ sở kinh phí đề xuất",
+          "description": "Phân tích sơ bộ cơ sở kinh phí đối với các hạng mục chính, có giá trị lớn.",
+          "validate": {
+            "required": true
+          },
+          "layout": {
+            "row": "Row_budget_basis",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "defense-effect",
+          "key": "hieuQuaQuocPhongAnNinhKhcn",
+          "label": "Hiệu quả quốc phòng, an ninh và khoa học công nghệ",
+          "description": "Bao gồm khả năng làm nền tảng cho phát triển các sản phẩm tiếp theo.",
+          "validate": {
+            "required": true
+          },
+          "layout": {
+            "row": "Row_effects",
+            "columns": 8
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "economic-effect",
+          "key": "hieuQuaKinhTe",
+          "label": "Hiệu quả kinh tế",
+          "description": "Có so sánh giá với sản phẩm tương đương.",
+          "validate": {
+            "required": true
+          },
+          "layout": {
+            "row": "Row_effects",
+            "columns": 8
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "difficulties",
+          "key": "khoKhan",
+          "label": "Khó khăn, vướng mắc",
+          "layout": {
+            "row": "Row_risks",
+            "columns": 8
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "solutions",
+          "key": "giaiPhap",
+          "label": "Giải pháp",
+          "layout": {
+            "row": "Row_risks",
+            "columns": 8
+          }
+        },
+        {
+          "type": "separator",
+          "id": "sep-part-3",
+          "layout": {
+            "row": "Row_sep_part_3",
+            "columns": null
+          }
+        },
+        {
+          "type": "html",
+          "id": "part-3-heading",
+          "layout": {
+            "row": "Row_part_3_heading",
+            "columns": null
+          },
+          "content": "<div style=\"text-align:center;font-family:serif;margin-top:20px\"><strong>PHẦN 3</strong><br><strong style=\"font-size:18px\">ĐỀ XUẤT TỔ CHỨC TRIỂN KHAI</strong></div>"
+        },
+        {
+          "type": "checklist",
+          "id": "approval-proposals",
+          "key": "noiDungXinChuTruong",
+          "label": "Nội dung xin chủ trương",
+          "validate": {
+            "required": true
+          },
+          "values": [
+            {
+              "value": "thong_qua_chu_truong",
+              "label": "Thông qua chủ trương thực hiện nhiệm vụ theo quy định hiện hành"
+            },
+            {
+              "value": "giao_xay_dung_ho_so",
+              "label": "Giao lãnh đạo chỉ đạo đơn vị xây dựng/hoàn thiện hồ sơ"
+            },
+            {
+              "value": "to_chuc_tham_dinh",
+              "label": "Chỉ đạo các cơ quan, đơn vị liên quan tổ chức xét duyệt, thẩm định hồ sơ"
+            },
+            {
+              "value": "trinh_bo_quoc_phong",
+              "label": "Hoàn thiện hồ sơ để trình Bộ Quốc phòng"
+            }
+          ],
+          "layout": {
+            "row": "Row_approval_proposals",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "directing-leader",
+          "key": "lanhDaoChiDao",
+          "label": "Lãnh đạo được đề xuất giao chỉ đạo",
+          "layout": {
+            "row": "Row_directing_leader",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "implementation-proposal",
+          "key": "deXuatToChucTrienKhai",
+          "label": "Đề xuất tổ chức triển khai chi tiết",
+          "validate": {
+            "required": true
+          },
+          "layout": {
+            "row": "Row_implementation_proposal",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "other-proposals",
+          "key": "deXuatKhac",
+          "label": "Đề xuất khác",
+          "layout": {
+            "row": "Row_other_proposals",
+            "columns": null
+          }
+        },
+        {
+          "type": "separator",
+          "id": "sep-signature",
+          "layout": {
+            "row": "Row_sep_signature",
+            "columns": null
+          }
+        },
+        {
+          "type": "html",
+          "id": "signature-heading",
+          "layout": {
+            "row": "Row_signature_heading",
+            "columns": null
+          },
+          "content": "<h3 style=\"font-family:serif\">Nơi nhận và ký báo cáo</h3>"
+        },
+        {
+          "type": "textarea",
+          "id": "recipients",
+          "key": "noiNhan",
+          "label": "Nơi nhận",
+          "defaultValue": "- Như trên;\n- Lưu: VT.",
+          "validate": {
+            "required": true
+          },
+          "layout": {
+            "row": "Row_recipients",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "signing-unit",
+          "key": "donViKy",
+          "label": "Đơn vị ký",
+          "validate": {
+            "required": true
+          },
+          "layout": {
+            "row": "Row_signature",
+            "columns": 6
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "signer-title",
+          "key": "chucVuNguoiKy",
+          "label": "Chức vụ người ký",
+          "layout": {
+            "row": "Row_signature",
+            "columns": 5
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "signer-name",
+          "key": "hoTenNguoiKy",
+          "label": "Họ và tên người ký",
+          "layout": {
+            "row": "Row_signature",
+            "columns": 5
+          }
+        }
+      ],
+      "layout": {
+        "row": "Row_soan_thao",
+        "columns": null
+      }
+    },
+    {
+      "type": "html",
+      "id": "Html_van_ban_hoan_chinh",
+      "content": "<style>\n  .document-page {\n    max-width: 900px;\n    margin: 0 auto;\n    padding: 34px 44px 48px;\n    background: #fff;\n    color: #111;\n    font-family: \"Times New Roman\", Times, serif;\n    font-size: 17px;\n    line-height: 1.55;\n  }\n  .document-page * { box-sizing: border-box; }\n  .document-header {\n    display: grid;\n    grid-template-columns: 1fr 1fr;\n    column-gap: 36px;\n    align-items: start;\n    margin-bottom: 22px;\n  }\n  .document-header__cell { text-align: center; }\n  .document-header__line {\n    display: inline-block;\n    min-width: 220px;\n    border-bottom: 1px solid #111;\n    padding-bottom: 3px;\n    font-weight: 700;\n  }\n  .document-meta {\n    display: grid;\n    grid-template-columns: 1fr 1fr;\n    column-gap: 36px;\n    margin-top: 12px;\n    align-items: end;\n  }\n  .document-meta__left { text-align: center; }\n  .document-meta__right { text-align: right; font-style: italic; }\n  .document-title { text-align: center; margin: 28px 0 20px; }\n  .document-title h1 { font-size: 23px; margin: 0 0 2px; }\n  .document-title h2 { font-size: 18px; margin: 0; }\n  .document-part { text-align: center; margin: 26px 0 14px; }\n  .document-part div:first-child { font-weight: 700; }\n  .document-part div:last-child { font-size: 19px; font-weight: 700; }\n  .document-page h3 { font-size: 17px; margin: 14px 0 6px; }\n  .document-page p { margin: 7px 0; text-align: justify; text-indent: 36px; }\n  .document-page ul { margin: 6px 0 8px 28px; padding-left: 18px; }\n  .document-page li { margin: 4px 0; text-align: justify; }\n  .preserve-lines { white-space: pre-line; text-align: justify; }\n  .signature-grid {\n    display: grid;\n    grid-template-columns: 1fr 1fr;\n    column-gap: 42px;\n    margin-top: 28px;\n  }\n  .signature-grid__right { text-align: center; }\n  .signature-space { height: 82px; }\n  .muted-placeholder { color: #777; font-style: italic; }\n  @media (max-width: 720px) {\n    .document-page { padding: 24px 18px; font-size: 16px; }\n    .document-header, .document-meta, .signature-grid {\n      grid-template-columns: 1fr;\n      row-gap: 18px;\n    }\n    .document-meta__right { text-align: center; }\n  }\n</style>\n\n<article class=\"document-page\">\n  <header class=\"document-header\">\n    <div class=\"document-header__cell\">\n      <strong>TẬP ĐOÀN CÔNG NGHIỆP - VIỄN THÔNG QUÂN ĐỘI</strong><br>\n      <span class=\"document-header__line\">{{donViBaoCao}}</span>\n    </div>\n    <div class=\"document-header__cell\">\n      <strong>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong><br>\n      <span class=\"document-header__line\">Độc lập - Tự do - Hạnh phúc</span>\n    </div>\n  </header>\n\n  <div class=\"document-meta\">\n    <div class=\"document-meta__left\">Số: {{soBaoCao}}/BC-…</div>\n    <div class=\"document-meta__right\">\n      {{diaDanh}}, ngày {{ngayBaoCao}} tháng {{thangBaoCao}} năm {{namBaoCao}}\n    </div>\n  </div>\n\n  <section class=\"document-title\">\n    <h1>BÁO CÁO</h1>\n    <h2>Xin chủ trương thực hiện nhiệm vụ “{{tenNhiemVu}}”</h2>\n  </section>\n\n  <p>\n    Căn cứ Quy chế lãnh đạo của Đảng ủy đối với công tác khoa học và công nghệ\n    trong Tập đoàn Công nghiệp - Viễn thông Quân đội số 455-QC/ĐU ngày 22/7/2024;\n  </p>\n  <p class=\"preserve-lines\">Căn cứ {{canCuKetLuanChiDao}};</p>\n  {{#loop canCuBoSung}}\n    <p class=\"preserve-lines\">Căn cứ {{noiDung}};</p>\n  {{/loop}}\n  <p>\n    {{donViBaoCao}} xin báo cáo Thường vụ Đảng ủy Tập đoàn cho chủ trương thực hiện\n    nhiệm vụ “{{tenNhiemVu}}”, chi tiết như sau:\n  </p>\n\n  <section class=\"document-part\">\n    <div>Phần 1</div>\n    <div>CƠ SỞ ĐỀ XUẤT</div>\n  </section>\n\n  <h3>1. Tính cần thiết</h3>\n  <div class=\"preserve-lines\">{{tinhCanThiet}}</div>\n\n  <h3>2. Cơ sở thực hiện</h3>\n  <p><strong>2.1. Cơ sở chính trị</strong></p>\n  <div class=\"preserve-lines\">{{coSoChinhTri}}</div>\n  <p><strong>2.2. Cơ sở pháp lý</strong></p>\n  <div class=\"preserve-lines\">{{coSoPhapLy}}</div>\n\n  <section class=\"document-part\">\n    <div>Phần 2</div>\n    <div>NHIỆM VỤ ĐỀ XUẤT</div>\n  </section>\n\n  <h3>1. Kết quả thực hiện</h3>\n  <p>\n    Báo cáo kết quả thực hiện đến nay theo quyết định phê duyệt, giao nhiệm vụ:\n  </p>\n  <ul>\n    <li><strong>Kết quả về công nghệ, sản phẩm:</strong>\n      <span class=\"preserve-lines\">{{ketQuaCongNgheSanPham}}</span>\n    </li>\n    <li><strong>Những kế thừa cho nhiệm vụ tiếp theo:</strong>\n      <span class=\"preserve-lines\">{{noiDungKeThua}}</span>\n    </li>\n    <li><strong>Kinh phí đã thực hiện:</strong> {{kinhPhiDaThucHien}} VNĐ.</li>\n    <li><strong>Kết quả khác:</strong>\n      <span class=\"preserve-lines\">{{ketQuaKhac}}</span>\n    </li>\n  </ul>\n\n  <h3>2. Nhiệm vụ đề xuất</h3>\n  <p>\n    Triển khai nhiệm vụ được giao, {{donViBaoCao}} đề xuất triển khai nhiệm vụ\n    “{{tenNhiemVu}}” với nội dung như sau:\n  </p>\n  <ul>\n    <li><strong>Mục tiêu:</strong>\n      <span class=\"preserve-lines\">{{mucTieu}}</span>\n    </li>\n    <li><strong>Sản phẩm dự kiến:</strong></li>\n  </ul>\n  <ol>\n    {{#loop sanPham}}\n      <li>\n        <strong>{{tenSanPham}}</strong>\n        <div class=\"preserve-lines\">{{soSanhDanhGia}}</div>\n      </li>\n    {{/loop}}\n  </ol>\n  <ul>\n    <li>\n      <strong>Kế hoạch thực hiện:</strong> {{thoiGianThucHienThang}} tháng,\n      từ ngày {{ngayBatDauDuKien}} đến ngày {{ngayKetThucDuKien}}.\n    </li>\n    <li>\n      <strong>Kinh phí dự kiến:</strong> {{kinhPhiDuKien}} VNĐ;\n      nguồn kinh phí: {{nguonKinhPhi}}.\n      <div class=\"preserve-lines\">{{coSoKinhPhiDeXuat}}</div>\n    </li>\n    <li>\n      <strong>Hiệu quả quốc phòng, an ninh và khoa học công nghệ:</strong>\n      <div class=\"preserve-lines\">{{hieuQuaQuocPhongAnNinhKhcn}}</div>\n    </li>\n    <li>\n      <strong>Hiệu quả kinh tế:</strong>\n      <div class=\"preserve-lines\">{{hieuQuaKinhTe}}</div>\n    </li>\n    <li>\n      <strong>Khó khăn:</strong>\n      <div class=\"preserve-lines\">{{khoKhan}}</div>\n    </li>\n    <li>\n      <strong>Giải pháp:</strong>\n      <div class=\"preserve-lines\">{{giaiPhap}}</div>\n    </li>\n  </ul>\n\n  <section class=\"document-part\">\n    <div>Phần 3</div>\n    <div>ĐỀ XUẤT TỔ CHỨC TRIỂN KHAI</div>\n  </section>\n\n  <p>\n    {{donViBaoCao}} kính đề nghị Thường vụ Đảng ủy Tập đoàn xem xét, thông qua\n    chủ trương thực hiện nhiệm vụ “{{tenNhiemVu}}” theo các quy định hiện hành.\n  </p>\n  <p><strong>Lãnh đạo đề xuất giao chỉ đạo:</strong> {{lanhDaoChiDao}}.</p>\n  <div class=\"preserve-lines\">{{deXuatToChucTrienKhai}}</div>\n  <div class=\"preserve-lines\">{{deXuatKhac}}</div>\n  <p>\n    Trên đây là báo cáo của {{donViBaoCao}} về việc triển khai nhiệm vụ\n    “{{tenNhiemVu}}”, kính đề nghị Thường vụ Đảng ủy Tập đoàn xem xét và chỉ đạo./.\n  </p>\n\n  <footer class=\"signature-grid\">\n    <div>\n      <strong>Nơi nhận:</strong>\n      <div class=\"preserve-lines\">{{noiNhan}}</div>\n    </div>\n    <div class=\"signature-grid__right\">\n      <strong>{{donViKy}}</strong><br>\n      <strong>{{chucVuNguoiKy}}</strong>\n      <div class=\"signature-space\"></div>\n      <strong>{{hoTenNguoiKy}}</strong>\n    </div>\n  </footer>\n</article>",
+      "conditional": {
+        "hide": "=cheDoXemVanBan != true"
+      },
+      "layout": {
+        "row": "Row_van_ban_hoan_chinh",
+        "columns": null
+      }
+    }
+  ],
+  "type": "default"
+}

@@ -1,0 +1,75 @@
+<div class="asgb-root">
+  <div class="asgb-mode">
+    <span nz-typography nzType="secondary">Chế độ:</span>
+    <nz-segmented [nzOptions]="modeOptions" [ngModel]="value().mode" (ngModelChange)="setMode($event)"></nz-segmented>
+    <span nz-typography nzType="secondary" class="asgb-mode-help">{{ modeHelp(value().mode) }}</span>
+  </div>
+
+  @if (value().targets.length === 0) {
+    <div class="asgb-empty">
+      <nz-tag nzColor="warning">Chưa có đích phân công</nz-tag>
+    </div>
+  }
+
+  @for (target of value().targets; track $index) {
+    <div class="asgb-row">
+      <div class="asgb-row-line">
+        <nz-select
+          class="asgb-type"
+          [ngModel]="target.type"
+          (ngModelChange)="onTypeChange($index, $event)"
+        >
+          @for (opt of targetTypeOptions; track opt.value) {
+            <nz-option [nzValue]="opt.value" [nzLabel]="opt.label" [nzDisabled]="!!opt.disabled"></nz-option>
+          }
+        </nz-select>
+
+        @if (target.type === 'GROUP') {
+          <nz-select
+            class="asgb-value"
+            nzMode="multiple"
+            nzPlaceHolder="Chọn nhóm phê duyệt"
+            nzShowSearch
+            [nzStatus]="issueFor($index) ? 'error' : ''"
+            [ngModel]="groupRoleCodes(target)"
+            (ngModelChange)="onGroupChange($index, $event)"
+          >
+            @for (opt of roleOptions; track opt.value) {
+              <nz-option [nzValue]="opt.value" [nzLabel]="opt.label"></nz-option>
+            }
+          </nz-select>
+        } @else if (target.type === 'USER') {
+          <nz-select
+            class="asgb-value"
+            nzMode="multiple"
+            nzPlaceHolder="Chọn người cụ thể"
+            nzShowSearch
+            [nzStatus]="issueFor($index) ? 'error' : ''"
+            [ngModel]="userIds(target)"
+            (ngModelChange)="onUserChange($index, $event)"
+          >
+            @for (opt of userOptions; track opt.value) {
+              <nz-option [nzValue]="opt.value" [nzLabel]="opt.label"></nz-option>
+            }
+          </nz-select>
+        } @else {
+          <nz-tag>Placeholder — sẽ resolve ở đợt backend</nz-tag>
+        }
+
+        <button nz-button nzType="text" nzDanger nzSize="small" (click)="removeTarget($index)">
+          <span nz-icon nzType="delete"></span>
+        </button>
+      </div>
+      @if (issueFor($index); as issue) {
+        <div class="asgb-issue">
+          <span nz-typography nzType="danger">{{ issue }}</span>
+        </div>
+      }
+    </div>
+  }
+
+  <button nz-button nzSize="small" (click)="addTarget()">
+    <span nz-icon nzType="plus"></span>
+    Thêm đích phân công
+  </button>
+</div>

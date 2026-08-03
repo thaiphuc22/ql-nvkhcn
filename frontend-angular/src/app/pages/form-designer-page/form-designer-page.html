@@ -1,0 +1,48 @@
+@if (loading()) {
+  <div class="fdp-loading">
+    <nz-spin nzTip="Đang tải biểu mẫu..."></nz-spin>
+  </div>
+} @else if (!meta()) {
+  <nz-result nzStatus="404" nzTitle="Không tìm thấy biểu mẫu" nzSubTitle="Biểu mẫu không tồn tại hoặc đã bị xoá.">
+    <div nz-result-extra>
+      <button nz-button nzType="primary" (click)="backToLibrary()">Về thư viện biểu mẫu</button>
+    </div>
+  </nz-result>
+} @else {
+  <div class="fdp-page">
+    <header class="fdp-header">
+      <div>
+        <button nz-button nzType="link" class="fdp-back" (click)="back()">← Thư viện biểu mẫu</button>
+        <h2>
+          <span nz-icon nzType="form" class="fdp-header-icon"></span>
+          Thiết kế biểu mẫu — {{ meta()!.ten }}
+        </h2>
+        <code>{{ meta()!.key }}</code>
+      </div>
+      <div class="fdp-actions">
+        <input #jsonFileInput class="fdp-file-input" type="file" accept=".json,application/json" (change)="importJson($event)" />
+        <button nz-button [nzLoading]="importing()" [disabled]="saving()" (click)="chooseJsonFile()">
+          <span nz-icon nzType="upload"></span>
+          Import JSON
+        </button>
+        <button nz-button (click)="back()">Huỷ</button>
+        <button nz-button nzType="primary" [nzLoading]="saving()" (click)="saveDesign()">
+          <span nz-icon nzType="save"></span>
+          Lưu thiết kế
+        </button>
+      </div>
+    </header>
+
+    <p class="fdp-hint">
+      Kéo–thả các trường từ dock <strong>Thành phần</strong> (trái), chỉnh thuộc tính ở dock phải, bật
+      <strong>Xem trước</strong> để thấy form render trực tiếp. Đặt <code>key</code> = <code>ketLuan</code> cho trường
+      kết luận để hệ thống tự nhận Đồng ý/Đạt/Thông qua/Phê duyệt.
+    </p>
+
+    <div class="fdp-designer">
+      @for (m of [meta()!]; track m.key) {
+        <app-form-designer [schema]="m.schema"></app-form-designer>
+      }
+    </div>
+  </div>
+}

@@ -1,0 +1,180 @@
+@if (!field()) {
+  <div class="fpr-empty">
+    <nz-empty nzNotFoundImage="simple" nzNotFoundContent="Chọn một thành phần để chỉnh sửa"></nz-empty>
+  </div>
+} @else {
+  <div class="fpr-wrap">
+    <div class="fpr-head">
+      <nz-tag nzColor="red">{{ typeLabel() }}</nz-tag>
+      <span class="fpr-id" [title]="field()!.id">id: {{ field()!.id }}</span>
+    </div>
+
+    @if (isRoot()) {
+      <span class="fpr-muted">Đây là biểu mẫu gốc. Chọn một thành phần bên trong để chỉnh thuộc tính.</span>
+    } @else {
+      @if (isKeyed()) {
+        <div class="fpr-section">
+          <div class="fpr-section-title">Chung</div>
+          <div class="fpr-field">
+            <div class="fpr-label">Khóa dữ liệu (key)</div>
+            <input nz-input [ngModel]="draftKey()" (ngModelChange)="draftKey.set($event)" (blur)="commitKey()" />
+          </div>
+          <div class="fpr-field">
+            <div class="fpr-label">Nhãn hiển thị</div>
+            <input nz-input [ngModel]="draftLabel()" (ngModelChange)="draftLabel.set($event)" (blur)="commitLabel()" />
+          </div>
+          <div class="fpr-field">
+            <div class="fpr-label">Mô tả</div>
+            <input nz-input [ngModel]="draftDescription()" (ngModelChange)="draftDescription.set($event)" (blur)="commitDescription()" />
+          </div>
+        </div>
+      }
+
+      @if (isGroup()) {
+        <div class="fpr-section">
+          <div class="fpr-section-title">Bố cục nhóm</div>
+          <div class="fpr-field">
+            <div class="fpr-label">Nhãn nhóm</div>
+            <input nz-input [ngModel]="draftLabel()" (ngModelChange)="draftLabel.set($event)" (blur)="commitLabel()" />
+          </div>
+          <div class="fpr-outline">
+            <nz-switch [ngModel]="!!field()!.showOutline" (ngModelChange)="toggleShowOutline($event)"></nz-switch>
+            <span>Hiển thị khung viền</span>
+          </div>
+        </div>
+      }
+
+      @if (isLabelOnly()) {
+        <div class="fpr-section">
+          <div class="fpr-section-title">Chung</div>
+          <div class="fpr-field">
+            <div class="fpr-label">Nhãn hiển thị</div>
+            <input nz-input [ngModel]="draftLabel()" (ngModelChange)="draftLabel.set($event)" (blur)="commitLabel()" />
+          </div>
+        </div>
+      }
+
+      @if (isImage()) {
+        <div class="fpr-section">
+          <div class="fpr-section-title">Nội dung ảnh</div>
+          <div class="fpr-field">
+            <div class="fpr-label">Nguồn ảnh (URL hoặc data URI)</div>
+            <input
+              nz-input
+              placeholder="https://... hoặc data:image/png;base64,..."
+              [ngModel]="draftSource()"
+              (ngModelChange)="draftSource.set($event)"
+              (blur)="commitSource()"
+            />
+          </div>
+        </div>
+      }
+
+      @if (isDatetime()) {
+        <div class="fpr-section">
+          <div class="fpr-section-title">Kiểu ngày giờ</div>
+          <nz-radio-group [ngModel]="field()!.subtype ?? 'date'" (ngModelChange)="commitSubtype($event)">
+            <label nz-radio-button nzValue="date">Ngày</label>
+            <label nz-radio-button nzValue="time">Giờ</label>
+            <label nz-radio-button nzValue="datetime">Ngày &amp; giờ</label>
+          </nz-radio-group>
+        </div>
+      }
+
+      @if (isTextOrHtml()) {
+        <div class="fpr-section">
+          <div class="fpr-section-title">Nội dung</div>
+          <div class="fpr-field">
+            @if (field()!.type === 'text') {
+              <div class="fpr-label">Văn bản (Markdown)</div>
+              <textarea nz-input [rows]="5" [ngModel]="draftText()" (ngModelChange)="draftText.set($event)" (blur)="commitText()"></textarea>
+            } @else {
+              <div class="fpr-label">Mã HTML</div>
+              <textarea nz-input [rows]="5" class="fpr-mono" [ngModel]="draftContent()" (ngModelChange)="draftContent.set($event)" (blur)="commitContent()"></textarea>
+            }
+          </div>
+        </div>
+      }
+
+      @if (isExpression()) {
+        <div class="fpr-section">
+          <div class="fpr-section-title">Biểu thức tự tính (FEEL)</div>
+          <div class="fpr-field">
+            <div class="fpr-label">Bắt đầu bằng =, ví dụ =soThang * heSo</div>
+            <textarea nz-input [rows]="3" class="fpr-mono" [ngModel]="draftExpression()" (ngModelChange)="draftExpression.set($event)" (blur)="commitExpression()"></textarea>
+          </div>
+        </div>
+      }
+
+      @if (isRequireable()) {
+        <div class="fpr-section">
+          <div class="fpr-section-title">Kiểm tra hợp lệ</div>
+          <div class="fpr-outline fpr-required-row">
+            <nz-switch [ngModel]="!!field()!.validate?.required" (ngModelChange)="toggleRequired($event)"></nz-switch>
+            <span>Bắt buộc nhập</span>
+          </div>
+          @if (isNumber()) {
+            <div class="fpr-field">
+              <div class="fpr-label">Giá trị nhỏ nhất</div>
+              <nz-input-number class="fpr-block" [ngModel]="draftMin()" (ngModelChange)="draftMin.set($event)" (blur)="commitMin()"></nz-input-number>
+            </div>
+            <div class="fpr-field">
+              <div class="fpr-label">Giá trị lớn nhất</div>
+              <nz-input-number class="fpr-block" [ngModel]="draftMax()" (ngModelChange)="draftMax.set($event)" (blur)="commitMax()"></nz-input-number>
+            </div>
+          }
+          @if (isTextLen()) {
+            <div class="fpr-field">
+              <div class="fpr-label">Độ dài tối thiểu</div>
+              <nz-input-number class="fpr-block" [nzMin]="0" [ngModel]="draftMinLength()" (ngModelChange)="draftMinLength.set($event)" (blur)="commitMinLength()"></nz-input-number>
+            </div>
+            <div class="fpr-field">
+              <div class="fpr-label">Độ dài tối đa</div>
+              <nz-input-number class="fpr-block" [nzMin]="0" [ngModel]="draftMaxLength()" (ngModelChange)="draftMaxLength.set($event)" (blur)="commitMaxLength()"></nz-input-number>
+            </div>
+          }
+        </div>
+      }
+
+      @if (isOptioned()) {
+        <div class="fpr-section">
+          <div class="fpr-section-title">Tùy chọn</div>
+          @for (o of draftOptions(); track $index) {
+            <div class="fpr-option-row">
+              <input nz-input placeholder="giá trị" [ngModel]="o.value" (ngModelChange)="setOptionCell($index, 'value', $event)" />
+              <input nz-input placeholder="nhãn hiển thị" [ngModel]="o.label" (ngModelChange)="setOptionCell($index, 'label', $event)" />
+              <button nz-button nzDanger (click)="removeOption($index)"><span nz-icon nzType="delete"></span></button>
+            </div>
+          }
+          <button nz-button nzType="dashed" nzBlock (click)="addOption()">
+            <span nz-icon nzType="plus"></span>
+            Thêm tùy chọn
+          </button>
+        </div>
+      }
+
+      <div class="fpr-section">
+        <div class="fpr-section-title">Ẩn / hiện có điều kiện (FEEL)</div>
+        <div class="fpr-field">
+          <div class="fpr-label">Ẩn khi biểu thức đúng, ví dụ =vaiTro != "chu_nhiem"</div>
+          <textarea nz-input [rows]="2" class="fpr-mono" [ngModel]="draftHide()" (ngModelChange)="draftHide.set($event)" (blur)="commitHide()"></textarea>
+        </div>
+      </div>
+
+      <nz-divider></nz-divider>
+      <button
+        nz-button
+        nzDanger
+        nzBlock
+        nz-popconfirm
+        nzPopconfirmTitle="Xóa thành phần này?"
+        nzOkText="Xóa"
+        nzCancelText="Hủy"
+        (nzOnConfirm)="confirmRemove()"
+      >
+        <span nz-icon nzType="delete"></span>
+        Xóa thành phần
+      </button>
+    }
+  </div>
+}

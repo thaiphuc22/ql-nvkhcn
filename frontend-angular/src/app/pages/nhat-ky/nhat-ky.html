@@ -1,0 +1,264 @@
+<div class="nk-page">
+  <div class="nk-header">
+    <h2 nz-typography>
+      <span nz-icon nzType="history" class="nk-header-icon"></span>
+      Nhật ký
+    </h2>
+  </div>
+
+  <nz-tabs>
+    <nz-tab nzTitle="Nhật ký luồng">
+      <div nz-row [nzGutter]="[14, 14]" class="nk-stats">
+        <div nz-col [nzXs]="8">
+          <div class="nk-stat-card">
+            <div class="nk-stat-value">{{ flowStats().total }}</div>
+            <span class="nk-stat-label">Sự kiện</span>
+          </div>
+        </div>
+        <div nz-col [nzXs]="8">
+          <div class="nk-stat-card nk-stat-purple">
+            <div class="nk-stat-value">{{ flowStats().services }}</div>
+            <span class="nk-stat-label">Gọi hệ ngoài</span>
+          </div>
+        </div>
+        <div nz-col [nzXs]="8">
+          <div class="nk-stat-card nk-stat-danger">
+            <div class="nk-stat-value">{{ flowStats().incidents }}</div>
+            <span class="nk-stat-label">Sự cố</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="nk-filter-bar">
+        <nz-select
+          [ngModel]="fHoSo()"
+          (ngModelChange)="fHoSo.set($event)"
+          nzPlaceHolder="Chọn hồ sơ"
+          style="width: 200px"
+        >
+          @for (d of dossierOptions; track d) {
+            <nz-option [nzValue]="d" [nzLabel]="d"></nz-option>
+          }
+        </nz-select>
+        <nz-select
+          nzAllowClear
+          [ngModel]="fType()"
+          (ngModelChange)="fType.set($event)"
+          nzPlaceHolder="Tất cả loại sự kiện"
+          style="width: 240px"
+        >
+          @for (t of eventTypeOptions; track t) {
+            <nz-option [nzValue]="t" [nzLabel]="eventMeta[t].label"></nz-option>
+          }
+        </nz-select>
+        <span class="nk-filter-right" nz-typography nzType="secondary">{{ flowEvents().length }} sự kiện</span>
+      </div>
+
+      <div class="nk-timeline-card">
+        @if (flowEvents().length) {
+          <nz-timeline>
+            @for (e of flowEvents(); track e.id) {
+              <nz-timeline-item [nzColor]="eventMeta[e.loai].color">
+                <div class="nk-event-head">
+                  <span nz-typography nzType="secondary" class="nk-event-time">{{ fmt(e.thoiDiem) }}</span>
+                  <nz-tag [nzColor]="eventMeta[e.loai].color">{{ eventMeta[e.loai].label }}</nz-tag>
+                  <strong>{{ e.element }}</strong>
+                </div>
+                <div class="nk-event-detail">{{ e.chiTiet }}</div>
+                @if (e.actor) {
+                  <span nz-typography nzType="secondary" class="nk-event-actor">↳ {{ e.actor }}</span>
+                }
+              </nz-timeline-item>
+            }
+          </nz-timeline>
+        } @else {
+          <nz-empty nzNotFoundContent="Không có sự kiện khớp bộ lọc."></nz-empty>
+        }
+      </div>
+
+      <p nz-typography nzType="secondary" class="nk-footnote">
+        Nguồn: lịch sử Zeebe/Operate (mock). Đây là audit <strong>lớp điều phối</strong> (luồng đi bước nào, rẽ
+        nhánh, gọi hệ ngoài, sự cố). Audit <strong>nội dung</strong> (ai sửa dữ liệu gì trong hồ sơ) nằm ở ứng dụng
+        nghiệp vụ — REQ-ENG-014.
+      </p>
+    </nz-tab>
+
+    <nz-tab nzTitle="Nhật ký tích hợp">
+      <div nz-row [nzGutter]="[14, 14]" class="nk-stats">
+        <div nz-col [nzXs]="8">
+          <div class="nk-stat-card">
+            <div class="nk-stat-value">{{ jobStats().total }}</div>
+            <span class="nk-stat-label">Lần chạy job</span>
+          </div>
+        </div>
+        <div nz-col [nzXs]="8">
+          <div class="nk-stat-card nk-stat-warning">
+            <div class="nk-stat-value">{{ jobStats().retry }}</div>
+            <span class="nk-stat-label">Đang thử lại</span>
+          </div>
+        </div>
+        <div nz-col [nzXs]="8">
+          <div class="nk-stat-card nk-stat-danger">
+            <div class="nk-stat-value">{{ jobStats().failed }}</div>
+            <span class="nk-stat-label">Thất bại</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="nk-filter-bar">
+        <nz-select
+          nzAllowClear
+          [ngModel]="fHe()"
+          (ngModelChange)="fHe.set($event)"
+          nzPlaceHolder="Tất cả hệ"
+          style="width: 160px"
+        >
+          @for (h of heOptions(); track h) {
+            <nz-option [nzValue]="h" [nzLabel]="h"></nz-option>
+          }
+        </nz-select>
+        <nz-select
+          nzAllowClear
+          [ngModel]="fKetQua()"
+          (ngModelChange)="fKetQua.set($event)"
+          nzPlaceHolder="Tất cả kết quả"
+          style="width: 170px"
+        >
+          @for (k of jobOutcomeOptions; track k) {
+            <nz-option [nzValue]="k" [nzLabel]="jobOutcomeMeta[k].label"></nz-option>
+          }
+        </nz-select>
+        <span class="nk-filter-right" nz-typography nzType="secondary"
+          >{{ jobRows().length }}/{{ allJobRuns().length }} lần chạy</span
+        >
+      </div>
+
+      <nz-table
+        [nzData]="jobRows()"
+        [nzLoading]="loadingJobRuns()"
+        nzTableLayout="fixed"
+        [nzScroll]="{ y: '420px' }"
+        nzSize="small"
+      >
+        <thead>
+          <tr>
+            <th nzWidth="180px">Job type</th>
+            <th nzWidth="74px">Hệ</th>
+            <th nzWidth="128px">Mã hồ sơ</th>
+            <th nzWidth="150px">Thời điểm</th>
+            <th nzWidth="140px" nzAlign="center">Kết quả</th>
+            <th>Thông điệp</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of jobRows(); track r.id) {
+            <tr>
+              <td><code>{{ r.jobType }}</code></td>
+              <td><nz-tag>{{ r.he }}</nz-tag></td>
+              <td><strong>{{ r.maHoSo }}</strong></td>
+              <td>{{ r.thoiDiem }}</td>
+              <td nzAlign="center">
+                <nz-tag [nzColor]="jobOutcomeMeta[r.ketQua].color">{{ jobOutcomeMeta[r.ketQua].label }}</nz-tag>
+                <div class="nk-job-retries" nz-typography nzType="secondary">retries {{ r.retries }}</div>
+              </td>
+              <td>{{ r.thongDiep }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6"><nz-empty nzNotFoundContent="Không có lần chạy job khớp bộ lọc."></nz-empty></td>
+            </tr>
+          }
+        </tbody>
+      </nz-table>
+
+      <p nz-typography nzType="secondary" class="nk-footnote">
+        Mỗi dòng là một lần <strong>job worker</strong> chạy — Camunda giao việc qua service task, worker của app
+        gọi hệ ngoài (docs/arch/camunda-design.md mục 5). Xem sức khoẻ tổng thể từng hệ ở màn
+        <strong>Trạng thái Tích hợp</strong>.
+      </p>
+    </nz-tab>
+
+    <nz-tab nzTitle="Quy trình ↔ NV KHCN">
+      <div class="nk-internal-intro">
+        <strong>Nhật ký tích hợp giữa hai service</strong>
+        <span>
+          Service Quản lý NV KHCN gửi lệnh khởi tạo quy trình qua outbox; Service Quản lý quy trình
+          trả sự kiện task/quy trình để cập nhật projection hồ sơ qua inbox.
+        </span>
+        <div class="nk-direction-legend">
+          <nz-tag nzColor="geekblue">NV KHCN → Quy trình</nz-tag><span>Lệnh khởi tạo</span>
+          <nz-tag nzColor="purple">Quy trình → NV KHCN</nz-tag><span>Sự kiện workflow</span>
+        </div>
+      </div>
+      @if (internalStatus(); as status) {
+        <div nz-row [nzGutter]="[14, 14]" class="nk-stats">
+          <div nz-col [nzXs]="8">
+            <div class="nk-stat-card nk-stat-warning">
+              <div class="nk-stat-value">{{ status.outboxPending }}</div>
+              <span class="nk-stat-label">Lệnh chờ gửi</span>
+            </div>
+          </div>
+          <div nz-col [nzXs]="8">
+            <div class="nk-stat-card nk-stat-danger">
+              <div class="nk-stat-value">{{ status.outboxFailed }}</div>
+              <span class="nk-stat-label">Lệnh gửi lỗi</span>
+            </div>
+          </div>
+          <div nz-col [nzXs]="8">
+            <div class="nk-stat-card nk-stat-danger">
+              <div class="nk-stat-value">{{ status.startFailedDossiers.length }}</div>
+              <span class="nk-stat-label">Hồ sơ START_FAILED</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="nk-internal-summary">
+          <div>
+            <span nz-typography nzType="secondary">Sự kiện gửi gần nhất</span>
+            <strong>{{ status.latestSent?.eventType ?? 'Chưa có' }}</strong>
+          </div>
+          <div><span>Hồ sơ</span><strong>{{ status.latestSent?.hoSoId ?? '—' }}</strong></div>
+          <div><span>Thời điểm gửi</span><strong>{{ fmtIso(status.latestSent?.sentAt) }}</strong></div>
+          <button nz-button (click)="loadInternalStatus()"><nz-icon nzType="reload" /> Làm mới</button>
+        </div>
+
+        <h3>Sự kiện Service Quản lý quy trình gửi về gần nhất theo loại</h3>
+        <nz-table [nzData]="status.latestInboxByType" nzSize="small" [nzLoading]="loadingInternalStatus()">
+          <thead><tr><th>Loại sự kiện</th><th>Hồ sơ</th><th>Process instance</th><th>Phát sinh</th><th>Tiếp nhận</th></tr></thead>
+          <tbody>
+            @for (event of status.latestInboxByType; track event.eventId) {
+              <tr>
+                <td><nz-tag nzColor="blue">{{ event.eventType }}</nz-tag></td>
+                <td><strong>{{ event.hoSoId }}</strong></td>
+                <td><code>{{ event.processInstanceId }}</code></td>
+                <td>{{ fmtIso(event.occurredAt) }}</td>
+                <td>{{ fmtIso(event.receivedAt) }}</td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+
+        @if (status.startFailedDossiers.length) {
+          <h3 class="nk-failed-title">Hồ sơ chưa khởi tạo được quy trình</h3>
+          <nz-table [nzData]="status.startFailedDossiers" nzSize="small" [nzShowPagination]="false">
+            <thead><tr><th nzWidth="180px">Mã hồ sơ</th><th>Nguyên nhân gần nhất</th></tr></thead>
+            <tbody>
+              @for (item of status.startFailedDossiers; track item.hoSoId) {
+                <tr><td><strong>{{ item.hoSoId }}</strong></td><td>{{ item.reason }}</td></tr>
+              }
+            </tbody>
+          </nz-table>
+        }
+
+        <p nz-typography nzType="secondary" class="nk-footnote">
+          Dữ liệu đọc trực tiếp từ transactional outbox/inbox. Kênh này được hiển thị riêng với các kết nối
+          hệ thống ngoài trên màn Tích hợp.
+        </p>
+      } @else if (loadingInternalStatus()) {
+        <nz-table [nzData]="[]" [nzLoading]="true"></nz-table>
+      } @else {
+        <nz-empty nzNotFoundContent="Chưa tải được trạng thái đồng bộ nội bộ."></nz-empty>
+      }
+    </nz-tab>
+  </nz-tabs>
+</div>

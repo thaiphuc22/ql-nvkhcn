@@ -26,13 +26,16 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 22
+          # Node 24 ships npm 11, which fixes the npm 10.x "Exit handler never
+          # called" hang that made `npm ci` time out after the recharts dep was
+          # added. Verified locally: install + build are clean on npm 11.
+          node-version: 24
           cache: npm
           cache-dependency-path: webapp/package-lock.json
 
       - name: Install dependencies
         working-directory: webapp
-        run: npm ci
+        run: npm ci --no-audit --no-fund
 
       - name: Build application
         working-directory: webapp

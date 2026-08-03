@@ -1,0 +1,85 @@
+<div class="isc-card">
+  <div class="isc-head">
+    <div class="isc-head-left">
+      <div class="isc-icon-tile" [style.background]="visual().bg" [style.color]="visual().color">
+        <span nz-icon [nzType]="visual().icon"></span>
+      </div>
+      <div class="isc-head-text">
+        <span nz-typography nzStrong class="isc-key">{{ system().key }}</span>
+        <span nz-typography nzType="secondary" class="isc-name">{{ system().ten }}</span>
+      </div>
+    </div>
+    <span class="isc-status-pill" [class]="'isc-status-' + statusMeta[system().trangThai].color">
+      {{ statusMeta[system().trangThai].label }}
+    </span>
+  </div>
+
+  <div class="isc-info">
+    <div class="isc-info-row">
+      <span class="isc-info-label">API Key</span>
+      @if (system().apiKeyTail) {
+        <span class="isc-info-value isc-mono">•••• •••• {{ system().apiKeyTail }}</span>
+      } @else {
+        <span class="isc-info-value isc-muted">Chưa thiết lập</span>
+      }
+    </div>
+    <div class="isc-info-row">
+      <span class="isc-info-label">Endpoint</span>
+      <span class="isc-info-value isc-mono isc-ellipsis" nz-tooltip [nzTooltipTitle]="system().endpoint">{{ system().endpoint }}</span>
+    </div>
+    <div class="isc-info-row">
+      <span class="isc-info-label">Đồng bộ cuối</span>
+      @if (connected()) {
+        <span class="isc-info-value">{{ system().lanDongBoCuoi }}</span>
+      } @else {
+        <span class="isc-info-value isc-danger">Mất kết nối</span>
+      }
+    </div>
+  </div>
+
+  <div class="isc-metrics">
+    <div class="isc-metric">
+      <div class="isc-metric-value">{{ system().doTreMs }}ms</div>
+      <span class="isc-metric-label">Độ trễ TB</span>
+    </div>
+    <div class="isc-metric-divider"></div>
+    <div class="isc-metric">
+      <div class="isc-metric-value" [class.isc-danger]="successRate() !== null && successRate()! < 100">
+        {{ successRate() === null ? '—' : successRate() + '%' }}
+      </div>
+      <span class="isc-metric-label">TL thành công</span>
+    </div>
+    <div class="isc-metric-divider"></div>
+    <div class="isc-metric">
+      <div class="isc-metric-value" [class.isc-danger]="system().hangDoi > 3">{{ system().hangDoi }}</div>
+      <span class="isc-metric-label">Hàng đợi</span>
+    </div>
+    <div class="isc-metric-divider"></div>
+    <div class="isc-metric">
+      <div class="isc-metric-value" [class.isc-danger]="openIncidents() > 0">{{ openIncidents() }}</div>
+      <span class="isc-metric-label">Lỗi mở</span>
+    </div>
+  </div>
+
+  <div class="isc-divider"></div>
+
+  <div class="isc-actions">
+    <button type="button" class="isc-btn isc-btn-outline" (click)="detail.emit()">Xem chi tiết</button>
+    @if (connected()) {
+      <div class="isc-actions-grid">
+        <button type="button" class="isc-btn isc-btn-outline" (click)="connect.emit()">
+          <span nz-icon nzType="setting"></span> Cấu hình
+        </button>
+        <button type="button" class="isc-btn isc-btn-danger" (click)="disconnect.emit()">
+          <span nz-icon nzType="disconnect"></span> Ngắt kết nối
+        </button>
+      </div>
+    } @else {
+      <button type="button" class="isc-btn isc-btn-primary" (click)="connect.emit()">
+        <span nz-icon nzType="link"></span> Kết nối
+      </button>
+    }
+  </div>
+
+  <div class="isc-ref" nz-tooltip nzTooltipTitle="Requirement/NFR liên quan">{{ system().ref }}</div>
+</div>

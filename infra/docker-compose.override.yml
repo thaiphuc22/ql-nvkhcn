@@ -1,0 +1,36 @@
+# QTKHCN domain DB (D15) — chạy CẠNH stack Camunda chính thức, không sửa file gốc của Camunda.
+# Cách dùng: copy (hoặc symlink) file này vào infra/camunda/ (thư mục chứa docker-compose.yaml
+# gốc lấy từ camunda-distributions, xem README.md) rồi chạy `docker compose up -d` như bình
+# thường tại đó — Docker Compose tự merge docker-compose.override.yml cùng thư mục.
+# Chi tiết bước lấy file gốc + verify: infra/README.md.
+
+services:
+  qtkhcn-postgres:
+    image: postgres:16-alpine
+    container_name: qtkhcn-postgres
+    environment:
+      - POSTGRES_DB=qtkhcn
+      - POSTGRES_USER=qtkhcn
+      - POSTGRES_PASSWORD=qtkhcn-dev-local
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - qtkhcn-postgres-data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - camunda
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U qtkhcn -d qtkhcn"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  qtkhcn-postgres-data:
+
+# KHÔNG khai báo lại top-level `networks.camunda` ở đây (từng có `external: true` — SAI, gây lỗi
+# "network camunda declared as external, but could not be found" ở lần chạy đầu vì network đó do
+# chính docker-compose.yaml gốc của Camunda tạo, chưa tồn tại trước khi `docker compose up` chạy).
+# Docker Compose tự merge top-level `networks:` theo key giữa docker-compose.yaml (khai báo
+# `camunda: {name: camunda}`, không external) và file override này — không cần lặp lại ở đây,
+# service qtkhcn-postgres bên trên chỉ cần tham chiếu `networks: [camunda]` là đủ.

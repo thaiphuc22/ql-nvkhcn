@@ -1,0 +1,33 @@
+.asc-alert {
+  margin-bottom: 16px;
+}
+.asc-table {
+  margin-bottom: 12px;
+}
+.asc-code {
+  font-size: 11px;
+}
+.asc-mota {
+  font-size: 12px;
+}
+.asc-add-bar {
+  display: flex;
+  justify-content: flex-end;
+}
+.asc-form {
+  display: grid;
+  gap: 7px;
+}
+.asc-form label {
+  margin-top: 6px;
+  font-weight: 600;
+}
+.asc-required {
+  color: var(--vht-danger, #cf1322);
+}
+.asc-form nz-select {
+  width: 100%;
+}
+.asc-form-block {
+  width: 100%;
+}

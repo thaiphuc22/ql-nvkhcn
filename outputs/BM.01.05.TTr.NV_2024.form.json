@@ -1,0 +1,724 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.9.0",
+  "exporter": {
+    "name": "Camunda Web Modeler",
+    "version": "c72e043"
+  },
+  "schemaVersion": 19,
+  "id": "Form_BM_01_05_TTr_NV_2024",
+  "components": [
+    {
+      "type": "html",
+      "id": "Html_1275",
+      "content": "<div style=\"padding:10px 12px;background:#f4f7fb;border-left:4px solid #0f62fe\"><strong>Chế độ hiển thị:</strong> Nhập và kiểm tra dữ liệu ở chế độ soạn thảo. Bật <em>Xem văn bản hoàn chỉnh</em> để xem bản trình bày.</div>",
+      "layout": {
+        "row": "Row_1276",
+        "columns": null
+      }
+    },
+    {
+      "type": "checkbox",
+      "id": "Field_1277",
+      "key": "cheDoXemVanBan",
+      "label": "Xem văn bản hoàn chỉnh",
+      "defaultValue": false,
+      "layout": {
+        "row": "Row_1278",
+        "columns": null
+      }
+    },
+    {
+      "type": "group",
+      "id": "Group_1279",
+      "label": "Thông tin soạn thảo",
+      "showOutline": true,
+      "conditional": {
+        "hide": "=cheDoXemVanBan = true"
+      },
+      "components": [
+        {
+          "type": "html",
+          "id": "Html_1267",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">Thông tin tờ trình</div>",
+          "layout": {
+            "row": "Row_1268",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_243",
+          "key": "donViBanHanh",
+          "label": "Đơn vị ban hành/chủ trì",
+          "layout": {
+            "row": "Row_244",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_245",
+          "key": "soVanBan",
+          "label": "Số văn bản",
+          "layout": {
+            "row": "Row_246",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_247",
+          "key": "diaDanh",
+          "label": "Địa danh",
+          "layout": {
+            "row": "Row_248",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          },
+          "defaultValue": "Hà Nội"
+        },
+        {
+          "type": "datetime",
+          "id": "Field_249",
+          "key": "ngayVanBan",
+          "label": "Ngày văn bản",
+          "layout": {
+            "row": "Row_250",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          },
+          "subtype": "date"
+        },
+        {
+          "type": "textfield",
+          "id": "Field_251",
+          "key": "nguoiKy",
+          "label": "Họ tên người ký",
+          "layout": {
+            "row": "Row_252",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_253",
+          "key": "chucDanhKy",
+          "label": "Chức danh người ký",
+          "layout": {
+            "row": "Row_254",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_255",
+          "key": "tenNhiemVu",
+          "label": "Tên nhiệm vụ KHCN",
+          "layout": {
+            "row": "Row_256",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_257",
+          "key": "maNhiemVu",
+          "label": "Mã số nhiệm vụ",
+          "layout": {
+            "row": "Row_258",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_259",
+          "key": "capQuanLy",
+          "label": "Cấp quản lý",
+          "layout": {
+            "row": "Row_260",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_261",
+          "key": "donViChuTri",
+          "label": "Đơn vị chủ trì",
+          "layout": {
+            "row": "Row_262",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_263",
+          "key": "chuNhiemNhiemVu",
+          "label": "Cá nhân chủ nhiệm",
+          "layout": {
+            "row": "Row_264",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_265",
+          "key": "linhVuc",
+          "label": "Lĩnh vực Hội đồng KHCN chuyên ngành",
+          "layout": {
+            "row": "Row_266",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_267",
+          "key": "kinhGui",
+          "label": "Kính gửi",
+          "layout": {
+            "row": "Row_268",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_269",
+          "key": "soQuyetDinhChuTruong",
+          "label": "Số Quyết định chủ trương",
+          "layout": {
+            "row": "Row_270",
+            "columns": null
+          }
+        },
+        {
+          "type": "datetime",
+          "id": "Field_271",
+          "key": "ngayQuyetDinhChuTruong",
+          "label": "Ngày Quyết định chủ trương",
+          "layout": {
+            "row": "Row_272",
+            "columns": null
+          },
+          "subtype": "date"
+        },
+        {
+          "type": "html",
+          "id": "Html_1269",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">I. Chủ trương và nhiệm vụ đã phê duyệt</div>",
+          "layout": {
+            "row": "Row_1270",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_273",
+          "key": "mucTieuDaDuyet",
+          "label": "Mục tiêu đã phê duyệt",
+          "layout": {
+            "row": "Row_274",
+            "columns": null
+          }
+        },
+        {
+          "type": "number",
+          "id": "Field_275",
+          "key": "kinhPhiKhaiToanDaDuyet",
+          "label": "Kinh phí khái toán đã phê duyệt",
+          "layout": {
+            "row": "Row_276",
+            "columns": null
+          },
+          "validate": {
+            "min": 0
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_277",
+          "key": "hinhThucDaDuyet",
+          "label": "Hình thức/cấp quản lý đã phê duyệt",
+          "layout": {
+            "row": "Row_278",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_279",
+          "key": "ketQuaDuKien",
+          "label": "Tóm tắt kết quả dự kiến",
+          "layout": {
+            "row": "Row_280",
+            "columns": null
+          }
+        },
+        {
+          "type": "number",
+          "id": "Field_281",
+          "key": "thoiGianDaDuyetThang",
+          "label": "Thời gian đã phê duyệt (tháng)",
+          "layout": {
+            "row": "Row_282",
+            "columns": null
+          },
+          "validate": {
+            "min": 0
+          }
+        },
+        {
+          "type": "number",
+          "id": "Field_283",
+          "key": "duToanDaDuyet",
+          "label": "Tổng dự toán đã phê duyệt",
+          "layout": {
+            "row": "Row_284",
+            "columns": null
+          },
+          "validate": {
+            "min": 0
+          }
+        },
+        {
+          "type": "html",
+          "id": "Html_1271",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">II. Tình hình triển khai</div>",
+          "layout": {
+            "row": "Row_1272",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_285",
+          "key": "tienDoKetQua",
+          "label": "Tiến độ và kết quả thực hiện",
+          "layout": {
+            "row": "Row_286",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "number",
+          "id": "Field_287",
+          "key": "tyLeHoanThanh",
+          "label": "Tỷ lệ hoàn thành (%)",
+          "layout": {
+            "row": "Row_288",
+            "columns": null
+          },
+          "validate": {
+            "min": 0,
+            "max": 100
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_289",
+          "key": "tinhHinhTaiChinh",
+          "label": "Tình hình sử dụng tài chính",
+          "layout": {
+            "row": "Row_290",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_291",
+          "key": "khoKhanVuongMac",
+          "label": "Tồn tại, khó khăn, vướng mắc",
+          "layout": {
+            "row": "Row_292",
+            "columns": null
+          }
+        },
+        {
+          "type": "dynamiclist",
+          "id": "List_303",
+          "key": "tienDoChiTiet",
+          "label": "Phụ lục - Tiến độ thực hiện",
+          "showOutline": true,
+          "components": [
+            {
+              "type": "textfield",
+              "id": "Field_293",
+              "key": "noiDungCongViec",
+              "label": "Nội dung công việc",
+              "layout": {
+                "row": "Row_294",
+                "columns": null
+              }
+            },
+            {
+              "type": "datetime",
+              "id": "Field_295",
+              "key": "tuNgay",
+              "label": "Từ ngày",
+              "layout": {
+                "row": "Row_296",
+                "columns": null
+              },
+              "subtype": "date"
+            },
+            {
+              "type": "datetime",
+              "id": "Field_297",
+              "key": "denNgay",
+              "label": "Đến ngày",
+              "layout": {
+                "row": "Row_298",
+                "columns": null
+              },
+              "subtype": "date"
+            },
+            {
+              "type": "textarea",
+              "id": "Field_299",
+              "key": "ketQuaHienTai",
+              "label": "Kết quả hiện tại",
+              "layout": {
+                "row": "Row_300",
+                "columns": null
+              }
+            },
+            {
+              "type": "textarea",
+              "id": "Field_301",
+              "key": "ghiChu",
+              "label": "Ghi chú",
+              "layout": {
+                "row": "Row_302",
+                "columns": null
+              }
+            }
+          ],
+          "layout": {
+            "row": "Row_304",
+            "columns": null
+          }
+        },
+        {
+          "type": "dynamiclist",
+          "id": "List_313",
+          "key": "suDungKinhPhi",
+          "label": "Phụ lục - Tình hình sử dụng kinh phí",
+          "showOutline": true,
+          "components": [
+            {
+              "type": "textfield",
+              "id": "Field_305",
+              "key": "khoanChi",
+              "label": "Nội dung khoản chi",
+              "layout": {
+                "row": "Row_306",
+                "columns": null
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_307",
+              "key": "kinhPhiDuocDuyet",
+              "label": "Kinh phí được duyệt",
+              "layout": {
+                "row": "Row_308",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_309",
+              "key": "giaTriDaQuyetToan",
+              "label": "Giá trị đã quyết toán",
+              "layout": {
+                "row": "Row_310",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "textarea",
+              "id": "Field_311",
+              "key": "ghiChu",
+              "label": "Ghi chú",
+              "layout": {
+                "row": "Row_312",
+                "columns": null
+              }
+            }
+          ],
+          "layout": {
+            "row": "Row_314",
+            "columns": null
+          }
+        },
+        {
+          "type": "html",
+          "id": "Html_1273",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">III. Nội dung đề xuất điều chỉnh</div>",
+          "layout": {
+            "row": "Row_1274",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_315",
+          "key": "dieuChinhMucTieu",
+          "label": "Điều chỉnh mục tiêu",
+          "layout": {
+            "row": "Row_316",
+            "columns": null
+          }
+        },
+        {
+          "type": "number",
+          "id": "Field_317",
+          "key": "kinhPhiTangGiam",
+          "label": "Kinh phí điều chỉnh tăng/giảm",
+          "layout": {
+            "row": "Row_318",
+            "columns": null
+          },
+          "validate": {
+            "min": 0
+          }
+        },
+        {
+          "type": "number",
+          "id": "Field_319",
+          "key": "tongDuToanSauDieuChinh",
+          "label": "Tổng dự toán sau điều chỉnh",
+          "layout": {
+            "row": "Row_320",
+            "columns": null
+          },
+          "validate": {
+            "min": 0
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_321",
+          "key": "chiTietDieuChinhKinhPhi",
+          "label": "Chi tiết và cơ sở điều chỉnh kinh phí",
+          "layout": {
+            "row": "Row_322",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_323",
+          "key": "donViChuTriMoi",
+          "label": "Đơn vị chủ trì đề xuất thay đổi",
+          "layout": {
+            "row": "Row_324",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_325",
+          "key": "lyDoDieuChinh",
+          "label": "Lý do và luận giải điều chỉnh",
+          "layout": {
+            "row": "Row_326",
+            "columns": null
+          }
+        },
+        {
+          "type": "dynamiclist",
+          "id": "List_347",
+          "key": "khaiToanDieuChinh",
+          "label": "Phụ lục - Điều chỉnh khái toán kinh phí",
+          "showOutline": true,
+          "components": [
+            {
+              "type": "textfield",
+              "id": "Field_327",
+              "key": "hangMuc",
+              "label": "Hạng mục",
+              "layout": {
+                "row": "Row_328",
+                "columns": null
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_329",
+              "key": "donViTinh",
+              "label": "Đơn vị tính",
+              "layout": {
+                "row": "Row_330",
+                "columns": null
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_331",
+              "key": "soLuongCu",
+              "label": "Số lượng đã duyệt",
+              "layout": {
+                "row": "Row_332",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_333",
+              "key": "donGiaCu",
+              "label": "Đơn giá đã duyệt",
+              "layout": {
+                "row": "Row_334",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_335",
+              "key": "thanhTienCu",
+              "label": "Thành tiền đã duyệt",
+              "layout": {
+                "row": "Row_336",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_337",
+              "key": "soLuongMoi",
+              "label": "Số lượng điều chỉnh",
+              "layout": {
+                "row": "Row_338",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_339",
+              "key": "donGiaMoi",
+              "label": "Đơn giá điều chỉnh",
+              "layout": {
+                "row": "Row_340",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_341",
+              "key": "thanhTienMoi",
+              "label": "Thành tiền điều chỉnh",
+              "layout": {
+                "row": "Row_342",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_343",
+              "key": "chenhLech",
+              "label": "Chênh lệch",
+              "layout": {
+                "row": "Row_344",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "textarea",
+              "id": "Field_345",
+              "key": "ghiChu",
+              "label": "Ghi chú",
+              "layout": {
+                "row": "Row_346",
+                "columns": null
+              }
+            }
+          ],
+          "layout": {
+            "row": "Row_348",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_349",
+          "key": "deXuatKienNghi",
+          "label": "Đề xuất, kiến nghị",
+          "layout": {
+            "row": "Row_350",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_351",
+          "key": "noiNhan",
+          "label": "Nơi nhận",
+          "layout": {
+            "row": "Row_352",
+            "columns": null
+          }
+        }
+      ],
+      "layout": {
+        "row": "Row_1280",
+        "columns": null
+      }
+    },
+    {
+      "type": "html",
+      "id": "Html_1281",
+      "content": "<style>.bm-page{max-width:900px;margin:0 auto;padding:34px 48px;background:#fff;color:#111;font:17px/1.48 \"Times New Roman\",serif;box-sizing:border-box}.bm-code{text-align:right;font-size:13px}.bm-head{text-align:center}.bm-head strong{display:block}.bm-rule{display:inline-block;width:150px;border-top:1px solid #111}.bm-title{text-align:center;font-size:20px;font-weight:700;margin:24px 0}.bm-page h3{font-size:17px;margin:18px 0 8px}.bm-page p{margin:4px 0;text-align:justify;white-space:pre-line}.value:empty:after{content:\"................................\"}@media(max-width:680px){.bm-page{padding:18px 14px;font-size:15px}}</style><article class=\"bm-page\"><div class=\"bm-code\">BM.01.05.TTr.NV_2024</div><header class=\"bm-head\"><strong>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong><strong>Độc lập - Tự do - Hạnh phúc</strong><span class=\"bm-rule\"></span></header><div class=\"bm-title\">TỜ TRÌNH PHÊ DUYỆT ĐIỀU CHỈNH CHỦ TRƯƠNG THỰC HIỆN NHIỆM VỤ KHCN</div><section><h3>Thông tin tờ trình</h3><p><strong>Đơn vị ban hành/chủ trì:</strong> <span class=\"value\">{{donViBanHanh}}</span></p><p><strong>Số văn bản:</strong> <span class=\"value\">{{soVanBan}}</span></p><p><strong>Địa danh:</strong> <span class=\"value\">{{diaDanh}}</span></p><p><strong>Ngày văn bản:</strong> <span class=\"value\">{{ngayVanBan}}</span></p><p><strong>Họ tên người ký:</strong> <span class=\"value\">{{nguoiKy}}</span></p><p><strong>Chức danh người ký:</strong> <span class=\"value\">{{chucDanhKy}}</span></p><p><strong>Tên nhiệm vụ KHCN:</strong> <span class=\"value\">{{tenNhiemVu}}</span></p><p><strong>Mã số nhiệm vụ:</strong> <span class=\"value\">{{maNhiemVu}}</span></p><p><strong>Cấp quản lý:</strong> <span class=\"value\">{{capQuanLy}}</span></p><p><strong>Đơn vị chủ trì:</strong> <span class=\"value\">{{donViChuTri}}</span></p><p><strong>Cá nhân chủ nhiệm:</strong> <span class=\"value\">{{chuNhiemNhiemVu}}</span></p><p><strong>Lĩnh vực Hội đồng KHCN chuyên ngành:</strong> <span class=\"value\">{{linhVuc}}</span></p><p><strong>Kính gửi:</strong> <span class=\"value\">{{kinhGui}}</span></p><p><strong>Số Quyết định chủ trương:</strong> <span class=\"value\">{{soQuyetDinhChuTruong}}</span></p><p><strong>Ngày Quyết định chủ trương:</strong> <span class=\"value\">{{ngayQuyetDinhChuTruong}}</span></p></section><section><h3>I. Chủ trương và nhiệm vụ đã phê duyệt</h3><p><strong>Mục tiêu đã phê duyệt:</strong> <span class=\"value\">{{mucTieuDaDuyet}}</span></p><p><strong>Kinh phí khái toán đã phê duyệt:</strong> <span class=\"value\">{{kinhPhiKhaiToanDaDuyet}}</span></p><p><strong>Hình thức/cấp quản lý đã phê duyệt:</strong> <span class=\"value\">{{hinhThucDaDuyet}}</span></p><p><strong>Tóm tắt kết quả dự kiến:</strong> <span class=\"value\">{{ketQuaDuKien}}</span></p><p><strong>Thời gian đã phê duyệt (tháng):</strong> <span class=\"value\">{{thoiGianDaDuyetThang}}</span></p><p><strong>Tổng dự toán đã phê duyệt:</strong> <span class=\"value\">{{duToanDaDuyet}}</span></p></section><section><h3>II. Tình hình triển khai</h3><p><strong>Tiến độ và kết quả thực hiện:</strong> <span class=\"value\">{{tienDoKetQua}}</span></p><p><strong>Tỷ lệ hoàn thành (%):</strong> <span class=\"value\">{{tyLeHoanThanh}}</span></p><p><strong>Tình hình sử dụng tài chính:</strong> <span class=\"value\">{{tinhHinhTaiChinh}}</span></p><p><strong>Tồn tại, khó khăn, vướng mắc:</strong> <span class=\"value\">{{khoKhanVuongMac}}</span></p><p><strong>Phụ lục - Tiến độ thực hiện:</strong> <span class=\"value\">{{tienDoChiTiet}}</span></p><p><strong>Phụ lục - Tình hình sử dụng kinh phí:</strong> <span class=\"value\">{{suDungKinhPhi}}</span></p></section><section><h3>III. Nội dung đề xuất điều chỉnh</h3><p><strong>Điều chỉnh mục tiêu:</strong> <span class=\"value\">{{dieuChinhMucTieu}}</span></p><p><strong>Kinh phí điều chỉnh tăng/giảm:</strong> <span class=\"value\">{{kinhPhiTangGiam}}</span></p><p><strong>Tổng dự toán sau điều chỉnh:</strong> <span class=\"value\">{{tongDuToanSauDieuChinh}}</span></p><p><strong>Chi tiết và cơ sở điều chỉnh kinh phí:</strong> <span class=\"value\">{{chiTietDieuChinhKinhPhi}}</span></p><p><strong>Đơn vị chủ trì đề xuất thay đổi:</strong> <span class=\"value\">{{donViChuTriMoi}}</span></p><p><strong>Lý do và luận giải điều chỉnh:</strong> <span class=\"value\">{{lyDoDieuChinh}}</span></p><p><strong>Phụ lục - Điều chỉnh khái toán kinh phí:</strong> <span class=\"value\">{{khaiToanDieuChinh}}</span></p><p><strong>Đề xuất, kiến nghị:</strong> <span class=\"value\">{{deXuatKienNghi}}</span></p><p><strong>Nơi nhận:</strong> <span class=\"value\">{{noiNhan}}</span></p></section></article>",
+      "conditional": {
+        "hide": "=cheDoXemVanBan != true"
+      },
+      "layout": {
+        "row": "Row_1282",
+        "columns": null
+      }
+    }
+  ],
+  "type": "default"
+}

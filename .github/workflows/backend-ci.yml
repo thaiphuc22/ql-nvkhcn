@@ -1,0 +1,31 @@
+name: Backend CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v7
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      # Runs the full Maven test suite, including
+      # BundledBpmnDeployedConsistencyTest — the "BPMN đã deploy vs file repo" drift check
+      # (dựng Postgres thật qua Testcontainers; Docker có sẵn trên ubuntu-latest runner).
+      - name: Run backend test suite
+        run: mvn -B test

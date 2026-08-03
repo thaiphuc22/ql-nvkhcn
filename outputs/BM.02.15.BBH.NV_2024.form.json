@@ -1,0 +1,564 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.9.0",
+  "exporter": {
+    "name": "Camunda Web Modeler",
+    "version": "c72e043"
+  },
+  "schemaVersion": 19,
+  "id": "Form_BM_02_15_BBH_NV_2024",
+  "components": [
+    {
+      "type": "html",
+      "id": "Html_1964",
+      "content": "<div style=\"padding:10px 12px;background:#f4f7fb;border-left:4px solid #0f62fe\"><strong>Chế độ hiển thị:</strong> Nhập và kiểm tra dữ liệu ở chế độ soạn thảo. Bật <em>Xem văn bản hoàn chỉnh</em> để xem bản trình bày.</div>",
+      "layout": {
+        "row": "Row_1963",
+        "columns": null
+      }
+    },
+    {
+      "type": "checkbox",
+      "id": "Field_1965",
+      "key": "cheDoXemVanBan",
+      "label": "Xem văn bản hoàn chỉnh",
+      "defaultValue": false,
+      "layout": {
+        "row": "Row_1966",
+        "columns": null
+      }
+    },
+    {
+      "type": "group",
+      "id": "Group_1967",
+      "label": "Thông tin soạn thảo",
+      "showOutline": true,
+      "conditional": {
+        "hide": "=cheDoXemVanBan = true"
+      },
+      "components": [
+        {
+          "type": "html",
+          "id": "Html_1958",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">A. Thông tin chung</div>",
+          "layout": {
+            "row": "Row_1957",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1309",
+          "key": "diaDanh",
+          "label": "Địa danh",
+          "layout": {
+            "row": "Row_1310",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          },
+          "defaultValue": "Hà Nội"
+        },
+        {
+          "type": "datetime",
+          "id": "Field_1311",
+          "key": "ngayVanBan",
+          "label": "Ngày văn bản",
+          "layout": {
+            "row": "Row_1312",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          },
+          "subtype": "date"
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1313",
+          "key": "soVanBan",
+          "label": "Số văn bản",
+          "layout": {
+            "row": "Row_1314",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1315",
+          "key": "nguoiKy",
+          "label": "Họ tên người ký",
+          "layout": {
+            "row": "Row_1316",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1317",
+          "key": "chucDanhKy",
+          "label": "Chức danh người ký",
+          "layout": {
+            "row": "Row_1318",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1319",
+          "key": "tenNhiemVu",
+          "label": "Tên nhiệm vụ",
+          "layout": {
+            "row": "Row_1320",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1321",
+          "key": "maNhiemVu",
+          "label": "Mã nhiệm vụ",
+          "layout": {
+            "row": "Row_1322",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1323",
+          "key": "donViChuTri",
+          "label": "Đơn vị chủ trì",
+          "layout": {
+            "row": "Row_1324",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1325",
+          "key": "chuNhiemHoTen",
+          "label": "Cá nhân đăng ký chủ nhiệm nhiệm vụ",
+          "layout": {
+            "row": "Row_1326",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1327",
+          "key": "linhVuc",
+          "label": "Lĩnh vực",
+          "layout": {
+            "row": "Row_1328",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1329",
+          "key": "soQuyetDinhHoiDong",
+          "label": "Số quyết định thành lập Hội đồng",
+          "layout": {
+            "row": "Row_1330",
+            "columns": null
+          }
+        },
+        {
+          "type": "datetime",
+          "id": "Field_1331",
+          "key": "ngayQuyetDinhHoiDong",
+          "label": "Ngày quyết định",
+          "layout": {
+            "row": "Row_1332",
+            "columns": null
+          },
+          "subtype": "date"
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1333",
+          "key": "thoiGianBatDau",
+          "label": "Thời gian bắt đầu phiên họp",
+          "layout": {
+            "row": "Row_1334",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1335",
+          "key": "thoiGianKetThuc",
+          "label": "Thời gian kết thúc phiên họp",
+          "layout": {
+            "row": "Row_1336",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1337",
+          "key": "diaDiemHop",
+          "label": "Địa điểm",
+          "layout": {
+            "row": "Row_1338",
+            "columns": null
+          }
+        },
+        {
+          "type": "number",
+          "id": "Field_1339",
+          "key": "tongSoThanhVien",
+          "label": "Tổng số thành viên Hội đồng",
+          "layout": {
+            "row": "Row_1340",
+            "columns": null
+          },
+          "validate": {
+            "min": 0
+          }
+        },
+        {
+          "type": "number",
+          "id": "Field_1341",
+          "key": "soThanhVienCoMat",
+          "label": "Số thành viên có mặt",
+          "layout": {
+            "row": "Row_1342",
+            "columns": null
+          },
+          "validate": {
+            "min": 0
+          }
+        },
+        {
+          "type": "number",
+          "id": "Field_1343",
+          "key": "soKhachMoi",
+          "label": "Số khách mời",
+          "layout": {
+            "row": "Row_1344",
+            "columns": null
+          },
+          "validate": {
+            "min": 0
+          }
+        },
+        {
+          "type": "number",
+          "id": "Field_1345",
+          "key": "soDaiDienNhom",
+          "label": "Số đại diện nhóm thực hiện",
+          "layout": {
+            "row": "Row_1346",
+            "columns": null
+          },
+          "validate": {
+            "min": 0
+          }
+        },
+        {
+          "type": "dynamiclist",
+          "id": "List_1355",
+          "key": "thanhVienThamDu",
+          "label": "Thành viên tham dự",
+          "showOutline": true,
+          "components": [
+            {
+              "type": "textfield",
+              "id": "Field_1347",
+              "key": "hoTen",
+              "label": "Họ tên",
+              "layout": {
+                "row": "Row_1348",
+                "columns": null
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_1349",
+              "key": "donViChucVu",
+              "label": "Đơn vị, chức vụ",
+              "layout": {
+                "row": "Row_1350",
+                "columns": null
+              }
+            },
+            {
+              "type": "select",
+              "id": "Field_1351",
+              "key": "vaiTro",
+              "label": "Vai trò",
+              "layout": {
+                "row": "Row_1352",
+                "columns": null
+              },
+              "values": [
+                {
+                  "value": "chu_tich",
+                  "label": "Chủ tịch Hội đồng"
+                },
+                {
+                  "value": "pho_chu_tich",
+                  "label": "Phó Chủ tịch Hội đồng"
+                },
+                {
+                  "value": "phan_bien",
+                  "label": "Ủy viên phản biện"
+                },
+                {
+                  "value": "thu_ky",
+                  "label": "Ủy viên, Thư ký khoa học"
+                },
+                {
+                  "value": "uy_vien",
+                  "label": "Ủy viên Hội đồng"
+                }
+              ]
+            },
+            {
+              "type": "select",
+              "id": "Field_1353",
+              "key": "thamDu",
+              "label": "Trạng thái",
+              "layout": {
+                "row": "Row_1354",
+                "columns": null
+              },
+              "values": [
+                {
+                  "value": "co_mat",
+                  "label": "Có mặt"
+                },
+                {
+                  "value": "vang_mat",
+                  "label": "Vắng mặt"
+                }
+              ]
+            }
+          ],
+          "layout": {
+            "row": "Row_1356",
+            "columns": null
+          }
+        },
+        {
+          "type": "html",
+          "id": "Html_1960",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">B. Nội dung làm việc</div>",
+          "layout": {
+            "row": "Row_1959",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_1357",
+          "key": "noiDungPhien1",
+          "label": "Nội dung và kết quả phiên họp 1",
+          "layout": {
+            "row": "Row_1358",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_1359",
+          "key": "noiDungPhien2",
+          "label": "Nội dung và kết quả phiên họp 2 (nếu có)",
+          "layout": {
+            "row": "Row_1360",
+            "columns": null
+          }
+        },
+        {
+          "type": "number",
+          "id": "Field_1361",
+          "key": "diemTrungBinh",
+          "label": "Điểm trung bình/100",
+          "layout": {
+            "row": "Row_1362",
+            "columns": null
+          },
+          "validate": {
+            "min": 0,
+            "max": 100
+          }
+        },
+        {
+          "type": "select",
+          "id": "Field_1363",
+          "key": "ketQuaDanhGia",
+          "label": "Kết quả đánh giá",
+          "layout": {
+            "row": "Row_1364",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          },
+          "values": [
+            {
+              "value": "du_dieu_kien",
+              "label": "Đủ điều kiện thực hiện"
+            },
+            {
+              "value": "chua_du_dieu_kien",
+              "label": "Chưa đủ điều kiện thực hiện"
+            }
+          ]
+        },
+        {
+          "type": "textarea",
+          "id": "Field_1365",
+          "key": "ketLuanKienNghi",
+          "label": "Kết luận và kiến nghị của Hội đồng",
+          "layout": {
+            "row": "Row_1366",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "dynamiclist",
+          "id": "List_1373",
+          "key": "tongHopYKien",
+          "label": "Tổng hợp ý kiến và giải trình",
+          "showOutline": true,
+          "components": [
+            {
+              "type": "textarea",
+              "id": "Field_1367",
+              "key": "yKien",
+              "label": "Ý kiến nhận xét",
+              "layout": {
+                "row": "Row_1368",
+                "columns": null
+              }
+            },
+            {
+              "type": "textarea",
+              "id": "Field_1369",
+              "key": "giaiTrinh",
+              "label": "Giải trình",
+              "layout": {
+                "row": "Row_1370",
+                "columns": null
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_1371",
+              "key": "thamChieu",
+              "label": "Tham chiếu trong văn bản",
+              "layout": {
+                "row": "Row_1372",
+                "columns": null
+              }
+            }
+          ],
+          "layout": {
+            "row": "Row_1374",
+            "columns": null
+          }
+        },
+        {
+          "type": "html",
+          "id": "Html_1962",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">Ký biên bản</div>",
+          "layout": {
+            "row": "Row_1961",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1375",
+          "key": "chuTichHoiDong",
+          "label": "Chủ tịch Hội đồng",
+          "layout": {
+            "row": "Row_1376",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1377",
+          "key": "thuKyHoiDong",
+          "label": "Thư ký Hội đồng",
+          "layout": {
+            "row": "Row_1378",
+            "columns": null
+          }
+        },
+        {
+          "type": "dynamiclist",
+          "id": "List_1383",
+          "key": "chuKyThanhVien",
+          "label": "Chữ ký thành viên",
+          "showOutline": true,
+          "components": [
+            {
+              "type": "textfield",
+              "id": "Field_1379",
+              "key": "hoTen",
+              "label": "Họ tên",
+              "layout": {
+                "row": "Row_1380",
+                "columns": null
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_1381",
+              "key": "vaiTro",
+              "label": "Vai trò",
+              "layout": {
+                "row": "Row_1382",
+                "columns": null
+              }
+            }
+          ],
+          "layout": {
+            "row": "Row_1384",
+            "columns": null
+          }
+        }
+      ],
+      "layout": {
+        "row": "Row_1968",
+        "columns": null
+      }
+    },
+    {
+      "type": "html",
+      "id": "Html_1969",
+      "content": "<style>.bm-page{max-width:900px;margin:0 auto;padding:34px 48px;background:#fff;color:#111;font:17px/1.48 \"Times New Roman\",serif;box-sizing:border-box}.bm-head{text-align:center}.bm-head .nation{font-weight:700;text-transform:uppercase}.bm-head .motto{font-weight:700}.bm-rule{display:inline-block;width:150px;border-top:1px solid #111}.bm-title{text-align:center;font-size:20px;font-weight:700;margin:24px 0}.bm-code{text-align:right;font-size:13px}.bm-page h3{font-size:17px;margin:18px 0 8px}.bm-page p{margin:4px 0;text-align:justify;white-space:pre-line}.value:empty:after{content:\"................................\";font-weight:400}@media(max-width:680px){.bm-page{padding:18px 14px;font-size:15px}}</style><article class=\"bm-page\"><div class=\"bm-code\">BM.02.15.BBH.NV_2024</div><header class=\"bm-head\"><div class=\"nation\">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div><div class=\"motto\">Độc lập - Tự do - Hạnh phúc</div><span class=\"bm-rule\"></span></header><div class=\"bm-title\">BIÊN BẢN HỌP HỘI ĐỒNG XÉT DUYỆT NHIỆM VỤ KHCN CẤP TẬP ĐOÀN</div><section><h3>A. Thông tin chung</h3><p><strong>Địa danh:</strong> <span class=\"value\">{{diaDanh}}</span></p><p><strong>Ngày văn bản:</strong> <span class=\"value\">{{ngayVanBan}}</span></p><p><strong>Số văn bản:</strong> <span class=\"value\">{{soVanBan}}</span></p><p><strong>Họ tên người ký:</strong> <span class=\"value\">{{nguoiKy}}</span></p><p><strong>Chức danh người ký:</strong> <span class=\"value\">{{chucDanhKy}}</span></p><p><strong>Tên nhiệm vụ:</strong> <span class=\"value\">{{tenNhiemVu}}</span></p><p><strong>Mã nhiệm vụ:</strong> <span class=\"value\">{{maNhiemVu}}</span></p><p><strong>Đơn vị chủ trì:</strong> <span class=\"value\">{{donViChuTri}}</span></p><p><strong>Cá nhân đăng ký chủ nhiệm nhiệm vụ:</strong> <span class=\"value\">{{chuNhiemHoTen}}</span></p><p><strong>Lĩnh vực:</strong> <span class=\"value\">{{linhVuc}}</span></p><p><strong>Số quyết định thành lập Hội đồng:</strong> <span class=\"value\">{{soQuyetDinhHoiDong}}</span></p><p><strong>Ngày quyết định:</strong> <span class=\"value\">{{ngayQuyetDinhHoiDong}}</span></p><p><strong>Thời gian bắt đầu phiên họp:</strong> <span class=\"value\">{{thoiGianBatDau}}</span></p><p><strong>Thời gian kết thúc phiên họp:</strong> <span class=\"value\">{{thoiGianKetThuc}}</span></p><p><strong>Địa điểm:</strong> <span class=\"value\">{{diaDiemHop}}</span></p><p><strong>Tổng số thành viên Hội đồng:</strong> <span class=\"value\">{{tongSoThanhVien}}</span></p><p><strong>Số thành viên có mặt:</strong> <span class=\"value\">{{soThanhVienCoMat}}</span></p><p><strong>Số khách mời:</strong> <span class=\"value\">{{soKhachMoi}}</span></p><p><strong>Số đại diện nhóm thực hiện:</strong> <span class=\"value\">{{soDaiDienNhom}}</span></p><p><strong>Thành viên tham dự:</strong> <span class=\"value\">{{thanhVienThamDu}}</span></p></section><section><h3>B. Nội dung làm việc</h3><p><strong>Nội dung và kết quả phiên họp 1:</strong> <span class=\"value\">{{noiDungPhien1}}</span></p><p><strong>Nội dung và kết quả phiên họp 2 (nếu có):</strong> <span class=\"value\">{{noiDungPhien2}}</span></p><p><strong>Điểm trung bình/100:</strong> <span class=\"value\">{{diemTrungBinh}}</span></p><p><strong>Kết quả đánh giá:</strong> <span class=\"value\">{{ketQuaDanhGia}}</span></p><p><strong>Kết luận và kiến nghị của Hội đồng:</strong> <span class=\"value\">{{ketLuanKienNghi}}</span></p><p><strong>Tổng hợp ý kiến và giải trình:</strong> <span class=\"value\">{{tongHopYKien}}</span></p></section><section><h3>Ký biên bản</h3><p><strong>Chủ tịch Hội đồng:</strong> <span class=\"value\">{{chuTichHoiDong}}</span></p><p><strong>Thư ký Hội đồng:</strong> <span class=\"value\">{{thuKyHoiDong}}</span></p><p><strong>Chữ ký thành viên:</strong> <span class=\"value\">{{chuKyThanhVien}}</span></p></section></article>",
+      "conditional": {
+        "hide": "=cheDoXemVanBan != true"
+      },
+      "layout": {
+        "row": "Row_1970",
+        "columns": null
+      }
+    }
+  ],
+  "type": "default"
+}

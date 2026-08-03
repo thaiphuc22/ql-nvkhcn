@@ -1,0 +1,359 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.9.0",
+  "exporter": {
+    "name": "Camunda Web Modeler",
+    "version": "c72e043"
+  },
+  "schemaVersion": 19,
+  "id": "Form_BM_02_20_GNV_NV_2024",
+  "components": [
+    {
+      "type": "html",
+      "id": "Html_2032",
+      "content": "<div style=\"padding:10px 12px;background:#f4f7fb;border-left:4px solid #0f62fe\"><strong>Chế độ hiển thị:</strong> Nhập và kiểm tra dữ liệu ở chế độ soạn thảo. Bật <em>Xem văn bản hoàn chỉnh</em> để xem bản trình bày.</div>",
+      "layout": {
+        "row": "Row_2031",
+        "columns": null
+      }
+    },
+    {
+      "type": "checkbox",
+      "id": "Field_2033",
+      "key": "cheDoXemVanBan",
+      "label": "Xem văn bản hoàn chỉnh",
+      "defaultValue": false,
+      "layout": {
+        "row": "Row_2034",
+        "columns": null
+      }
+    },
+    {
+      "type": "group",
+      "id": "Group_2035",
+      "label": "Thông tin soạn thảo",
+      "showOutline": true,
+      "conditional": {
+        "hide": "=cheDoXemVanBan = true"
+      },
+      "components": [
+        {
+          "type": "html",
+          "id": "Html_2028",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">Thông tin quyết định</div>",
+          "layout": {
+            "row": "Row_2027",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1613",
+          "key": "diaDanh",
+          "label": "Địa danh",
+          "layout": {
+            "row": "Row_1614",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          },
+          "defaultValue": "Hà Nội"
+        },
+        {
+          "type": "datetime",
+          "id": "Field_1615",
+          "key": "ngayVanBan",
+          "label": "Ngày văn bản",
+          "layout": {
+            "row": "Row_1616",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          },
+          "subtype": "date"
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1617",
+          "key": "soVanBan",
+          "label": "Số văn bản",
+          "layout": {
+            "row": "Row_1618",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1619",
+          "key": "nguoiKy",
+          "label": "Họ tên người ký",
+          "layout": {
+            "row": "Row_1620",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1621",
+          "key": "chucDanhKy",
+          "label": "Chức danh người ký",
+          "layout": {
+            "row": "Row_1622",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1623",
+          "key": "tenNhiemVu",
+          "label": "Tên nhiệm vụ",
+          "layout": {
+            "row": "Row_1624",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1625",
+          "key": "maNhiemVu",
+          "label": "Mã nhiệm vụ",
+          "layout": {
+            "row": "Row_1626",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1627",
+          "key": "donViChuTri",
+          "label": "Đơn vị chủ trì",
+          "layout": {
+            "row": "Row_1628",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1629",
+          "key": "chuNhiemHoTen",
+          "label": "Cá nhân đăng ký chủ nhiệm nhiệm vụ",
+          "layout": {
+            "row": "Row_1630",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1631",
+          "key": "linhVuc",
+          "label": "Lĩnh vực",
+          "layout": {
+            "row": "Row_1632",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1633",
+          "key": "soQuyetDinhPheDuyet",
+          "label": "Số quyết định phê duyệt nhiệm vụ",
+          "layout": {
+            "row": "Row_1634",
+            "columns": null
+          }
+        },
+        {
+          "type": "datetime",
+          "id": "Field_1635",
+          "key": "ngayQuyetDinhPheDuyet",
+          "label": "Ngày quyết định phê duyệt",
+          "layout": {
+            "row": "Row_1636",
+            "columns": null
+          },
+          "subtype": "date"
+        },
+        {
+          "type": "textarea",
+          "id": "Field_1637",
+          "key": "canCuBoSung",
+          "label": "Căn cứ bổ sung",
+          "layout": {
+            "row": "Row_1638",
+            "columns": null
+          }
+        },
+        {
+          "type": "html",
+          "id": "Html_2030",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">Nội dung giao nhiệm vụ</div>",
+          "layout": {
+            "row": "Row_2029",
+            "columns": null
+          }
+        },
+        {
+          "type": "number",
+          "id": "Field_1639",
+          "key": "thoiGianThang",
+          "label": "Thời gian thực hiện (tháng)",
+          "layout": {
+            "row": "Row_1640",
+            "columns": null
+          },
+          "validate": {
+            "required": true,
+            "min": 1
+          }
+        },
+        {
+          "type": "datetime",
+          "id": "Field_1641",
+          "key": "ngayBatDau",
+          "label": "Ngày bắt đầu",
+          "layout": {
+            "row": "Row_1642",
+            "columns": null
+          },
+          "subtype": "date"
+        },
+        {
+          "type": "datetime",
+          "id": "Field_1643",
+          "key": "ngayKetThuc",
+          "label": "Ngày kết thúc",
+          "layout": {
+            "row": "Row_1644",
+            "columns": null
+          },
+          "subtype": "date"
+        },
+        {
+          "type": "number",
+          "id": "Field_1645",
+          "key": "tongKinhPhi",
+          "label": "Tổng kinh phí (VNĐ)",
+          "layout": {
+            "row": "Row_1646",
+            "columns": null
+          },
+          "validate": {
+            "required": true,
+            "min": 0
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1647",
+          "key": "kinhPhiBangChu",
+          "label": "Kinh phí bằng chữ",
+          "layout": {
+            "row": "Row_1648",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1649",
+          "key": "nguonKinhPhi",
+          "label": "Nguồn kinh phí",
+          "layout": {
+            "row": "Row_1650",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_1651",
+          "key": "noiDungKetQua",
+          "label": "Nội dung, kết quả và sản phẩm phải đạt",
+          "layout": {
+            "row": "Row_1652",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_1653",
+          "key": "tienDoThucHien",
+          "label": "Tiến độ thực hiện",
+          "layout": {
+            "row": "Row_1654",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_1655",
+          "key": "trachNhiemDonVi",
+          "label": "Trách nhiệm của đơn vị chủ trì",
+          "layout": {
+            "row": "Row_1656",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_1657",
+          "key": "trachNhiemChuNhiem",
+          "label": "Trách nhiệm của Chủ nhiệm nhiệm vụ",
+          "layout": {
+            "row": "Row_1658",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_1659",
+          "key": "quyDinhKetThuc",
+          "label": "Quy định kết thúc/dừng nhiệm vụ",
+          "layout": {
+            "row": "Row_1660",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_1661",
+          "key": "noiNhan",
+          "label": "Nơi nhận",
+          "layout": {
+            "row": "Row_1662",
+            "columns": null
+          }
+        }
+      ],
+      "layout": {
+        "row": "Row_2036",
+        "columns": null
+      }
+    },
+    {
+      "type": "html",
+      "id": "Html_2037",
+      "content": "<style>.bm-page{max-width:900px;margin:0 auto;padding:34px 48px;background:#fff;color:#111;font:17px/1.48 \"Times New Roman\",serif;box-sizing:border-box}.bm-head{text-align:center}.bm-head .nation{font-weight:700;text-transform:uppercase}.bm-head .motto{font-weight:700}.bm-rule{display:inline-block;width:150px;border-top:1px solid #111}.bm-title{text-align:center;font-size:20px;font-weight:700;margin:24px 0}.bm-code{text-align:right;font-size:13px}.bm-page h3{font-size:17px;margin:18px 0 8px}.bm-page p{margin:4px 0;text-align:justify;white-space:pre-line}.value:empty:after{content:\"................................\";font-weight:400}@media(max-width:680px){.bm-page{padding:18px 14px;font-size:15px}}</style><article class=\"bm-page\"><div class=\"bm-code\">BM.02.20.GNV.NV_2024</div><header class=\"bm-head\"><div class=\"nation\">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div><div class=\"motto\">Độc lập - Tự do - Hạnh phúc</div><span class=\"bm-rule\"></span></header><div class=\"bm-title\">QUYẾT ĐỊNH GIAO NHIỆM VỤ THỰC HIỆN NHIỆM VỤ KHOA HỌC VÀ CÔNG NGHỆ CẤP TẬP ĐOÀN</div><section><h3>Thông tin quyết định</h3><p><strong>Địa danh:</strong> <span class=\"value\">{{diaDanh}}</span></p><p><strong>Ngày văn bản:</strong> <span class=\"value\">{{ngayVanBan}}</span></p><p><strong>Số văn bản:</strong> <span class=\"value\">{{soVanBan}}</span></p><p><strong>Họ tên người ký:</strong> <span class=\"value\">{{nguoiKy}}</span></p><p><strong>Chức danh người ký:</strong> <span class=\"value\">{{chucDanhKy}}</span></p><p><strong>Tên nhiệm vụ:</strong> <span class=\"value\">{{tenNhiemVu}}</span></p><p><strong>Mã nhiệm vụ:</strong> <span class=\"value\">{{maNhiemVu}}</span></p><p><strong>Đơn vị chủ trì:</strong> <span class=\"value\">{{donViChuTri}}</span></p><p><strong>Cá nhân đăng ký chủ nhiệm nhiệm vụ:</strong> <span class=\"value\">{{chuNhiemHoTen}}</span></p><p><strong>Lĩnh vực:</strong> <span class=\"value\">{{linhVuc}}</span></p><p><strong>Số quyết định phê duyệt nhiệm vụ:</strong> <span class=\"value\">{{soQuyetDinhPheDuyet}}</span></p><p><strong>Ngày quyết định phê duyệt:</strong> <span class=\"value\">{{ngayQuyetDinhPheDuyet}}</span></p><p><strong>Căn cứ bổ sung:</strong> <span class=\"value\">{{canCuBoSung}}</span></p></section><section><h3>Nội dung giao nhiệm vụ</h3><p><strong>Thời gian thực hiện (tháng):</strong> <span class=\"value\">{{thoiGianThang}}</span></p><p><strong>Ngày bắt đầu:</strong> <span class=\"value\">{{ngayBatDau}}</span></p><p><strong>Ngày kết thúc:</strong> <span class=\"value\">{{ngayKetThuc}}</span></p><p><strong>Tổng kinh phí (VNĐ):</strong> <span class=\"value\">{{tongKinhPhi}}</span></p><p><strong>Kinh phí bằng chữ:</strong> <span class=\"value\">{{kinhPhiBangChu}}</span></p><p><strong>Nguồn kinh phí:</strong> <span class=\"value\">{{nguonKinhPhi}}</span></p><p><strong>Nội dung, kết quả và sản phẩm phải đạt:</strong> <span class=\"value\">{{noiDungKetQua}}</span></p><p><strong>Tiến độ thực hiện:</strong> <span class=\"value\">{{tienDoThucHien}}</span></p><p><strong>Trách nhiệm của đơn vị chủ trì:</strong> <span class=\"value\">{{trachNhiemDonVi}}</span></p><p><strong>Trách nhiệm của Chủ nhiệm nhiệm vụ:</strong> <span class=\"value\">{{trachNhiemChuNhiem}}</span></p><p><strong>Quy định kết thúc/dừng nhiệm vụ:</strong> <span class=\"value\">{{quyDinhKetThuc}}</span></p><p><strong>Nơi nhận:</strong> <span class=\"value\">{{noiNhan}}</span></p></section></article>",
+      "conditional": {
+        "hide": "=cheDoXemVanBan != true"
+      },
+      "layout": {
+        "row": "Row_2038",
+        "columns": null
+      }
+    }
+  ],
+  "type": "default"
+}

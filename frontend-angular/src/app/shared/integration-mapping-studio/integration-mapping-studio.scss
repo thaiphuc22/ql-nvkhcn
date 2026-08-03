@@ -1,0 +1,67 @@
+.ims-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.ims-spacer {
+  flex: 1;
+}
+
+.ims-center {
+  text-align: center;
+}
+
+.ims-row-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ims-create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ims-edit-hint {
+  font-size: 12px;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.ims-preview-title {
+  font-size: 12px;
+  display: block;
+}
+
+.ims-json-block {
+  margin: 6px 0 0;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  background: var(--vht-surface-2, #f5f3f3);
+  overflow-x: auto;
+  max-height: 260px;
+}
+
+.ims-preview-errors {
+  margin-top: 12px;
+}
+
+.ims-preview-error-row {
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.ims-preview-ok {
+  font-size: 12px;
+  margin-top: 12px;
+  color: #389e0d;
+}

@@ -95,6 +95,7 @@ Define your own foundations in `state/DELIVERY_STATE.md` and document each in
 | [Session Continuity](rules/session-continuity.md) | How agents write state and resume after context limit |
 | [Harness/Skill Boundary](rules/harness-skill-boundary.md) | When to use the harness vs invoking a skill |
 | [AI Collaboration Hygiene](rules/ai-collaboration-hygiene.md) | Prompt quality, session discipline, tool use, context management |
+| [Demo Environment Safety](rules/demo-environment-safety.md) | Live demo runs from a separate release worktree (not this dev workspace) — read before running `New-DemoRelease.ps1`/`Switch-DemoRelease.ps1` or touching `infra/demo-tunnel/` |
 
 ---
 

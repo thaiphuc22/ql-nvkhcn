@@ -1,0 +1,997 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.9.0",
+  "exporter": {
+    "name": "Camunda Web Modeler",
+    "version": "c72e043"
+  },
+  "schemaVersion": 19,
+  "id": "Form_BM_02_02_DTO_NV_2024",
+  "components": [
+    {
+      "type": "html",
+      "id": "Html_1766",
+      "content": "<div style=\"padding:10px 12px;background:#f4f7fb;border-left:4px solid #0f62fe\"><strong>Chế độ hiển thị:</strong> Nhập và kiểm tra dữ liệu ở chế độ soạn thảo. Bật <em>Xem văn bản hoàn chỉnh</em> để xem bản trình bày.</div>",
+      "layout": {
+        "row": "Row_1765",
+        "columns": null
+      }
+    },
+    {
+      "type": "checkbox",
+      "id": "Field_1767",
+      "key": "cheDoXemVanBan",
+      "label": "Xem văn bản hoàn chỉnh",
+      "defaultValue": false,
+      "layout": {
+        "row": "Row_1768",
+        "columns": null
+      }
+    },
+    {
+      "type": "group",
+      "id": "Group_1769",
+      "label": "Thông tin soạn thảo",
+      "showOutline": true,
+      "conditional": {
+        "hide": "=cheDoXemVanBan = true"
+      },
+      "components": [
+        {
+          "type": "html",
+          "id": "Html_1760",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">Thông tin chung</div>",
+          "layout": {
+            "row": "Row_1759",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_1",
+          "key": "diaDanh",
+          "label": "Địa danh",
+          "layout": {
+            "row": "Row_2",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          },
+          "defaultValue": "Hà Nội"
+        },
+        {
+          "type": "datetime",
+          "id": "Field_3",
+          "key": "ngayVanBan",
+          "label": "Ngày văn bản",
+          "layout": {
+            "row": "Row_4",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          },
+          "subtype": "date"
+        },
+        {
+          "type": "textfield",
+          "id": "Field_5",
+          "key": "soVanBan",
+          "label": "Số văn bản",
+          "layout": {
+            "row": "Row_6",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_7",
+          "key": "nguoiKy",
+          "label": "Họ tên người ký",
+          "layout": {
+            "row": "Row_8",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_9",
+          "key": "chucDanhKy",
+          "label": "Chức danh người ký",
+          "layout": {
+            "row": "Row_10",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_11",
+          "key": "tenNhiemVu",
+          "label": "Tên nhiệm vụ",
+          "layout": {
+            "row": "Row_12",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_13",
+          "key": "maNhiemVu",
+          "label": "Mã nhiệm vụ",
+          "layout": {
+            "row": "Row_14",
+            "columns": null
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_15",
+          "key": "donViChuTri",
+          "label": "Đơn vị chủ trì",
+          "layout": {
+            "row": "Row_16",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_17",
+          "key": "chuNhiemHoTen",
+          "label": "Cá nhân đăng ký chủ nhiệm nhiệm vụ",
+          "layout": {
+            "row": "Row_18",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_19",
+          "key": "linhVuc",
+          "label": "Lĩnh vực",
+          "layout": {
+            "row": "Row_20",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "number",
+          "id": "Field_21",
+          "key": "giaTriDuToan",
+          "label": "Giá trị dự toán (VNĐ)",
+          "layout": {
+            "row": "Row_22",
+            "columns": null
+          },
+          "validate": {
+            "required": true,
+            "min": 0
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_23",
+          "key": "giaTriBangChu",
+          "label": "Giá trị dự toán bằng chữ",
+          "layout": {
+            "row": "Row_24",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "Field_25",
+          "key": "nguonVon",
+          "label": "Nguồn vốn",
+          "layout": {
+            "row": "Row_26",
+            "columns": null
+          },
+          "defaultValue": "Quỹ Phát triển KHCN"
+        },
+        {
+          "type": "textfield",
+          "id": "Field_27",
+          "key": "loaiNhiemVu",
+          "label": "Loại nhiệm vụ",
+          "layout": {
+            "row": "Row_28",
+            "columns": null
+          }
+        },
+        {
+          "type": "html",
+          "id": "Html_1762",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">Căn cứ lập dự toán</div>",
+          "layout": {
+            "row": "Row_1761",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_29",
+          "key": "canCuLapDuToan",
+          "label": "Các căn cứ lập dự toán",
+          "layout": {
+            "row": "Row_30",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_31",
+          "key": "coSoChiNhanCong",
+          "label": "Cơ sở chi phí nhân công",
+          "layout": {
+            "row": "Row_32",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_33",
+          "key": "coSoNguyenVatLieu",
+          "label": "Cơ sở chi nguyên liệu, vật liệu",
+          "layout": {
+            "row": "Row_34",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_35",
+          "key": "coSoCcdcTscd",
+          "label": "Cơ sở chi công cụ dụng cụ và tài sản cố định",
+          "layout": {
+            "row": "Row_36",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_37",
+          "key": "coSoThueNgoai",
+          "label": "Cơ sở chi dịch vụ thuê ngoài",
+          "layout": {
+            "row": "Row_38",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_39",
+          "key": "coSoChiKhac",
+          "label": "Cơ sở chi khác",
+          "layout": {
+            "row": "Row_40",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "Field_41",
+          "key": "coSoQuanLy",
+          "label": "Cơ sở chi quản lý nhiệm vụ",
+          "layout": {
+            "row": "Row_42",
+            "columns": null
+          }
+        },
+        {
+          "type": "html",
+          "id": "Html_1764",
+          "content": "<div style=\"margin:14px 0 5px;padding:8px 10px;background:#eef3f8;border-left:4px solid #1f5a94;font-weight:700\">Tổng hợp và phụ lục chi phí</div>",
+          "layout": {
+            "row": "Row_1763",
+            "columns": null
+          }
+        },
+        {
+          "type": "dynamiclist",
+          "id": "List_59",
+          "key": "chiNhanCong",
+          "label": "Phụ lục 1 - Chi nhân công",
+          "showOutline": true,
+          "components": [
+            {
+              "type": "textfield",
+              "id": "Field_43",
+              "key": "khoanMuc",
+              "label": "Khoản mục",
+              "layout": {
+                "row": "Row_44",
+                "columns": null
+              },
+              "validate": {
+                "required": true
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_45",
+              "key": "donViTinh",
+              "label": "Đơn vị tính",
+              "layout": {
+                "row": "Row_46",
+                "columns": null
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_47",
+              "key": "soLuong",
+              "label": "Số lượng",
+              "layout": {
+                "row": "Row_48",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_49",
+              "key": "donGia",
+              "label": "Đơn giá",
+              "layout": {
+                "row": "Row_50",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_51",
+              "key": "tienTruocThue",
+              "label": "Tiền trước thuế GTGT",
+              "layout": {
+                "row": "Row_52",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_53",
+              "key": "thueGtgt",
+              "label": "Thuế GTGT",
+              "layout": {
+                "row": "Row_54",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_55",
+              "key": "thanhTien",
+              "label": "Thành tiền",
+              "layout": {
+                "row": "Row_56",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "textarea",
+              "id": "Field_57",
+              "key": "ghiChu",
+              "label": "Ghi chú/cơ sở giá",
+              "layout": {
+                "row": "Row_58",
+                "columns": null
+              }
+            }
+          ],
+          "layout": {
+            "row": "Row_60",
+            "columns": null
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "dynamiclist",
+          "id": "List_77",
+          "key": "chiNguyenVatLieu",
+          "label": "Phụ lục 2 - Chi nguyên liệu, vật liệu",
+          "showOutline": true,
+          "components": [
+            {
+              "type": "textfield",
+              "id": "Field_61",
+              "key": "khoanMuc",
+              "label": "Khoản mục",
+              "layout": {
+                "row": "Row_62",
+                "columns": null
+              },
+              "validate": {
+                "required": true
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_63",
+              "key": "donViTinh",
+              "label": "Đơn vị tính",
+              "layout": {
+                "row": "Row_64",
+                "columns": null
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_65",
+              "key": "soLuong",
+              "label": "Số lượng",
+              "layout": {
+                "row": "Row_66",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_67",
+              "key": "donGia",
+              "label": "Đơn giá",
+              "layout": {
+                "row": "Row_68",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_69",
+              "key": "tienTruocThue",
+              "label": "Tiền trước thuế GTGT",
+              "layout": {
+                "row": "Row_70",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_71",
+              "key": "thueGtgt",
+              "label": "Thuế GTGT",
+              "layout": {
+                "row": "Row_72",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_73",
+              "key": "thanhTien",
+              "label": "Thành tiền",
+              "layout": {
+                "row": "Row_74",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "textarea",
+              "id": "Field_75",
+              "key": "ghiChu",
+              "label": "Ghi chú/cơ sở giá",
+              "layout": {
+                "row": "Row_76",
+                "columns": null
+              }
+            }
+          ],
+          "layout": {
+            "row": "Row_78",
+            "columns": null
+          }
+        },
+        {
+          "type": "dynamiclist",
+          "id": "List_95",
+          "key": "chiCcdcTscd",
+          "label": "Phụ lục 3 - Chi công cụ dụng cụ và tài sản cố định",
+          "showOutline": true,
+          "components": [
+            {
+              "type": "textfield",
+              "id": "Field_79",
+              "key": "khoanMuc",
+              "label": "Khoản mục",
+              "layout": {
+                "row": "Row_80",
+                "columns": null
+              },
+              "validate": {
+                "required": true
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_81",
+              "key": "donViTinh",
+              "label": "Đơn vị tính",
+              "layout": {
+                "row": "Row_82",
+                "columns": null
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_83",
+              "key": "soLuong",
+              "label": "Số lượng",
+              "layout": {
+                "row": "Row_84",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_85",
+              "key": "donGia",
+              "label": "Đơn giá",
+              "layout": {
+                "row": "Row_86",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_87",
+              "key": "tienTruocThue",
+              "label": "Tiền trước thuế GTGT",
+              "layout": {
+                "row": "Row_88",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_89",
+              "key": "thueGtgt",
+              "label": "Thuế GTGT",
+              "layout": {
+                "row": "Row_90",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_91",
+              "key": "thanhTien",
+              "label": "Thành tiền",
+              "layout": {
+                "row": "Row_92",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "textarea",
+              "id": "Field_93",
+              "key": "ghiChu",
+              "label": "Ghi chú/cơ sở giá",
+              "layout": {
+                "row": "Row_94",
+                "columns": null
+              }
+            }
+          ],
+          "layout": {
+            "row": "Row_96",
+            "columns": null
+          }
+        },
+        {
+          "type": "dynamiclist",
+          "id": "List_113",
+          "key": "chiThueNgoai",
+          "label": "Phụ lục 4 - Chi dịch vụ thuê ngoài",
+          "showOutline": true,
+          "components": [
+            {
+              "type": "textfield",
+              "id": "Field_97",
+              "key": "khoanMuc",
+              "label": "Khoản mục",
+              "layout": {
+                "row": "Row_98",
+                "columns": null
+              },
+              "validate": {
+                "required": true
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_99",
+              "key": "donViTinh",
+              "label": "Đơn vị tính",
+              "layout": {
+                "row": "Row_100",
+                "columns": null
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_101",
+              "key": "soLuong",
+              "label": "Số lượng",
+              "layout": {
+                "row": "Row_102",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_103",
+              "key": "donGia",
+              "label": "Đơn giá",
+              "layout": {
+                "row": "Row_104",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_105",
+              "key": "tienTruocThue",
+              "label": "Tiền trước thuế GTGT",
+              "layout": {
+                "row": "Row_106",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_107",
+              "key": "thueGtgt",
+              "label": "Thuế GTGT",
+              "layout": {
+                "row": "Row_108",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_109",
+              "key": "thanhTien",
+              "label": "Thành tiền",
+              "layout": {
+                "row": "Row_110",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "textarea",
+              "id": "Field_111",
+              "key": "ghiChu",
+              "label": "Ghi chú/cơ sở giá",
+              "layout": {
+                "row": "Row_112",
+                "columns": null
+              }
+            }
+          ],
+          "layout": {
+            "row": "Row_114",
+            "columns": null
+          }
+        },
+        {
+          "type": "dynamiclist",
+          "id": "List_131",
+          "key": "chiKhac",
+          "label": "Phụ lục 5 - Chi khác phục vụ trực tiếp",
+          "showOutline": true,
+          "components": [
+            {
+              "type": "textfield",
+              "id": "Field_115",
+              "key": "khoanMuc",
+              "label": "Khoản mục",
+              "layout": {
+                "row": "Row_116",
+                "columns": null
+              },
+              "validate": {
+                "required": true
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_117",
+              "key": "donViTinh",
+              "label": "Đơn vị tính",
+              "layout": {
+                "row": "Row_118",
+                "columns": null
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_119",
+              "key": "soLuong",
+              "label": "Số lượng",
+              "layout": {
+                "row": "Row_120",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_121",
+              "key": "donGia",
+              "label": "Đơn giá",
+              "layout": {
+                "row": "Row_122",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_123",
+              "key": "tienTruocThue",
+              "label": "Tiền trước thuế GTGT",
+              "layout": {
+                "row": "Row_124",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_125",
+              "key": "thueGtgt",
+              "label": "Thuế GTGT",
+              "layout": {
+                "row": "Row_126",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_127",
+              "key": "thanhTien",
+              "label": "Thành tiền",
+              "layout": {
+                "row": "Row_128",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "textarea",
+              "id": "Field_129",
+              "key": "ghiChu",
+              "label": "Ghi chú/cơ sở giá",
+              "layout": {
+                "row": "Row_130",
+                "columns": null
+              }
+            }
+          ],
+          "layout": {
+            "row": "Row_132",
+            "columns": null
+          }
+        },
+        {
+          "type": "dynamiclist",
+          "id": "List_149",
+          "key": "chiQuanLy",
+          "label": "Phụ lục 6 - Chi quản lý nhiệm vụ",
+          "showOutline": true,
+          "components": [
+            {
+              "type": "textfield",
+              "id": "Field_133",
+              "key": "khoanMuc",
+              "label": "Khoản mục",
+              "layout": {
+                "row": "Row_134",
+                "columns": null
+              },
+              "validate": {
+                "required": true
+              }
+            },
+            {
+              "type": "textfield",
+              "id": "Field_135",
+              "key": "donViTinh",
+              "label": "Đơn vị tính",
+              "layout": {
+                "row": "Row_136",
+                "columns": null
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_137",
+              "key": "soLuong",
+              "label": "Số lượng",
+              "layout": {
+                "row": "Row_138",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_139",
+              "key": "donGia",
+              "label": "Đơn giá",
+              "layout": {
+                "row": "Row_140",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_141",
+              "key": "tienTruocThue",
+              "label": "Tiền trước thuế GTGT",
+              "layout": {
+                "row": "Row_142",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_143",
+              "key": "thueGtgt",
+              "label": "Thuế GTGT",
+              "layout": {
+                "row": "Row_144",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "number",
+              "id": "Field_145",
+              "key": "thanhTien",
+              "label": "Thành tiền",
+              "layout": {
+                "row": "Row_146",
+                "columns": null
+              },
+              "validate": {
+                "min": 0
+              }
+            },
+            {
+              "type": "textarea",
+              "id": "Field_147",
+              "key": "ghiChu",
+              "label": "Ghi chú/cơ sở giá",
+              "layout": {
+                "row": "Row_148",
+                "columns": null
+              }
+            }
+          ],
+          "layout": {
+            "row": "Row_150",
+            "columns": null
+          }
+        }
+      ],
+      "layout": {
+        "row": "Row_1770",
+        "columns": null
+      }
+    },
+    {
+      "type": "html",
+      "id": "Html_1771",
+      "content": "<style>.bm-page{max-width:900px;margin:0 auto;padding:34px 48px;background:#fff;color:#111;font:17px/1.48 \"Times New Roman\",serif;box-sizing:border-box}.bm-head{text-align:center}.bm-head .nation{font-weight:700;text-transform:uppercase}.bm-head .motto{font-weight:700}.bm-rule{display:inline-block;width:150px;border-top:1px solid #111}.bm-title{text-align:center;font-size:20px;font-weight:700;margin:24px 0}.bm-code{text-align:right;font-size:13px}.bm-page h3{font-size:17px;margin:18px 0 8px}.bm-page p{margin:4px 0;text-align:justify;white-space:pre-line}.value:empty:after{content:\"................................\";font-weight:400}@media(max-width:680px){.bm-page{padding:18px 14px;font-size:15px}}</style><article class=\"bm-page\"><div class=\"bm-code\">BM.02.02.DTO.NV_2024</div><header class=\"bm-head\"><div class=\"nation\">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div><div class=\"motto\">Độc lập - Tự do - Hạnh phúc</div><span class=\"bm-rule\"></span></header><div class=\"bm-title\">HỒ SƠ DỰ TOÁN KINH PHÍ THỰC HIỆN NHIỆM VỤ KHOA HỌC VÀ CÔNG NGHỆ</div><section><h3>Thông tin chung</h3><p><strong>Địa danh:</strong> <span class=\"value\">{{diaDanh}}</span></p><p><strong>Ngày văn bản:</strong> <span class=\"value\">{{ngayVanBan}}</span></p><p><strong>Số văn bản:</strong> <span class=\"value\">{{soVanBan}}</span></p><p><strong>Họ tên người ký:</strong> <span class=\"value\">{{nguoiKy}}</span></p><p><strong>Chức danh người ký:</strong> <span class=\"value\">{{chucDanhKy}}</span></p><p><strong>Tên nhiệm vụ:</strong> <span class=\"value\">{{tenNhiemVu}}</span></p><p><strong>Mã nhiệm vụ:</strong> <span class=\"value\">{{maNhiemVu}}</span></p><p><strong>Đơn vị chủ trì:</strong> <span class=\"value\">{{donViChuTri}}</span></p><p><strong>Cá nhân đăng ký chủ nhiệm nhiệm vụ:</strong> <span class=\"value\">{{chuNhiemHoTen}}</span></p><p><strong>Lĩnh vực:</strong> <span class=\"value\">{{linhVuc}}</span></p><p><strong>Giá trị dự toán (VNĐ):</strong> <span class=\"value\">{{giaTriDuToan}}</span></p><p><strong>Giá trị dự toán bằng chữ:</strong> <span class=\"value\">{{giaTriBangChu}}</span></p><p><strong>Nguồn vốn:</strong> <span class=\"value\">{{nguonVon}}</span></p><p><strong>Loại nhiệm vụ:</strong> <span class=\"value\">{{loaiNhiemVu}}</span></p></section><section><h3>Căn cứ lập dự toán</h3><p><strong>Các căn cứ lập dự toán:</strong> <span class=\"value\">{{canCuLapDuToan}}</span></p><p><strong>Cơ sở chi phí nhân công:</strong> <span class=\"value\">{{coSoChiNhanCong}}</span></p><p><strong>Cơ sở chi nguyên liệu, vật liệu:</strong> <span class=\"value\">{{coSoNguyenVatLieu}}</span></p><p><strong>Cơ sở chi công cụ dụng cụ và tài sản cố định:</strong> <span class=\"value\">{{coSoCcdcTscd}}</span></p><p><strong>Cơ sở chi dịch vụ thuê ngoài:</strong> <span class=\"value\">{{coSoThueNgoai}}</span></p><p><strong>Cơ sở chi khác:</strong> <span class=\"value\">{{coSoChiKhac}}</span></p><p><strong>Cơ sở chi quản lý nhiệm vụ:</strong> <span class=\"value\">{{coSoQuanLy}}</span></p></section><section><h3>Tổng hợp và phụ lục chi phí</h3><p><strong>Phụ lục 1 - Chi nhân công:</strong> <span class=\"value\">{{chiNhanCong}}</span></p><p><strong>Phụ lục 2 - Chi nguyên liệu, vật liệu:</strong> <span class=\"value\">{{chiNguyenVatLieu}}</span></p><p><strong>Phụ lục 3 - Chi công cụ dụng cụ và tài sản cố định:</strong> <span class=\"value\">{{chiCcdcTscd}}</span></p><p><strong>Phụ lục 4 - Chi dịch vụ thuê ngoài:</strong> <span class=\"value\">{{chiThueNgoai}}</span></p><p><strong>Phụ lục 5 - Chi khác phục vụ trực tiếp:</strong> <span class=\"value\">{{chiKhac}}</span></p><p><strong>Phụ lục 6 - Chi quản lý nhiệm vụ:</strong> <span class=\"value\">{{chiQuanLy}}</span></p></section></article>",
+      "conditional": {
+        "hide": "=cheDoXemVanBan != true"
+      },
+      "layout": {
+        "row": "Row_1772",
+        "columns": null
+      }
+    }
+  ],
+  "type": "default"
+}

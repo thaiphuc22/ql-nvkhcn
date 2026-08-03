@@ -1,0 +1,337 @@
+<nz-page-header nzBackIcon="" [nzTitle]="draft()?.name ?? 'Chạy thử BPMN'" (nzBack)="backToCatalog()">
+  <nz-page-header-tags>
+    @if (draft(); as d) {
+      <nz-tag>{{ d.bpmnProcessId }}</nz-tag>
+    }
+    @if (session(); as s) {
+      <nz-tag [nzColor]="statusColor(s.status)">{{ s.status }}</nz-tag>
+    }
+  </nz-page-header-tags>
+  <nz-page-header-content>
+    <span class="bts-subline">
+      Chạy BPMN của bản nháp trên một Camunda test engine cô lập — không đụng tới hệ thống production.
+    </span>
+  </nz-page-header-content>
+</nz-page-header>
+
+<div class="bts-body">
+  @if (loadingDraft()) {
+    <div class="bts-loading"><nz-spin nzTip="Đang tải bản nháp..."></nz-spin></div>
+  } @else if (draftError()) {
+    <nz-result nzStatus="error" nzTitle="Không tải được bản nháp" [nzSubTitle]="draftError() ?? undefined">
+      <div nz-result-extra>
+        <button nz-button nzType="primary" (click)="backToCatalog()">Về danh mục quy trình</button>
+      </div>
+    </nz-result>
+  } @else if (draft(); as d) {
+    @if (!session()) {
+      <div class="bts-config-card">
+        <h4 nz-typography>Cấu hình phiên chạy thử</h4>
+
+        @if (startError(); as err) {
+          <nz-alert nzType="error" nzShowIcon [nzMessage]="err.message" class="bts-alert"></nz-alert>
+          @if (err.errors?.length) {
+            <ul class="bts-error-list">
+              @for (e of err.errors; track e) {
+                <li>{{ e }}</li>
+              }
+            </ul>
+          }
+        }
+
+        <div class="bts-field">
+          <label>Revision</label>
+          <nz-select [ngModel]="selectedRevision()" (ngModelChange)="selectedRevision.set($event)" style="width: 220px">
+            <nz-option [nzValue]="d.revision" [nzLabel]="'r' + d.revision + ' (hiện tại — ' + d.status + ')'"></nz-option>
+            @for (r of d.revisions; track r.id) {
+              @if (r.revision !== d.revision) {
+                <nz-option [nzValue]="r.revision" [nzLabel]="'r' + r.revision + ' · ' + (r.createdAt | date: 'dd/MM HH:mm')"></nz-option>
+              }
+            }
+          </nz-select>
+        </div>
+
+        <div class="bts-field">
+          <label>Biến khởi tạo</label>
+          <app-bpmn-variable-form
+            [xml]="selectedRevisionXml()"
+            [initialJson]="variablesText()"
+            (jsonChange)="variablesText.set($event)"
+          ></app-bpmn-variable-form>
+        </div>
+
+        <div class="bts-field">
+          <label>TTL (giây, tuỳ chọn — mặc định 900, tối đa 3600)</label>
+          <nz-input-number
+            [ngModel]="ttlSeconds()"
+            (ngModelChange)="ttlSeconds.set($event)"
+            [nzMin]="1"
+            [nzMax]="3600"
+            style="width: 160px"
+          ></nz-input-number>
+        </div>
+
+        <button nz-button nzType="primary" [nzLoading]="starting()" (click)="startSession()">
+          <span nz-icon nzType="play-circle"></span>
+          Bắt đầu chạy thử
+        </button>
+      </div>
+    } @else if (session(); as s) {
+      @if (s.failureMessage) {
+        <nz-alert
+          [nzType]="s.status === 'FAILED' ? 'error' : 'warning'"
+          nzShowIcon
+          [nzMessage]="s.failureMessage"
+          class="bts-alert"
+        ></nz-alert>
+      }
+
+      <nz-descriptions nzBordered [nzColumn]="3" nzSize="small" class="bts-descriptions">
+        <nz-descriptions-item nzTitle="Correlation">{{ s.correlationId }}</nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Process definition key">{{ s.processDefinitionKey ?? '—' }}</nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Process instance key">{{ s.processInstanceKey ?? '—' }}</nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Bắt đầu">{{ s.createdAt | date: 'dd/MM/yyyy HH:mm:ss' }}</nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Hết hạn">{{ s.expiresAt | date: 'dd/MM/yyyy HH:mm:ss' }}</nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Kết thúc">{{ s.endedAt ? (s.endedAt | date: 'dd/MM/yyyy HH:mm:ss') : '—' }}</nz-descriptions-item>
+      </nz-descriptions>
+
+      <div class="bts-actions">
+        <button nz-button (click)="refreshNow()">
+          <span nz-icon nzType="reload"></span> Làm mới
+        </button>
+        @if (!isTerminal()) {
+          <button nz-button nzDanger [nzLoading]="cancelling()" (click)="confirmCancelSession()">
+            <span nz-icon nzType="stop"></span> Huỷ phiên
+          </button>
+        } @else {
+          <button nz-button nzType="primary" (click)="runAgain()">
+            <span nz-icon nzType="redo"></span> Chạy thử lại
+          </button>
+        }
+      </div>
+
+      <div class="bts-columns">
+        <div class="bts-diagram">
+          <app-bpmn-viewer
+            [xml]="selectedRevisionXml()"
+            [activeElementIds]="activeElementIds()"
+            [incidentElementIds]="incidentElementIds()"
+          ></app-bpmn-viewer>
+        </div>
+
+        <div class="bts-side">
+          <h4 nz-typography>User task đang chờ ({{ s.tasks.length }})</h4>
+          <nz-table [nzData]="s.tasks" [nzShowPagination]="false" nzSize="small">
+            <thead>
+              <tr>
+                <th>Task</th>
+                <th nzWidth="90px" nzAlign="center">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (task of s.tasks; track task.key) {
+                <tr>
+                  <td>
+                    {{ task.name ?? task.elementId }}
+                    @if (task.candidateGroups.length) {
+                      <div class="bts-candidate-groups">{{ task.candidateGroups.join(', ') }}</div>
+                    }
+                  </td>
+                  <td nzAlign="center">
+                    <button nz-button nzType="link" nzSize="small" (click)="openCompleteTask(task)">Hoàn tất</button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr><td colspan="2"><nz-empty nzNotFoundContent="Không có task nào đang chờ."></nz-empty></td></tr>
+              }
+            </tbody>
+          </nz-table>
+
+          @if (s.blockedJobs.length) {
+            <h4 nz-typography class="bts-section-title">Job bị chặn ({{ s.blockedJobs.length }})</h4>
+            @for (job of s.blockedJobs; track job.key) {
+              <div class="bts-blocked-job">
+                <nz-alert
+                  nzType="warning"
+                  nzShowIcon
+                  [nzMessage]="job.type + ' — ' + job.elementId"
+                  [nzDescription]="job.explanation"
+                  class="bts-alert"
+                ></nz-alert>
+                <button nz-button nzType="primary" nzSize="small" (click)="openBypassJob(job)">
+                  Bypass — hoàn tất thủ công
+                </button>
+              </div>
+            }
+          }
+
+          @if (s.incidents.length) {
+            <h4 nz-typography class="bts-section-title">Incident ({{ s.incidents.length }})</h4>
+            @for (incident of s.incidents; track incident.key) {
+              @if (incident.type === 'CONDITION_ERROR') {
+                <div class="bts-condition-error">
+                  <nz-alert
+                    nzType="error"
+                    nzShowIcon
+                    nzMessage="Gateway không có luồng ra nào thoả điều kiện (CONDITION_ERROR)"
+                    class="bts-alert"
+                  ></nz-alert>
+                  @if (gatewayInfo(incident.elementId); as gw) {
+                    <p class="bts-gateway-name">{{ gw.name ?? incident.elementId }}</p>
+                    <ul class="bts-flow-list">
+                      @for (flow of gw.flows; track flow.flowId) {
+                        <li>
+                          <strong>→ {{ flow.targetElementName ?? flow.targetElementId }}</strong>
+                          @if (flow.condition) {
+                            : <code>{{ flow.condition }}</code>
+                            <span class="bts-flow-vars">
+                              (@for (name of referencedVariables(flow.condition); track name; let last = $last) {
+                                {{ name }} = {{ variableDisplay(s.variables, name) }}{{ last ? '' : ', ' }}
+                              })
+                            </span>
+                          } @else if (flow.isDefault) {
+                            <em>(luồng mặc định)</em>
+                          } @else {
+                            <em>(không có điều kiện — sẽ không bao giờ được chọn)</em>
+                          }
+                        </li>
+                      }
+                    </ul>
+                  } @else {
+                    <p>{{ incident.message }}</p>
+                  }
+                  <button nz-button nzType="primary" nzSize="small" (click)="openResolveIncident(incident)">
+                    Sửa biến & tiếp tục
+                  </button>
+                </div>
+              } @else {
+                <nz-alert
+                  nzType="error"
+                  nzShowIcon
+                  [nzMessage]="incident.type + ' — ' + incident.elementId"
+                  [nzDescription]="incident.message"
+                  class="bts-alert"
+                ></nz-alert>
+              }
+            }
+          }
+
+          <h4 nz-typography class="bts-section-title">Biến process</h4>
+          <nz-table [nzData]="variableEntries(s.variables)" [nzShowPagination]="false" nzSize="small">
+            <thead>
+              <tr>
+                <th>Tên</th>
+                <th>Giá trị</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (v of variableEntries(s.variables); track v.key) {
+                <tr>
+                  <td><code>{{ v.key }}</code></td>
+                  <td class="bts-variable-value">{{ v.value }}</td>
+                </tr>
+              } @empty {
+                <tr><td colspan="2"><nz-empty nzNotFoundContent="Chưa có biến."></nz-empty></td></tr>
+              }
+            </tbody>
+          </nz-table>
+        </div>
+      </div>
+    }
+  }
+</div>
+
+<nz-drawer
+  [nzVisible]="!!completingTask()"
+  nzTitle="Hoàn tất user task"
+  [nzWidth]="420"
+  [nzClosable]="!completing()"
+  (nzOnClose)="closeCompleteTask()"
+>
+  <ng-container *nzDrawerContent>
+    @if (completingTask(); as task) {
+      <p>{{ task.name ?? task.elementId }}</p>
+      <label>Biến kết quả</label>
+      <app-bpmn-variable-form
+        [xml]="selectedRevisionXml()"
+        [focusElementId]="task.elementId"
+        [initialJson]="completeVariablesText()"
+        (jsonChange)="completeVariablesText.set($event)"
+      ></app-bpmn-variable-form>
+      <div class="bts-drawer-actions">
+        <button nz-button (click)="closeCompleteTask()" [disabled]="completing()">Huỷ</button>
+        <button nz-button nzType="primary" [nzLoading]="completing()" (click)="submitCompleteTask()">
+          Hoàn tất
+        </button>
+      </div>
+    }
+  </ng-container>
+</nz-drawer>
+
+<nz-drawer
+  [nzVisible]="!!resolvingIncident()"
+  nzTitle="Sửa biến & tiếp tục"
+  [nzWidth]="420"
+  [nzClosable]="!resolvingIncidentSubmitting()"
+  (nzOnClose)="closeResolveIncident()"
+>
+  <ng-container *nzDrawerContent>
+    @if (resolvingIncident(); as incident) {
+      <p>{{ incident.type }} — {{ incident.elementId }}</p>
+      <label>Biến</label>
+      <app-bpmn-variable-form
+        [xml]="selectedRevisionXml()"
+        [focusElementId]="incident.elementId"
+        [initialJson]="resolveIncidentVariablesText()"
+        (jsonChange)="resolveIncidentVariablesText.set($event)"
+      ></app-bpmn-variable-form>
+      <div class="bts-drawer-actions">
+        <button nz-button (click)="closeResolveIncident()" [disabled]="resolvingIncidentSubmitting()">Huỷ</button>
+        <button
+          nz-button
+          nzType="primary"
+          [nzLoading]="resolvingIncidentSubmitting()"
+          (click)="submitResolveIncident()"
+        >
+          Sửa biến & tiếp tục
+        </button>
+      </div>
+    }
+  </ng-container>
+</nz-drawer>
+
+<nz-drawer
+  [nzVisible]="!!bypassingJob()"
+  nzTitle="Bypass Service Task"
+  [nzWidth]="420"
+  [nzClosable]="!bypassingSubmitting()"
+  (nzOnClose)="closeBypassJob()"
+>
+  <ng-container *nzDrawerContent>
+    @if (bypassingJob(); as job) {
+      <p>{{ job.type }} — {{ job.elementId }}</p>
+      <p class="bts-bypass-hint">
+        Chưa có worker thật cho type này trên test engine. Nhập biến output giả lập như khi worker đã
+        chạy xong, rồi bấm bypass để instance đi tiếp mà không cần triển khai worker.
+      </p>
+      <label>Biến output</label>
+      <app-bpmn-variable-form
+        [xml]="selectedRevisionXml()"
+        [focusElementId]="job.elementId"
+        [initialJson]="bypassVariablesText()"
+        (jsonChange)="bypassVariablesText.set($event)"
+      ></app-bpmn-variable-form>
+      <div class="bts-drawer-actions">
+        <button nz-button (click)="closeBypassJob()" [disabled]="bypassingSubmitting()">Huỷ</button>
+        <button
+          nz-button
+          nzType="primary"
+          [nzLoading]="bypassingSubmitting()"
+          (click)="submitBypassJob()"
+        >
+          Bypass
+        </button>
+      </div>
+    }
+  </ng-container>
+</nz-drawer>

@@ -1,0 +1,313 @@
+<div class="br-page">
+  <div class="br-header">
+    <div>
+      <h2 nz-typography>Ma trận quyết định</h2>
+      <p>Quản lý luật nghiệp vụ và bảng quyết định áp dụng cho các quy trình RD.</p>
+    </div>
+    <button nz-button nzType="primary" (click)="openCreate()">
+      <span nz-icon nzType="plus"></span>
+      Tạo luật
+    </button>
+  </div>
+
+  <!-- <nz-alert
+    nzType="success"
+    nzShowIcon
+    nzMessage="Đã nối kho luật backend"
+    nzDescription="Danh mục, trạng thái và các phiên bản DMN được lưu tại /api/dmn-rules."
+  ></nz-alert> -->
+
+  @if (loadError()) {
+    <nz-alert nzType="error" nzShowIcon [nzMessage]="loadError()!"></nz-alert>
+    <button nz-button nzType="link" (click)="loadRules()">Tải lại</button>
+  }
+
+  <div nz-row [nzGutter]="14">
+    <div nz-col [nzXs]="12" [nzMd]="6">
+      <div class="br-stat">
+        <strong>{{ stats().total }}</strong
+        ><span>Tổng số luật</span>
+      </div>
+    </div>
+    <div nz-col [nzXs]="12" [nzMd]="6">
+      <div class="br-stat br-stat--green">
+        <strong>{{ stats().active }}</strong
+        ><span>Đang hiệu lực</span>
+      </div>
+    </div>
+    <div nz-col [nzXs]="12" [nzMd]="6">
+      <div class="br-stat br-stat--gold">
+        <strong>{{ stats().draft }}</strong
+        ><span>Bản nháp</span>
+      </div>
+    </div>
+    <div nz-col [nzXs]="12" [nzMd]="6">
+      <div class="br-stat br-stat--blue">
+        <strong>{{ stats().dmn }}</strong
+        ><span>Bảng DMN</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="br-filters">
+    <nz-input-group nzPrefixIcon="search" class="br-search">
+      <input
+        nz-input
+        placeholder="Tìm mã, tên hoặc mô tả luật..."
+        [ngModel]="query()"
+        (ngModelChange)="query.set($event)"
+      />
+    </nz-input-group>
+    <nz-select
+      nzAllowClear
+      nzPlaceHolder="Loại luật"
+      [ngModel]="categoryFilter()"
+      (ngModelChange)="categoryFilter.set($event)"
+    >
+      @for (category of categories; track category) {
+        <nz-option [nzValue]="category" [nzLabel]="categoryLabels[category]"></nz-option>
+      }
+    </nz-select>
+    <nz-select
+      nzAllowClear
+      nzPlaceHolder="Kiểu luật"
+      [ngModel]="kindFilter()"
+      (ngModelChange)="kindFilter.set($event)"
+    >
+      @for (kind of kinds; track kind) {
+        <nz-option [nzValue]="kind" [nzLabel]="kindLabels[kind]"></nz-option>
+      }
+    </nz-select>
+    <nz-select
+      nzAllowClear
+      nzPlaceHolder="Trạng thái"
+      [ngModel]="statusFilter()"
+      (ngModelChange)="statusFilter.set($event)"
+    >
+      @for (status of statuses; track status) {
+        <nz-option [nzValue]="status" [nzLabel]="statusMeta[status].label"></nz-option>
+      }
+    </nz-select>
+    <button nz-button nzType="text" (click)="clearFilters()">Xóa lọc</button>
+    <span class="br-count">{{ rows().length }}/{{ stats().total }} luật</span>
+  </div>
+
+  <nz-table
+    #table
+    [nzData]="rows()"
+    [nzPageSize]="10"
+    nzTableLayout="fixed"
+    [nzScroll]="{ x: '1120px' }"
+  >
+    <thead>
+      <tr>
+        <th nzWidth="180px">Mã luật</th>
+        <th nzWidth="290px">Tên luật</th>
+        <th nzWidth="130px">Loại</th>
+        <th nzWidth="145px">Kiểu</th>
+        <th nzWidth="170px">RD áp dụng</th>
+        <th nzWidth="135px">Trạng thái</th>
+        <th nzWidth="90px" nzAlign="center">Phiên bản</th>
+        <th nzWidth="240px" nzAlign="center">Thao tác</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (rule of table.data; track rule.id) {
+        <tr>
+          <td>
+            <code>{{ rule.code }}</code>
+          </td>
+          <td>
+            <button class="br-name" (click)="openDetail(rule)">{{ rule.name }}</button>
+            <small>{{ rule.description }}</small>
+          </td>
+          <td>
+            <nz-tag>{{ categoryLabels[rule.category] }}</nz-tag>
+          </td>
+          <td>
+            <nz-tag [nzColor]="rule.kind === 'DMN' ? 'blue' : 'volcano'">{{
+              kindLabels[rule.kind]
+            }}</nz-tag>
+          </td>
+          <td>
+            @for (process of rule.appliedProcesses; track process) {
+              <nz-tag>{{ process }}</nz-tag>
+            }
+          </td>
+          <td>
+            <nz-tag [nzColor]="statusMeta[rule.status].color">{{
+              statusMeta[rule.status].label
+            }}</nz-tag>
+          </td>
+          <td nzAlign="center">v{{ rule.version }}</td>
+          <td nzAlign="center">
+            <button nz-button nzSize="small" nzType="link" (click)="openDetail(rule)">
+              Mở chi tiết
+            </button>
+            @if (rule.status === 'ACTIVE') {
+              <button
+                nz-button
+                nzSize="small"
+                nzType="link"
+                (click)="changeStatus(rule, 'DISABLED')"
+              >
+                Vô hiệu
+              </button>
+            } @else if (rule.version > 0) {
+              <button nz-button nzSize="small" nzType="link" (click)="changeStatus(rule, 'ACTIVE')">
+                Kích hoạt
+              </button>
+            }
+          </td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="8">
+            <nz-empty nzNotFoundContent="Không có luật phù hợp bộ lọc."></nz-empty>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </nz-table>
+</div>
+
+<nz-drawer
+  [nzVisible]="!!selectedRule()"
+  nzTitle="Chi tiết luật"
+  [nzWidth]="560"
+  (nzOnClose)="selectedRule.set(null)"
+>
+  <ng-container *nzDrawerContent>
+    @if (selectedRule(); as rule) {
+      <div class="br-detail-title">
+        <div>
+          <code>{{ rule.code }}</code>
+          <h3>{{ rule.name }}</h3>
+        </div>
+        <nz-tag [nzColor]="statusMeta[rule.status].color">{{
+          statusMeta[rule.status].label
+        }}</nz-tag>
+      </div>
+      <p>{{ rule.description }}</p>
+      <nz-descriptions nzBordered [nzColumn]="1" nzSize="small">
+        <nz-descriptions-item nzTitle="Loại luật">{{
+          categoryLabels[rule.category]
+        }}</nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Kiểu luật">{{ kindLabels[rule.kind] }}</nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Phiên bản">v{{ rule.version }}</nz-descriptions-item>
+        <nz-descriptions-item nzTitle="RD áp dụng">{{
+          rule.appliedProcesses.join(', ')
+        }}</nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Cập nhật"
+          >{{ rule.updatedAt }} · {{ rule.updatedBy }}</nz-descriptions-item
+        >
+        @if (rule.kind === 'SERVICE') {
+          <nz-descriptions-item nzTitle="Đầu vào">{{
+            rule.serviceInputs || 'Chưa khai báo'
+          }}</nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Đầu ra">{{
+            rule.serviceOutput || 'Chưa khai báo'
+          }}</nz-descriptions-item>
+        }
+      </nz-descriptions>
+      @if (rule.kind === 'DMN') {
+        <button nz-button nzType="primary" class="br-detail-alert" (click)="openDetail(rule)">
+          Mở trình soạn bảng luật
+        </button>
+      }
+    }
+  </ng-container>
+</nz-drawer>
+
+<nz-modal
+  [nzVisible]="createOpen()"
+  nzTitle="Tạo luật nghiệp vụ"
+  [nzFooter]="createFooter"
+  (nzOnCancel)="createOpen.set(false)"
+>
+  <ng-container *nzModalContent>
+    <div class="br-form">
+      <label for="rule-name">Tên luật <span>*</span></label>
+      <input
+        id="rule-name"
+        nz-input
+        maxlength="255"
+        placeholder="Ví dụ: Cần Hội đồng nghiệm thu"
+        [ngModel]="createName()"
+        (ngModelChange)="createName.set($event)"
+      />
+      <label for="rule-description">Mô tả <span>*</span></label>
+      <textarea
+        id="rule-description"
+        nz-input
+        rows="3"
+        maxlength="1000"
+        placeholder="Luật này quyết định điều gì?"
+        [ngModel]="createDescription()"
+        (ngModelChange)="createDescription.set($event)"
+      ></textarea>
+      <div class="br-form-row">
+        <div>
+          <label>Loại luật</label>
+          <nz-select [ngModel]="createCategory()" (ngModelChange)="createCategory.set($event)">
+            @for (category of categories; track category) {
+              <nz-option [nzValue]="category" [nzLabel]="categoryLabels[category]"></nz-option>
+            }
+          </nz-select>
+        </div>
+        <div>
+          <label>Kiểu luật</label>
+          <nz-select [ngModel]="createKind()" (ngModelChange)="createKind.set($event)">
+            @for (kind of kinds; track kind) {
+              <nz-option [nzValue]="kind" [nzLabel]="kindLabels[kind]"></nz-option>
+            }
+          </nz-select>
+        </div>
+      </div>
+      <label>RD áp dụng <span>*</span></label>
+      <nz-select
+        nzMode="multiple"
+        nzShowSearch
+        [nzLoading]="deployedProcessesLoading()"
+        [nzDisabled]="deployedProcessesLoading()"
+        nzPlaceHolder="Chọn một hoặc nhiều quy trình đã deploy"
+        [ngModel]="createProcesses()"
+        (ngModelChange)="createProcesses.set($event)"
+      >
+        @for (process of deployedProcesses(); track process.id) {
+          <nz-option
+            [nzValue]="process.bpmnProcessId"
+            [nzLabel]="
+              process.bpmnProcessId + ' — ' + process.name + ' (v' + process.latestVersion + ')'
+            "
+          ></nz-option>
+        }
+      </nz-select>
+      @if (deployedProcessesError()) {
+        <nz-alert nzType="error" nzShowIcon [nzMessage]="deployedProcessesError()!"></nz-alert>
+        <button nz-button nzType="link" nzSize="small" (click)="loadDeployedProcesses()">
+          Tải lại danh sách
+        </button>
+      } @else if (!deployedProcessesLoading() && deployedProcesses().length === 0) {
+        <nz-alert
+          nzType="warning"
+          nzShowIcon
+          nzMessage="Chưa có quy trình nào ở trạng thái DEPLOYED."
+        ></nz-alert>
+      }
+    </div>
+  </ng-container>
+</nz-modal>
+
+<ng-template #createFooter>
+  <button nz-button (click)="createOpen.set(false)">Huỷ</button>
+  <button
+    nz-button
+    nzType="primary"
+    [nzLoading]="creating()"
+    [disabled]="!canCreate() || creating()"
+    (click)="create()"
+  >
+    Tạo bản nháp
+  </button>
+</ng-template>

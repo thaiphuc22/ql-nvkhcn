@@ -5,6 +5,7 @@
 import { phieuNhanXetSchema } from './phieuNhanXet'
 import { phieuDuToanDemoSchema } from './phieuDuToanDemo'
 import { phieuThanhVienDemoSchema } from './phieuThanhVienDemo'
+import { congVanDangKyXetDuyetNvKhcnSchema } from './congVanDangKyXetDuyetNvKhcn'
 
 export interface FormMeta {
   key: string
@@ -84,6 +85,7 @@ const phieuPheDuyetSchema = {
 
 /** Biểu mẫu mẫu nạp sẵn vào thư viện. FormContext sẽ quản lý CRUD trên tập này. */
 export const seedForms: FormMeta[] = [
+  { key: 'bm-02-00-cv-dang-ky-xet-duyet-nv-khcn', ten: 'BM.02.00/CV — Công văn đăng ký xét duyệt NV KHCN', moTa: 'Lập công văn xin thẩm định hồ sơ đăng ký xét duyệt nhiệm vụ KHCN và khai báo các đầu mối phối hợp', loai: 'Soạn thảo', schema: congVanDangKyXetDuyetNvKhcnSchema },
   { key: 'phieu-chu-truong', ten: 'Hồ sơ trình duyệt Chủ trương', moTa: 'Soạn nội dung HS chủ trương: sự cần thiết + mục tiêu + dự toán', loai: 'Soạn thảo', schema: phieuChuTruongSchema },
   { key: 'phieu-y-kien', ten: 'Phiếu góp ý', moTa: 'Ghi ý kiến, không kết luận', loai: 'Góp ý', schema: phieuYKienSchema },
   { key: 'phieu-nhan-xet', ten: 'Phiếu nhận xét', moTa: 'Tiêu chí + kết luận + ý kiến', loai: 'Nhận xét', schema: phieuNhanXetSchema },
@@ -103,10 +105,26 @@ export function emptySchema(key: string, ten: string): unknown {
   }
 }
 
-/** Đếm số trường nhập liệu (component có `key`) — bỏ qua text tĩnh. */
+interface CountableComp {
+  key?: string
+  type?: string
+  components?: CountableComp[]
+}
+
+/** Đếm số trường nhập liệu (component có `key`) — bỏ qua text tĩnh; đệ quy qua `group`
+ *  (container thuần, field con vẫn tính là trường của biểu mẫu). */
+function countIn(comps: CountableComp[]): number {
+  let n = 0
+  for (const c of comps) {
+    if (c.type === 'group' && Array.isArray(c.components)) n += countIn(c.components)
+    else if (c.key) n += 1
+  }
+  return n
+}
+
 export function countFields(schema: unknown): number {
-  const comps = (schema as { components?: { key?: string }[] })?.components
-  return Array.isArray(comps) ? comps.filter((c) => !!c.key).length : 0
+  const comps = (schema as { components?: CountableComp[] })?.components
+  return Array.isArray(comps) ? countIn(comps) : 0
 }
 
 const TIEU_CHI: Record<string, string> = {

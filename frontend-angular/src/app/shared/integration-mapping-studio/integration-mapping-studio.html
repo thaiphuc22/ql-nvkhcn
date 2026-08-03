@@ -1,0 +1,187 @@
+<div class="ims-filter-bar">
+  <nz-select nzAllowClear nzPlaceHolder="Tất cả hệ" style="width:170px" [ngModel]="fHe()" (ngModelChange)="fHe.set($event)">
+    @for (opt of systemOptions(); track opt.value) {
+      <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+    }
+  </nz-select>
+  <nz-select nzAllowClear nzPlaceHolder="Tất cả đối tượng" style="width:160px" [ngModel]="fDoiTuong()" (ngModelChange)="fDoiTuong.set($event)">
+    @for (opt of objectOptions; track opt.value) {
+      <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+    }
+  </nz-select>
+  <nz-select nzAllowClear nzPlaceHolder="Tất cả chiều" style="width:190px" [ngModel]="fChieu()" (ngModelChange)="fChieu.set($event)">
+    @for (opt of directionOptions; track opt.value) {
+      <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+    }
+  </nz-select>
+  <span class="ims-spacer"></span>
+  <button nz-button nzType="primary" (click)="createOpen.set(true)">
+    <span nz-icon nzType="plus"></span> Thêm mapping
+  </button>
+</div>
+
+<nz-table #table nzSize="small" [nzData]="rows()" [nzShowPagination]="rows().length > 10">
+  <thead>
+    <tr>
+      <th>Hệ</th>
+      <th>Đối tượng</th>
+      <th>Chiều</th>
+      <th>Trạng thái</th>
+      <th>Field</th>
+      <th>Cập nhật</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (c of table.data; track c.id) {
+      <tr>
+        <td>{{ c.he }}</td>
+        <td>{{ businessObjectLabel[c.doiTuong] }}</td>
+        <td>{{ directionLabel[c.chieu] }}</td>
+        <td><nz-tag [nzColor]="statusMeta[c.trangThai].color">{{ statusMeta[c.trangThai].label }}</nz-tag></td>
+        <td class="ims-center">{{ c.fields.length }}</td>
+        <td>{{ c.capNhatLuc }} · {{ c.capNhatBoi }}</td>
+        <td>
+          <div class="ims-row-actions">
+            <button nz-button nzSize="small" (click)="openEdit(c)">Sửa</button>
+            <button
+              nz-button
+              nzSize="small"
+              [disabled]="c.fields.length === 0"
+              nz-tooltip
+              [nzTooltipTitle]="c.fields.length === 0 ? 'Chưa có field để xem trước' : undefined"
+              (click)="openPreview(c)"
+            >
+              <span nz-icon nzType="eye"></span> Xem trước
+            </button>
+            <button nz-button nzSize="small" [nzType]="c.trangThai === 'active' ? 'default' : 'primary'" (click)="toggleActive(c)">
+              {{ c.trangThai === 'active' ? 'Vô hiệu hoá' : 'Kích hoạt' }}
+            </button>
+            <button
+              nz-button
+              nzSize="small"
+              nzDanger
+              nzType="text"
+              nz-popconfirm
+              [nzPopconfirmTitle]="'Xoá mapping ' + c.he + '?'"
+              nzOkText="Xoá"
+              nzCancelText="Huỷ"
+              (nzOnConfirm)="remove(c)"
+            >
+              <span nz-icon nzType="delete"></span>
+            </button>
+          </div>
+        </td>
+      </tr>
+    } @empty {
+      <tr>
+        <td colspan="7"><nz-empty nzNotFoundContent="Chưa có mapping nào khớp bộ lọc."></nz-empty></td>
+      </tr>
+    }
+  </tbody>
+</nz-table>
+
+<!-- Tạo mapping mới — chỉ chọn hệ/đối tượng/chiều, soạn field ở bước Sửa. -->
+<nz-modal
+  [nzVisible]="createOpen()"
+  nzTitle="Thêm mapping mới"
+  (nzOnCancel)="createOpen.set(false)"
+  (nzOnOk)="doCreate()"
+  [nzOkLoading]="saving()"
+  [nzOkDisabled]="!createForm().he || !createForm().doiTuong || !createForm().chieu"
+  nzOkText="Tạo (Draft)"
+  nzCancelText="Huỷ"
+>
+  <ng-container *nzModalContent>
+    <div class="ims-create-form">
+      <nz-select style="width:100%" nzPlaceHolder="Hệ tích hợp" [ngModel]="createForm().he"
+                 (ngModelChange)="createForm.set({ ...createForm(), he: $event })">
+        @for (opt of systemOptions(); track opt.value) {
+          <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+        }
+      </nz-select>
+      <nz-select style="width:100%" nzPlaceHolder="Đối tượng nghiệp vụ" [ngModel]="createForm().doiTuong"
+                 (ngModelChange)="createForm.set({ ...createForm(), doiTuong: $event })">
+        @for (opt of objectOptions; track opt.value) {
+          <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+        }
+      </nz-select>
+      <nz-select style="width:100%" nzPlaceHolder="Chiều dữ liệu" [ngModel]="createForm().chieu"
+                 (ngModelChange)="createForm.set({ ...createForm(), chieu: $event })">
+        @for (opt of directionOptions; track opt.value) {
+          <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+        }
+      </nz-select>
+    </div>
+  </ng-container>
+</nz-modal>
+
+<!-- Soạn field + value mapping. -->
+<ng-template #editExtra>
+  <button nz-button nzType="primary" (click)="saveEdit()">Lưu</button>
+</ng-template>
+<nz-drawer
+  [nzVisible]="!!editing()"
+  [nzTitle]="editing() ? (editing()!.he + ' · ' + businessObjectLabel[editing()!.doiTuong]) : undefined"
+  [nzExtra]="editExtra"
+  [nzWidth]="640"
+  (nzOnClose)="closeEdit()"
+>
+  <ng-container *nzDrawerContent>
+    @if (editing(); as e) {
+      <p nz-typography nzType="secondary" class="ims-edit-hint">
+        {{ directionLabel[e.chieu] }} · lưu sẽ đưa cấu hình về Draft (cần Kích hoạt lại sau khi validate qua).
+      </p>
+      <app-integration-mapping-field-editor [fields]="draftFields()" (fieldsChange)="draftFields.set($event)" />
+    }
+  </ng-container>
+</nz-drawer>
+
+<!-- Preview payload: chọn 1 bản ghi mẫu → JSON gốc / JSON sau mapping / lỗi. -->
+@if (previewing(); as p) {
+  <nz-modal
+    [nzVisible]="true"
+    [nzTitle]="'Xem trước payload · ' + p.he"
+    (nzOnCancel)="closePreview()"
+    [nzFooter]="null"
+    [nzWidth]="720"
+  >
+    <ng-container *nzModalContent>
+      @if (sampleRecords().length === 0) {
+        <nz-empty nzNotFoundContent="Chưa có dữ liệu mẫu cho đối tượng này."></nz-empty>
+      } @else {
+        <nz-select style="width:100%;margin-bottom:12px" [ngModel]="sampleId()" (ngModelChange)="sampleId.set($event)">
+          @for (s of sampleRecords(); track s.id) {
+            <nz-option [nzLabel]="s.label" [nzValue]="s.id"></nz-option>
+          }
+        </nz-select>
+        @if (previewResult(); as result) {
+          <div nz-row [nzGutter]="12">
+            <div nz-col [nzSpan]="12">
+              <span nz-typography nzStrong class="ims-preview-title">Dữ liệu gốc (QTKHCN)</span>
+              <pre class="ims-json-block">{{ previewSample()!.data | json }}</pre>
+            </div>
+            <div nz-col [nzSpan]="12">
+              <span nz-typography nzStrong class="ims-preview-title">Payload sau mapping ({{ p.he }})</span>
+              <pre class="ims-json-block">{{ result.payload | json }}</pre>
+            </div>
+          </div>
+          @if (result.missingCount > 0 || result.invalidCount > 0) {
+            <div class="ims-preview-errors">
+              @for (f of result.fields; track f.fieldId) {
+                @if (f.thieu || f.loi) {
+                  <div class="ims-preview-error-row">
+                    <nz-tag [nzColor]="f.thieu ? 'error' : 'warning'">{{ f.thieu ? 'Thiếu' : 'Lỗi' }}</nz-tag>
+                    <span>{{ f.truongQTKHCN || '(chưa đặt tên)' }} → {{ f.truongHeNgoai || '(chưa map)' }}</span>
+                  </div>
+                }
+              }
+            </div>
+          } @else {
+            <p nz-typography class="ims-preview-ok">Không có field thiếu/lỗi với bản ghi mẫu này.</p>
+          }
+        }
+      }
+    </ng-container>
+  </nz-modal>
+}

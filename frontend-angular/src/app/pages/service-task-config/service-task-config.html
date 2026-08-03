@@ -1,0 +1,573 @@
+<div class="stc-page">
+  <div class="stc-header">
+    <h2 nz-typography>
+      <span nz-icon nzType="api" class="stc-header-icon"></span>
+      Cấu hình Service Task
+    </h2>
+    <button nz-button nzType="primary" (click)="openCreate()">
+      <span nz-icon nzType="plus"></span>
+      Tạo cấu hình
+    </button>
+  </div>
+
+  @if (realConfigError()) {
+    <nz-alert nzType="warning" nzShowIcon class="stc-real-source" [nzMessage]="realConfigError()!"></nz-alert>
+  } @else if (!realConfigLoading()) {
+    <nz-alert nzType="info" nzShowIcon class="stc-real-source" [nzMessage]="realSourceTitle" [nzDescription]="realSourceBody"></nz-alert>
+    <ng-template #realSourceTitle>
+      Dữ liệu runtime thật: {{ realDefinitions().length }} cấu hình · {{ activeRealBindings().length }} binding active
+    </ng-template>
+    <ng-template #realSourceBody>
+      @if (activeRealBindings().length) {
+        <ul class="stc-real-source-list">
+          @for (binding of activeRealBindings(); track binding.id) {
+            <li>
+              <code>{{ binding.bpmnProcessId }}</code> ·
+              <code>{{ binding.elementId ?? '(mọi element cùng job type)' }}</code> →
+              <strong>{{ binding.definitionCode }}</strong>
+              <span class="stc-real-source-job">{{ binding.jobType }}</span>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p>Chưa có binding ACTIVE nào trong DB — mọi job worker đang chạy theo giá trị mặc định hard-code.</p>
+      }
+      @if (realDefinitions().length) {
+        <div class="stc-real-definitions">
+          @for (definition of realDefinitions(); track definition.id) {
+            <nz-tag [nzColor]="definition.status === 'ACTIVE' ? 'green' : 'default'">
+              {{ definition.code }} · v{{ definition.activeVersion ?? definition.latestVersion }} · {{ definition.status }}
+            </nz-tag>
+          }
+        </div>
+      }
+      <p class="stc-real-source-note">
+        Tab Cấu hình và các thao tác tạo, sửa, nhân bản, xóa đang dùng dữ liệu DB thật. Các tab kiểm thử,
+        log và audit vẫn dùng dữ liệu mô phỏng cho tới khi có API runtime tương ứng.
+      </p>
+    </ng-template>
+  }
+
+  @if (aiAgentDefinitions().length) {
+    <nz-alert nzType="info" nzShowIcon class="stc-real-source" [nzMessage]="aiAgentTitle" [nzDescription]="aiAgentBody"></nz-alert>
+    <ng-template #aiAgentTitle>
+      <span nz-icon nzType="robot"></span>
+      {{ aiAgentDefinitions().length }} tác vụ AI Agent — cấu hình bằng biến môi trường backend, không qua nút "Sửa cấu hình" ở trên
+    </ng-template>
+    <ng-template #aiAgentBody>
+      <ul class="stc-real-source-list">
+        @for (item of aiAgentDefinitions(); track item.definition.id) {
+          <li>
+            <strong>{{ item.definition.name }}</strong> ({{ item.definition.code }})
+            @for (jobType of item.jobTypes; track jobType) {
+              <code>{{ jobType }}</code>
+            }
+          </li>
+        }
+      </ul>
+      <p>
+        Job worker gọi thẳng LLM provider (OpenAI hoặc Gemini), không đọc bảng <code>service_task_definition</code> — vì vậy
+        loại này không hiện trong bảng "Cấu hình" (nguồn DB thật) và không sửa được qua form Tạo/Sửa. Để đổi cấu
+        hình, đặt biến môi trường khi chạy backend rồi khởi động lại tiến trình:
+      </p>
+      <ul class="stc-real-source-list">
+        <li><code>QTKHCN_AI_PROVIDER</code> — mặc định <code>auto</code>; đặt <code>gemini</code> nếu muốn ép dùng Gemini khi cả hai key cùng tồn tại.</li>
+        <li><code>OPENAI_API_KEY</code> — key OpenAI; trong chế độ <code>auto</code> được ưu tiên nếu có giá trị.</li>
+        <li><code>GEMINI_API_KEY</code> — key Gemini; được dùng khi <code>QTKHCN_AI_PROVIDER=gemini</code> hoặc khi <code>auto</code> mà không có <code>OPENAI_API_KEY</code>.</li>
+        <li><code>QTKHCN_AI_OPENAI_MODEL</code> — mặc định <code>gpt-4o-mini</code>.</li>
+        <li><code>QTKHCN_AI_OPENAI_MAX_TOKENS</code> — mặc định <code>512</code>.</li>
+        <li><code>QTKHCN_AI_OPENAI_BASE_URL</code> — mặc định <code>https://api.openai.com</code>.</li>
+        <li><code>QTKHCN_AI_GEMINI_MODEL</code> — mặc định <code>gemini-flash-latest</code>.</li>
+        <li><code>QTKHCN_AI_GEMINI_MAX_OUTPUT_TOKENS</code> — mặc định <code>1024</code>.</li>
+        <li><code>QTKHCN_AI_GEMINI_BASE_URL</code> — mặc định <code>https://generativelanguage.googleapis.com</code>.</li>
+      </ul>
+    </ng-template>
+  }
+
+  <div nz-row [nzGutter]="[12, 12]" class="stc-stats">
+    <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6">
+      <div class="stc-stat-card">
+        <div class="stc-stat-value">{{ rows().length }}</div>
+        <div class="stc-stat-label">Tổng cấu hình</div>
+      </div>
+    </div>
+    <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6">
+      <div class="stc-stat-card">
+        <div class="stc-stat-value" style="color:#1677ff">{{ filteredStats().active }}</div>
+        <div class="stc-stat-label">Đang active</div>
+      </div>
+    </div>
+    <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6">
+      <div class="stc-stat-card">
+        <div class="stc-stat-value" [style.color]="missingBinding() ? '#fa8c16' : undefined">{{ missingBinding() }}</div>
+        <div class="stc-stat-label">Thiếu binding</div>
+      </div>
+    </div>
+    <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6">
+      <div class="stc-stat-card">
+        <div class="stc-stat-value" [style.color]="openIncidents() ? '#cf1322' : undefined">{{ openIncidents() }}</div>
+        <div class="stc-stat-label">Incident mở</div>
+      </div>
+    </div>
+  </div>
+
+  <nz-tabs>
+    <nz-tab nzTitle="Tổng quan">
+      <div nz-row [nzGutter]="[12, 12]">
+        <div nz-col [nzXs]="24" [nzLg]="14">
+          <div class="stc-card">
+            <span class="stc-card-title">Cấu hình cần chú ý</span>
+            <nz-table #attentionTable nzSize="small" [nzData]="attentionRows()" [nzScroll]="{ x: '1000px', y: '320px' }" [nzPageSize]="6" [nzHideOnSinglePage]="true">
+              <thead>
+                <tr>
+                  <th>Mã</th>
+                  <th>Tên</th>
+                  <th>Trạng thái</th>
+                  <th>Binding</th>
+                  <th>Incident</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of attentionTable.data; track row.definition.id) {
+                  <tr>
+                    <td>{{ row.definition.code }}</td>
+                    <td>{{ row.definition.name }}</td>
+                    <td>
+                      @let meta = statusMeta[row.definition.status];
+                      <nz-tag [nzColor]="meta.color">{{ meta.label }}</nz-tag>
+                    </td>
+                    <td>
+                      @if (row.processCodes.length === 0) {
+                        <span class="stc-muted">Chưa gắn</span>
+                      } @else {
+                        @for (code of row.processCodes.slice(0, 2); track code) {
+                          <nz-tag>{{ code }}</nz-tag>
+                        }
+                      }
+                    </td>
+                    <td>
+                      @if (row.incidentCount) {
+                        <nz-tag nzColor="error">{{ row.incidentCount }}</nz-tag>
+                      } @else {
+                        <nz-tag>0</nz-tag>
+                      }
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr><td colspan="5"><nz-empty nzNotFoundContent="Tất cả cấu hình đều ổn."></nz-empty></td></tr>
+                }
+              </tbody>
+            </nz-table>
+          </div>
+        </div>
+        <div nz-col [nzXs]="24" [nzLg]="10">
+          <div class="stc-card">
+            <span class="stc-card-title">Loại Service Task</span>
+            @for (group of categoryGroups; track group.key) {
+              @let groupTypes = serviceTasks.types().filter(t => t.category === group.key);
+              @if (groupTypes.length > 0) {
+                <div class="stc-type-group">
+                  <span class="stc-type-group-label">{{ group.label }}</span>
+                  @for (type of groupTypes; track type.code) {
+                    @let count = rows().filter(r => r.definition.typeCode === type.code).length;
+                    <div class="stc-type-row">
+                      <span nz-icon [nzType]="group.icon" class="stc-type-icon"></span>
+                      <div class="stc-type-info">
+                        <span class="stc-type-name">{{ type.name }}</span>
+                        <span class="stc-type-desc">{{ type.description }}</span>
+                      </div>
+                      <nz-tag>{{ count }}</nz-tag>
+                    </div>
+                  }
+                </div>
+              }
+            }
+          </div>
+        </div>
+      </div>
+
+      <div nz-row [nzGutter]="[12, 12]" class="stc-mt">
+        <div nz-col [nzSpan]="24">
+          <div class="stc-card">
+            <span class="stc-card-title">Hoạt động gần đây</span>
+            @if (sortedRecentAudit().length === 0) {
+              <nz-empty nzNotFoundContent="Chưa có hoạt động nào."></nz-empty>
+            } @else {
+              @for (entry of sortedRecentAudit(); track entry.id) {
+                <div class="stc-activity-row">
+                  <nz-tag nzColor="blue">{{ entry.action }}</nz-tag>
+                  <span class="stc-activity-text">{{ entry.entityType }} · {{ entry.actor }}</span>
+                  <span class="stc-muted">{{ entry.at }}</span>
+                </div>
+              }
+            }
+          </div>
+        </div>
+      </div>
+    </nz-tab>
+
+    <nz-tab nzTitle="Cấu hình">
+      <div nz-row [nzGutter]="[12, 12]" class="stc-mb">
+        <div nz-col [nzXs]="12" [nzSm]="6" [nzMd]="4">
+          <div class="stc-stat-card">
+            <div class="stc-stat-value">{{ filteredStats().total }} <span class="stc-stat-suffix">/ {{ rows().length }}</span></div>
+            <div class="stc-stat-label">Đang hiển thị</div>
+          </div>
+        </div>
+        <div nz-col [nzXs]="12" [nzSm]="6" [nzMd]="4">
+          <div class="stc-stat-card">
+            <div class="stc-stat-value" style="color:#1677ff">{{ filteredStats().active }}</div>
+            <div class="stc-stat-label">Active</div>
+          </div>
+        </div>
+        <div nz-col [nzXs]="12" [nzSm]="6" [nzMd]="4">
+          <div class="stc-stat-card">
+            <div class="stc-stat-value" [style.color]="filteredStats().withIncidents ? '#cf1322' : undefined">{{ filteredStats().withIncidents }}</div>
+            <div class="stc-stat-label">Có incident</div>
+          </div>
+        </div>
+        <div nz-col [nzXs]="12" [nzSm]="6" [nzMd]="4">
+          <div class="stc-stat-card">
+            <div class="stc-stat-value" [style.color]="filteredStats().missingBinding ? '#fa8c16' : undefined">{{ filteredStats().missingBinding }}</div>
+            <div class="stc-stat-label">Thiếu binding</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stc-card">
+        <div class="stc-filter-bar">
+          <nz-select nzAllowClear nzPlaceHolder="Loại" class="stc-filter-select" [ngModel]="typeFilter()" (ngModelChange)="typeFilter.set($event)">
+            @for (t of serviceTasks.types(); track t.code) {
+              <nz-option [nzLabel]="t.name" [nzValue]="t.code"></nz-option>
+            }
+          </nz-select>
+          <nz-select nzAllowClear nzPlaceHolder="Trạng thái" class="stc-filter-select" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
+            @for (s of statusList; track s) {
+              <nz-option [nzLabel]="statusLabel(s)" [nzValue]="s"></nz-option>
+            }
+          </nz-select>
+          <nz-select nzAllowClear nzPlaceHolder="Quy trình" class="stc-filter-select" [ngModel]="processFilter()" (ngModelChange)="processFilter.set($event)">
+            @for (opt of processOptions(); track opt.value) {
+              <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+            }
+          </nz-select>
+          <nz-select nzAllowClear nzPlaceHolder="Connector" class="stc-filter-select" [ngModel]="connectorFilter()" (ngModelChange)="connectorFilter.set($event)">
+            @for (opt of connectorOptions(); track opt.value) {
+              <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+            }
+          </nz-select>
+          <nz-select nzAllowClear nzPlaceHolder="Incident" class="stc-filter-select" [ngModel]="incidentFilter()" (ngModelChange)="incidentFilter.set($event)">
+            <nz-option nzLabel="Có incident" [nzValue]="true"></nz-option>
+            <nz-option nzLabel="Không incident" [nzValue]="false"></nz-option>
+          </nz-select>
+          <span class="stc-filter-total">
+            <span nz-icon nzType="filter"></span>
+            {{ filteredRows().length }}/{{ rows().length }} cấu hình
+          </span>
+          @if (activeFilterCount > 0) {
+            <button nz-button nzSize="small" (click)="clearFilters()">
+              <span nz-icon nzType="close-circle"></span>
+              Xóa bộ lọc
+            </button>
+          }
+        </div>
+
+        <nz-table
+          #configTable
+          nzSize="small"
+          [nzData]="filteredRows()"
+          [nzScroll]="{ x: '1300px' }"
+          [nzPageSize]="8"
+          [nzShowSizeChanger]="true"
+          [nzPageSizeOptions]="[8, 15, 30]"
+        >
+          <thead>
+            <tr>
+              <th nzLeft nzWidth="190px">Mã</th>
+              <th nzWidth="240px">Tên</th>
+              <th nzWidth="150px">Loại</th>
+              <th nzWidth="150px">Trạng thái</th>
+              <th nzWidth="170px">Binding</th>
+              <th nzWidth="150px">Success 7 ngày</th>
+              <th nzWidth="90px">Incident</th>
+              <th nzWidth="140px">Cập nhật</th>
+              <th nzRight nzWidth="52px"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of configTable.data; track row.definition.id) {
+              <tr>
+                <td nzLeft>
+                  <div class="stc-code-cell">
+                    <strong>{{ row.definition.code }}</strong>
+                    <span class="stc-muted">{{ row.definition.ownerModule }}</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="stc-name-cell">
+                    <span>{{ row.definition.name }}</span>
+                    <span class="stc-muted">{{ row.definition.description }}</span>
+                  </div>
+                </td>
+                <td>
+                  <div>{{ row.typeName }}</div>
+                  <span class="stc-muted">{{ row.definition.typeCode }}</span>
+                </td>
+                <td>
+                  @let meta = statusMeta[row.definition.status];
+                  <nz-tag [nzColor]="meta.color">{{ meta.label }}</nz-tag>
+                  @if (row.latestVersion) {
+                    <nz-tag>v{{ row.latestVersion.versionNo }}</nz-tag>
+                  }
+                </td>
+                <td>
+                  @if (row.processCodes.length === 0) {
+                    <span class="stc-muted">Chưa gắn</span>
+                  } @else {
+                    @for (code of row.processCodes.slice(0, 2); track code) {
+                      <nz-tag>{{ code }}</nz-tag>
+                    }
+                    @if (row.processCodes.length > 2) {
+                      <nz-tag [title]="row.processCodes.slice(2).join(', ')">+{{ row.processCodes.length - 2 }}</nz-tag>
+                    }
+                  }
+                </td>
+                <td>
+                  @if (row.successRate === '-') {
+                    <span class="stc-muted">-</span>
+                  } @else {
+                    @let pct = +row.successRate.replace('%', '');
+                    <div class="stc-success-cell">
+                      <nz-progress nzType="line" [nzPercent]="pct" [nzShowInfo]="false" nzSize="small" [nzStrokeColor]="pct >= 90 ? '#1677ff' : pct >= 70 ? '#fa8c16' : '#cf1322'" class="stc-progress"></nz-progress>
+                      <span>{{ row.successRate }}</span>
+                    </div>
+                  }
+                </td>
+                <td>
+                  @if (row.incidentCount) {
+                    <nz-tag nzColor="error">{{ row.incidentCount }}</nz-tag>
+                  } @else {
+                    <nz-tag>0</nz-tag>
+                  }
+                </td>
+                <td>{{ row.definition.updatedAt }}</td>
+                <td nzRight>
+                  <button nz-button nzType="text" nz-dropdown [nzDropdownMenu]="rowMenu">
+                    <span nz-icon nzType="more"></span>
+                  </button>
+                  <nz-dropdown-menu #rowMenu="nzDropdownMenu">
+                    <ul nz-menu>
+                      <li nz-menu-item (click)="openEdit(row)"><span nz-icon nzType="edit"></span> Sửa cấu hình</li>
+                      <li nz-menu-divider></li>
+                      <li nz-menu-item (click)="duplicate(row)"><span nz-icon nzType="copy"></span> Nhân bản</li>
+                      <li nz-menu-divider></li>
+                      <li nz-menu-item nzDanger (click)="delete(row)"><span nz-icon nzType="delete"></span> Xóa</li>
+                    </ul>
+                  </nz-dropdown-menu>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="9"><nz-empty nzNotFoundContent="Không có cấu hình nào."></nz-empty></td></tr>
+            }
+          </tbody>
+        </nz-table>
+      </div>
+    </nz-tab>
+
+    <nz-tab nzTitle="Đối soát BPMN">
+      <app-service-task-binding-table></app-service-task-binding-table>
+    </nz-tab>
+
+    <nz-tab nzTitle="Kiểm thử">
+      <app-service-task-test-panel></app-service-task-test-panel>
+    </nz-tab>
+
+    <nz-tab nzTitle="Log thực thi">
+      <div class="stc-card">
+        <div class="stc-filter-bar">
+          <nz-select nzAllowClear nzPlaceHolder="Quy trình" class="stc-filter-select" [ngModel]="logProcessFilter()" (ngModelChange)="logProcessFilter.set($event)">
+            @for (opt of processOptions(); track opt.value) {
+              <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+            }
+          </nz-select>
+          <nz-select nzAllowClear nzShowSearch nzPlaceHolder="Definition" class="stc-filter-select-wide" [ngModel]="logDefinitionFilter()" (ngModelChange)="logDefinitionFilter.set($event)">
+            @for (opt of definitionOptions(); track opt.value) {
+              <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+            }
+          </nz-select>
+          <nz-select nzAllowClear nzPlaceHolder="Trạng thái" class="stc-filter-select" [ngModel]="logStatusFilter()" (ngModelChange)="logStatusFilter.set($event)">
+            @for (entry of executionStatusMeta | keyvalue; track entry.key) {
+              <nz-option [nzLabel]="entry.value.label" [nzValue]="entry.key"></nz-option>
+            }
+          </nz-select>
+          <nz-select nzAllowClear nzPlaceHolder="Incident" class="stc-filter-select" [ngModel]="logIncidentFilter()" (ngModelChange)="logIncidentFilter.set($event)">
+            <nz-option nzLabel="Có incident" [nzValue]="true"></nz-option>
+            <nz-option nzLabel="Không incident" [nzValue]="false"></nz-option>
+          </nz-select>
+        </div>
+
+        <nz-table #logTable nzSize="small" [nzData]="filteredExecutionLogs()" [nzScroll]="{ x: '1300px' }" [nzPageSize]="6">
+          <thead>
+            <tr>
+              <th nzWidth="170px">Instance key</th>
+              <th nzWidth="120px">Process</th>
+              <th nzWidth="220px">Task key</th>
+              <th nzWidth="260px">Definition</th>
+              <th nzWidth="90px">Version</th>
+              <th nzWidth="130px">Status</th>
+              <th nzWidth="90px">Attempt</th>
+              <th nzWidth="100px">Duration</th>
+              <th nzWidth="170px">Error</th>
+              <th nzWidth="170px">Incident id</th>
+              <th nzRight nzWidth="110px">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (log of logTable.data; track log.id) {
+              <tr>
+                <td>{{ log.processInstanceKey }}</td>
+                <td>{{ log.processCode }}</td>
+                <td>
+                  <div>{{ log.taskDefinitionKey }}</div>
+                  <span class="stc-muted">{{ log.taskName }}</span>
+                </td>
+                <td>
+                  @let def = serviceTasks.getDefinition(log.serviceTaskDefinitionId);
+                  @if (def) {
+                    <strong>{{ def.name }}</strong>
+                    <div class="stc-muted">{{ def.code }}</div>
+                  } @else {
+                    <span class="stc-muted">-</span>
+                  }
+                </td>
+                <td><nz-tag>v{{ log.configVersionNo }}</nz-tag></td>
+                <td>
+                  @let execMeta = executionStatusMeta[log.status];
+                  <nz-tag [nzColor]="execMeta.color">{{ execMeta.label }}</nz-tag>
+                </td>
+                <td>{{ log.attemptNo }}</td>
+                <td>{{ log.durationMs ? log.durationMs + ' ms' : '-' }}</td>
+                <td>
+                  @if (log.errorCode) {
+                    <span class="stc-danger">{{ log.errorCode }}: {{ log.errorMessage }}</span>
+                  } @else {
+                    -
+                  }
+                </td>
+                <td>
+                  @if (log.incidentId) {
+                    <nz-tag nzColor="error">{{ log.incidentId }}</nz-tag>
+                  } @else {
+                    -
+                  }
+                </td>
+                <td nzRight>
+                  <button nz-button nzSize="small" (click)="selectedLogId.set(log.id)">
+                    <span nz-icon nzType="eye"></span>
+                    Chi tiết
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      </div>
+    </nz-tab>
+
+    <nz-tab nzTitle="Phiên bản & audit">
+      <div nz-row [nzGutter]="[12, 12]">
+        <div nz-col [nzXs]="24" [nzLg]="10">
+          <div class="stc-card">
+            <div class="stc-card-header">
+              <span class="stc-card-title">Lịch sử phiên bản</span>
+              <nz-select nzAllowClear nzShowSearch nzPlaceHolder="Lọc definition" class="stc-filter-select-wide" [ngModel]="auditDefinitionFilter()" (ngModelChange)="auditDefinitionFilter.set($event)">
+                @for (opt of definitionOptions(); track opt.value) {
+                  <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+                }
+              </nz-select>
+            </div>
+            <nz-table #versionTable nzSize="small" [nzData]="versionRows()" [nzScroll]="{ x: '820px' }" [nzPageSize]="6">
+              <thead>
+                <tr>
+                  <th nzWidth="220px">Definition</th>
+                  <th nzWidth="90px">Version</th>
+                  <th nzWidth="110px">Status</th>
+                  <th nzWidth="130px">Người tạo</th>
+                  <th nzWidth="260px">Ghi chú</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (ver of versionTable.data; track ver.id) {
+                  <tr>
+                    <td>
+                      @let def = serviceTasks.getDefinition(ver.serviceTaskDefinitionId);
+                      @if (def) {
+                        <strong>{{ def.code }}</strong>
+                        <div class="stc-muted">{{ def.name }}</div>
+                      } @else {
+                        -
+                      }
+                    </td>
+                    <td><nz-tag>v{{ ver.versionNo }}</nz-tag></td>
+                    <td>
+                      <nz-tag [nzColor]="ver.status === 'ACTIVE' ? 'green' : ver.status === 'ARCHIVED' ? 'default' : 'blue'">{{ ver.status }}</nz-tag>
+                    </td>
+                    <td>{{ ver.createdBy }}</td>
+                    <td>{{ ver.changeNote }}</td>
+                  </tr>
+                }
+              </tbody>
+            </nz-table>
+          </div>
+        </div>
+        <div nz-col [nzXs]="24" [nzLg]="14">
+          <div class="stc-card">
+            <span class="stc-card-title">Audit trail</span>
+            <nz-table #auditFullTable nzSize="small" [nzData]="filteredAuditEntries()" [nzScroll]="{ x: '980px' }" [nzPageSize]="8">
+              <thead>
+                <tr>
+                  <th nzWidth="150px">Thời điểm</th>
+                  <th nzWidth="180px">Action</th>
+                  <th nzWidth="190px">Entity</th>
+                  <th nzWidth="150px">Actor</th>
+                  <th nzWidth="90px">Version</th>
+                  <th nzWidth="260px">Lý do</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (entry of auditFullTable.data; track entry.id) {
+                  <tr>
+                    <td>{{ entry.at }}</td>
+                    <td><nz-tag nzColor="blue">{{ entry.action }}</nz-tag></td>
+                    <td>{{ entry.entityType }}</td>
+                    <td>{{ entry.actor }}</td>
+                    <td>{{ entry.configVersionNo ? 'v' + entry.configVersionNo : '-' }}</td>
+                    <td>{{ entry.reason ?? '-' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </nz-table>
+          </div>
+        </div>
+      </div>
+    </nz-tab>
+  </nz-tabs>
+</div>
+
+<app-service-task-form-drawer
+  [open]="drawerOpen()"
+  [definition]="editing()"
+  [apiDefinition]="editingApi()"
+  (closed)="closeDrawer()"
+  (saved)="reloadRealConfig()"
+></app-service-task-form-drawer>
+
+<app-service-task-execution-drawer
+  [open]="!!selectedLog()"
+  [log]="selectedLog()"
+  [definition]="selectedLogDefinition()"
+  [version]="selectedLogVersion()"
+  (closed)="selectedLogId.set(undefined)"
+  (retry)="onRetryLog($event)"
+  (manualResolve)="onManualResolveLog($event)"
+></app-service-task-execution-drawer>

@@ -1,0 +1,137 @@
+<div class="hsc-page">
+  <div class="hsc-header">
+    <button nz-button nzType="text" (click)="cancel()"><span nz-icon nzType="arrow-left"></span></button>
+    <div>
+      <h2>Tạo mới Hồ sơ</h2>
+      <div>Khởi tạo hồ sơ nghiệp vụ gắn với một Nhiệm vụ KHCN.</div>
+    </div>
+  </div>
+
+  @if (errorMessage()) {
+    <nz-alert nzType="error" nzShowIcon [nzMessage]="errorMessage()"></nz-alert>
+  }
+
+  @if (loading()) {
+    <div class="hsc-loading"><nz-spin nzSimple></nz-spin></div>
+  } @else {
+    <form nz-form nzLayout="vertical" [formGroup]="form" (ngSubmit)="submit()">
+      <div nz-row [nzGutter]="16">
+        <div nz-col [nzXs]="24" [nzLg]="14">
+          <nz-card nzTitle="Thông tin khởi tạo">
+            <nz-form-item>
+              <nz-form-label nzRequired>Nhiệm vụ KHCN</nz-form-label>
+              <nz-form-control nzErrorTip="Chọn nhiệm vụ KHCN.">
+                <nz-select formControlName="maNV" nzShowSearch nzPlaceHolder="Tìm theo mã, tên nhiệm vụ, chủ nhiệm...">
+                  @for (nv of nhiemVuList(); track nv.ma) {
+                    <nz-option [nzValue]="nv.ma" [nzLabel]="nv.ma + ' – ' + nv.ten"></nz-option>
+                  }
+                </nz-select>
+              </nz-form-control>
+            </nz-form-item>
+
+            <div nz-row [nzGutter]="12">
+              <div nz-col [nzXs]="24" [nzSm]="12">
+                <nz-form-item>
+                  <nz-form-label nzRequired>Loại hồ sơ</nz-form-label>
+                  <nz-form-control nzErrorTip="Chọn loại hồ sơ.">
+                    <nz-select formControlName="loai" nzPlaceHolder="Chọn loại hồ sơ">
+                      @for (option of loaiOptions; track option.value) {
+                        <nz-option [nzValue]="option.value" [nzLabel]="option.label + ' (' + loaiGroup[option.value] + ')'" />
+                      }
+                    </nz-select>
+                  </nz-form-control>
+                </nz-form-item>
+              </div>
+              <div nz-col [nzXs]="24" [nzSm]="12">
+                <nz-form-item>
+                  <nz-form-label nzRequired>Ngày tạo</nz-form-label>
+                  <nz-form-control nzErrorTip="Chọn ngày tạo.">
+                    <nz-date-picker formControlName="ngayTao" nzFormat="dd/MM/yyyy"></nz-date-picker>
+                  </nz-form-control>
+                </nz-form-item>
+              </div>
+            </div>
+
+            <nz-form-item>
+              <nz-form-label nzRequired>Người khởi tạo</nz-form-label>
+              <nz-form-control nzErrorTip="Nhập người khởi tạo.">
+                <input nz-input formControlName="nguoiKhoiTao" placeholder="VD: TS. Trần Văn Nam" />
+              </nz-form-control>
+            </nz-form-item>
+
+            <nz-form-item>
+              <nz-form-label>Tài liệu thành phần</nz-form-label>
+              <nz-form-control>
+                <div class="hsc-documents">
+                  @for (document of availableDocuments(); track document) {
+                    <label nz-checkbox [ngModel]="selectedDocuments().has(document)" [ngModelOptions]="{ standalone: true }" (ngModelChange)="toggleDocument(document, $event)">{{ document }}</label>
+                  } @empty {
+                    <span class="hsc-muted">Chọn loại hồ sơ để xem danh sách tài liệu.</span>
+                  }
+                </div>
+              </nz-form-control>
+            </nz-form-item>
+
+            @if (warnings().length) {
+              <nz-alert nzType="warning" nzShowIcon nzMessage="Cảnh báo nghiệp vụ" [nzDescription]="warningDescription"></nz-alert>
+              <ng-template #warningDescription>
+                @for (warning of warnings(); track warning) { <div>{{ warning }}</div> }
+              </ng-template>
+            }
+
+            <div class="hsc-actions">
+              <button nz-button type="button" (click)="cancel()">Hủy</button>
+              <button nz-button nzType="primary" type="submit" [nzLoading]="submitting()"><span nz-icon nzType="save"></span> Tạo hồ sơ</button>
+            </div>
+          </nz-card>
+        </div>
+
+        <div nz-col [nzXs]="24" [nzLg]="10">
+          <nz-card nzTitle="Tóm tắt Nhiệm vụ">
+            @if (selectedNhiemVu(); as nv) {
+              <nz-descriptions nzBordered [nzColumn]="1" nzSize="small">
+                <nz-descriptions-item nzTitle="Mã NV KHCN">{{ nv.ma }}</nz-descriptions-item>
+                <nz-descriptions-item nzTitle="Tên nhiệm vụ">{{ nv.ten }}</nz-descriptions-item>
+                <nz-descriptions-item nzTitle="Chủ nhiệm">{{ nv.chuNhiem }}</nz-descriptions-item>
+                <nz-descriptions-item nzTitle="Đơn vị chủ trì">{{ nv.donViChuTri }}</nz-descriptions-item>
+                <nz-descriptions-item nzTitle="Cấp">{{ capLabel[nv.cap] }}</nz-descriptions-item>
+                <nz-descriptions-item nzTitle="Giai đoạn"><nz-tag [nzColor]="stageColor[nv.giaiDoan]">{{ stageLabel[nv.giaiDoan] }}</nz-tag></nz-descriptions-item>
+                <nz-descriptions-item nzTitle="Dự toán">{{ nv.duToan || '—' }}</nz-descriptions-item>
+                <nz-descriptions-item nzTitle="Thời gian thực hiện">{{ nv.thoiGianThucHien || '—' }}</nz-descriptions-item>
+              </nz-descriptions>
+            } @else {
+              <nz-empty nzNotFoundContent="Chưa chọn nhiệm vụ"></nz-empty>
+            }
+          </nz-card>
+
+          <nz-card nzTitle="Preview quy trình">
+            @if (selectedLoai(); as loai) {
+              <div class="hsc-preview">
+                <div>Loại hồ sơ: <nz-tag nzColor="blue">{{ loaiLabel[loai] }}</nz-tag></div>
+                <div>Nhóm quy trình khi Gửi duyệt: <nz-tag>{{ processGroup() }}</nz-tag></div>
+                <div>Trạng thái sau khi tạo: <strong>Khởi tạo</strong></div>
+                <div class="hsc-muted">Bước tiếp theo: mở hồ sơ và Gửi duyệt.</div>
+              </div>
+            } @else {
+              <span class="hsc-muted">Chọn loại hồ sơ để xem nhóm quy trình tương ứng.</span>
+            }
+          </nz-card>
+
+          <nz-card [nzTitle]="'Hồ sơ đã có của nhiệm vụ (' + history().length + ')'" nzSize="small">
+            <p class="hsc-muted">Kiểm tra nhanh quan hệ một nhiệm vụ – nhiều hồ sơ trước khi tạo bản nháp mới.</p>
+            <nz-table #historyTable [nzData]="history()" [nzPageSize]="4" nzSize="small">
+              <thead><tr><th>Mã hồ sơ</th><th>Loại</th><th>Trạng thái</th><th>Ngày tạo</th></tr></thead>
+              <tbody>
+                @for (row of historyTable.data; track row.id) {
+                  <tr><td><code>{{ row.id }}</code></td><td>{{ loaiLabel[row.loai] }}</td><td>{{ statusLabel[row.trangThai] }}</td><td>{{ row.ngayTao }}</td></tr>
+                } @empty {
+                  <tr><td colspan="4"><nz-empty nzNotFoundContent="Nhiệm vụ này chưa có hồ sơ."></nz-empty></td></tr>
+                }
+              </tbody>
+            </nz-table>
+          </nz-card>
+        </div>
+      </div>
+    </form>
+  }
+</div>

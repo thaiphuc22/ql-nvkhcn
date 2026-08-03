@@ -1,0 +1,58 @@
+:host {
+  display: block;
+}
+
+.ff-block {
+  width: 100%;
+}
+
+.ff-text {
+  margin-bottom: 12px;
+}
+
+.ff-html {
+  margin-bottom: 12px;
+}
+
+.ff-image {
+  max-width: 100%;
+  margin-bottom: 12px;
+}
+
+.ff-heading {
+  margin-top: 0;
+}
+
+.ff-paragraph {
+  margin-bottom: 8px;
+}
+
+.ff-spacer {
+  height: 16px;
+}
+
+.ff-field {
+  margin-bottom: 16px;
+}
+
+.ff-label {
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.ff-required {
+  color: #ff4d4f;
+  margin-left: 4px;
+}
+
+.ff-error {
+  color: #ff4d4f;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.ff-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}

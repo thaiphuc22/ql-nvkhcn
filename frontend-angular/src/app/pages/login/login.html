@@ -1,0 +1,61 @@
+<div class="login-page">
+  <div class="login-row">
+    <nz-card class="login-card">
+      <div class="login-title">
+        <nz-icon nzType="experiment" class="login-icon" />
+        <h4>Quản trị nhiệm vụ KHCN</h4>
+      </div>
+      <p class="login-subtitle">Đăng nhập để quản lý và xét duyệt nhiệm vụ khoa học công nghệ</p>
+
+      @if (errorMessage(); as err) {
+        <nz-alert nzType="error" [nzMessage]="err" nzShowIcon class="login-error" />
+      }
+
+      <form nz-form [formGroup]="form" (ngSubmit)="onSubmit()" nzLayout="vertical" class="login-form">
+        <nz-form-item>
+          <nz-form-label nzRequired>Email</nz-form-label>
+          <nz-form-control nzErrorTip="Vui lòng nhập email hợp lệ">
+            <nz-input-group nzPrefixIcon="mail">
+              <input nz-input formControlName="email" placeholder="ban@example.com" autocomplete="username" />
+            </nz-input-group>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label nzRequired>Mật khẩu</nz-form-label>
+          <nz-form-control nzErrorTip="Vui lòng nhập mật khẩu">
+            <nz-input-group nzPrefixIcon="lock">
+              <input
+                nz-input
+                type="password"
+                formControlName="password"
+                placeholder="••••••"
+                autocomplete="current-password"
+              />
+            </nz-input-group>
+          </nz-form-control>
+        </nz-form-item>
+
+        <button nz-button nzType="primary" nzBlock [nzLoading]="submitting()" type="submit">
+          <nz-icon nzType="login" /> Đăng nhập
+        </button>
+      </form>
+    </nz-card>
+
+    @if (showDemoAccounts) {
+      <nz-card class="demo-card">
+        <h5>Tài khoản demo</h5>
+        <p>Mật khẩu chung: <code>{{ demoPassword }}</code></p>
+        <div class="demo-list">
+          @for (u of demoUsers; track u.email) {
+            <div class="demo-row">
+              <code>{{ u.email }}</code>
+              <span>{{ u.chucDanh }}</span>
+              <button nz-button nzSize="small" (click)="fillQuick(u.email)">Điền nhanh</button>
+            </div>
+          }
+        </div>
+      </nz-card>
+    }
+  </div>
+</div>

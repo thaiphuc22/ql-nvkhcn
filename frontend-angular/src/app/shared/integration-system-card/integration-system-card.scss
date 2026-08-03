@@ -1,0 +1,213 @@
+.isc-card {
+  background: var(--vht-surface);
+  border: 1px solid var(--vht-border);
+  border-radius: var(--vht-radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.isc-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.isc-head-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.isc-icon-tile {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.isc-head-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.isc-key {
+  font-size: 16px;
+  line-height: 22px;
+}
+
+.isc-name {
+  font-size: 12px;
+}
+
+.isc-status-pill {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 999px;
+  line-height: 18px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.isc-status-success {
+  background: #389e0d15;
+  color: #389e0d;
+  border: 1px solid #389e0d30;
+}
+
+.isc-status-warning {
+  background: #d4b10615;
+  color: #ad8b00;
+  border: 1px solid #ad8b0030;
+}
+
+.isc-status-error {
+  background: #cf132215;
+  color: #cf1322;
+  border: 1px solid #cf132230;
+}
+
+.isc-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.isc-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.isc-info-label {
+  font-size: 12px;
+  color: var(--vht-ink-2);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.isc-info-value {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.isc-mono {
+  font-family: monospace;
+}
+
+.isc-ellipsis {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.isc-muted {
+  font-style: italic;
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.isc-danger {
+  color: #cf1322 !important;
+}
+
+.isc-metrics {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--vht-border);
+}
+
+.isc-metric {
+  flex: 1;
+  text-align: center;
+}
+
+.isc-metric-value {
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 22px;
+}
+
+.isc-metric-label {
+  font-size: 10px;
+  color: var(--vht-ink-2);
+}
+
+.isc-metric-divider {
+  width: 1px;
+  height: 28px;
+  background: var(--vht-border);
+  align-self: center;
+}
+
+.isc-divider {
+  border-top: 1px solid var(--vht-border);
+  margin: 14px 0 12px;
+}
+
+.isc-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.isc-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.isc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 0;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 20px;
+  width: 100%;
+}
+
+.isc-btn-outline {
+  background: var(--vht-surface);
+  color: var(--vht-red, #ee0033);
+  border: 1px solid var(--vht-red, #ee0033);
+}
+
+.isc-btn-danger {
+  background: var(--vht-surface);
+  color: #cf1322;
+  border: 1px solid #cf1322;
+}
+
+.isc-btn-primary {
+  background: var(--vht-red, #ee0033);
+  color: #fff;
+}
+
+.isc-ref {
+  margin-top: 10px;
+  font-size: 11px;
+  color: #9ca3af;
+}

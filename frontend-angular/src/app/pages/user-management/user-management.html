@@ -1,0 +1,272 @@
+<div class="um-page">
+  <div class="um-header">
+    <h2>
+      <span nz-icon nzType="team" class="um-header-icon"></span>
+      Quản trị người dùng
+    </h2>
+    <button nz-button nzType="primary" (click)="openCreate()">
+      <span nz-icon nzType="plus"></span>
+      Thêm người dùng
+    </button>
+  </div>
+
+  @if (errorMessage(); as err) {
+    <div class="um-error">{{ err }}</div>
+  }
+
+  <div nz-row [nzGutter]="12" class="um-stats">
+    <div nz-col [nzXs]="24" [nzSm]="8">
+      <div class="um-stat-card">
+        <div class="um-stat-value">{{ list().length }}</div>
+        <div class="um-stat-label">Tổng người dùng</div>
+      </div>
+    </div>
+    <div nz-col [nzXs]="24" [nzSm]="8">
+      <div class="um-stat-card">
+        <div class="um-stat-value">{{ allAssignments().length }}</div>
+        <div class="um-stat-label">Lượt gán vai trò</div>
+      </div>
+    </div>
+    <div nz-col [nzXs]="24" [nzSm]="8">
+      <div class="um-stat-card">
+        <div class="um-stat-value" [class.um-stat-warn]="usersWithoutRole() > 0">{{ usersWithoutRole() }}</div>
+        <div class="um-stat-label">Chưa có vai trò nào</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="um-card">
+    <nz-table #table [nzData]="list()" [nzLoading]="loading()" nzSize="middle" [nzShowPagination]="list().length > 10">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Họ tên</th>
+          <th>Chức danh</th>
+          <th>Đơn vị</th>
+          <th nzWidth="220px">Vai trò</th>
+          <th nzWidth="110px">Trạng thái</th>
+          <th nzWidth="90px" nzAlign="center">Admin</th>
+          <th nzWidth="200px">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (u of table.data; track u.id) {
+          <tr>
+            <td>{{ u.email }}</td>
+            <td>{{ u.fullName }}</td>
+            <td>{{ u.jobTitle || '—' }}</td>
+            <td>{{ orgName(u.organizationId) }}</td>
+            <td>
+              @if (roleCodesOf(u.id).length === 0) {
+                <span class="um-role-none">—</span>
+              } @else {
+                <span class="um-role-tags">
+                  @for (code of roleCodesOf(u.id).slice(0, 3); track code) {
+                    <nz-tag nzColor="processing">{{ code }}</nz-tag>
+                  }
+                  @if (roleCodesOf(u.id).length > 3) {
+                    <nz-tag nz-tooltip [nzTooltipTitle]="roleCodesOf(u.id).join(', ')">
+                      +{{ roleCodesOf(u.id).length - 3 }}
+                    </nz-tag>
+                  }
+                </span>
+              }
+            </td>
+            <td>
+              @if (u.status === 'ACTIVE') {
+                <nz-tag nzColor="success">Hoạt động</nz-tag>
+              } @else {
+                <nz-tag>{{ u.status }}</nz-tag>
+              }
+            </td>
+            <td nzAlign="center">
+              @if (u.administrator) {
+                <span nz-icon nzType="check-circle" class="um-admin-check"></span>
+              }
+            </td>
+            <td>
+              <button nz-button nzSize="small" nz-tooltip nzTooltipTitle="Phân quyền" (click)="openAssignments(u)">
+                <span nz-icon nzType="safety-certificate"></span>
+              </button>
+              <button nz-button nzSize="small" nz-tooltip nzTooltipTitle="Sửa" (click)="openEdit(u)">
+                <span nz-icon nzType="edit"></span>
+              </button>
+              <button
+                nz-button
+                nzSize="small"
+                nzDanger
+                nz-tooltip
+                nzTooltipTitle="Xoá"
+                nz-popconfirm
+                nzPopconfirmTitle="Xoá người dùng này? Thao tác này không thể hoàn tác."
+                nzOkText="Xoá"
+                nzCancelText="Huỷ"
+                (nzOnConfirm)="remove(u)"
+              >
+                <span nz-icon nzType="delete"></span>
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+  </div>
+
+  <nz-modal
+    [nzVisible]="modalOpen()"
+    [nzTitle]="editing() ? 'Sửa người dùng' : 'Thêm người dùng'"
+    nzOkText="Lưu"
+    nzCancelText="Huỷ"
+    [nzOkLoading]="saving()"
+    (nzOnOk)="submit()"
+    (nzOnCancel)="closeModal()"
+  >
+    <ng-container *nzModalContent>
+      <div class="um-form">
+        <label>Email <span class="um-required">*</span></label>
+        <input nz-input placeholder="ten.nguoidung@vht.com.vn" [ngModel]="formEmail()" (ngModelChange)="formEmail.set($event)" />
+        <label>Họ tên <span class="um-required">*</span></label>
+        <input nz-input [ngModel]="formFullName()" (ngModelChange)="formFullName.set($event)" />
+        <label>Mã nhân viên</label>
+        <input nz-input [ngModel]="formEmployeeCode()" (ngModelChange)="formEmployeeCode.set($event)" />
+        <label>Chức danh</label>
+        <input nz-input [ngModel]="formJobTitle()" (ngModelChange)="formJobTitle.set($event)" />
+        <label>Đơn vị</label>
+        <nz-select nzAllowClear placeholder="Chọn đơn vị" [ngModel]="formOrganizationId()" (ngModelChange)="formOrganizationId.set($event)">
+          @for (o of orgs(); track o.id) {
+            <nz-option [nzLabel]="o.name" [nzValue]="o.id"></nz-option>
+          }
+        </nz-select>
+        <label>Trạng thái</label>
+        <nz-select [ngModel]="formStatus()" (ngModelChange)="formStatus.set($event)">
+          @for (s of statusOptions; track s) {
+            <nz-option [nzLabel]="s" [nzValue]="s"></nz-option>
+          }
+        </nz-select>
+        <label class="um-switch-row">
+          <span>Quản trị hệ thống</span>
+          <nz-switch [ngModel]="formAdministrator()" (ngModelChange)="formAdministrator.set($event)"></nz-switch>
+        </label>
+      </div>
+    </ng-container>
+  </nz-modal>
+
+  <nz-drawer
+    [nzVisible]="assignDrawerOpen()"
+    [nzTitle]="'Phân quyền — ' + (assignTarget()?.fullName ?? '')"
+    [nzWidth]="480"
+    (nzOnClose)="closeAssignments()"
+  >
+    <ng-container *nzDrawerContent>
+      <nz-tabs [nzSelectedIndex]="assignDrawerTabIndex()" (nzSelectedIndexChange)="assignDrawerTabIndex.set($event)">
+        <nz-tab nzTitle="Vai trò">
+          <div class="um-assign-list">
+            @if (assignmentsLoading()) {
+              <div class="um-assign-loading">Đang tải…</div>
+            } @else if (assignments().length === 0) {
+              <div class="um-assign-empty">Chưa có vai trò nào được gán.</div>
+            } @else {
+              @for (a of assignments(); track a.id) {
+                <div class="um-assign-row">
+                  <div class="um-assign-main">
+                    <span class="um-assign-role">{{ a.roleCode }}</span>
+                    <span class="um-assign-scope">{{ a.dataScope }}</span>
+                  </div>
+                  <div class="um-assign-meta">
+                    @if (a.organizationId) {
+                      <span>{{ orgName(a.organizationId) }}</span>
+                    }
+                    @if (a.effectiveFrom || a.effectiveTo) {
+                      <span>{{ a.effectiveFrom || '…' }} → {{ a.effectiveTo || '…' }}</span>
+                    }
+                  </div>
+                  <button
+                    nz-button
+                    nzSize="small"
+                    nzDanger
+                    nz-popconfirm
+                    nzPopconfirmTitle="Thu hồi vai trò này?"
+                    nzOkText="Thu hồi"
+                    nzCancelText="Huỷ"
+                    (nzOnConfirm)="revokeAssignment(a)"
+                  >
+                    <span nz-icon nzType="delete"></span>
+                  </button>
+                </div>
+              }
+            }
+          </div>
+
+          <div class="um-assign-form">
+            <h4>Gán vai trò mới</h4>
+            <label>Vai trò <span class="um-required">*</span></label>
+            <nz-select
+              nzMode="multiple"
+              nzShowSearch
+              nzPlaceHolder="Chọn một hoặc nhiều vai trò"
+              [ngModel]="newRoleCodes()"
+              (ngModelChange)="newRoleCodes.set($event)"
+            >
+              @for (r of assignableRoles(); track r.code) {
+                <nz-option [nzLabel]="r.code + ' — ' + r.name" [nzValue]="r.code"></nz-option>
+              }
+            </nz-select>
+            <div class="um-assign-note">
+              Phạm vi dữ liệu, đơn vị và khoảng hiệu lực dưới đây áp dụng cho <strong>tất cả</strong>
+              vai trò được chọn ở lượt gán này. Vai trò user đã có không xuất hiện trong danh sách.
+            </div>
+            <label>Phạm vi dữ liệu <span class="um-required">*</span></label>
+            <nz-select nzPlaceHolder="Chọn phạm vi dữ liệu" [ngModel]="newDataScope()" (ngModelChange)="newDataScope.set($event)">
+              @for (s of dataScopes(); track s.code) {
+                <nz-option [nzLabel]="s.name + ' (' + s.code + ')'" [nzValue]="s.code"></nz-option>
+              }
+            </nz-select>
+            <label>Đơn vị áp dụng</label>
+            <nz-select nzAllowClear placeholder="Không giới hạn theo đơn vị" [ngModel]="newOrganizationId()" (ngModelChange)="newOrganizationId.set($event)">
+              @for (o of orgs(); track o.id) {
+                <nz-option [nzLabel]="o.name" [nzValue]="o.id"></nz-option>
+              }
+            </nz-select>
+            <div class="um-date-row">
+              <div>
+                <label>Hiệu lực từ</label>
+                <nz-date-picker [ngModel]="newEffectiveFrom()" (ngModelChange)="newEffectiveFrom.set($event)"></nz-date-picker>
+              </div>
+              <div>
+                <label>Hiệu lực đến</label>
+                <nz-date-picker [ngModel]="newEffectiveTo()" (ngModelChange)="newEffectiveTo.set($event)"></nz-date-picker>
+              </div>
+            </div>
+            <button nz-button nzType="primary" [nzLoading]="assigning()" [disabled]="!canAssign()" (click)="addAssignment()">
+              <span nz-icon nzType="plus"></span>
+              @if (newRoleCodes().length > 1) {
+                Gán {{ newRoleCodes().length }} vai trò
+              } @else {
+                Gán vai trò
+              }
+            </button>
+          </div>
+        </nz-tab>
+
+        <nz-tab nzTitle="Ứng dụng">
+          <div class="um-apps-list">
+            @if (userAppsLoading()) {
+              <div class="um-assign-loading">Đang tải…</div>
+            } @else {
+              @for (a of appCatalog(); track a.code) {
+                <label class="um-app-row" nz-checkbox [ngModel]="isAppGranted(a.code)" (ngModelChange)="toggleUserApp(a.code)">
+                  <span class="um-app-name">{{ a.name }}</span>
+                  <span class="um-app-desc">{{ a.description }}</span>
+                </label>
+              }
+            }
+          </div>
+          <button nz-button nzType="primary" [nzLoading]="userAppsSaving()" (click)="saveUserApps()">
+            <span nz-icon nzType="save"></span>
+            Lưu ứng dụng
+          </button>
+        </nz-tab>
+      </nz-tabs>
+    </ng-container>
+  </nz-drawer>
+</div>
