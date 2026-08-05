@@ -3,8 +3,10 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
 import { NzIconService } from 'ng-zorro-antd/icon';
+import { NzMessageService } from 'ng-zorro-antd/message';
 import { provideNzI18n, vi_VN } from 'ng-zorro-antd/i18n';
 import { BehaviorSubject } from 'rxjs';
+import { vi } from 'vitest';
 
 import {
   APPROVAL_MATRIX_ICONS, EFORM_ICONS, NAV_ICONS, NHIEM_VU_ICONS, SERVICE_TASK_ICONS,
@@ -63,11 +65,13 @@ describe('HoSoDetailPage', () => {
   afterEach(() => http.verify());
 
   function setup(id: string, queryParams: Record<string, string> = {}) {
+    TestBed.resetTestingModule();
     paramMap = new BehaviorSubject(convertToParamMap({ id }));
     queryParamMap = new BehaviorSubject(convertToParamMap(queryParams));
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]), provideHttpClient(), provideHttpClientTesting(), provideNzI18n(vi_VN),
+        { provide: NzMessageService, useValue: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() } },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -490,6 +494,10 @@ describe('HoSoDetailPage', () => {
     expect(cmp.availableActions().some((action) => action.actionCode === 'APPROVE_STEP')).toBe(true);
     expect(cmp.availableActions().some((action) => action.actionCode === 'REJECT_STEP')).toBe(false);
     expect(fixture.nativeElement.textContent).not.toContain('Không có quyền thao tác task ở bước này');
+    expect(fixture.nativeElement.textContent).toContain('Luật hiển thị nút');
+    expect(fixture.nativeElement.textContent).toContain('AP-APPROVE');
+    expect(fixture.nativeElement.textContent).toContain('AP-RETURN');
+    expect(cmp.appliedActionPolicies().map((p) => p.policyId)).toEqual(['AP-APPROVE', 'AP-RETURN']);
 
     cmp.openAction('APPROVE_STEP');
     fixture.detectChanges();
@@ -624,5 +632,23 @@ describe('HoSoDetailPage', () => {
     });
     fixture.detectChanges();
     expect(fixture.componentInstance.formAction()?.policyId).toBe('AP-1784539922796');
+  });
+
+  it('shows "Xem nhận xét" and opens modal for step yKien', () => {
+    const dossierWithComments: HoSoResponse = {
+      ...dossier,
+      steps: dossier.steps.map((s) => ({ ...s, yKien: 'Nhận xét bước 1' })),
+    };
+    setup(dossierWithComments.id);
+    const fixture = TestBed.createComponent(HoSoDetailPage);
+
+    http.expectOne(`/api/ho-so/${dossierWithComments.id}`).flush(dossierWithComments);
+    flushSimulation();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Xem nhận xét');
+    fixture.componentInstance.openStepComments();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Nhận xét bước 1');
   });
 });

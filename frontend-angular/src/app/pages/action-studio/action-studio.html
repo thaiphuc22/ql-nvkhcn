@@ -89,7 +89,7 @@
         <nz-select [ngModel]="reconcileProcess()" (ngModelChange)="setReconcileProcess($event)">
           @for (process of store.processes(); track process.code) { <nz-option [nzValue]="process.code" [nzLabel]="process.code + ' · ' + process.name"></nz-option> }
         </nz-select>
-        <button nz-button nzType="primary" (click)="scaffold()"><span nz-icon nzType="sync"></span> Tạo luật còn thiếu từ BPMN</button>
+        <button nz-button nzType="primary" [disabled]="!reconcileProcess().trim()" (click)="scaffold()"><span nz-icon nzType="sync"></span> Tạo luật còn thiếu từ BPMN</button>
       </div>
       <div class="as-reconcile-summary">
         <nz-card><nz-progress nzType="circle" [nzPercent]="reconcileStats().percent" [nzWidth]="82"></nz-progress><span><strong>Sức khỏe đối soát</strong><small>{{ reconcileStats().ok }}/{{ reconcileRows().length }} nhánh đã ghim đầy đủ</small></span></nz-card>

@@ -100,6 +100,10 @@ export class HoSoDetailPage {
   readonly hoiDongCapLabel = HOI_DONG_CAP_LABEL;
   readonly stepLabel = STEP_LABEL;
   readonly stepColor = STEP_COLOR;
+  readonly stepCommentsOpen = signal(false);
+  readonly stepComments = computed(() =>
+    (this.item()?.steps ?? []).filter((s) => !!s.yKien),
+  );
   readonly loading = signal(true);
   readonly saving = signal(false);
   readonly notFound = signal(false);
@@ -173,6 +177,25 @@ export class HoSoDetailPage {
     if (action.outcome && action.outcome !== 'SUBMIT') return false;
     return true;
   }));
+
+  /** Mã luật Action Studio (“Cấu hình luật hiển thị nút”) đang gắn với các nút hiện trên hồ sơ. */
+  readonly appliedActionPolicies = computed(() => {
+    const fromDossier = this.dossierActions()
+      .filter((a) => !!a.policyId)
+      .map((a) => ({
+        policyId: a.policyId!,
+        policyVersion: a.policyVersion,
+        actionCode: a.actionCode,
+        label: a.label,
+      }));
+    const fromTask = this.availableActions().map((a) => ({
+      policyId: a.policyId,
+      policyVersion: a.policyVersion,
+      actionCode: a.actionCode,
+      label: a.label,
+    }));
+    return [...fromDossier, ...fromTask];
+  });
 
   constructor() {
     combineLatest([this.route.paramMap, this.route.queryParamMap])
@@ -284,6 +307,8 @@ export class HoSoDetailPage {
   }
 
   back(): void { void this.router.navigate(['/ho-so']); }
+  openStepComments(): void { this.stepCommentsOpen.set(true); }
+  closeStepComments(): void { this.stepCommentsOpen.set(false); }
   openMission(): void { void this.router.navigate(['/nhiem-vu', this.item()?.maNV]); }
 
   openBpmn(): void {

@@ -362,7 +362,12 @@ export class ActionStudioPage implements OnInit {
   }
 
   scaffold(): void {
-    this.store.scaffold(this.reconcileProcess(), this.actor()).subscribe({
+    const processCode = this.reconcileProcess().trim();
+    if (!processCode) {
+      this.message.warning('Vui lòng chọn quy trình BPMN trước khi scaffold.');
+      return;
+    }
+    this.store.scaffold(processCode, this.actor()).subscribe({
       next: (response) => {
         this.reconcileRows.set(response.rows);
         response.createdCount ? this.message.success(`Đã tạo ${response.createdCount} luật còn thiếu từ BPMN.`)
@@ -374,7 +379,7 @@ export class ActionStudioPage implements OnInit {
   }
 
   setReconcileProcess(processCode: string): void {
-    this.reconcileProcess.set(processCode);
+    this.reconcileProcess.set(processCode?.trim() ?? '');
     this.refreshReconcile();
   }
 

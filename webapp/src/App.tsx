@@ -39,6 +39,8 @@ import {
   FileProtectOutlined,
   ReadOutlined,
   RocketOutlined,
+  AppstoreOutlined,
+  UnorderedListOutlined,
 } from "@ant-design/icons";
 import {
   Routes,
@@ -84,6 +86,8 @@ const SanPhamNghienCuuList = lazy(() => import("./pages/san-pham-khcn/SanPhamNgh
 const HoSoSHTTList = lazy(() => import("./pages/san-pham-khcn/HoSoSHTTList"));
 const CongBoKhoaHocList = lazy(() => import("./pages/san-pham-khcn/CongBoKhoaHocList"));
 const CongNgheLoiList = lazy(() => import("./pages/san-pham-khcn/CongNgheLoiList"));
+const LoaiDanhMucChungPage = lazy(() => import("./pages/catalog/LoaiDanhMucChung"));
+const DanhMucChungPage = lazy(() => import("./pages/catalog/DanhMucChung"));
 import SubsystemSwitcher from "./components/SubsystemSwitcher";
 import { useDossiers } from "./store/DossierContext";
 import { useBreadcrumb } from "./store/BreadcrumbContext";
@@ -149,6 +153,8 @@ const ROUTE_BY_KEY: Record<string, string> = {
   "ph2-nguoidung": "/phan-he/PH2/nguoi-dung",
   "ph2-phanquyen": "/phan-he/PH2/phan-quyen",
   "ph3-tongquan": "/phan-he/PH3/tong-quan",
+  "ph3-loai-danh-muc-chung": "/phan-he/PH3/loai-danh-muc-chung",
+  "ph3-danh-muc-chung": "/phan-he/PH3/danh-muc-chung",
   "ph3-bieumau": "/phan-he/PH3/bieu-mau",
 };
 
@@ -239,24 +245,28 @@ export default function App() {
           ? "ph2-phanquyen"
           : location.pathname.startsWith("/phan-he/PH3/tong-quan")
             ? "ph3-tongquan"
-            : location.pathname.startsWith("/phan-he/PH3/bieu-mau")
-              ? "ph3-bieumau"
-              : location.pathname.startsWith("/dashboard")
-                ? (DASHBOARD_MENU.find((m) => location.pathname.startsWith(m.path))?.key ?? "dash-tong-quan")
-                : location.pathname.startsWith("/tong-quan")
-                  ? "dash-tong-quan"
-                  : location.pathname.startsWith("/viec-cua-toi")
-                    ? "worklist"
-                    : location.pathname.startsWith("/giam-sat")
-                      ? "giamsat"
-                      : location.pathname.startsWith("/hoi-dong")
-                      ? "hoidong"
-                      : location.pathname.startsWith("/tich-hop")
-                        ? "tichhop"
-                        : location.pathname.startsWith("/nhat-ky")
-                          ? "nhatky"
-                          : location.pathname.startsWith("/quy-trinh")
-                            ? "quytrinh"
+            : location.pathname.startsWith("/phan-he/PH3/loai-danh-muc-chung")
+              ? "ph3-loai-danh-muc-chung"
+              : location.pathname.startsWith("/phan-he/PH3/danh-muc-chung")
+                ? "ph3-danh-muc-chung"
+                : location.pathname.startsWith("/phan-he/PH3/bieu-mau")
+                  ? "ph3-bieumau"
+                  : location.pathname.startsWith("/dashboard")
+                    ? (DASHBOARD_MENU.find((m) => location.pathname.startsWith(m.path))?.key ?? "dash-tong-quan")
+                    : location.pathname.startsWith("/tong-quan")
+                      ? "dash-tong-quan"
+                      : location.pathname.startsWith("/viec-cua-toi")
+                        ? "worklist"
+                        : location.pathname.startsWith("/giam-sat")
+                          ? "giamsat"
+                          : location.pathname.startsWith("/hoi-dong")
+                          ? "hoidong"
+                          : location.pathname.startsWith("/tich-hop")
+                            ? "tichhop"
+                            : location.pathname.startsWith("/nhat-ky")
+                              ? "nhatky"
+                              : location.pathname.startsWith("/quy-trinh")
+                                ? "quytrinh"
                             : location.pathname.startsWith("/quan-ly-luat")
                               ? "luat"
                               : location.pathname.startsWith("/ma-tran-phe-duyet")
@@ -498,6 +508,16 @@ export default function App() {
     ],
     PH3: [
       { key: "ph3-tongquan", icon: <DashboardOutlined />, label: "Tổng quan" },
+      {
+        key: "ph3-loai-danh-muc-chung",
+        icon: <AppstoreOutlined />,
+        label: "Loại danh mục dùng chung",
+      },
+      {
+        key: "ph3-danh-muc-chung",
+        icon: <UnorderedListOutlined />,
+        label: "Danh mục dùng chung",
+      },
       {
         key: "ph3-bieumau",
         icon: <FormOutlined />,
@@ -930,6 +950,14 @@ export default function App() {
                     <Navigate to="/tong-quan" replace />
                   )
                 }
+              />
+              <Route
+                path="/phan-he/PH3/loai-danh-muc-chung"
+                element={<LoaiDanhMucChungPage />}
+              />
+              <Route
+                path="/phan-he/PH3/danh-muc-chung"
+                element={<DanhMucChungPage />}
               />
               <Route
                 path="/giam-sat"

@@ -5,5 +5,5 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   base: '/ql-nvkhcn/',
   plugins: [react()],
-  server: { port: 5173, open: true },
+  server: { host: '127.0.0.1', port: 5173, open: true },
 })

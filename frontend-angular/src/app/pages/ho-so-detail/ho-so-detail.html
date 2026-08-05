@@ -11,6 +11,16 @@
       <div class="hsd-heading">
         <div class="hsd-title-line"><h2>{{ dossier.tenDeTai }}</h2><nz-tag [nzColor]="statusColor[dossier.trangThai]">{{ statusLabel[dossier.trangThai] }}</nz-tag></div>
         <div><code>{{ dossier.id }}</code> · {{ dossier.quyTrinh ? dossier.quyTrinh + ' · ' + dossier.quyTrinhTen : dossier.quyTrinhTen }} · cấp {{ capLabel[dossier.cap] }}</div>
+        @if (appliedActionPolicies().length) {
+          <div class="hsd-policy-line">
+            Luật hiển thị nút:
+            @for (policy of appliedActionPolicies(); track policy.policyId + ':' + policy.actionCode) {
+              <nz-tag nzColor="purple" [title]="policy.label + ' · ' + policy.actionCode">
+                <code>{{ policy.policyId }}</code>@if (policy.policyVersion != null) { <span class="hsd-policy-ver">v{{ policy.policyVersion }}</span> }
+              </nz-tag>
+            }
+          </div>
+        }
       </div>
       <div class="hsd-actions">
         @if (actionsLoading()) {
@@ -18,8 +28,10 @@
         }
         @for (action of dossierActions(); track action.actionCode) {
           <button nz-button [nzType]="actionButtonType(action)" [nzDanger]="action.tone === 'danger'"
-            [title]="action.helpText || ''" (click)="runDossierAction(action)">
+            [title]="(action.helpText || action.label) + (action.policyId ? ' · Luật ' + action.policyId : '')"
+            (click)="runDossierAction(action)">
             {{ action.label }}
+            @if (action.policyId) { <code class="hsd-policy-code">{{ action.policyId }}</code> }
           </button>
         }
         @if (dossier.trangThai === 'PROCESSING') {
@@ -28,9 +40,11 @@
           } @else {
             @for (action of availableActions(); track action.actionCode) {
               <button nz-button [nzType]="action.tone === 'primary' ? 'primary' : 'default'"
-                [nzDanger]="action.tone === 'danger'" [title]="action.helpText || ''"
+                [nzDanger]="action.tone === 'danger'"
+                [title]="(action.helpText || action.label) + ' · Luật ' + action.policyId"
                 (click)="openAction(action.actionCode)">
                 {{ action.label }}
+                <code class="hsd-policy-code">{{ action.policyId }}</code>
               </button>
             }
           }
@@ -111,6 +125,16 @@
             <nz-descriptions-item nzTitle="Tổng dự toán (PL1–PL6)">{{ dossier.duToan || '—' }}</nz-descriptions-item>
             <nz-descriptions-item nzTitle="Người khởi tạo">{{ dossier.nguoiKhoiTao }}</nz-descriptions-item>
             <nz-descriptions-item nzTitle="Ngày tạo hồ sơ">{{ dossier.ngayTao }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Luật hiển thị nút">
+              @if (appliedActionPolicies().length) {
+                @for (policy of appliedActionPolicies(); track policy.policyId + ':' + policy.actionCode; let last = $last) {
+                  <code>{{ policy.policyId }}</code>@if (policy.policyVersion != null) { <span class="hsd-policy-ver">v{{ policy.policyVersion }}</span> }
+                  <span class="hsd-policy-action">({{ policy.actionCode }})</span>@if (!last) { · }
+                }
+              } @else {
+                —
+              }
+            </nz-descriptions-item>
           </nz-descriptions>
         </nz-card>
 
@@ -169,6 +193,11 @@
 
       <div nz-col [nzXs]="24" [nzLg]="11" class="hsd-column">
         <nz-card nzTitle="Dòng thời gian phê duyệt">
+          @if (stepComments().length) {
+            <div class="hsd-timeline-toolbar">
+              <button nz-button (click)="openStepComments()">Xem nhận xét</button>
+            </div>
+          }
           <div class="hsd-timeline">
             @for (step of dossier.steps; track step.buocIndex) {
               <div class="hsd-timeline-item" [class.pending]="step.trangThai === 'PENDING'">
@@ -228,6 +257,11 @@
     (nzOnCancel)="closeAction()" (nzOnOk)="applyAction()">
     <ng-container *nzModalContent>
       @if (currentStep(); as current) { <p>Bước hiện tại: <strong>{{ current.ten }}</strong></p> }
+      @if (selectedAction(); as action) {
+        <p class="hsd-policy-modal">Luật hiển thị nút: <code>{{ action.policyId }}</code>
+          <span class="hsd-policy-ver">v{{ action.policyVersion }}</span>
+          · {{ action.actionCode }}</p>
+      }
       @if (selectedAction()?.formBundle?.items?.length) {
         @if (taskActionFormLoading()) {
           <div class="hsd-loading"><nz-spin nzSimple></nz-spin></div>
@@ -286,6 +320,44 @@
       }
       <label for="action-note">Ý kiến {{ selectedAction()?.requiresReason ? '(bắt buộc)' : '(không bắt buộc)' }}</label>
       <textarea id="action-note" nz-input rows="4" [ngModel]="actionNote()" (ngModelChange)="actionNote.set($event)" placeholder="Nhập ý kiến xử lý..."></textarea>
+    </ng-container>
+  </nz-modal>
+
+  <nz-modal [nzVisible]="stepCommentsOpen()" nzTitle="Nhận xét theo từng bước duyệt" nzWidth="720px"
+    [nzFooter]="null" (nzOnCancel)="closeStepComments()">
+    <ng-container *nzModalContent>
+      @if (!stepComments().length) {
+        <nz-empty nzNotFoundContent="Chưa có nhận xét theo từng bước duyệt."></nz-empty>
+      } @else {
+        <table class="hsd-comments-table">
+          <thead>
+            <tr>
+              <th nzWidth="70px">Bước</th>
+              <th>Bước duyệt</th>
+              <th nzWidth="180px">Vai trò / Người</th>
+              <th nzWidth="160px">Thời điểm</th>
+              <th>Nhận xét</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (s of stepComments(); track s.buocIndex) {
+              <tr>
+                <td><code>{{ s.buocIndex + 1 }}</code></td>
+                <td>
+                  <div><strong>{{ s.ten }}</strong></div>
+                  <nz-tag [nzColor]="stepColor[s.trangThai]">{{ stepLabel[s.trangThai] }}</nz-tag>
+                </td>
+                <td>
+                  <div>{{ s.vaiTro }}</div>
+                  <div class="hsd-muted">{{ s.nguoi || '—' }}</div>
+                </td>
+                <td><small class="hsd-muted">{{ s.thoiDiem || '—' }}</small></td>
+                <td>{{ s.yKien }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
     </ng-container>
   </nz-modal>
 

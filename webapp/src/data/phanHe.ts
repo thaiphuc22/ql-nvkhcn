@@ -90,7 +90,11 @@ export const DANH_SACH_PHAN_HE: PhanHe[] = [
     color: "#fa8c16",
     route: "/phan-he/PH3",
     trangThai: "active",
-    modules: [{ label: "Thư viện biểu mẫu", route: "/phan-he/PH3/bieu-mau" }],
+    modules: [
+      { label: "Loại danh mục dùng chung", route: "/phan-he/PH3/loai-danh-muc-chung" },
+      { label: "Danh mục dùng chung", route: "/phan-he/PH3/danh-muc-chung" },
+      { label: "Thư viện biểu mẫu", route: "/phan-he/PH3/bieu-mau" },
+    ],
     hasPermission: (p) => !p.isChuNhiemDeTai,
   },
   {

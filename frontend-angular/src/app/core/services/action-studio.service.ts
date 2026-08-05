@@ -178,7 +178,11 @@ export class ActionStudioService {
   }
 
   scaffold(processCode: string, actor?: string): Observable<ScaffoldResponse> {
-    return this.http.post<ScaffoldResponse>(`${BASE_URL}/reconcile/${encodeURIComponent(processCode)}/scaffold`, {},
+    const normalizedCode = processCode.trim();
+    if (!normalizedCode) {
+      return throwError(() => new Error('processCode is required for scaffold'));
+    }
+    return this.http.post<ScaffoldResponse>(`${BASE_URL}/reconcile/${encodeURIComponent(normalizedCode)}/scaffold`, {},
       { headers: actorHeaders(actor) }).pipe(tap((response) => {
         for (const item of response.createdPolicies) this.upsertAvailability(item);
       }));

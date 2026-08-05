@@ -6,6 +6,7 @@ import { phieuNhanXetSchema } from './phieuNhanXet'
 import { phieuDuToanDemoSchema } from './phieuDuToanDemo'
 import { phieuThanhVienDemoSchema } from './phieuThanhVienDemo'
 import { congVanDangKyXetDuyetNvKhcnSchema } from './congVanDangKyXetDuyetNvKhcn'
+import { bm0202DtoNv2024Schema } from './bm0202DtoNv2024'
 
 export interface FormMeta {
   key: string
@@ -86,6 +87,13 @@ const phieuPheDuyetSchema = {
 /** Biểu mẫu mẫu nạp sẵn vào thư viện. FormContext sẽ quản lý CRUD trên tập này. */
 export const seedForms: FormMeta[] = [
   { key: 'bm-02-00-cv-dang-ky-xet-duyet-nv-khcn', ten: 'BM.02.00/CV — Công văn đăng ký xét duyệt NV KHCN', moTa: 'Lập công văn xin thẩm định hồ sơ đăng ký xét duyệt nhiệm vụ KHCN và khai báo các đầu mối phối hợp', loai: 'Soạn thảo', schema: congVanDangKyXetDuyetNvKhcnSchema },
+  {
+    key: 'bm-02-02-dto-nv-2024',
+    ten: 'BM.02.02.DTO.NV_2024 — Hồ sơ dự toán kinh phí NV KHCN',
+    moTa: 'Dự toán kinh phí thực hiện nhiệm vụ KHCN (PL1–PL6): thông tin chung, căn cứ lập dự toán, bảng chi tiết nhân công/NVL/CCDC/thuê ngoài/chi khác/quản lý',
+    loai: 'Soạn thảo',
+    schema: bm0202DtoNv2024Schema,
+  },
   { key: 'phieu-chu-truong', ten: 'Hồ sơ trình duyệt Chủ trương', moTa: 'Soạn nội dung HS chủ trương: sự cần thiết + mục tiêu + dự toán', loai: 'Soạn thảo', schema: phieuChuTruongSchema },
   { key: 'phieu-y-kien', ten: 'Phiếu góp ý', moTa: 'Ghi ý kiến, không kết luận', loai: 'Góp ý', schema: phieuYKienSchema },
   { key: 'phieu-nhan-xet', ten: 'Phiếu nhận xét', moTa: 'Tiêu chí + kết luận + ý kiến', loai: 'Nhận xét', schema: phieuNhanXetSchema },
