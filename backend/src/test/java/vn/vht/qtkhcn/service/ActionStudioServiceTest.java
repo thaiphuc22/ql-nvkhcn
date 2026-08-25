@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
@@ -16,11 +17,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import vn.vht.qtkhcn.domain.ActionAvailabilityPolicy;
 import vn.vht.qtkhcn.domain.ActionAvailabilityPolicyStatus;
+import vn.vht.qtkhcn.domain.ActionOutcomeKeyword;
 import vn.vht.qtkhcn.domain.ActionStudioAction;
 import vn.vht.qtkhcn.domain.ActionStudioAudit;
 import vn.vht.qtkhcn.domain.Eform;
 import vn.vht.qtkhcn.repository.ActionAvailabilityPolicyRepository;
 import vn.vht.qtkhcn.repository.ActionExceptionPolicyRepository;
+import vn.vht.qtkhcn.repository.ActionOutcomeKeywordRepository;
 import vn.vht.qtkhcn.repository.ActionStudioActionRepository;
 import vn.vht.qtkhcn.repository.ActionStudioAuditRepository;
 import vn.vht.qtkhcn.repository.EformRepository;
@@ -28,6 +31,7 @@ import vn.vht.qtkhcn.web.dto.ActionStudioDtos.AvailabilityRequest;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.BulkDeleteAvailabilityItem;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.BulkDeleteAvailabilityRequest;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.BulkStatusAvailabilityRequest;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ReconcileResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.SimulationRequest;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ProcessRoutingResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ProcessStepResponse;
@@ -484,6 +488,75 @@ class ActionStudioServiceTest {
         var scaffold = service.scaffold("unknown_roles", "alice");
         assertThat(scaffold.createdCount()).isZero();
         verify(policies, org.mockito.Mockito.never()).saveAndFlush(any());
+    }
+
+    /**
+     * Nhánh có từ khoá chưa nút nào nhận phải kèm ĐỀ XUẤT suy từ {@code kind} của nhánh — đó là thứ
+     * biến màn Đối soát từ "báo lỗi rồi thôi" thành "bấm một cái là xong".
+     */
+    @Test
+    void unmappedBranchCarriesSuggestionMatchingTheBranchKind() {
+        when(routing.require("tu_ngu_rieng")).thenReturn(new ProcessRoutingResponse("tu_ngu_rieng", "Quy trình",
+                List.of(new ProcessStepResponse("Task_1", "Thẩm định", "CQ_KHCN", null, List.of(
+                        new RouteBranchResponse("thong_qua", "Thông qua", "Ký duyệt", "forward", "ketQua"),
+                        new RouteBranchResponse("bac_bo", "Bác bỏ", "Kết thúc", "reject", "ketQua"),
+                        new RouteBranchResponse("lam_lai", "Làm lại", "Soạn hồ sơ", "rework", "ketQua"))))));
+        when(policies.findAllByOrderByDisplayOrderAscIdAsc()).thenReturn(List.of());
+
+        var rows = service.reconcile("tu_ngu_rieng");
+
+        assertThat(rows).extracting(ReconcileResponse::status)
+                .containsExactly("UNMAPPED_BRANCH", "UNMAPPED_BRANCH", "UNMAPPED_BRANCH");
+        assertThat(rows).extracting(ReconcileResponse::suggestedActionCode)
+                .containsExactly("APPROVE_STEP", "REJECT_STEP", "RETURN_STEP");
+        assertThat(rows.getFirst().reason()).contains("Thông qua").contains("Ký duyệt");
+    }
+
+    /**
+     * Cốt lõi của tính năng: BA thêm từ khoá riêng của khách vào Danh mục nút thì nhánh được nhận
+     * diện ngay, KHÔNG cần sửa Java. Và từ khoá là tài sản toàn cục — nút thứ hai không giành được.
+     */
+    @Test
+    void keywordAddedInCatalogIsRecognizedAndCannotBeClaimedByASecondButton() {
+        ActionOutcomeKeywordRepository keywords = mock(ActionOutcomeKeywordRepository.class);
+        List<ActionOutcomeKeyword> stored = new ArrayList<>();
+        when(keywords.findAllByOrderByActionCodeAscKeywordAsc()).thenAnswer(call -> List.copyOf(stored));
+        when(keywords.saveAndFlush(any())).thenAnswer(call -> {
+            stored.add(call.getArgument(0));
+            return call.getArgument(0);
+        });
+        when(actions.findById("APPROVE_STEP")).thenReturn(Optional.of(action("APPROVE_STEP", true, 1)));
+        when(actions.findById("REJECT_STEP")).thenReturn(Optional.of(action("REJECT_STEP", true, 1)));
+        ActionStudioService withCatalog = new ActionStudioService(actions, policies,
+                mock(ActionExceptionPolicyRepository.class), audits, routing, eforms, keywords);
+
+        var updated = withCatalog.addOutcomeKeyword("APPROVE_STEP", "  Thong_Qua  ", "alice");
+        assertThat(updated.outcomeKeywords()).containsExactly("thong_qua");
+
+        when(routing.require("tu_ngu_rieng")).thenReturn(new ProcessRoutingResponse("tu_ngu_rieng", "Quy trình",
+                List.of(new ProcessStepResponse("Task_1", "Thẩm định", "CQ_KHCN", null,
+                        List.of(new RouteBranchResponse("thong_qua", "Thông qua", "Ký duyệt", "forward", "ketQua"))))));
+        when(policies.findAllByOrderByDisplayOrderAscIdAsc()).thenReturn(List.of());
+        var rows = withCatalog.reconcile("tu_ngu_rieng");
+        assertThat(rows.getFirst().status()).isEqualTo("MISSING_POLICY");
+        assertThat(rows.getFirst().actionCode()).isEqualTo("APPROVE_STEP");
+
+        assertThatThrownBy(() -> withCatalog.addOutcomeKeyword("REJECT_STEP", "thong_qua", "bob"))
+                .isInstanceOf(ActionStudioConflictException.class)
+                .hasMessageContaining("APPROVE_STEP");
+    }
+
+    @Test
+    void outcomeKeywordWithDiacriticsOrSpacesIsRejectedBeforeItReachesTheCatalog() {
+        ActionOutcomeKeywordRepository keywords = mock(ActionOutcomeKeywordRepository.class);
+        when(keywords.findAllByOrderByActionCodeAscKeywordAsc()).thenReturn(List.of());
+        when(actions.findById("APPROVE_STEP")).thenReturn(Optional.of(action("APPROVE_STEP", true, 1)));
+        ActionStudioService withCatalog = new ActionStudioService(actions, policies,
+                mock(ActionExceptionPolicyRepository.class), audits, routing, eforms, keywords);
+
+        assertThatThrownBy(() -> withCatalog.addOutcomeKeyword("APPROVE_STEP", "thông qua", "alice"))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(keywords, never()).saveAndFlush(any());
     }
 
     private static ActionAvailabilityPolicy policy(String id, String process, String task, int order) {

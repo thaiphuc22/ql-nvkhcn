@@ -46,8 +46,12 @@ import vn.vht.qtkhcn.workflow.WorkflowRuntimeEvent;
 
 @Service
 public class WorkflowTaskActionService {
-    private static final Set<String> RUNTIME_ACTIONS = Set.of(
-            "APPROVE_STEP", "RETURN_STEP", "REJECT_STEP");
+    /**
+     * Dẫn xuất từ {@link BpmnOutcomeCodes#TASK_RUNTIME_ACTIONS} thay vì chép lại literal — trước đây
+     * đây là bản chép thứ hai của tập mã nút D10 và đã lệch (3 mã ở đây, 4 mã ở kia) mà không chỗ
+     * nào phát hiện được.
+     */
+    private static final Set<String> RUNTIME_ACTIONS = BpmnOutcomeCodes.TASK_RUNTIME_ACTIONS;
 
     private final WorkflowActionInboxRepository inbox;
     private final ActionFormSubmissionRepository submissions;
@@ -58,6 +62,7 @@ public class WorkflowTaskActionService {
     private final HoiDongMembershipGateway hoiDong;
     private final WorkflowDemoIdentityProvider identities;
     private final ActionStudioService actionStudio;
+    private final ActionVariableBindingCatalog variableBindings;
     private final ObjectMapper json;
     private final TransactionTemplate transactions;
 
@@ -66,6 +71,7 @@ public class WorkflowTaskActionService {
             CamundaWorkflowTaskRuntime runtime, WorkflowTaskActionRouting routing,
             HoiDongMembershipGateway hoiDong,
             WorkflowDemoIdentityProvider identities, ActionStudioService actionStudio,
+            ActionVariableBindingCatalog variableBindings,
             ObjectMapper json, TransactionTemplate transactions) {
         this.inbox = inbox;
         this.submissions = submissions;
@@ -76,6 +82,7 @@ public class WorkflowTaskActionService {
         this.hoiDong = hoiDong;
         this.identities = identities;
         this.actionStudio = actionStudio;
+        this.variableBindings = variableBindings;
         this.json = json;
         this.transactions = transactions;
     }
@@ -190,7 +197,8 @@ public class WorkflowTaskActionService {
             markUnknown(row.getRequestId(), task, mapping, action, request, identity.userId());
             Map<String, Object> variables = routing.variables(mapping.getProcessDefinitionId(),
                     task.taskDefinitionKey(), request.actionCode(), request.requestId().toString(), identity.userId());
-            variables = withDiemSoForT24(task.taskDefinitionKey(), request.actionCode(), variables, request.formData());
+            variables = variableBindings.apply(mapping.getProcessDefinitionId(), task.taskDefinitionKey(),
+                    request.actionCode(), variables, request.formData());
             runtime.apply(task, request.actionCode(), variables);
             return complete(row.getRequestId());
         } catch (TaskActionException validation) {
@@ -408,26 +416,6 @@ public class WorkflowTaskActionService {
             row.setUpdatedAt(now());
             inbox.save(row);
         });
-    }
-
-    /**
-     * T24 (Họp HĐXD Tập đoàn phiên 2) là multi-instance: mỗi thành viên hoàn thành một instance
-     * riêng, và biến Zeebe outputCollection của multi-instance là nơi DUY NHẤT có thể giữ N điểm số
-     * song song để tính trung bình — dossier_step ở ho-so-service chỉ có 1 dòng theo
-     * taskDefinitionKey nên 3 lượt hoàn thành T24 sẽ ghi đè formData của nhau. Vì vậy CHỈ field
-     * điểm số (không phải cả formData) được chuyển thành biến Zeebe cục bộ của đúng instance đó —
-     * cùng mẫu "business data ngắn hạn phục vụ DMN" đã có tiền lệ ở
-     * SystemCheckJobWorker#checkChuTruongTapDoan (tongDuToan/loaiNhiemVu), không phá nguyên tắc D3
-     * vì không lưu lại lâu dài, chỉ đi qua Zeebe đúng 1 chặng tới business rule task rồi biến mất.
-     */
-    private static Map<String, Object> withDiemSoForT24(String taskDefinitionKey, String actionCode,
-            Map<String, Object> variables, Map<String, Object> formData) {
-        if (!"T24".equals(taskDefinitionKey) || !"APPROVE_STEP".equals(actionCode)) return variables;
-        Object diemSo = formData.get("diemSo");
-        if (!(diemSo instanceof Number)) return variables;
-        Map<String, Object> merged = new java.util.LinkedHashMap<>(variables);
-        merged.put("diemSo", diemSo);
-        return merged;
     }
 
     private static void validateRequest(String pathTaskKey, ExecuteActionRequest request) {

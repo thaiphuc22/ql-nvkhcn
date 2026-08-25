@@ -2,6 +2,7 @@ package vn.vht.qtkhcn.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +38,9 @@ public class DeployedProcessPolicyScaffolder {
         this.actionStudio = actionStudio;
     }
 
+    // Sau EmbeddedFormImportService (@Order(10)): scaffold ghim formKey vào luật hành động, mà
+    // validateBundle đòi biểu mẫu phải có sẵn trong bảng eform — chạy trước nó là hỏng cả lượt.
+    @Order(20)
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void onProcessDeployed(ProcessDeployedEvent event) {

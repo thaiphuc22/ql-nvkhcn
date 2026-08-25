@@ -32,9 +32,13 @@ public final class ActionStudioDtos {
     public record CatalogOptionResponse(String value, String label) {
     }
 
+    /**
+     * @param outcomeKeywords các từ khoá outcome trong BPMN mà nút này nhận. Chỉ để NHẬN DIỆN nhánh
+     *        — biến gửi vào Camunda vẫn bốc nguyên văn từ bản vẽ, không lấy từ danh sách này.
+     */
     public record ActionResponse(String actionCode, String actionName, String actionType, String outcome,
             boolean requiresReason, boolean requiresEvidence, boolean requiresConfirm, boolean active,
-            long version, String updatedBy, OffsetDateTime updatedAt) {
+            long version, String updatedBy, OffsetDateTime updatedAt, List<String> outcomeKeywords) {
     }
 
     public record PresentationResponse(String actionCode, String label, String icon, String uiGroup,
@@ -46,6 +50,9 @@ public final class ActionStudioDtos {
     }
 
     public record StatusRequest(boolean enabled) {
+    }
+
+    public record OutcomeKeywordRequest(@NotBlank @Size(max = 64) String keyword) {
     }
 
     public record AvailabilityRequest(
@@ -154,8 +161,30 @@ public final class ActionStudioDtos {
         }
     }
 
+    /**
+     * @param suggestedActionCode chỉ có giá trị ở dòng {@code UNMAPPED_BRANCH} — nút mà App đề xuất
+     *        cho từ khoá chưa ai nhận, suy từ {@code kind} của nhánh. Là ĐỀ XUẤT để người chốt, App
+     *        không tự ghi vào Danh mục nút.
+     */
     public record ReconcileResponse(String processCode, String stepKey, String stepName, String outcome,
-            String actionCode, String status, String policyId, String reason) {
+            String actionCode, String status, String policyId, String reason, String suggestedActionCode,
+            List<String> variableBindings) {
+        public ReconcileResponse(String processCode, String stepKey, String stepName, String outcome,
+                String actionCode, String status, String policyId, String reason) {
+            this(processCode, stepKey, stepName, outcome, actionCode, status, policyId, reason, null, List.of());
+        }
+
+        public ReconcileResponse(String processCode, String stepKey, String stepName, String outcome,
+                String actionCode, String status, String policyId, String reason, String suggestedActionCode) {
+            this(processCode, stepKey, stepName, outcome, actionCode, status, policyId, reason, suggestedActionCode,
+                    List.of());
+        }
+
+        /** Bản sao có kèm danh sách "trường biểu mẫu đến biến Camunda" của đúng nhánh này. */
+        public ReconcileResponse withVariableBindings(List<String> bindings) {
+            return new ReconcileResponse(processCode, stepKey, stepName, outcome, actionCode, status, policyId,
+                    reason, suggestedActionCode, bindings);
+        }
     }
 
     public record ScaffoldResponse(int createdCount, List<AvailabilityResponse> createdPolicies,

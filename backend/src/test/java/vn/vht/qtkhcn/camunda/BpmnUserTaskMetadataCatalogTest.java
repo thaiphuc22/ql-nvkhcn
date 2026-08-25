@@ -41,6 +41,31 @@ class BpmnUserTaskMetadataCatalogTest {
     }
 
     /**
+     * Khách khai eForm trên Camunda rồi gắn vào task ⇒ Modeler ghi {@code formId}, không phải
+     * {@code formKey}. Trước khi có {@link BpmnFormReference}, lớp này trả rỗng cho mọi task như vậy,
+     * nên bước hiện ra không có biểu mẫu nào dù bản vẽ đã gắn đủ.
+     */
+    @Test
+    void docDuocLinkedFormKhaiBangFormId() {
+        String xml = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                    xmlns:zeebe="http://camunda.org/schema/zeebe/1.0">
+                  <bpmn:process id="P1">
+                    <bpmn:userTask id="Task_1" name="Ký duyệt">
+                      <bpmn:extensionElements>
+                        <zeebe:userTask />
+                        <zeebe:formDefinition formId="approval-form" />
+                      </bpmn:extensionElements>
+                    </bpmn:userTask>
+                  </bpmn:process>
+                </bpmn:definitions>
+                """;
+
+        assertEquals("approval-form", BpmnUserTaskMetadataCatalog.parse(xml).get("Task_1").formKey());
+    }
+
+    /**
      * Lượt tra trước khi quy trình được hút về catalog (nút "Đồng bộ từ Camunda", Lát 1) KHÔNG được
      * đóng băng kết quả rỗng: nếu cache cả map rỗng thì mọi bước của quy trình đó hiện ra không tên,
      * không role cho tới khi restart backend.

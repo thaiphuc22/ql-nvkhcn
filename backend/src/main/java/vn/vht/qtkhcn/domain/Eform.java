@@ -32,6 +32,18 @@ public class Eform {
     @Column(name = "schema_json", nullable = false, columnDefinition = "text")
     private String schemaJson;
 
+    /**
+     * {@code APP} — BA vẽ trong Thư viện biểu mẫu; {@code CAMUNDA} — hút từ BPMN khách deploy.
+     * Dòng CAMUNDA là read-only với app (Camunda là nơi authoring duy nhất) nhưng lượt đồng bộ sau
+     * được ghi đè; dòng APP thì importer không bao giờ đụng vào.
+     */
+    @Column(name = "source", nullable = false, length = 16)
+    private String source = EformSource.APP;
+
+    /** Id nguyên văn trong BPMN — null với biểu mẫu do app tự vẽ. */
+    @Column(name = "camunda_form_id", length = 255)
+    private String camundaFormId;
+
     @Version
     @Column(nullable = false)
     private long version;

@@ -28,6 +28,45 @@ class WorkflowTaskActionRoutingTest {
     private final DeployedBpmnRoutingReader routingReader = mock(DeployedBpmnRoutingReader.class);
     private final WorkflowTaskActionRouting routing = new WorkflowTaskActionRouting(routingReader);
 
+    /**
+     * D10.1 ràng buộc 2 — fail-closed. RD01.01 Task_6 lâu nay đã đi nhánh {@code dong_y_bo_sung} bằng
+     * chính nút APPROVE_STEP (xem bảng cứng {@code rd0101}), nên bật APPROVE_WITH_SUPPLEMENT KHÔNG
+     * được phép làm bước đó mọc nút thứ hai làm y hệt.
+     */
+    @Test
+    void approveWithSupplementKhongLamRd0101MocThemNutTrung() {
+        assertFalse(routing.supports("RD01_01", "Task_6", "APPROVE_WITH_SUPPLEMENT"));
+        assertTrue(routing.supports("RD01_01", "Task_6", "APPROVE_STEP"));
+        assertEquals("dong_y_bo_sung",
+                routing.variables("RD01_01", "Task_6", "APPROVE_STEP", "req-1", "actor-1")
+                        .get("ketQuaThamDinh"));
+        verifyNoInteractions(routingReader);
+    }
+
+    @Test
+    void approveWithSupplementKhongApDungChoRd0202() {
+        assertFalse(routing.supports("RD02_02", "T24", "APPROVE_WITH_SUPPLEMENT"));
+    }
+
+    /** Tác dụng thật của D10.1: quy trình khách tự vẽ có nhánh bổ sung thì sinh được nút. */
+    @Test
+    void approveWithSupplementKhaDungKhiBpmnThatSuCoNhanh() {
+        when(routingReader.actionVariables("RD09_01", "Task_X"))
+                .thenReturn(Map.of("APPROVE_WITH_SUPPLEMENT", Map.of("ketQua", "dong_y_bo_sung")));
+
+        assertTrue(routing.supports("RD09_01", "Task_X", "APPROVE_WITH_SUPPLEMENT"));
+        assertEquals("dong_y_bo_sung",
+                routing.variables("RD09_01", "Task_X", "APPROVE_WITH_SUPPLEMENT", "req-1", "actor-1")
+                        .get("ketQua"));
+    }
+
+    @Test
+    void approveWithSupplementBiChanKhiBpmnKhongCoNhanh() {
+        when(routingReader.actionVariables("RD09_01", "Task_Y")).thenReturn(Map.of());
+
+        assertFalse(routing.supports("RD09_01", "Task_Y", "APPROVE_WITH_SUPPLEMENT"));
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"T01", "T02", "T05", "T24", "T33", "T03_CQ_KHCN", "T03_CQ_MS"})
     void approveStepOnRealRd0202TaskSetsNoGatewayVariableBesidesActionMetadata(String taskDefinitionKey) {

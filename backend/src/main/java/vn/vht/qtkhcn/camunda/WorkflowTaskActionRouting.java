@@ -24,7 +24,18 @@ import vn.vht.qtkhcn.service.TaskActionException;
  */
 @Component
 public class WorkflowTaskActionRouting {
-    private static final Set<String> ACTIONS = Set.of("APPROVE_STEP", "RETURN_STEP", "REJECT_STEP");
+    /**
+     * Dẫn xuất từ {@link vn.vht.qtkhcn.service.BpmnOutcomeCodes#TASK_RUNTIME_ACTIONS} thay vì chép
+     * lại literal — đây từng là bản chép thứ ba của tập mã nút D10 trong backend, và đã lệch.
+     */
+    private static final Set<String> ACTIONS = vn.vht.qtkhcn.service.BpmnOutcomeCodes.TASK_RUNTIME_ACTIONS;
+
+    /**
+     * Các mã nút chỉ khả dụng khi routing THẬT SỰ cấp được biến điều khiển cho chúng (ràng buộc 2 của
+     * D10.1). Không có nhánh mà vẫn cho bấm thì user task vẫn hoàn tất qua đúng một outgoing flow,
+     * tức nút im lặng biến thành {@code APPROVE_STEP} — đúng cái bẫy đã ghi cho RETURN_STEP.
+     */
+    private static final Set<String> FAIL_CLOSED_ACTIONS = Set.of("RETURN_STEP", "APPROVE_WITH_SUPPLEMENT");
 
     private static final Set<String> RD01_01_RETURNABLE =
             Set.of("Task_5", "Task_6", "Task_9", "Task_11_HD", "Task_11_TGD");
@@ -48,7 +59,14 @@ public class WorkflowTaskActionRouting {
 
     public boolean supports(String processDefinitionId, String taskDefinitionKey, String actionCode) {
         if (!ACTIONS.contains(actionCode)) return false;
-        if (!"RETURN_STEP".equals(actionCode)) return true;
+        if (!FAIL_CLOSED_ACTIONS.contains(actionCode)) return true;
+        if ("APPROVE_WITH_SUPPLEMENT".equals(actionCode)) {
+            // Cả hai bảng cứng rd0101/rd0202 đều KHÔNG cấp biến cho mã này, nên RD01.01 và RD02.02
+            // không mọc thêm nút — RD01.01 Task_6 vốn đã đi nhánh dong_y_bo_sung bằng APPROVE_STEP
+            // (xem rd0101), thêm nút thứ hai làm y hệt chỉ gây rối. Quy trình khách tự vẽ thì đi
+            // đường derived(): có nhánh thật mới có nút.
+            return !routingVariables(processDefinitionId, taskDefinitionKey, actionCode).isEmpty();
+        }
         return switch (processDefinitionId) {
             case "RD01_01" -> RD01_01_RETURNABLE.contains(taskDefinitionKey);
             case "RD02_02" -> RD02_02_RETURNABLE.contains(taskDefinitionKey);

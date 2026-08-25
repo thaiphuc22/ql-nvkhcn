@@ -90,3 +90,19 @@ code { color: #b42318; background: #fff1f0; padding: 2px 5px; border-radius: 4px
   .as-layer-card { grid-column: 1; }
   .as-stat-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* Từ khoá outcome trong Danh mục nút + đề xuất gán nút ở màn Đối soát. */
+.as-keywords { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.as-keywords input { max-width: 130px; }
+.as-suggest { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.as-suggest nz-select { min-width: 150px; }
+
+.as-binding {
+  display: inline-block;
+  margin: 0 4px 2px 0;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.04);
+  font-size: 12px;
+  white-space: nowrap;
+}

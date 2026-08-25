@@ -35,9 +35,18 @@ export interface ReconcileRow {
   outcome: string;
   actionCode: string;
   status: 'OK' | 'GENERIC_POLICY' | 'MISSING_FORM' | 'MISSING_POLICY' | 'UNMAPPED_BRANCH'
-    | 'ORPHAN_POLICY' | 'ROLE_MISMATCH' | 'CONFLICT' | 'INVALID_TARGET';
+    | 'ORPHAN_POLICY' | 'ROLE_MISMATCH' | 'CONFLICT' | 'INVALID_TARGET'
+    | 'BINDING_FIELD_MISSING' | 'ORPHAN_BINDING';
   policyId: string | null;
   reason: string;
+  /** Chỉ có ở dòng `UNMAPPED_BRANCH`: nút App đề xuất cho từ khoá chưa ai nhận. Đề xuất, người chốt. */
+  suggestedActionCode: string | null;
+  /**
+   * Quy tắc "trường biểu mẫu → biến Camunda" đang gắn vào nhánh này, dạng `diemSo → diemSo`.
+   * Trước đây các quy tắc này nằm cứng trong backend và không hiện ở đâu, nên đổi tên trường biểu
+   * mẫu là hỏng im lặng. Rỗng ở hầu hết các nhánh — đây là ngoại lệ hẹp, không phải cơ chế chung.
+   */
+  variableBindings: string[];
 }
 
 function actorHeaders(actor?: string): Record<string, string> {
@@ -109,6 +118,25 @@ export class ActionStudioService {
       this.definitionsSignal.update((items) => items.map((value) => value.actionCode === saved.actionCode ? saved : value));
       this.presentationsSignal.update((items) => items.map((value) => value.actionCode === saved.actionCode ? { ...value, version: saved.version } : value));
     }));
+  }
+
+  addOutcomeKeyword(actionCode: string, keyword: string, actor?: string): Observable<ActionDefinition> {
+    return this.http.post<ActionDefinition>(
+      `${BASE_URL}/actions/${encodeURIComponent(actionCode)}/outcome-keywords`, { keyword },
+      { headers: actorHeaders(actor) },
+    ).pipe(tap((saved) => this.replaceDefinition(saved)));
+  }
+
+  removeOutcomeKeyword(actionCode: string, keyword: string, actor?: string): Observable<ActionDefinition> {
+    return this.http.delete<ActionDefinition>(
+      `${BASE_URL}/actions/${encodeURIComponent(actionCode)}/outcome-keywords/${encodeURIComponent(keyword)}`,
+      { headers: actorHeaders(actor) },
+    ).pipe(tap((saved) => this.replaceDefinition(saved)));
+  }
+
+  private replaceDefinition(saved: ActionDefinition): void {
+    this.definitionsSignal.update((items) =>
+      items.map((value) => value.actionCode === saved.actionCode ? saved : value));
   }
 
   saveAvailability(value: ActionAvailabilityPolicy, actor?: string): Observable<ActionAvailabilityPolicy> {

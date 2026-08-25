@@ -26,6 +26,7 @@ import vn.vht.qtkhcn.web.dto.ActionStudioDtos.BulkStatusAvailabilityResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ConfigResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ExceptionRequest;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ExceptionResponse;
+import vn.vht.qtkhcn.web.dto.ActionStudioDtos.OutcomeKeywordRequest;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.PresentationRequest;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.PresentationResponse;
 import vn.vht.qtkhcn.web.dto.ActionStudioDtos.ReconcileResponse;
@@ -69,6 +70,19 @@ public class ActionStudioController {
             @RequestHeader("If-Match") String ifMatch,
             @RequestHeader(value = "X-QTKHCN-Actor", required = false) String actor) {
         return service.setActionStatus(code, request.enabled(), version(ifMatch), actor);
+    }
+
+    @PostMapping("/actions/{code}/outcome-keywords")
+    public ActionResponse addOutcomeKeyword(@PathVariable String code,
+            @Valid @RequestBody OutcomeKeywordRequest request,
+            @RequestHeader(value = "X-QTKHCN-Actor", required = false) String actor) {
+        return service.addOutcomeKeyword(code, request.keyword(), actor);
+    }
+
+    @DeleteMapping("/actions/{code}/outcome-keywords/{keyword}")
+    public ActionResponse removeOutcomeKeyword(@PathVariable String code, @PathVariable String keyword,
+            @RequestHeader(value = "X-QTKHCN-Actor", required = false) String actor) {
+        return service.removeOutcomeKeyword(code, keyword, actor);
     }
 
     @PostMapping("/availability-policies")

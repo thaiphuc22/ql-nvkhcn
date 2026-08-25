@@ -67,7 +67,8 @@ class WorkflowTaskActionAuthorizationTest {
         service = new WorkflowTaskActionService(mock(WorkflowActionInboxRepository.class),
                 mock(vn.vht.qtkhcn.repository.ActionFormSubmissionRepository.class), mappings,
                 mock(WorkflowEventOutboxRepository.class), runtime, mock(WorkflowTaskActionRouting.class),
-                hoiDong, identities, actionStudio, new ObjectMapper(), mock(TransactionTemplate.class));
+                hoiDong, identities, actionStudio, new ActionVariableBindingCatalog(), new ObjectMapper(),
+                mock(TransactionTemplate.class));
     }
 
     @Test

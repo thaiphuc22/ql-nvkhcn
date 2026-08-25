@@ -83,7 +83,46 @@ the new Angular stack; it is not deleted at D17's lock date.
 
 **Rationale**: Different outcomes genuinely need different eForms (approve = ký/ý kiến, reject = lý do bắt buộc, adjust = sửa gì + trả về đâu). The old single-form + routing-radio approach encoded the outcome twice (form `ketLuan` field *and* routing) and bolted routing UI onto the modal. Splitting removes the double representation and lets availability/tone/form be configured per outcome, while the outcome-tag + `resolveRouting` guardrail keeps buttons and the branch diagram from drifting.
 **Source**: Design session 2026-07-07 (BA/PM). Affects `webapp/src/pages/ActionStudio.tsx`, `data/actionRegistry.ts`, `data/actionAvailabilityPolicy.ts`, `components/TaskFormModal.tsx`, `data/stepRouting.ts`. Extends D6; consistent with D2/D3 (custom UI owns rendering; Camunda holds no business data) and the flow-view decision.
-**Status**: LOCKED (model shape) — frontend-mock implementation DONE 2026-07-08 (all 5 points): points 1–4 via the UI cut-over (DossierDetail/TaskFormModal/Worklist, 3 outcome buttons, form-by-reference on policy); point 5 via `data/bpmnReconcile.ts` + the "Đồng bộ BPMN" tab in Action Studio (pull-based scaffold + 🔴/🟡/⚪ coverage check). See the D10 bullet in `DELIVERY_STATE.md`. Real DB-backed policy tables + a real BPMN/Camunda parse still wait on F1.
+**Status**: LOCKED (model shape) — **AMENDED 2026-08-25, xem D10.1 ngay dưới** — frontend-mock implementation DONE 2026-07-08 (all 5 points): points 1–4 via the UI cut-over (DossierDetail/TaskFormModal/Worklist, 3 outcome buttons, form-by-reference on policy); point 5 via `data/bpmnReconcile.ts` + the "Đồng bộ BPMN" tab in Action Studio (pull-based scaffold + 🔴/🟡/⚪ coverage check). See the D10 bullet in `DELIVERY_STATE.md`. Real DB-backed policy tables + a real BPMN/Camunda parse still wait on F1.
+
+## D10.1 — Tập mã nút rẽ nhánh mở rộng từ 4 lên 5 (thêm `APPROVE_WITH_SUPPLEMENT`)
+**Date**: 2026-08-25
+**Quyết định bởi**: người dùng (chủ dự án), trả lời trực tiếp câu hỏi của Claude trong phiên
+`ql-nvkhcn-0a`. Đây là lần đầu D10 được ghi đè kể từ khi khoá 2026-07-07.
+
+**Decision**: Điểm 1 của D10 nói "a small, fixed, semantic set of outcome actions — `SUBMIT`,
+`APPROVE_STEP`, `RETURN_STEP`, `REJECT_STEP`". Tập này nay gồm **5 mã**, thêm
+`APPROVE_WITH_SUPPLEMENT` ("Đồng ý, yêu cầu bổ sung").
+
+**Vì sao**: `APPROVE_WITH_SUPPLEMENT` đã tồn tại đầy đủ trong dữ liệu từ 2026-07 — danh mục nút
+(seed `V20`), từ khoá `dong_y_bo_sung` (seed `V37`), và một dòng luật hiển thị sẵn
+(`AP-BPMN-RD01_01-Task_6-SUPPLEMENT`) — nhưng bị chặn ở tầng mã nguồn vì không nằm trong tập 4 mã.
+Dữ liệu và quyết định mâu thuẫn nhau suốt, không bên nào báo lỗi. Chốt theo hướng dữ liệu vì "đồng ý
+nhưng phải bổ sung hồ sơ" là một kết luận thẩm định có thật, khác nghĩa với "đồng ý" thuần.
+
+**Ràng buộc kèm theo — KHÔNG được bỏ khi thi hành**:
+
+1. **Tập vẫn cứng, vẫn do mã nguồn sở hữu.** Nguồn duy nhất là
+   `BpmnOutcomeCodes.OUTCOME_ACTIONS`; mọi nơi khác dẫn xuất từ đó. Cố ý KHÔNG đọc từ CSDL: cho tập
+   này thành dữ liệu là mở rộng được nó tuỳ ý, tức vô hiệu hoá chính D10. Thêm mã thứ 6 phải sửa
+   quyết định này trước, và `BpmnOutcomeCodesTest` sẽ vỡ để ép điều đó.
+2. **Fail-closed.** `APPROVE_WITH_SUPPLEMENT` chỉ khả dụng tại bước mà routing THẬT SỰ cấp được biến
+   điều khiển cho nó — cùng nguyên tắc đang áp cho `RETURN_STEP`. Không có nhánh mà vẫn cho bấm thì
+   user task vẫn hoàn tất qua đúng một outgoing flow, tức nút im lặng biến thành `APPROVE_STEP`.
+3. **RD01.01 `Task_6` KHÔNG đổi hành vi.** Bảng cứng `WorkflowTaskActionRouting.rd0101()` đang map
+   `APPROVE_STEP` tại `Task_6` sang `ketQuaThamDinh = "dong_y_bo_sung"`, nghĩa là nhánh bổ sung ở
+   RD01.01 lâu nay vẫn đi được bằng nút "Đồng ý duyệt". Do ràng buộc (2), bước này không mọc thêm
+   nút thứ hai. Muốn `Task_6` hiển thị đúng nhãn "Đồng ý, yêu cầu bổ sung" thì phải **chuyển** ánh xạ
+   trong `rd0101()` chứ không phải thêm — đó là đổi nhãn trên một bước phê duyệt đang chạy thật, cần
+   quyết định riêng của nghiệp vụ, chưa làm.
+
+**Tác dụng thực tế của D10.1**: quy trình mới khách tự vẽ, có nhánh `= <biến> = "dong_y_bo_sung"`,
+từ nay tự sinh được nút đúng nghĩa qua đường `derived()` + từ điển từ khoá V37 — trước đây nhánh đó
+không nút nào bấm tới được.
+
+**Source**: phiên 2026-08-25, tiếp nối `.harness/state/features/de-xuat-tu-dien-outcome.md` mục 6
+(vốn ghi "không mở rộng tập mã nút" — mục đó nay bị D10.1 ghi đè).
+**Status**: LOCKED
 
 ## D11 — Data scope is a per-user overlay (`UserRoleAssignment`), not a field on `RolePermissionPolicy`
 **Date**: 2026-07-08

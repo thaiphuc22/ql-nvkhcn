@@ -72,13 +72,15 @@ public class BpmnUserTaskMetadataCatalog {
             for (int i = 0; i < tasks.getLength(); i++) {
                 Element task = (Element) tasks.item(i);
                 Element assignment = descendant(task, "assignmentDefinition");
-                Element form = descendant(task, "formDefinition");
+                // Không đọc thẳng attribute `formKey` nữa: form khai trên Camunda rồi gắn vào task
+                // sinh ra `formId`, xem BpmnFormReference.
+                String formKey = BpmnFormReference.of(descendant(task, "formDefinition")).formKey();
                 result.put(task.getAttribute("id"), new UserTaskMetadata(
                         task.getAttribute("name"),
                         attribute(assignment, "assignee"),
                         csv(attribute(assignment, "candidateUsers")),
                         csv(attribute(assignment, "candidateGroups")),
-                        attribute(form, "formKey")));
+                        formKey == null ? "" : formKey));
             }
             return Map.copyOf(result);
         } catch (Exception e) {

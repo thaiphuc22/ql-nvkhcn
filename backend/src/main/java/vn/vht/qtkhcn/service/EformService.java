@@ -9,6 +9,7 @@ import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.vht.qtkhcn.domain.Eform;
+import vn.vht.qtkhcn.domain.EformSource;
 import vn.vht.qtkhcn.domain.EformVersion;
 import vn.vht.qtkhcn.repository.EformRepository;
 import vn.vht.qtkhcn.repository.EformVersionRepository;
@@ -73,7 +74,7 @@ public class EformService {
 
     @Transactional
     public EformResponse updateMeta(String key, UpdateMetaRequest request, long expectedVersion, String actor) {
-        Eform entity = find(key);
+        Eform entity = findEditable(key);
         assertVersion(key, expectedVersion, entity.getVersion());
         validateLoai(request.loai());
         entity.setTen(request.ten().trim());
@@ -87,7 +88,7 @@ public class EformService {
 
     @Transactional
     public EformResponse updateSchema(String key, UpdateSchemaRequest request, long expectedVersion, String actor) {
-        Eform entity = find(key);
+        Eform entity = findEditable(key);
         assertVersion(key, expectedVersion, entity.getVersion());
         entity.setSchemaJson(writeSchema(request.schema()));
         touch(entity, actor);
@@ -98,15 +99,79 @@ public class EformService {
 
     @Transactional
     public void delete(String key, long expectedVersion) {
-        Eform entity = find(key);
+        Eform entity = findEditable(key);
         assertVersion(key, expectedVersion, entity.getVersion());
         repository.delete(entity);
         repository.flush();
     }
 
+    /**
+     * Ghi một biểu mẫu hút từ Camunda vào thư viện — dùng cho form NHÚNG lấy được lúc đồng bộ, và
+     * sau này cho linked form hydrate lúc runtime.
+     *
+     * <p>Khác {@link #create}/{@link #updateSchema} ở ba điểm, đều có lý do:
+     * <ul>
+     *   <li><b>Không hạ chữ thường khoá.</b> {@code create} hạ chữ thường vì khoá do người gõ tay;
+     *       ở đây khoá là id trong BPMN, phân biệt hoa thường, và phải khớp nguyên văn với khoá mà
+     *       {@code BpmnFormReference} ghim vào luật hành động lúc scaffold.</li>
+     *   <li><b>Không kiểm {@code If-Match}.</b> Đây không phải người sửa đồng thời mà là đồng bộ từ
+     *       nguồn sự thật bên ngoài; chặn theo version chỉ làm lượt đồng bộ hỏng vô cớ.</li>
+     *   <li><b>Không bao giờ đè dòng {@code source=APP}.</b> Trùng khoá với biểu mẫu BA tự vẽ thì
+     *       BỎ QUA và báo lên, vì ghi đè là làm mất bài của người ta — mất im lặng, không hoàn tác
+     *       được. Đổi tên bên nào là quyết định của người dùng, không phải của importer.</li>
+     * </ul>
+     */
+    @Transactional
+    public ImportOutcome importFromCamunda(String key, String camundaFormId, String ten, String moTa,
+            String schemaJson, String actor) {
+        Eform existing = repository.findById(key).orElse(null);
+        if (existing != null && !EformSource.CAMUNDA.equals(existing.getSource())) {
+            return ImportOutcome.SKIPPED_APP_OWNED;
+        }
+        if (existing != null && schemaJson.equals(existing.getSchemaJson()) && ten.equals(existing.getTen())) {
+            return ImportOutcome.UNCHANGED;
+        }
+        boolean created = existing == null;
+        OffsetDateTime now = OffsetDateTime.now();
+        Eform entity = existing == null ? new Eform() : existing;
+        if (created) {
+            entity.setKey(key);
+            entity.setCreatedAt(now);
+            entity.setSource(EformSource.CAMUNDA);
+        }
+        entity.setCamundaFormId(camundaFormId);
+        entity.setTen(trim(ten, 255));
+        entity.setMoTa(trim(moTa == null ? "" : moTa, 1000));
+        entity.setSchemaJson(schemaJson);
+        touch(entity, actor);
+        entity = repository.saveAndFlush(entity);
+        snapshot(entity);
+        return created ? ImportOutcome.CREATED : ImportOutcome.UPDATED;
+    }
+
+    public enum ImportOutcome { CREATED, UPDATED, UNCHANGED, SKIPPED_APP_OWNED }
+
+    private static String trim(String value, int maxLength) {
+        return value.length() <= maxLength ? value : value.substring(0, maxLength);
+    }
+
     private Eform find(String key) {
         return repository.findById(key)
                 .orElseThrow(() -> new NoSuchElementException("Không tìm thấy biểu mẫu: " + key));
+    }
+
+    /**
+     * Biểu mẫu hút từ Camunda là READ-ONLY trong app: Camunda là nơi authoring duy nhất, và lượt đồng
+     * bộ sau sẽ ghi đè. Không chặn ở đây thì BA sửa xong tưởng đã lưu, tới lượt đồng bộ kế tiếp mất
+     * sạch mà không ai biết vì sao — mất im lặng, đúng loại lỗi khó truy nhất.
+     */
+    private Eform findEditable(String key) {
+        Eform entity = find(key);
+        if (EformSource.CAMUNDA.equals(entity.getSource())) {
+            throw new IllegalArgumentException(
+                    "Biểu mẫu " + key + " khai trên Camunda — sửa trên Camunda rồi đồng bộ lại, app không sửa được.");
+        }
+        return entity;
     }
 
     private void assertVersion(String key, long expected, long actual) {

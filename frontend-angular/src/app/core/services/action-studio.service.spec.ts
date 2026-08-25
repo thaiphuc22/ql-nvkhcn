@@ -178,6 +178,30 @@ describe('ActionStudioService', () => {
     expect(service.definitions()[0].version).toBe(3);
   });
 
+  it('lets a button claim a new BPMN outcome keyword and refreshes the shared definition', () => {
+    seed();
+    service.addOutcomeKeyword('APPROVE_STEP', 'thong_qua', 'Lê Văn Cường').subscribe();
+
+    const request = http.expectOne(`${base}/actions/APPROVE_STEP/outcome-keywords`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ keyword: 'thong_qua' });
+    expect(request.request.headers.get('X-QTKHCN-Actor')).toBeTruthy();
+    request.flush({ ...definition, outcomeKeywords: ['dong_y', 'thong_qua'] });
+
+    expect(service.definitions()[0].outcomeKeywords).toEqual(['dong_y', 'thong_qua']);
+  });
+
+  it('drops an outcome keyword from a button', () => {
+    seed();
+    service.removeOutcomeKeyword('APPROVE_STEP', 'thong_qua').subscribe();
+
+    const request = http.expectOne(`${base}/actions/APPROVE_STEP/outcome-keywords/thong_qua`);
+    expect(request.request.method).toBe('DELETE');
+    request.flush({ ...definition, outcomeKeywords: ['dong_y'] });
+
+    expect(service.definitions()[0].outcomeKeywords).toEqual(['dong_y']);
+  });
+
   function seed(): void {
     service.load().subscribe();
     http.expectOne(base).flush({

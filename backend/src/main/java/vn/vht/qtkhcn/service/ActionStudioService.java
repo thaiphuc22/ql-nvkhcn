@@ -7,24 +7,29 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import vn.vht.qtkhcn.domain.ActionAvailabilityPolicy;
 import vn.vht.qtkhcn.domain.ActionAvailabilityPolicyStatus;
+import vn.vht.qtkhcn.domain.ActionOutcomeKeyword;
 import vn.vht.qtkhcn.domain.ActionFormBundleItem;
 import vn.vht.qtkhcn.domain.ActionFormBundleSnapshot;
 import vn.vht.qtkhcn.domain.ActionExceptionPolicy;
 import vn.vht.qtkhcn.domain.ActionStudioAction;
 import vn.vht.qtkhcn.domain.ActionStudioAudit;
+import vn.vht.qtkhcn.domain.ActionVariableBinding;
 import vn.vht.qtkhcn.domain.Eform;
 import vn.vht.qtkhcn.repository.ActionAvailabilityPolicyRepository;
+import vn.vht.qtkhcn.repository.ActionOutcomeKeywordRepository;
 import vn.vht.qtkhcn.repository.ActionExceptionPolicyRepository;
 import vn.vht.qtkhcn.repository.ActionStudioActionRepository;
 import vn.vht.qtkhcn.repository.ActionStudioAuditRepository;
@@ -76,6 +81,9 @@ public class ActionStudioService {
     private final EformRepository eformRepository;
     private final ActionBusinessConditionEvaluator conditions;
     private final ActionFormBundleSnapshotRepository bundleSnapshots;
+    private final ActionOutcomeKeywordRepository keywordRepository;
+    private final OutcomeKeywordCatalog outcomeKeywords;
+    private final ActionVariableBindingCatalog variableBindings;
 
     @Autowired
     public ActionStudioService(ActionStudioActionRepository actionRepository,
@@ -84,7 +92,10 @@ public class ActionStudioService {
             ActionStudioAuditRepository auditRepository,
             ActionStudioRoutingCatalog routingCatalog,
             EformRepository eformRepository, ActionBusinessConditionEvaluator conditions,
-            ActionFormBundleSnapshotRepository bundleSnapshots) {
+            ActionFormBundleSnapshotRepository bundleSnapshots,
+            ActionOutcomeKeywordRepository keywordRepository,
+            OutcomeKeywordCatalog outcomeKeywords,
+            ActionVariableBindingCatalog variableBindings) {
         this.actionRepository = actionRepository;
         this.availabilityRepository = availabilityRepository;
         this.exceptionRepository = exceptionRepository;
@@ -93,6 +104,9 @@ public class ActionStudioService {
         this.eformRepository = eformRepository;
         this.conditions = conditions;
         this.bundleSnapshots = bundleSnapshots;
+        this.keywordRepository = keywordRepository;
+        this.outcomeKeywords = outcomeKeywords;
+        this.variableBindings = variableBindings;
     }
 
     ActionStudioService(ActionStudioActionRepository actionRepository,
@@ -101,13 +115,27 @@ public class ActionStudioService {
             ActionStudioAuditRepository auditRepository,
             ActionStudioRoutingCatalog routingCatalog, EformRepository eformRepository) {
         this(actionRepository, availabilityRepository, exceptionRepository, auditRepository, routingCatalog,
-                eformRepository, new ActionBusinessConditionEvaluator(new ObjectMapper(), new ApprovalConditionEngine()), null);
+                eformRepository, new ActionBusinessConditionEvaluator(new ObjectMapper(), new ApprovalConditionEngine()),
+                null, null, new OutcomeKeywordCatalog(), new ActionVariableBindingCatalog());
+    }
+
+    /** Như trên nhưng có từ điển outcome thật — cho test phần Danh mục nút nhận thêm từ khoá. */
+    ActionStudioService(ActionStudioActionRepository actionRepository,
+            ActionAvailabilityPolicyRepository availabilityRepository,
+            ActionExceptionPolicyRepository exceptionRepository,
+            ActionStudioAuditRepository auditRepository,
+            ActionStudioRoutingCatalog routingCatalog, EformRepository eformRepository,
+            ActionOutcomeKeywordRepository keywordRepository) {
+        this(actionRepository, availabilityRepository, exceptionRepository, auditRepository, routingCatalog,
+                eformRepository, new ActionBusinessConditionEvaluator(new ObjectMapper(), new ApprovalConditionEngine()),
+                null, keywordRepository, new OutcomeKeywordCatalog(keywordRepository),
+                new ActionVariableBindingCatalog());
     }
 
     @Transactional(readOnly = true)
     public ConfigResponse load() {
         List<ActionStudioAction> actions = actionRepository.findAllByOrderByDisplayOrderAsc();
-        return new ConfigResponse(actions.stream().map(ActionStudioService::toAction).toList(),
+        return new ConfigResponse(actions.stream().map(this::toAction).toList(),
                 actions.stream().map(ActionStudioService::toPresentation).toList(),
                 availabilityRepository.findAllByOrderByDisplayOrderAscIdAsc().stream().map(ActionStudioService::toAvailability).toList(),
                 exceptionRepository.findAllByOrderByIdAsc().stream().map(ActionStudioService::toException).toList(),
@@ -183,6 +211,63 @@ public class ActionStudioService {
         action = actionRepository.saveAndFlush(action);
         audit("ACTION", code, active ? "ACTIVATE" : "DEACTIVATE", actorHeader,
                 active ? "Kích hoạt hành động." : "Khóa hành động.");
+        return toAction(action);
+    }
+
+    /**
+     * Cho nút này nhận thêm một từ khoá outcome trong BPMN.
+     *
+     * <p>Chỉ mở rộng tập TỪ NGỮ được nhận diện, không mở rộng tập mã nút (D10). Từ khoá là tài sản
+     * toàn cục: thêm ở đây là tuyên bố cho mọi quy trình, kể cả quy trình chưa vẽ — nên nó phải
+     * UNIQUE và phải có người ký trong audit.
+     */
+    @Transactional
+    public ActionResponse addOutcomeKeyword(String code, String keyword, String actorHeader) {
+        ActionStudioAction action = action(code);
+        String normalized = OutcomeKeywordCatalog.normalize(keyword);
+        if (!OutcomeKeywordCatalog.isValidKeyword(normalized)) {
+            throw new IllegalArgumentException("Từ khoá outcome phải là chữ thường không dấu, số và gạch "
+                    + "dưới, bắt đầu bằng chữ cái: " + keyword);
+        }
+        String owner = outcomeKeywords.ownerOf(normalized);
+        if (code.equals(owner)) return toAction(action);
+        if (owner != null) {
+            throw new ActionStudioConflictException("Từ khoá \"" + normalized + "\" đã thuộc nút " + owner
+                    + ". Một từ khoá chỉ được thuộc đúng một nút — nếu không, hai nhánh cùng ánh xạ về một "
+                    + "nút và nhánh vẽ sau bị bỏ qua mà không báo lỗi.");
+        }
+        ActionOutcomeKeyword entity = new ActionOutcomeKeyword();
+        entity.setKeyword(normalized);
+        entity.setActionCode(action.getActionCode());
+        entity.setCreatedBy(ProcessDefinitionService.normalizeActor(actorHeader));
+        entity.setCreatedAt(now());
+        try {
+            keywordRepository.saveAndFlush(entity);
+        } catch (DataIntegrityViolationException raced) {
+            // Khoá chính mới là trọng tài thật; kiểm ở trên đọc cache nên có thể lỡ một lượt ghi song song.
+            throw new ActionStudioConflictException("Từ khoá \"" + normalized + "\" vừa được nút khác nhận.");
+        } finally {
+            outcomeKeywords.invalidate();
+        }
+        audit("ACTION", code, "ADD_OUTCOME_KEYWORD", actorHeader, "Nhận thêm từ khoá outcome: " + normalized);
+        return toAction(action);
+    }
+
+    /** Bỏ một từ khoá khỏi nút. Nhánh BPMN dùng từ khoá đó sẽ quay lại trạng thái chưa ai nhận. */
+    @Transactional
+    public ActionResponse removeOutcomeKeyword(String code, String keyword, String actorHeader) {
+        ActionStudioAction action = action(code);
+        String normalized = OutcomeKeywordCatalog.normalize(keyword);
+        ActionOutcomeKeyword existing = keywordRepository.findById(normalized)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy từ khoá outcome " + normalized));
+        if (!existing.getActionCode().equals(code)) {
+            throw new ActionStudioConflictException("Từ khoá \"" + normalized + "\" thuộc nút "
+                    + existing.getActionCode() + ", không thuộc " + code + ".");
+        }
+        keywordRepository.delete(existing);
+        keywordRepository.flush();
+        outcomeKeywords.invalidate();
+        audit("ACTION", code, "REMOVE_OUTCOME_KEYWORD", actorHeader, "Bỏ từ khoá outcome: " + normalized);
         return toAction(action);
     }
 
@@ -481,8 +566,16 @@ public class ActionStudioService {
         List<ReconcileResponse> rows = new ArrayList<>(process.steps().stream().flatMap(step -> step.branches().stream().map(branch -> {
             String actionCode = outcomeAction(branch.outcome());
             if (actionCode == null) {
+                String suggestion = suggestedAction(branch.kind());
+                // Kèm nhãn + đích của nhánh để người duyệt đề xuất có căn cứ quyết, thay vì phải mở
+                // lại bản vẽ BPMN mới biết nhánh này đi đâu.
+                String context = "Nhánh \"" + branch.label() + "\" đi tới \"" + branch.target() + "\".";
                 return new ReconcileResponse(processCode, step.key(), step.name(), branch.outcome(), null,
-                        "UNMAPPED_BRANCH", null, "Outcome BPMN chưa được ánh xạ sang action code.");
+                        "UNMAPPED_BRANCH", null,
+                        suggestion == null
+                                ? "Từ khoá outcome chưa nút nào nhận và không suy được đề xuất. " + context
+                                : "Từ khoá outcome chưa nút nào nhận. " + context,
+                        suggestion);
             }
             if (branch.target() == null || branch.target().isBlank()) {
                 return new ReconcileResponse(processCode, step.key(), step.name(), branch.outcome(), actionCode,
@@ -542,7 +635,104 @@ public class ActionStudioService {
                 .forEach(item -> rows.add(new ReconcileResponse(processCode, item.getTaskDefinitionKey(),
                         item.getTaskDefinitionKey(), null, item.getActionCode(), "ORPHAN_POLICY", item.getId(),
                         "Luật ACTIVE không còn nhánh tương ứng trong BPMN.")));
-        return List.copyOf(rows);
+        return withVariableBindingRows(processCode, rows, policies);
+    }
+
+    /**
+     * Gắn các quy tắc "trường biểu mẫu đến biến Camunda" vào đúng dòng đối soát, và báo động khi một
+     * quy tắc trỏ vào trường không còn tồn tại trong biểu mẫu.
+     *
+     * <p>Đây là phần trả lời cho khiếm khuyết đã biết: trước đây quy tắc nằm cứng trong
+     * {@code withDiemSoForT24}, không hiện ở đâu cả, nên đổi tên trường biểu mẫu là hỏng im lặng —
+     * hồ sơ vẫn đi đúng nhánh nhưng business rule task nhận thiếu biến.
+     */
+    private List<ReconcileResponse> withVariableBindingRows(String processCode, List<ReconcileResponse> rows,
+            List<ActionAvailabilityPolicy> policies) {
+        var bindings = variableBindings.forProcess(processCode);
+        if (bindings.isEmpty()) return List.copyOf(rows);
+
+        Map<String, List<ActionVariableBinding>> bySelector = new LinkedHashMap<>();
+        for (ActionVariableBinding binding : bindings) {
+            bySelector.computeIfAbsent(binding.getTaskDefinitionKey() + "\u0000" + binding.getActionCode(),
+                    unused -> new ArrayList<>()).add(binding);
+        }
+
+        List<ReconcileResponse> result = new ArrayList<>();
+        Set<String> matchedSelectors = new LinkedHashSet<>();
+        for (ReconcileResponse row : rows) {
+            String selector = row.stepKey() + "\u0000" + row.actionCode();
+            List<ActionVariableBinding> declared = bySelector.get(selector);
+            if (declared == null) {
+                result.add(row);
+                continue;
+            }
+            matchedSelectors.add(selector);
+            result.add(row.withVariableBindings(declared.stream()
+                    .map(binding -> binding.getFormField() + " → " + binding.getVariableName()).toList()));
+            Set<String> fields = formFieldKeys(policyById(policies, row.policyId()));
+            // fields rỗng = không đọc được biểu mẫu (chưa gắn form, hoặc schema hỏng). Im lặng còn
+            // hơn báo động giả: chỉ kết luận "trường không tồn tại" khi thực sự đọc được danh sách.
+            if (fields.isEmpty()) continue;
+            for (ActionVariableBinding binding : declared) {
+                if (fields.contains(binding.getFormField())) continue;
+                result.add(new ReconcileResponse(processCode, row.stepKey(), row.stepName(), row.outcome(),
+                        row.actionCode(), "BINDING_FIELD_MISSING", row.policyId(),
+                        "Quy tắc gửi biến trỏ vào trường \"" + binding.getFormField()
+                                + "\" nhưng biểu mẫu đang gắn không có trường này.",
+                        null, List.of(binding.getFormField() + " → " + binding.getVariableName())));
+            }
+        }
+
+        bySelector.forEach((selector, declared) -> {
+            if (matchedSelectors.contains(selector)) return;
+            ActionVariableBinding first = declared.get(0);
+            result.add(new ReconcileResponse(processCode, first.getTaskDefinitionKey(),
+                    first.getTaskDefinitionKey(), null, first.getActionCode(), "ORPHAN_BINDING", null,
+                    "Quy tắc gửi biến khai cho bước/nút không còn nhánh tương ứng trong BPMN.", null,
+                    declared.stream().map(binding -> binding.getFormField() + " → " + binding.getVariableName())
+                            .toList()));
+        });
+        return List.copyOf(result);
+    }
+
+    private static ActionAvailabilityPolicy policyById(List<ActionAvailabilityPolicy> policies, String policyId) {
+        if (policyId == null) return null;
+        return policies.stream().filter(item -> policyId.equals(item.getId())).findFirst().orElse(null);
+    }
+
+    /** Khoá của mọi trường trong các biểu mẫu mà luật này gắn. Rỗng nghĩa là không đọc được. */
+    private Set<String> formFieldKeys(ActionAvailabilityPolicy policy) {
+        if (policy == null) return Set.of();
+        List<String> formKeys = new ArrayList<>(policy.getFormBundleItems().stream()
+                .map(ActionFormBundleItem::getFormKey).filter(Objects::nonNull).toList());
+        if (policy.getFormKey() != null) formKeys.add(policy.getFormKey());
+        Set<String> fields = new LinkedHashSet<>();
+        for (String formKey : formKeys) {
+            eformRepository.findById(formKey).ifPresent(form -> collectFieldKeys(form.getSchemaJson(), fields));
+        }
+        return fields;
+    }
+
+    /** Gom {@code key} của mọi component trong schema form-js, kể cả component lồng trong nhóm. */
+    private static void collectFieldKeys(String schemaJson, Set<String> into) {
+        if (schemaJson == null || schemaJson.isBlank()) return;
+        try {
+            collectFieldKeys(JSON.readTree(schemaJson), into);
+        } catch (RuntimeException | com.fasterxml.jackson.core.JsonProcessingException malformed) {
+            // Schema hỏng thì bỏ qua — đối soát không phải nơi báo lỗi biểu mẫu.
+        }
+    }
+
+    private static void collectFieldKeys(JsonNode node, Set<String> into) {
+        if (node == null) return;
+        if (node.isArray()) {
+            node.forEach(child -> collectFieldKeys(child, into));
+            return;
+        }
+        if (!node.isObject()) return;
+        var key = node.get("key");
+        if (key != null && key.isTextual()) into.add(key.asText());
+        collectFieldKeys(node.get("components"), into);
     }
 
     private static boolean sameSelector(ActionAvailabilityPolicy left, ActionAvailabilityPolicy right) {
@@ -896,10 +1086,11 @@ public class ActionStudioService {
         entity.setUpdatedAt(now());
     }
 
-    private static ActionResponse toAction(ActionStudioAction item) {
+    private ActionResponse toAction(ActionStudioAction item) {
         return new ActionResponse(item.getActionCode(), item.getActionName(), item.getActionType(), item.getOutcome(),
                 item.isRequiresReason(), item.isRequiresEvidence(), item.isRequiresConfirm(), item.isActive(),
-                item.getVersion(), item.getUpdatedBy(), item.getUpdatedAt());
+                item.getVersion(), item.getUpdatedBy(), item.getUpdatedAt(),
+                outcomeKeywords.keywordsFor(item.getActionCode()));
     }
 
     private static PresentationResponse toPresentation(ActionStudioAction item) {
@@ -950,8 +1141,26 @@ public class ActionStudioService {
                 + (item.getTaskDefinitionKey() == null ? 0 : 1) + (item.getDossierStatus() == null ? 0 : 1);
     }
 
-    private static String outcomeAction(String outcome) {
-        return BpmnOutcomeCodes.actionCode(outcome);
+    private String outcomeAction(String outcome) {
+        return outcomeKeywords.actionCode(outcome);
+    }
+
+    /**
+     * Nút mà App ĐỀ XUẤT cho một nhánh có từ khoá chưa ai nhận, suy từ {@code kind} mà
+     * {@link DeployedBpmnRoutingReader} đã tính sẵn từ node đích.
+     *
+     * <p>Chỉ là đề xuất để người chốt: App không tự ghi vào Danh mục nút. Đoán sai mà tự ghi thì nút
+     * hiện nhãn "Đồng ý duyệt" nhưng hồ sơ chạy vào nhánh từ chối — không lỗi, không cảnh báo. Ngoài
+     * ra từ khoá là tài sản toàn cục (một từ khoá chỉ thuộc một nút), nên việc thêm nó phải có người
+     * ký trong audit.
+     */
+    private static String suggestedAction(String kind) {
+        return switch (kind == null ? "" : kind) {
+            case "reject" -> "REJECT_STEP";
+            case "rework" -> "RETURN_STEP";
+            case "forward", "complete" -> "APPROVE_STEP";
+            default -> null;
+        };
     }
 
     private static boolean isOutcomeAction(String actionCode) {

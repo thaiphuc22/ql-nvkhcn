@@ -1,5 +1,74 @@
 # Delivery State
 
+> **2026-08-25 — QUY TẮC "TRƯỜNG BIỂU MẪU → BIẾN CAMUNDA" THÀNH DỮ LIỆU + DỌN BẢN SAO TẬP MÃ NÚT
+> — CODE DONE, CHƯA CHẠY THỬ STACK SỐNG (owner Claude, phiên ql-nvkhcn-0a).** Tiếp ngay sau entry
+> bên dưới, cùng ngày, phiên khác. Xử lý khiếm khuyết #3 trong
+> `.harness/state/features/de-xuat-tu-dien-outcome.md`: quy tắc gửi kèm trường biểu mẫu nằm cứng
+> trong `WorkflowTaskActionService.withDiemSoForT24()` — BA không thấy nó tồn tại, đổi tên trường
+> biểu mẫu là hỏng im lặng (hồ sơ vẫn đi đúng nhánh, business rule task nhận thiếu biến).
+> **Backend:** migration V38 (`action_variable_binding`) + `ActionVariableBindingCatalog`; xoá
+> `withDiemSoForT24`. Bảng khoá theo **selector** `(process_code, task_definition_key, action_code)`
+> chứ KHÔNG theo `policy_id`, vì scaffold từ BPMN xoá và tạo lại policy với id mới nên binding gắn
+> theo id sẽ mất im lặng sau mỗi lần đối soát. Chỉ giá trị **vô hướng** được đi (số/cờ/chuỗi ≤200
+> ký tự) — D3 vẫn giữ, đây là ngoại lệ hẹp khai từng dòng, không phải cơ chế gửi cả form.
+> **Sửa luôn một bẫy của hàm cũ:** nó chỉ so `taskDefinitionKey = "T24"` mà không so quy trình, nên
+> quy trình khác đặt tên bước là T24 cũng vô tình gửi kèm điểm số; dòng seed nay ghim `RD02_02`.
+> **Angular:** cột "Biến gửi kèm" ở tab Đối soát + 2 trạng thái mới `BINDING_FIELD_MISSING` (quy tắc
+> trỏ vào trường biểu mẫu không còn tồn tại — đây là phần chữa "hỏng im lặng") và `ORPHAN_BINDING`.
+> Sửa luôn `track` của bảng đối soát (cũ là `stepKey + outcome`, dòng cảnh báo mới trùng khoá với
+> dòng cha sẽ làm Angular ném lỗi trùng key).
+> **Dọn bản sao:** `WorkflowTaskActionService.RUNTIME_ACTIONS` từng là literal thứ hai của tập mã nút
+> D10 và **đã lệch** (3 mã ở đây, 4 mã ở `BpmnOutcomeCodes`), nay dẫn xuất bằng
+> `BpmnOutcomeCodes.TASK_RUNTIME_ACTIONS` = D10 trừ `SUBMIT` (SUBMIT không hoàn tất user task nào,
+> nó đi `DossierActionService` → `POST /api/ho-so/{id}/submit`). Xoá mock chết trong
+> `core/models/action-studio.ts` (8 hằng + hàm `outcomeAction()` — **bản sao thứ năm** của ánh xạ từ
+> khoá→nút) và sửa `RouteBranch.outcome` từ union 4 giá trị về `string` vì backend gửi từ khoá thật.
+> **D10 ĐÃ ĐƯỢC SỬA — xem `decisions.md` → D10.1 (2026-08-25), người dùng quyết trực tiếp.** Tập mã
+> nút rẽ nhánh từ 4 lên **5**, thêm `APPROVE_WITH_SUPPLEMENT`. Tập vẫn CỨNG, vẫn do mã nguồn sở hữu
+> (`BpmnOutcomeCodes.OUTCOME_ACTIONS`) — không biến thành dữ liệu, vì thế mới còn là "tập cố định".
+> **Ràng buộc fail-closed đi kèm:** mã mới chỉ khả dụng ở bước mà routing THẬT SỰ cấp được biến điều
+> khiển, cùng nguyên tắc đang áp cho `RETURN_STEP` — nếu không, nút vẫn hiện nhưng task hoàn tất qua
+> một outgoing flow duy nhất, tức im lặng biến thành `APPROVE_STEP`.
+> **RD01.01 `Task_6` KHÔNG đổi hành vi, và đây là chỗ dễ hiểu sai nhất:** nhánh `dong_y_bo_sung` ở
+> RD01.01 **chưa bao giờ chết** — bảng cứng `rd0101()` map `APPROVE_STEP` tại `Task_6` sang
+> `ketQuaThamDinh = "dong_y_bo_sung"`, nên nút "Đồng ý duyệt" ở bước đó vẫn đang đi nhánh bổ sung.
+> Bật `APPROVE_WITH_SUPPLEMENT` một cách ngây thơ sẽ làm bước này mọc nút thứ hai làm y hệt; ràng
+> buộc fail-closed chặn đúng chuyện đó (`WorkflowTaskActionRoutingTest.approveWithSupplementKhongLamRd0101MocThemNutTrung`).
+> **Tác dụng thật của D10.1** nằm ở quy trình khách tự vẽ: nhánh `= <biến> = "dong_y_bo_sung"` từ nay
+> tự sinh nút qua `derived()` + từ điển V37, trước đây không nút nào bấm tới được.
+> **Muốn `Task_6` hiển thị đúng nhãn "Đồng ý, yêu cầu bổ sung"** thì phải CHUYỂN ánh xạ trong
+> `rd0101()` chứ không phải thêm — đổi nhãn trên bước phê duyệt đang chạy thật, cần quyết định nghiệp
+> vụ riêng, CHƯA LÀM.
+> **Dọn thêm bản sao thứ sáu:** `WorkflowTaskActionRouting.ACTIONS` cũng là literal chép tay của tập
+> mã nút, nay dẫn xuất từ `BpmnOutcomeCodes.TASK_RUNTIME_ACTIONS`.
+> **Verify:** backend `mvn -o test` **318/319** (1 fail duy nhất
+> là `OpenAiSummaryClientGeminiSmokeTest` — gọi thật API Gemini qua mạng, không liên quan); Angular
+> `tsc --noEmit` sạch, `ng build production` **GREEN**, `ng test` 240/250 (đúng 10 fail có sẵn ở 2
+> file cũ, không phát sinh mới). **Chưa làm:** chạy thử trên stack sống — JAR đang chạy là bản
+> 22/08, chưa có V37 lẫn V38.
+
+> **2026-08-25 — TỪ ĐIỂN OUTCOME TRONG DANH MỤC NÚT (đề xuất A + B) — CODE DONE, CHƯA CHẠY THỬ
+> STACK SỐNG (owner Claude).** Chuyển ánh xạ *từ khoá outcome BPMN → mã nút* từ `switch` cứng trong
+> `BpmnOutcomeCodes` (17 chữ) thành dữ liệu BA tự quản lý, cộng cơ chế màn Đối soát **tự đề xuất**
+> nút cho từ khoá lạ. Trước đây khách vẽ `= ketQua = "thong_qua"` là quy trình chết lặng — không sinh
+> luật hiển thị, Chi tiết Hồ sơ không có nút nào bấm, chữa được chỉ bằng sửa Java rồi deploy lại.
+> **Backend:** migration V37 (`action_studio_action_outcome`, `keyword` là PK nên một từ khoá chỉ
+> thuộc một nút) + `OutcomeKeywordCatalog` (cache, tra hụt rơi về bảng cứng — đường này nằm trên thao
+> tác bấm nút, không được sập) + 2 endpoint thêm/bỏ từ khoá có audit + `suggestedActionCode` trên
+> dòng `UNMAPPED_BRANCH` suy từ `kind` của nhánh. **Angular:** cột "Từ khoá BPMN" ở tab Danh mục nút;
+> tab Đối soát có thẻ đếm "chưa ánh xạ" và nút `[Chấp nhận]`. **Giữ nguyên có chủ ý:**
+> `isOutcomeAction` vẫn là tập cứng 4 mã (mở ra là đụng D10 bằng cửa sau, vì
+> `APPROVE_WITH_SUPPLEMENT` sẽ sống dậy); RD01_01/RD02_02 vẫn đi bảng cứng `WorkflowTaskActionRouting`.
+> **Điểm dễ hiểu ngược, đã ghim bằng test:** từ điển CHỈ để nhận diện — giá trị gửi vào Zeebe vẫn bốc
+> nguyên văn từ bản vẽ (`DeployedBpmnRoutingReaderTest.keywordDeclaredByBaIsRecognisedButTheValueSentStillComesFromTheDiagram`).
+> **Verify:** backend `mvn -o test` **304/304 PASS**; Angular `tsc -b --noEmit` sạch,
+> `ng build production` **GREEN**, `ng test` 240/250 (10 fail đều ở 2 file có sẵn từ trước:
+> `nav-items.spec.ts` và `ho-so-detail.spec.ts`). **Sửa ngoài phạm vi, bắt buộc để verify được:**
+> `ho-so-detail.spec.ts` dùng `NzMessageService` mà thiếu import kể từ commit c5dccba → cả bộ test
+> Angular không build được; đã thêm 1 dòng import, lộ ra 8 test fail sẵn có (lỗi TestBed của chính
+> file đó, chưa sửa). **Chưa làm:** chạy thử trên stack sống; 3 ngoại lệ mục 7 của
+> `.harness/state/features/de-xuat-tu-dien-outcome.md` vẫn treo.
+
 > **2026-07-30 — MA TRẬN PHÂN QUYỀN: REFACTOR SANG LƯỚI CARD THEO ẢNH MẪU — DONE + TEST VERIFIED
 > (owner Claude).** Chuyển hướng có chủ ý (user chỉ đạo trực tiếp "triển khai coding theo plan",
 > tạm rời RD02.02 v3 — xem entry ngay dưới, vẫn TO DO). Trang thật

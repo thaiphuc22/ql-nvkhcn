@@ -82,6 +82,15 @@ export class ActionStudioPage implements OnInit {
   readonly bundleCopySourceId = signal<string | null>(null);
   readonly reconcileProcess = signal('');
   readonly reconcileRows = signal<ReconcileRow[]>([]);
+  /** Ô nhập từ khoá đang gõ, theo từng dòng của Danh mục nút. */
+  readonly keywordDraft = signal<Record<string, string | undefined>>({});
+  readonly keywordPending = signal(false);
+  /**
+   * 5 mã nút rẽ nhánh — tập cố định theo D10 sửa bởi D10.1 (2026-08-25), không mở rộng ở đây.
+   * Phải khớp `BpmnOutcomeCodes.OUTCOME_ACTIONS` bên backend; thêm mã thì sửa quyết định trước.
+   */
+  readonly outcomeActionCodes = ['SUBMIT', 'APPROVE_STEP', 'RETURN_STEP', 'REJECT_STEP',
+    'APPROVE_WITH_SUPPLEMENT'];
   readonly simulatedActions = signal<SimulatedAction[]>([]);
   readonly simulation = signal<SimulationContext>({
     surface: 'DOSSIER_DETAIL', processCode: '', taskDefinitionKey: '',
@@ -109,6 +118,7 @@ export class ActionStudioPage implements OnInit {
       generic: rows.filter((item) => item.status === 'GENERIC_POLICY').length,
       unfilled: rows.filter((item) => item.status === 'MISSING_FORM').length,
       missing: rows.filter((item) => item.status === 'MISSING_POLICY').length,
+      unmapped: rows.filter((item) => item.status === 'UNMAPPED_BRANCH').length,
       percent: rows.length ? Math.round(rows.filter((item) => item.status === 'OK').length / rows.length * 100) : 0,
     };
   });
@@ -385,6 +395,56 @@ export class ActionStudioPage implements OnInit {
     });
   }
 
+  setKeywordDraft(actionCode: string, value: string): void {
+    this.keywordDraft.update((draft) => ({ ...draft, [actionCode]: value }));
+  }
+
+  addKeyword(item: ActionDefinition): void {
+    const keyword = (this.keywordDraft()[item.actionCode] ?? '').trim();
+    if (!keyword) return;
+    this.keywordPending.set(true);
+    this.store.addOutcomeKeyword(item.actionCode, keyword, this.actor()).subscribe({
+      next: () => {
+        this.setKeywordDraft(item.actionCode, '');
+        this.message.success(`Nút "${item.actionName}" đã nhận từ khoá ${keyword.toLowerCase()}.`);
+        this.keywordPending.set(false);
+        this.refreshDerived();
+      },
+      error: (error) => {
+        this.keywordPending.set(false);
+        this.showError('Không thêm được từ khoá outcome.', error);
+      },
+    });
+  }
+
+  removeKeyword(item: ActionDefinition, keyword: string): void {
+    this.store.removeOutcomeKeyword(item.actionCode, keyword, this.actor()).subscribe({
+      next: () => { this.message.success(`Đã bỏ từ khoá ${keyword}.`); this.refreshDerived(); },
+      error: (error) => this.showError('Không bỏ được từ khoá outcome.', error),
+    });
+  }
+
+  /**
+   * Chấp nhận đề xuất của màn Đối soát: gán từ khoá lạ cho một nút. Đây là bước "người chốt" —
+   * App chỉ đề xuất, không tự ghi, vì đoán sai thì nút hiện nhãn "Đồng ý duyệt" mà hồ sơ chạy vào
+   * nhánh từ chối, không lỗi và không cảnh báo.
+   */
+  acceptSuggestion(row: ReconcileRow, actionCode: string | null): void {
+    if (!actionCode || !row.outcome) return;
+    this.keywordPending.set(true);
+    this.store.addOutcomeKeyword(actionCode, row.outcome, this.actor()).subscribe({
+      next: () => {
+        this.message.success(`Từ khoá ${row.outcome} nay thuộc nút ${actionCode}.`);
+        this.keywordPending.set(false);
+        this.refreshDerived();
+      },
+      error: (error) => {
+        this.keywordPending.set(false);
+        this.showError('Không gán được từ khoá cho nút.', error);
+      },
+    });
+  }
+
   setSimulation<K extends keyof SimulationContext>(key: K, value: SimulationContext[K]): void {
     this.simulation.update((item) => ({ ...item, [key]: value }));
     if (key === 'processCode') {
@@ -397,13 +457,14 @@ export class ActionStudioPage implements OnInit {
   statusColor(status: ReconcileRow['status']): string {
     return ({ OK: 'success', GENERIC_POLICY: 'processing', MISSING_FORM: 'warning', MISSING_POLICY: 'error',
       UNMAPPED_BRANCH: 'default', ORPHAN_POLICY: 'error', ROLE_MISMATCH: 'warning', CONFLICT: 'error',
-      INVALID_TARGET: 'error' })[status];
+      INVALID_TARGET: 'error', BINDING_FIELD_MISSING: 'error', ORPHAN_BINDING: 'warning' })[status];
   }
 
   statusText(status: ReconcileRow['status']): string {
     return ({ OK: 'Đã khớp', GENERIC_POLICY: 'Luật chung', MISSING_FORM: 'Thiếu biểu mẫu',
       MISSING_POLICY: 'Thiếu luật', UNMAPPED_BRANCH: 'Chưa ánh xạ', ORPHAN_POLICY: 'Luật mồ côi',
-      ROLE_MISMATCH: 'Lệch vai trò', CONFLICT: 'Xung đột', INVALID_TARGET: 'Đích không hợp lệ' })[status];
+      ROLE_MISMATCH: 'Lệch vai trò', CONFLICT: 'Xung đột', INVALID_TARGET: 'Đích không hợp lệ',
+      BINDING_FIELD_MISSING: 'Biến trỏ trường đã mất', ORPHAN_BINDING: 'Quy tắc biến mồ côi' })[status];
   }
 
   private refreshDerived(): void {

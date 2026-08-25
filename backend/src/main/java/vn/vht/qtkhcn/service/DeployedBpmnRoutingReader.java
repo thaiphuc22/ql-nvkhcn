@@ -18,6 +18,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
+import vn.vht.qtkhcn.camunda.BpmnFormReference;
 import vn.vht.qtkhcn.domain.ProcessDefinitionCatalog;
 import vn.vht.qtkhcn.domain.ProcessDefinitionVersion;
 import vn.vht.qtkhcn.repository.ProcessDefinitionCatalogRepository;
@@ -42,12 +43,21 @@ public class DeployedBpmnRoutingReader {
     private static final String BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL";
     private final ProcessDefinitionCatalogRepository catalogRepository;
     private final ProcessDefinitionVersionRepository versionRepository;
+    private final OutcomeKeywordCatalog outcomeKeywords;
     private final Map<Long, ProcessRoutingResponse> cache = new ConcurrentHashMap<>();
 
     public DeployedBpmnRoutingReader(ProcessDefinitionCatalogRepository catalogRepository,
-            ProcessDefinitionVersionRepository versionRepository) {
+            ProcessDefinitionVersionRepository versionRepository,
+            OutcomeKeywordCatalog outcomeKeywords) {
         this.catalogRepository = catalogRepository;
         this.versionRepository = versionRepository;
+        this.outcomeKeywords = outcomeKeywords;
+    }
+
+    /** Chỉ dùng bảng từ khoá mặc định — cho unit test không dựng CSDL. */
+    DeployedBpmnRoutingReader(ProcessDefinitionCatalogRepository catalogRepository,
+            ProcessDefinitionVersionRepository versionRepository) {
+        this(catalogRepository, versionRepository, new OutcomeKeywordCatalog());
     }
 
     public List<ProcessRoutingResponse> processes() {
@@ -115,7 +125,7 @@ public class DeployedBpmnRoutingReader {
                     .map(code -> actionBranch(code, forwardTarget)).toList();
             return new ProcessStepResponse(taskId, displayName(task),
                     descendantAttribute(task, "assignmentDefinition", "candidateGroups"),
-                    descendantAttribute(task, "formDefinition", "formKey"), actionBranches);
+                    formKey(task), actionBranches);
         }
         List<RouteBranchResponse> routes = new ArrayList<>();
         for (Element flow : flows) {
@@ -126,7 +136,7 @@ public class DeployedBpmnRoutingReader {
             } else routes.add(branch(flow, taskId, nodes, taskOrder, false));
         }
         return new ProcessStepResponse(taskId, displayName(task), descendantAttribute(task, "assignmentDefinition", "candidateGroups"),
-                descendantAttribute(task, "formDefinition", "formKey"), routes);
+                formKey(task), routes);
     }
 
     /**
@@ -195,7 +205,9 @@ public class DeployedBpmnRoutingReader {
                 .ifPresent(step -> step.branches().stream()
                         .filter(branch -> branch.variable() != null)
                         .forEach(branch -> {
-                            String actionCode = BpmnOutcomeCodes.actionCode(branch.outcome());
+                            // Từ điển CHỈ để nhận diện nhánh này thuộc nút nào. Giá trị gửi đi ngay
+                            // dưới vẫn bốc nguyên văn từ bản vẽ, không lấy từ từ điển.
+                            String actionCode = outcomeKeywords.actionCode(branch.outcome());
                             // putIfAbsent: hai nhánh cùng ánh xạ về một action (vd "dat" và "dong_y")
                             // thì lấy nhánh vẽ trước, không âm thầm ghi đè bằng nhánh sau.
                             if (actionCode != null) {
@@ -223,6 +235,15 @@ public class DeployedBpmnRoutingReader {
                 : ((Element) root).getElementsByTagNameNS("*", localName);
         for (int i = 0; i < nodes.getLength(); i++) result.add((Element) nodes.item(i));
         return result;
+    }
+
+    /**
+     * Không đọc thẳng attribute {@code formKey} nữa: form khai trên Camunda rồi gắn vào task sinh ra
+     * {@code formId}. Xem {@link BpmnFormReference}.
+     */
+    private static String formKey(Element task) {
+        List<Element> matches = elements(task, "formDefinition");
+        return matches.isEmpty() ? null : BpmnFormReference.of(matches.get(0)).formKey();
     }
 
     private static String descendantAttribute(Element parent, String name, String attribute) {
