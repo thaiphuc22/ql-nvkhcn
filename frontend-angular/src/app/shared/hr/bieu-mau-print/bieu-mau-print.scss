@@ -1,0 +1,71 @@
+/* Chỉ có tác dụng khi in — `.hr-print-only` bị ẩn trên màn hình bởi src/styles/hr-print.scss. */
+
+@media print {
+  .pd-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 16pt;
+    text-align: center;
+    font-size: 10pt;
+  }
+
+  .pd-org,
+  .pd-quochieu {
+    flex: 1 1 0;
+  }
+
+  /* `strong` là inline — không cho xuống dòng thì quốc hiệu và tiêu ngữ dính liền nhau. */
+  .pd-org strong,
+  .pd-quochieu strong {
+    display: block;
+  }
+
+  .pd-quochieu > div {
+    border-bottom: 1px solid #000;
+    display: inline-block;
+    padding-bottom: 2pt;
+  }
+
+  .pd-title {
+    margin: 18pt 0 4pt;
+    font-size: 15pt;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .pd-sub {
+    margin: 0 0 12pt;
+    text-align: center;
+    font-style: italic;
+    font-size: 11pt;
+  }
+
+  .pd-meta {
+    margin-bottom: 10pt;
+
+    div {
+      margin-bottom: 2pt;
+    }
+  }
+
+  .pd-sign {
+    display: flex;
+    justify-content: space-between;
+    gap: 24pt;
+    margin-top: 24pt;
+    break-inside: avoid;
+  }
+
+  .pd-sign__col {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2pt;
+    text-align: center;
+    font-size: 11pt;
+  }
+
+  .pd-sign__name {
+    margin-top: 48pt;
+  }
+}

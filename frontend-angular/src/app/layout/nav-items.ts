@@ -58,6 +58,23 @@ export const NAV_ITEMS: NavItem[] = [
     ],
   },
   {
+    key: 'hr-nhiem-vu',
+    app: 'hrtools',
+    label: 'Quản lý nhiệm vụ',
+    icon: 'project',
+    children: [
+      { key: 'hr-danh-muc-nhiem-vu', label: 'Danh mục nhiệm vụ', route: '/hr/nhiem-vu' },
+      { key: 'hr-khai-bao-nhiem-vu', label: 'Khai báo nhiệm vụ', route: '/hr/khai-bao-nhiem-vu' },
+    ],
+  },
+  {
+    key: 'hr-nhan-su',
+    app: 'hrtools',
+    label: 'Quản lý nhân sự',
+    icon: 'team',
+    children: [{ key: 'hr-danh-sach-nhan-su', label: 'Danh sách nhân sự', route: '/hr/nhan-su' }],
+  },
+  {
     key: 'ph2',
     app: 'he-thong',
     label: 'Phân quyền & Xác thực',
@@ -96,6 +113,9 @@ export const SECTION_TITLE_BY_ROUTE: Record<string, string> = {
   '/giam-sat': 'Giám sát tiến trình',
   '/tich-hop': 'Tích hợp',
   '/nhat-ky': 'Nhật ký',
+  '/hr/nhiem-vu': 'Quản lý nhiệm vụ',
+  '/hr/khai-bao-nhiem-vu': 'Quản lý nhiệm vụ',
+  '/hr/nhan-su': 'Quản lý nhân sự',
   '/phan-he/PH2/co-cau-to-chuc': 'Quản trị đơn vị',
   '/phan-he/PH2/nguoi-dung': 'Quản trị người dùng',
   '/phan-he/PH2/phan-quyen': 'Phân quyền',

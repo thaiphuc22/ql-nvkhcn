@@ -1,0 +1,77 @@
+:host {
+  display: block;
+  margin-bottom: var(--vht-space-16);
+}
+
+.hr-as {
+  padding: var(--vht-space-16) var(--vht-space-20);
+  border-radius: var(--vht-radius-12);
+  background: var(--vht-surface);
+  box-shadow: var(--vht-shadow-sm);
+}
+
+.hr-as__head {
+  display: flex;
+  align-items: center;
+  gap: var(--vht-space-8);
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--vht-ink);
+  font: var(--vht-font-subtitle);
+  cursor: pointer;
+}
+
+.hr-as__caret {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--vht-ink-3);
+}
+
+.hr-as__body {
+  padding-top: var(--vht-space-16);
+}
+
+.hr-as.is-collapsed .hr-as__body {
+  display: none;
+}
+
+.hr-as__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--vht-space-16);
+}
+
+@media (max-width: 1100px) {
+  .hr-as__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .hr-as__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.hr-as__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--vht-space-8);
+  margin-top: var(--vht-space-16);
+}
+
+/* Nhãn + ô nhập trong lưới — trang gọi chỉ cần bọc mỗi ô lọc trong `<label class="hr-field">`. */
+:host ::ng-deep .hr-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+
+  > span {
+    font: var(--vht-font-label);
+    letter-spacing: var(--vht-tracking-label);
+    color: var(--vht-ink-2);
+  }
+}

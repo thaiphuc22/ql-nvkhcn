@@ -1,0 +1,240 @@
+<hr-page-card tieuDe="Danh sách nhân sự" moTa="Nhân sự tham gia nhiệm vụ và nội dung công việc được phân công (BM1).">
+  <div actions>
+    <button nz-button (click)="inDanhSach()"><nz-icon nzType="printer" /> In</button>
+    <button nz-button (click)="xuatExcel()"><nz-icon nzType="file-excel" /> Xuất Excel</button>
+    <button nz-button (click)="moImport()"><nz-icon nzType="upload" /> Nhập từ file</button>
+    <button nz-button nzType="primary" (click)="themMoi()"><nz-icon nzType="plus" /> Thêm mới</button>
+  </div>
+
+  <div class="hr-stats hr-screen-only">
+    <div class="hr-stat"><small>Tổng số dòng phân công</small><strong>{{ tatCa().length }}</strong></div>
+    <div class="hr-stat"><small>Đang chờ duyệt</small><strong>{{ soChoDuyet() }}</strong></div>
+    <div class="hr-stat" [class.is-canhbao]="soVuot() > 0">
+      <small>Nhân sự vượt 100% tỷ lệ dự kiến</small><strong>{{ soVuot() }}</strong>
+    </div>
+  </div>
+
+  <div class="hr-filters hr-screen-only">
+    @if (soDaChon() > 0) {
+      <div class="hr-filters__spacer hr-bulk">
+        <span>Đã chọn {{ soDaChon() }} dòng:</span>
+        <button nz-button nzSize="small" (click)="trinhDuyet()"><nz-icon nzType="send" /> Trình duyệt</button>
+        <button nz-button nzSize="small" class="hr-ok" (click)="duyet()"><nz-icon nzType="check" /> Duyệt</button>
+        <button nz-button nzSize="small" nzDanger (click)="moTuChoi()"><nz-icon nzType="stop" /> Từ chối</button>
+      </div>
+    }
+    <nz-select
+      class="hr-filters__select"
+      nzAllowClear
+      nzShowSearch
+      nzPlaceHolder="Nhiệm vụ"
+      [ngModel]="nhiemVuFilter()"
+      (ngModelChange)="locNhiemVu($event)"
+    >
+      @for (o of nhiemVuOptions(); track o.value) { <nz-option [nzValue]="o.value" [nzLabel]="o.label" /> }
+    </nz-select>
+    <nz-select
+      class="hr-filters__select"
+      nzAllowClear
+      nzPlaceHolder="Trạng thái"
+      [ngModel]="trangThaiFilter()"
+      (ngModelChange)="locTrangThai($event)"
+    >
+      @for (o of trangThaiOptions; track o.value) { <nz-option [nzValue]="o.value" [nzLabel]="o.label" /> }
+    </nz-select>
+    <nz-input-group nzPrefixIcon="search" class="hr-filters__search">
+      <input nz-input placeholder="Tìm theo mã NV, họ tên, đơn vị..." [ngModel]="tuKhoa()" (ngModelChange)="timKiem($event)" />
+    </nz-input-group>
+  </div>
+
+  <div class="hr-screen-only">
+    <nz-table
+      #table
+      class="hr-table"
+      [nzData]="pagedRows()"
+      [nzFrontPagination]="false"
+      [nzShowPagination]="false"
+      nzTableLayout="fixed"
+      [nzScroll]="{ x: '1560px' }"
+      nzNoResult="Không có nhân sự khớp điều kiện lọc."
+    >
+      <thead>
+        <tr>
+          <th nzWidth="48px">
+            <label
+              nz-checkbox
+              [ngModel]="soDaChon() > 0 && soDaChon() === pagedRows().length"
+              [nzIndeterminate]="soDaChon() > 0 && soDaChon() < pagedRows().length"
+              (ngModelChange)="tichTatCa($event)"
+            ></label>
+          </th>
+          <th nzWidth="64px">STT</th>
+          <th nzWidth="100px">Thao tác</th>
+          <th nzWidth="110px">Mã NV</th>
+          <th nzWidth="190px">Họ và tên</th>
+          <th nzWidth="180px">Đơn vị</th>
+          <th nzWidth="150px">Mã nhiệm vụ</th>
+          <th nzWidth="160px">Vai trò tham gia</th>
+          <th nzWidth="240px">Nội dung công việc tham gia</th>
+          <th nzWidth="140px">Tỷ lệ dự kiến</th>
+          <th nzWidth="200px">Thời gian tham gia</th>
+          <th nzWidth="130px">Trạng thái</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of table.data; track row.id; let i = $index) {
+          <tr [class.hr-row-canhbao]="laVuot(row)">
+            <td><label nz-checkbox [ngModel]="daTich(row.id)" (ngModelChange)="toggle(row)"></label></td>
+            <td>{{ stt(i) }}</td>
+            <td class="hr-actions">
+              <button nz-button nzType="text" nzSize="small" (click)="sua(row)" aria-label="Sửa phân công">
+                <nz-icon nzType="edit" />
+              </button>
+              <button
+                nz-button
+                nzType="text"
+                nzSize="small"
+                nzDanger
+                nz-popconfirm
+                nzPopconfirmTitle="Xoá dòng phân công này?"
+                (nzOnConfirm)="xoa(row)"
+                aria-label="Xoá phân công"
+              >
+                <nz-icon nzType="delete" />
+              </button>
+            </td>
+            <td><code>{{ row.maNhanVien }}</code></td>
+            <td class="hr-ellipsis" [title]="row.hoTen">{{ row.hoTen }}<br /><small class="hr-muted">{{ row.email }}</small></td>
+            <td class="hr-ellipsis">{{ row.donVi }}</td>
+            <td><a class="hr-code" (click)="moNhiemVu(row.nhiemVuId)">{{ row.nhiemVuId }}</a></td>
+            <td class="hr-ellipsis">{{ row.vaiTroThamGia }}</td>
+            <td class="hr-ellipsis" [title]="tenNoiDung(row.noiDungCongViecIds)">{{ tenNoiDung(row.noiDungCongViecIds) }}</td>
+            <td>
+              <!-- Bỏ trống là dạng dữ liệu ĐÚNG theo BM1 — hiện `—` chứ không phải 0%. -->
+              {{ row.tyLePhanBo !== undefined ? row.tyLePhanBo + '%' : '—' }}
+              @if (laVuot(row)) {
+                <div class="hr-canhbao">
+                  <nz-icon nzType="warning" /> Tổng {{ tongPhanBoCua(row) }}% trong kỳ
+                </div>
+              }
+            </td>
+            <td>{{ row.tuNgay }} → {{ row.denNgay }}</td>
+            <td><hr-trang-thai-tag [nhan]="trangThaiLabel[row.trangThaiDuyet]" [loai]="trangThaiMau[row.trangThaiDuyet]" /></td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <hr-table-footer
+      [total]="rows().length"
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize()"
+      (pageIndexChange)="pageIndex.set($event)"
+      (pageSizeChange)="pageSize.set($event)"
+    />
+  </div>
+
+  <!-- Bản in: dùng CHÍNH tập dòng đang lọc, nên in ra đúng cái người dùng đang nhìn. -->
+  <hr-bieu-mau-print
+    tenBieuMau="Danh sách nhân sự tham gia nhiệm vụ"
+    moTa="BM.06 — kèm nội dung công việc tham gia"
+    [cot]="cotIn"
+    [dong]="dongIn()"
+  />
+</hr-page-card>
+
+<!-- ------------------------------------------------------------------ import -->
+<nz-modal
+  [nzVisible]="importMo()"
+  nzTitle="Nhập nhân sự từ file"
+  [nzWidth]="880"
+  nzCancelText="Đóng"
+  [nzOkText]="'Nhập ' + soDongHopLe() + ' dòng hợp lệ'"
+  [nzOkDisabled]="soDongHopLe() === 0"
+  (nzOnCancel)="importMo.set(false)"
+  (nzOnOk)="nhapDuLieu()"
+>
+  <div *nzModalContent class="hr-import">
+    <div class="hr-import__head">
+      <button nz-button (click)="taiFileMau()"><nz-icon nzType="download" /> Tải file mẫu (.csv)</button>
+      <nz-upload [nzBeforeUpload]="beforeUpload" [nzShowUploadList]="false" nzAccept=".csv,text/csv">
+        <button nz-button nzType="primary"><nz-icon nzType="upload" /> Chọn file</button>
+      </nz-upload>
+      @if (importTenFile()) { <span class="hr-muted">{{ importTenFile() }}</span> }
+    </div>
+
+    @if (importLoiDoc()) {
+      <ul class="hr-form__errors"><li>{{ importLoiDoc() }}</li></ul>
+    }
+
+    @if (importPreview().length) {
+      <p class="hr-import__summary">
+        Đọc được <b>{{ importPreview().length }}</b> dòng —
+        <b class="hr-ok-text">{{ soDongHopLe() }} hợp lệ</b>,
+        <b class="hr-err-text">{{ soDongLoi() }} lỗi</b>.
+        Chỉ dòng hợp lệ được nhập; dòng lỗi giữ nguyên trong file để bạn sửa và nhập lại.
+      </p>
+
+      <div class="hr-import__tablewrap">
+        <table class="hr-import__table">
+          <thead>
+            <tr>
+              <th>Dòng</th>
+              <th>Mã NV</th>
+              <th>Nhiệm vụ</th>
+              <th>Vai trò</th>
+              <th>Tỷ lệ</th>
+              <th>Kết quả kiểm tra</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of importPreview(); track p.soDong) {
+              <tr [class.is-loi]="!p.hopLe">
+                <td>{{ p.soDong }}</td>
+                <td>{{ p.raw.maNhanVien || '—' }}</td>
+                <td>{{ p.raw.nhiemVuId || '—' }}</td>
+                <td>{{ p.raw.vaiTroThamGia || '—' }}</td>
+                <td>{{ p.raw.tyLePhanBo || '—' }}</td>
+                <td>
+                  @if (p.hopLe) {
+                    <span class="hr-ok-text"><nz-icon nzType="check" /> Hợp lệ</span>
+                  } @else {
+                    <ul class="hr-import__errs">
+                      @for (m of p.loi; track m) { <li>{{ m }}</li> }
+                    </ul>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</nz-modal>
+
+<!-- ---------------------------------------------------------------- từ chối -->
+<nz-modal
+  [nzVisible]="tuChoiMo()"
+  nzTitle="Từ chối phân công"
+  [nzWidth]="520"
+  nzOkText="Từ chối"
+  nzCancelText="Huỷ"
+  [nzOkDanger]="true"
+  [nzOkDisabled]="!tuChoiLyDo().trim()"
+  (nzOnCancel)="tuChoiMo.set(false)"
+  (nzOnOk)="xacNhanTuChoi()"
+>
+  <div *nzModalContent class="hr-form">
+    <label class="hr-field">
+      <span>Lý do từ chối <b>*</b></span>
+      <textarea
+        nz-input
+        rows="3"
+        placeholder="Lý do được ghi vào lịch sử của từng dòng bị từ chối."
+        [ngModel]="tuChoiLyDo()"
+        (ngModelChange)="tuChoiLyDo.set($event)"
+      ></textarea>
+    </label>
+  </div>
+</nz-modal>

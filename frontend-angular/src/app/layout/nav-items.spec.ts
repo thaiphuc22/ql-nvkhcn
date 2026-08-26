@@ -10,6 +10,10 @@ describe('navItemsForApp', () => {
     expect(navItemsForApp('he-thong').map((item) => item.key)).toEqual(['ph2', 'ph3']);
   });
 
+  it('gives HR Tools its own two groups', () => {
+    expect(navItemsForApp('hrtools').map((item) => item.key)).toEqual(['hr-nhiem-vu', 'hr-nhan-su']);
+  });
+
   it('fails closed before an app is selected', () => {
     expect(navItemsForApp(null)).toEqual([]);
   });

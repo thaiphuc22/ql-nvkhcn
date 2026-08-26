@@ -1,5 +1,123 @@
 # Delivery State
 
+> **2026-08-26 (muộn hơn trong ngày) — HR TOOLS: HIỆU CHỈNH ĐỢT 1 THEO TÀI LIỆU KHÁCH — DONE, BUILD
+> GREEN, ĐÃ CHẠY THỬ THẬT (owner Claude).** Bước 1 của
+> `docs/plan/hr-tools-ke-hoach-thi-cong-2026-08-26.md` (§13), nội dung ở §3. Vẫn là **chuyển hướng theo
+> chỉ đạo trực tiếp của người dùng**; foundations vẫn 1/6, RD02.02 v3 chưa đụng tới.
+>
+> **Việc chính là ĐỔI THỰC THỂ, không phải đổi nhãn.** Bộ tài liệu khách (`docs/hr_tool/`, BM5) cho thấy
+> `DeTai` mà đợt 1 dựng **chính là dòng `PHÂN LOẠI = Chính` của BM5**, tức là *nhiệm vụ*; còn đề tài chỉ
+> là **cặp trường tham chiếu nullable** trên nó. `decisions.md` → **P1 đã LOCKED** theo chiều đó và nay
+> ghi rõ **nợ đổi tên ĐÃ TRẢ**:
+> · `core/models/hr/de-tai.ts` → `nhiem-vu.ts` (`DeTai` → `NhiemVu` HR); `de-tai.service.ts` →
+>   `nhiem-vu.service.ts`; `shared/hr/de-tai-form-modal/` → `nhiem-vu-form-modal/`;
+>   `pages/hr-de-tai-{list,detail}/` → `pages/hr-nhiem-vu-{list,detail}/`.
+> · Route `/hr/de-tai` → `/hr/nhiem-vu`, `/hr/khai-bao-de-tai` → `/hr/khai-bao-nhiem-vu`; `nav-items.ts`,
+>   `app-registry.ts` (`defaultRoute` + mô tả tile) và 2 spec khoá chúng đã cập nhật.
+> · `NhanSuDeTai` → `NhanSuNhiemVu`, `deTaiId` → `nhiemVuId`, `vaiTroTrongDeTai` → `vaiTroThamGia`.
+> · **Không còn ký hiệu `DeTai` nào** trong code HR — `maDeTai`/`tenDeTai` chỉ còn là trường tham chiếu.
+>
+> **Ba thực thể mới** (đợt 2 ăn thẳng vào): `NoiDungCongViec` (dòng `Thành phần` của BM5 — có ĐV phân bổ
+> và CPNC phê duyệt RIÊNG; đây mới là nơi chấm công gán ngày vào), `VaiTroNhiemVu` (PM/PA theo nhiệm vụ,
+> tách khỏi chức danh HRM, kèm hàm `kiemTraVaiTro` soát luật *1 PM + 1 PA chủ trì + mỗi ĐV phân bổ 1 PA*),
+> và `don-vi.ts` (cây đơn vị 5 cấp, **tên lấy nguyên từ sheet `List` của khách, không bịa**, kèm hàm tách
+> mã đơn vị từ phải sang vì tên đơn vị có chứa dấu gạch nối).
+>
+> **`tyLePhanBo` bị hạ cấp có chủ ý.** BM1 chỉ có 7 cột và **không có cột tỷ lệ %** — trường này là sản
+> phẩm của bản thiết kế Figma, không phải luật của khách. Nay là `tyLePhanBo?: number`, nhãn *"Tỷ lệ dự
+> kiến (%) — tham khảo"*, form không còn điền sẵn 20%, import chấp nhận ô trống, bảng hiện `—` chứ không
+> `0%`. Kiểm tra ≤ 100% giữ nguyên (không sai, chỉ là không bắt buộc). Ràng buộc **thật** thay chỗ nó:
+> `noiDungCongViecIds` — BM1 bắt buộc. Q4 gửi khách còn treo; hạ cấp thì đảo ngược được, xoá thì không.
+>
+> **Ba luật nghiệp vụ của khách đã cài và đã nhìn thấy chạy**: (a) nhiệm vụ nguồn **Bảo hành không lập dự
+> toán** ⇒ cột "Nguồn đã lập dự toán" hiện **`—`, không phải `0 đ`** (`0` đọc thành *hết nguồn*);
+> (b) `tongDuToan ≠ chiPhiNhanCongPheDuyet` — seed dùng số thật của BM5 (64,78 tỷ vs 23,04 tỷ) để cặp này
+> không bị gộp lại; (c) thiếu PA của một đơn vị phân bổ thì tab Vai trò nêu đích danh đơn vị đó.
+>
+> **Verify**: `npx tsc -b --noEmit --force` sạch · `npm run build` **GREEN** · `npm run test` **252/262,
+> đúng 10 fail có sẵn** (`nav-items.spec.ts` 2 + `ho-so-detail.spec.ts` 8), không phát sinh mới.
+> **Chạy thật `ng serve` + Playwright, `admin@example.com`**: fail-closed guard đẩy `/hr/nhiem-vu` về đăng
+> nhập rồi `/chon-ung-dung`; danh mục hiện 7 nhiệm vụ với `Mã đề tài = —` đúng cho 3 nhiệm vụ ngoài KHCN;
+> chi tiết `NV-2024-001` có tổng CPNC 3 nội dung **khớp đến từng đồng** với CPNC nhiệm vụ; `PO-92166` dòng
+> Bảo hành ra `—`; màn nhân sự vẫn đếm đúng 1 người vượt 100% và hiện `—` cho dòng bỏ trống tỷ lệ. Hồi quy
+> `/nhiem-vu` (shell cũ): layout không vỡ.
+>
+> **Lệch có chủ ý so với thiết kế**: popup khai báo nhiệm vụ rộng **720px** thay vì 520px của khuôn DMDC —
+> BM5 có 18 trường, nhồi vào 520px thì cặp `Tổng dự toán` / `CPNC phê duyệt` không nằm cạnh nhau.
+>
+> **`decisions.md` cập nhật cùng lúc**: P1 ghi nợ đã trả; thêm **P3 (ĐỀ XUẤT, CHƯA CÀI ĐẶT)** — CPNC
+> pro-rata **13 khoản mục** với mẫu số là *công tính lương của từng người* + **quy tắc công thừa** dồn vào
+> "Nhiệm vụ khác / Chi phí quản lý"; thêm mục **Nợ kỹ thuật** ghi việc kho mẫu thông báo sẽ có 2 nguồn.
+>
+> **NGOÀI PHẠM VI, đừng tưởng đã có**: màn Danh mục (bước 1.5), kỳ + import BM0, chấm công, bảng lương,
+> `cpnc.service.ts`, báo cáo/dashboard, cảnh báo/thông báo, VOffice, backend + migration, nối `maDeTai`
+> sang `nhiem_vu` thật. Vẫn **mock data, không backend**.
+
+
+> **2026-08-26 — HR TOOLS ĐỢT 1 (khung phân hệ + Đề tài + Nhân sự) — CODE DONE, ĐÃ CHẠY THỬ TRÊN
+> `ng serve` (owner Claude).** **CHUYỂN HƯỚNG THEO CHỈ ĐẠO TRỰC TIẾP CỦA NGƯỜI DÙNG** — đúng tiền lệ
+> entry 2026-07-30: foundations vẫn 1/6 và `active-task.md` trước đó là RD02.02 v3, việc này KHÔNG
+> phải feature work tự phát. Thi công theo `docs/plan/hr-tools-chi-phi-nhan-cong-dot-1-2026-08-26.md`.
+>
+> **Sản phẩm**: phân hệ thứ tư `hrtools` ("Quản lý chi phí nhân công") — **mock data, không backend**,
+> 6 route dưới `/hr/...`, shell riêng dựng theo design system VHT. Ba trục dữ liệu của phân hệ là đề
+> tài (nơi tiêu tiền) / nhân sự (ai tham gia, tỷ lệ phân bổ) / thời gian-tiền; đợt 1 làm hai trục đầu.
+>
+> **Token áp TOÀN APP** (`src/styles/tokens.scss` + `src/theme.less`): ramp brand/coolgray/semantic,
+> thang spacing–radius–elevation, 8 lớp typography. Tên biến `--vht-*` cũ giữ nguyên làm alias trỏ vào
+> ramp mới — đổi tên là mọi `.scss` trang cũ hỏng im lặng. Đã hồi quy `/nhiem-vu`, `/ma-tran-phe-duyet`:
+> layout cũ không vỡ. **Bẫy đã ghi vào `decisions.md` → P2: phần CHỮ trong file DS bị lệch (ghi cam
+> #F95E00), phải lấy theo màu render (#EE0033 đỏ).**
+>
+> **Shell riêng, không sửa shell chung**: chrome thiết kế mới (topbar tối full-width + sider TRẮNG pill
+> đỏ) ngược cấu trúc `layout/shell.ts` (sider tối + header sáng). Sửa shell chung là đổi giao diện mọi
+> màn đang demo — phần đắt và dễ vỡ nhất. `layout/hr-shell/` đọc `navItemsForApp()`, không hardcode
+> menu, không phụ thuộc gì vào HR Tools; chuyển cả app sang thiết kế mới sau này = đổi một dòng ở
+> `app.routes.ts`. Route `hr` đặt TRƯỚC route `''` và dùng `loadComponent` (giữ shell mới ngoài bundle
+> khởi động của 3 phân hệ kia).
+>
+> **Hai điểm nghiệp vụ làm thật, không phải CRUD trang trí:**
+> · **Ràng buộc PBNC** — tổng `tyLePhanBo` của một người trên các đề tài **chồng lấn kỳ** không được
+>   vượt 100%. Một cách tính duy nhất (`tinhTongPhanBo` ở `core/models/hr/nhan-su.ts`) dùng chung cho
+>   màn danh sách, màn form và luồng import. Seed CỐ Ý có NV004 ở 120% để cảnh báo có dữ liệu chứng
+>   minh ngay khi mở màn. Form chặn Lưu khi vượt (đã chạy thử: báo "đạt 140% (> 100%)").
+> · **Import có preview** — `phanTichFileImport` chấm điểm TỪNG dòng (thiếu mã NV, email sai, đề tài
+>   không tồn tại, trùng trong file, trùng với dữ liệu đã có, vượt phân bổ **cộng dồn trong nội bộ
+>   file**) rồi `importRows` mới ghi, và chỉ ghi dòng hợp lệ. Không im lặng bỏ dòng lỗi.
+>
+> **Hai spec có bẫy sẵn đã cập nhật cùng lúc** như kế hoạch cảnh báo: `app.routes.spec.ts` (nay duyệt
+> MỌI route có `children` và đối chiếu `ALL_APP_CODES` thay vì 3 mã chép tay — shell riêng làm bài test
+> cũ soi hụt) và `nav-items.spec.ts`. Phát sinh thêm một spec thứ ba mà kế hoạch không lường:
+> `auth.service.spec.ts > gives an admin all registered apps` chép tay danh sách 3 app — nay so với
+> `ALL_APP_CODES`.
+>
+> **Dọn bản sao**: `nativeUploadFile()` chuyển từ `pages/process-catalog/process-catalog.ts` sang
+> `core/utils/upload-file.ts` (hai màn dùng chung: nhập BPMN và nhập nhân sự); tên cũ vẫn re-export nên
+> spec cũ không phải sửa.
+>
+> **Verify**: `tsc -b --noEmit` sạch · `ng build` production **GREEN** · `ng test` **250/260, đúng 10
+> fail có sẵn** ở `nav-items.spec.ts` (2) và `ho-so-detail.spec.ts` (8), không phát sinh mới; 8 test mới
+> ở `core/services/hr/nhan-su.service.spec.ts` xanh. **Chạy thử thật trên `ng serve`** (Playwright,
+> 1440×900): `/chon-ung-dung` hiện 4 tile → khai báo đề tài DT-2026-006 → trình duyệt → duyệt bản khai →
+> chi tiết → import file 5 dòng (2 hợp lệ / 3 lỗi, mỗi lỗi nêu đúng nguyên nhân) → nhập 2 dòng → thêm
+> nhân sự qua pop-up cây đơn vị → xuất `.xls` (mở được, có BOM, 12 dòng, tiếng Việt nguyên vẹn) → in
+> (chrome ẩn, ra đúng biểu mẫu hành chính). **Fail-closed đã kiểm**: `pm@example.com` vào thẳng
+> `/hr/de-tai` bị `appChildGuard` đẩy về `/chon-ung-dung`.
+>
+> **Cảnh báo build còn lại (không chặn)**: `bundle initial exceeded maximum budget` — **đã vượt sẵn từ
+> trước** (baseline 28.10 kB over, nay 43.00 kB over do phần global style mới); `hr-shell.scss` vượt
+> ngưỡng 4 kB, cùng loại cảnh báo `action-studio.scss`/`ho-so-detail.scss` đang có.
+>
+> **NGOÀI PHẠM VI đợt này, đừng tưởng đã có**: bảng công, bảng lương, báo cáo CPNC/PBNC, thông báo,
+> trình ký VOffice, backend + migration, nối `maDeTai` vào `nhiem_vu` thật, RBAC thật cho HR Tools
+> (đang dùng entitlement demo phía client theo D19), chuyển các màn cũ sang shell mới. Quan hệ
+> `Đề tài → Nhiệm vụ` mới là **đề xuất P1 chưa khoá** — tab "Nhiệm vụ KHCN" ở màn chi tiết cố tình để
+> rỗng kèm ghi chú thay vì hiện dữ liệu giả.
+>
+> **VIỆC NGOÀI CODE CÒN NỢ**: thu hồi Figma personal access token đã dùng để kéo dữ liệu (Figma →
+> Settings → Security → Revoke). Token đã bị dán dạng chữ thường trong hội thoại nên phải coi là ĐÃ LỘ.
+
+
 > **2026-08-25 — QUY TẮC "TRƯỜNG BIỂU MẪU → BIẾN CAMUNDA" THÀNH DỮ LIỆU + DỌN BẢN SAO TẬP MÃ NÚT
 > — CODE DONE, CHƯA CHẠY THỬ STACK SỐNG (owner Claude, phiên ql-nvkhcn-0a).** Tiếp ngay sau entry
 > bên dưới, cùng ngày, phiên khác. Xử lý khiếm khuyết #3 trong

@@ -81,47 +81,97 @@ engine, shared infrastructure for all RD flows; (2) *Phân hệ Quản lý Nhi�
 business subsystem consuming that engine. Phase 1 (2026) targets RD01, RD02, RD05, RD06,
 RD08, RD10, RD03.6; RD03/RD04 are Phase 2. See `docs/req/scope-2-phanhe.md`.
 
-Current state: frontend mock (mock data, no backend) covering RD01/RD02/RD05 dossier flows
-is built and deployed. Backend + real Camunda integration have not started — see
-`.harness/state/DELIVERY_STATE.md` for exact foundation status before doing any feature work.
+Current state (verified 2026-08-26 against the tree, not from memory): **the backend exists
+and runs** — Spring Boot + Flyway through `V39`, plus two extracted services. Real Camunda
+integration is in place for RD01.01 / RD02.02. Treat any older claim of "no backend yet" as
+stale. Read `.harness/state/DELIVERY_STATE.md` for exact foundation status before feature work.
+
+**Two frontends coexist on purpose** (D17 strangler migration, do not "clean up" either one):
+
+| Path | What it is | Status |
+|---|---|---|
+| `frontend-angular/` | Angular 21 + ng-zorro-antd 21 | **Active development target** — the real client of the backend services |
+| `webapp/` | React 18 + Vite + Ant Design v5 | Legacy mock; still the one CI builds and deploys to GitHub Pages (`.github/workflows/deploy-pages.yml`) |
 
 ## Tech Stack
 
-- **Frontend**: React 18 + TypeScript, Vite, Ant Design v5, React Router v6, Vietnamese
-  locale (`antd/locale/vi_VN`). BPMN authoring: `bpmn-js` + `bpmn-js-properties-panel` +
-  `zeebe-bpmn-moddle`. Forms: `@bpmn-io/form-js` (Camunda Forms rendered in custom UI, not
-  default Tasklist).
+- **Frontend (active)**: Angular 21 + ng-zorro-antd 21, standalone components + signals,
+  Vietnamese locale. Styling: `src/theme.less` (ng-zorro Less variable overrides — the only
+  place theme colors are set) + `src/styles/tokens.scss` (`--vht-*` custom properties for
+  hand-written UI). Tests: **vitest** (`npm run test`), not Karma.
+- **Design system**: `docs/design-system/README.md` is the **official source** for every colour,
+  type size, spacing, radius and shadow — extracted from the customer's Figma on 2026-08-26 and
+  kept in-repo because the Figma access token was revoked afterwards. Read it before writing any
+  UI. Two traps documented there: the Figma file's *written* semantic colour labels are stale
+  (they say orange `#F95E00`; the real brand is red `#EE0033` — trust the rendered values), and
+  the Brand and Danger ramps are deliberately identical, so destructive actions must never be
+  distinguished by colour alone. `docs/design_sample/design-system.md` is the superseded
+  Google-Stitch-derived predecessor — kept only to explain leftover values, not to build from.
+- **Frontend (legacy mock)**: React 18 + TypeScript, Vite, Ant Design v5, React Router v6.
+- **BPMN/Forms** (both frontends): `bpmn-js` + `bpmn-js-properties-panel` + `zeebe-bpmn-moddle`;
+  `@bpmn-io/form-js` (Camunda Forms rendered in custom UI, not default Tasklist).
+- **Backend**: Java 21 + Spring Boot 4.0.7 + Camunda 8.9.12 (`camunda-spring-boot-starter`),
+  PostgreSQL + Flyway, Maven. Three modules, each with its own schema and migrations:
+
+| Module | Port | Migrations |
+|---|---|---|
+| `backend/` (qtkhcn-backend — process/action/eForm admin) | 8090 | `V1`–`V39` |
+| `services/ho-so-service/` (dossiers, hội đồng, my-tasks) | 8093 | 13 |
+| `services/identity-service/` (org, users, roles, permissions) | 8095 | 7 |
+
 - **Workflow engine**: Camunda 8 (Zeebe/Operate/Tasklist/Identity/Optimize) — orchestration
   only; holds correlation/control variables (`maHoSo`, `cap`, ...), never business data.
-- **Backend / DB / Camunda deployment model**: **not yet decided** — see
-  `.harness/state/decisions.md` → "Open decisions blocking Foundation 1". Do not assume a
-  stack; ask before writing backend code.
 
 ## Development Commands
 
 ```bash
-cd webapp
+# Angular frontend (active)
+cd frontend-angular
 npm install
-npm run dev          # Vite dev server, http://localhost:5173
-npm run build         # tsc -b && vite build
-npm run typecheck     # tsc -b --noEmit
+npm start             # ng serve + proxy.conf.json → :4200
+npm run build         # production build
+npm run test          # vitest
+npx tsc -b --noEmit   # typecheck only
+
+# React legacy mock (what GitHub Pages deploys)
+cd webapp && npm install && npm run dev   # Vite, :5173
+
+# Backend (each module separately; Docker/Camunda must be up first)
+cd backend               && mvn spring-boot:run   # :8090
+cd services/ho-so-service && mvn spring-boot:run  # :8093
+cd services/identity-service && mvn spring-boot:run # :8095
+mvn -o test              # offline test run, used in CI (backend-ci.yml, JDK 21)
 ```
 
-Backend commands: none yet (Foundation 1 not started).
+**Local stack gotchas** (these bite every time): start order is Docker → 8090 → 8093 → 4200;
+`frontend-angular/proxy.conf.json` must route every new `/api/...` prefix explicitly or the
+call 404s silently; the 8090↔8093 hop needs matching internal service tokens or you get a bare
+401; and `ng serve` must be restarted after editing the proxy config.
 
 ## Architecture
 
 - **Core domain split**: `NhiemVu` (Mission — one master record per đề tài, whole lifecycle)
   and `HoSo` (Dossier — one row per document package per RD stage) are separate entities in
   a 1–N relationship, never merged. See `docs/req/data-model-NV-vs-HoSo.md` (decision D8 in
-  `.harness/state/decisions.md`) and the existing shapes in `webapp/src/data/nhiemVu.ts` /
-  `dossiers.ts`.
-- **RBAC**: role codes double as Camunda `candidateGroup`s (see `webapp/src/data/roles.ts`);
-  a user may act on a dossier step only if they hold one of that step's `vaiTroCodes` —
-  fail-closed (empty list = admin-only). See decision D9.
+  `.harness/state/decisions.md`). Authoritative shapes now live in
+  `services/ho-so-service/src/main/java/vn/vht/qtkhcn/hoso/domain/{NhiemVu,HoSo}.java`;
+  `frontend-angular/src/app/core/models/{nhiem-vu,ho-so}.ts` are the client-side mirrors, and
+  `webapp/src/data/*.ts` is the legacy mock copy — when the three disagree, the backend wins.
+- **RBAC**: role codes double as Camunda `candidateGroup`s (see
+  `frontend-angular/src/app/core/models/roles.ts`, with assignments served by
+  `services/identity-service`); a user may act on a dossier step only if they hold one of that
+  step's `vaiTroCodes` — fail-closed (empty list = admin-only). See decision D9. Note the
+  permission catalog in identity-service **gates real backend actions**, not just UI visibility:
+  deactivating a permission code cuts the actual right.
 - **Camunda boundary**: business data always lives in the app's own domain DB; Camunda
   process variables are correlation/control only (decision D3). Never add business fields to
   Camunda variables to "save a lookup."
 - **Full research/architecture notes**: `docs/research/` (brainstorm-level, see
   `docs/research/SUMMARY.md`), `docs/arch/` (Camunda design, more concrete), `docs/req/`
   (requirements, RTM, backlog — the source of truth for what's actually committed).
+- **HR Tools business source**: `docs/hr_tool/` — the customer's own BRD, screen spec and BM0–BM5
+  form templates for the **Quản lý chi phí nhân công** subsystem, delivered 2026-08-26. The originals
+  are binary Office files; read `docs/hr_tool/trich-xuat/` instead (markdown, regenerate with
+  `trich-xuat.py`). This folder **outranks the Figma design** on every business point — data model,
+  CPNC formula, statuses, permission matrix, alert thresholds — while `docs/design-system/` still
+  outranks it on everything visual. Start at `docs/hr_tool/README.md`.

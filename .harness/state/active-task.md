@@ -1,5 +1,77 @@
 # Active Task
 
+## ★ HR Tools — hiệu chỉnh đợt 1 theo tài liệu khách (bước 1 của kế hoạch thi công) — 2026-08-26 (owner Claude)
+
+**Status: DONE — typecheck sạch, build GREEN, test không phát sinh fail mới, đã chạy thử thật trên
+`ng serve` + Playwright.**
+
+**Kế hoạch nguồn**: `docs/plan/hr-tools-ke-hoach-thi-cong-2026-08-26.md` — §13 bước 1, nội dung ở §3.
+Đây là bản hợp nhất đang có hiệu lực; ba file kế hoạch HR Tools cũ chỉ còn giá trị tham chiếu
+(`...-dot-1-...md` là hồ sơ as-built của đợt 1 bản cũ).
+
+**Đây vẫn là chuyển hướng theo chỉ đạo trực tiếp của người dùng**, không phải feature work tự phát.
+Foundations vẫn 1/6; task RD02.02 v3 bên dưới CHƯA làm và vẫn còn nguyên giá trị.
+
+### Đã làm — trả nợ §3
+
+| Việc | Kết quả |
+|---|---|
+| `DeTai` → `NhiemVu` (HR) | `core/models/hr/nhiem-vu.ts`; route `/hr/de-tai` → `/hr/nhiem-vu`, `/hr/khai-bao-de-tai` → `/hr/khai-bao-nhiem-vu`; 2 thư mục trang đổi tên; `app.routes.ts` + `nav-items.ts` + `app-registry.ts` + 2 spec |
+| Trường mới trên `NhiemVu` (§3.1) | `maDeTai`/`tenDeTai` **nullable**, `khoi`, `donViPhanBo[]`, `phanLoai`, `phanNguon`, `pmMaNhanVien`, `paMaNhanVien`, `chiPhiNhanCongPheDuyet` (khác `tongDuToan`), `duPhong`, `tinhTrangPhanBo`; `namBatDau/namKetThuc` → `tuNgay/denNgay` (ngày đầy đủ); xoá `linhVuc` |
+| Thực thể mới (§3.3) | `core/models/hr/noi-dung-cong-viec.ts`, `core/models/hr/vai-tro-nhiem-vu.ts` (+ `kiemTraVaiTro`), `core/models/hr/don-vi.ts` (cây 5 cấp, danh sách thật từ sheet `List`) |
+| Hạ cấp `tyLePhanBo` (§3.2) | `tyLePhanBo?: number` + nhãn dùng chung `TY_LE_PHAN_BO_NHAN`; thêm `noiDungCongViecIds: string[]` (BM1 bắt buộc); `NhanSuDeTai` → `NhanSuNhiemVu`, `deTaiId` → `nhiemVuId`, `vaiTroTrongDeTai` → `vaiTroThamGia` |
+| Màn chi tiết | Bỏ tab rỗng "Nhiệm vụ KHCN"; thêm **tab Nội dung công việc** (CRUD + CPNC/dự phòng) và **tab Vai trò PM/PA** (soát luật 1 PM + 1 PA chủ trì + mỗi ĐV phân bổ 1 PA) |
+| Store | `de-tai.service.ts` → `nhiem-vu.service.ts` (giữ luôn store vai trò), thêm `noi-dung-cong-viec.service.ts` |
+| Import CSV | Cột `maDeTai` → `maNhiemVu`; `tyLePhanBo` **để trống là hợp lệ**; file mẫu có 1 dòng bỏ trống tỷ lệ |
+| Test | `nhan-su.service.spec.ts` cập nhật + 2 test mới cho trường tỷ lệ bỏ trống (9 test, xanh) |
+
+### Kiểm chứng đã chạy
+
+- `npx tsc -b --noEmit --force` sạch; `npm run build` GREEN (chỉ còn warning budget/CommonJS có sẵn).
+- `npm run test`: **10 fail — đúng baseline** (`nav-items.spec.ts` 2, `ho-so-detail.spec.ts` 8), không
+  phát sinh fail mới; test HR Tools xanh.
+- Chạy thật `ng serve` + Playwright, tài khoản `admin@example.com`: fail-closed guard đẩy về đăng nhập
+  rồi về `/chon-ung-dung`; `/hr/nhiem-vu` hiện 7 nhiệm vụ, cột **Mã đề tài = `—`** đúng cho 3 nhiệm vụ
+  không thuộc đề tài; chi tiết `NV-2024-001` có tổng CPNC 3 nội dung = 23.043.245.371 đ **khớp** CPNC
+  của nhiệm vụ; tab Vai trò báo đúng *"Đơn vị phân bổ Trung tâm Đảm bảo chất lượng chưa có PA"*;
+  `PO-92166` dòng nguồn Bảo hành có **"Nguồn đã lập dự toán" = `—`, không phải `0 đ`**; màn nhân sự hiện
+  `—` cho dòng bỏ trống tỷ lệ và vẫn đếm 1 người vượt 100%. Hồi quy `/nhiem-vu` (shell cũ): layout không
+  vỡ (HTTP 500 là do backend chưa chạy, không liên quan).
+
+### Đọc trước khi sửa tiếp
+
+1. **`decisions.md` → P1 (LOCKED)**: `DeTai` **không phải** cha của `NhiemVu` (HR) — quan hệ là tham
+   chiếu `maDeTai` nullable. Và `NhiemVu` của HR **khác** `NhiemVu` của `ho-so-service`; không gộp.
+2. **`decisions.md` → P2, mục "BẪY"**: phần chữ trong file design system VHT bị lệch (ghi cam `#F95E00`).
+   Màu đúng lấy theo giá trị render: `brand/50 = #EE0033`. Đừng "sửa lại cho khớp file DS".
+3. **`decisions.md` → P3 (ĐỀ XUẤT)**: công thức CPNC pro-rata 13 khoản + quy tắc công thừa. Khi cài
+   (đợt 4) phải nằm **một chỗ duy nhất** `core/services/hr/cpnc.service.ts`.
+4. **Một cách tính duy nhất cho ràng buộc tỷ lệ**: `tinhTongPhanBo()` ở `core/models/hr/nhan-su.ts`. Ba
+   màn (danh sách / form / import) đều gọi hàm này.
+5. **`tyLePhanBo` là trường THAM KHẢO** — BM1 không có cột này. Q4 gửi khách còn treo; nếu khách chốt bỏ
+   hẳn thì điểm bắt đầu để gỡ là `TY_LE_PHAN_BO_NHAN`.
+6. **Tên biến `--vht-*` cũ là alias, không được xoá** — trang cũ đang dùng, đổi tên hỏng im lặng.
+7. **Thêm phân hệ thứ năm** thì nhớ 3 spec chép tay danh sách app: `app.routes.spec.ts`,
+   `nav-items.spec.ts`, `auth.service.spec.ts`.
+
+### Lệch có chủ ý so với bản thiết kế
+
+- Popup khai báo nhiệm vụ rộng **720px** thay vì 520px của khuôn DMDC: BM5 có 18 trường bắt buộc, nhồi
+  vào 520px thì cặp `Tổng dự toán` / `CPNC phê duyệt` không nằm cạnh nhau — mà đó đúng là cặp số hay bị
+  nhập nhầm thành một.
+
+### Việc kế tiếp (chờ người dùng quyết)
+
+- **Bước 1.5** — màn Danh mục (§5): Đơn vị · Chức danh · Nhân viên · Nguồn kinh phí · Sản phẩm · Thư
+  viện công việc + Ký hiệu công + Nhóm công việc. Đợt 2 cần *Ký hiệu công*, *Sản phẩm*, *Nhóm công việc*
+  mới chạy được, nên không xếp xuống cuối.
+- **Câu hỏi khách còn treo** (§12): Q4 chặn việc chốt `tyLePhanBo` (đã xử lý tạm bằng cách hạ optional);
+  Q2/Q3/Q5/Q8 chặn đợt 2.
+- **Nợ ngoài code, chưa làm**: thu hồi Figma personal access token đã dùng ngày 2026-08-26 (Figma →
+  Settings → Security → Revoke). Token đã lộ trong hội thoại.
+
+---
+
 ## ★ DONE + RUNTIME VERIFIED — Fix "không thấy action nào" trên HS-2026-025 — regression từ refactor Ma trận phân quyền — 2026-07-31 (owner Claude)
 
 **Yêu cầu user:** kiểm tra `http://localhost:4200/ho-so/HS-2026-025` đăng nhập `pm@example.com`,

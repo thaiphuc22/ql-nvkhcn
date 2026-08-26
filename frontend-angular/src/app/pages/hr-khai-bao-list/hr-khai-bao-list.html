@@ -1,0 +1,132 @@
+<hr-advanced-search (lamMoi)="lamMoi()" (timKiem)="timKiem()">
+  <label class="hr-field">
+    <span>Từ khoá</span>
+    <input nz-input placeholder="Mã, tên nhiệm vụ, mã đề tài" [ngModel]="locNhap().tuKhoa" (ngModelChange)="capNhatLoc('tuKhoa', $event)" />
+  </label>
+  <label class="hr-field">
+    <span>Phân loại</span>
+    <nz-select nzAllowClear nzPlaceHolder="Tất cả" [ngModel]="locNhap().phanLoai" (ngModelChange)="capNhatLoc('phanLoai', $event)">
+      @for (o of phanLoaiOptions; track o.value) { <nz-option [nzValue]="o.value" [nzLabel]="o.label" /> }
+    </nz-select>
+  </label>
+  <label class="hr-field">
+    <span>Khối</span>
+    <nz-select nzAllowClear nzPlaceHolder="Tất cả" [ngModel]="locNhap().khoi" (ngModelChange)="capNhatLoc('khoi', $event)">
+      @for (o of khoiOptions; track o) { <nz-option [nzValue]="o" [nzLabel]="o" /> }
+    </nz-select>
+  </label>
+  <label class="hr-field">
+    <span>Trạng thái</span>
+    <nz-select nzAllowClear nzPlaceHolder="Tất cả" [ngModel]="locNhap().trangThai" (ngModelChange)="capNhatLoc('trangThai', $event)">
+      @for (o of trangThaiOptions; track o.value) { <nz-option [nzValue]="o.value" [nzLabel]="o.label" /> }
+    </nz-select>
+  </label>
+  <label class="hr-field">
+    <span>Năm bắt đầu</span>
+    <nz-input-number
+      class="hr-field__full"
+      [ngModel]="locNhap().namBatDau"
+      (ngModelChange)="capNhatLoc('namBatDau', $event)"
+      [nzMin]="2000"
+      [nzMax]="2100"
+      nzPlaceHolder="Tất cả"
+    />
+  </label>
+</hr-advanced-search>
+
+<hr-page-card tieuDe="Khai báo nhiệm vụ" moTa="Bản khai nhiệm vụ của bạn và của đơn vị.">
+  <div actions>
+    <button nz-button [disabled]="soDaChon() === 0" (click)="trinhDuyetHangLoat()">
+      <nz-icon nzType="send" /> Trình duyệt ({{ soDaChon() }})
+    </button>
+    <button nz-button nzType="primary" (click)="moKhaiBao()"><nz-icon nzType="plus" /> Khai báo nhiệm vụ</button>
+  </div>
+
+  <div class="hr-filters">
+    <nz-radio-group class="hr-filters__spacer" [ngModel]="phamVi()" (ngModelChange)="doiPhamVi($event)">
+      <label nz-radio-button nzValue="toi">Bản khai của tôi</label>
+      <label nz-radio-button nzValue="donVi">Của đơn vị</label>
+    </nz-radio-group>
+  </div>
+
+  <nz-table
+    #table
+    class="hr-table"
+    [nzData]="pagedRows()"
+    [nzFrontPagination]="false"
+    [nzShowPagination]="false"
+    nzTableLayout="fixed"
+    [nzScroll]="{ x: '1440px' }"
+    nzNoResult="Chưa có bản khai nào khớp điều kiện."
+  >
+    <thead>
+      <tr>
+        <th nzWidth="48px">
+          <label
+            nz-checkbox
+            [ngModel]="soDaChon() > 0 && soDaChon() === soTrinhDuocTrongTrang()"
+            [nzIndeterminate]="soDaChon() > 0 && soDaChon() < soTrinhDuocTrongTrang()"
+            [nzDisabled]="soTrinhDuocTrongTrang() === 0"
+            (ngModelChange)="tichTatCa($event)"
+          ></label>
+        </th>
+        <th nzWidth="64px">STT</th>
+        <th nzWidth="100px">Thao tác</th>
+        <th nzWidth="140px">Mã nhiệm vụ</th>
+        <th nzWidth="320px">Tên nhiệm vụ</th>
+        <th nzWidth="150px">Phân loại</th>
+        <th nzWidth="170px">Khối</th>
+        <th nzWidth="170px">CPNC phê duyệt</th>
+        <th nzWidth="120px">Thời gian</th>
+        <th nzWidth="120px">Ngày khai</th>
+        <th nzWidth="130px">Trạng thái</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of table.data; track row.maNhiemVu; let i = $index) {
+        <tr>
+          <td>
+            <label
+              nz-checkbox
+              [ngModel]="daTich(row.maNhiemVu)"
+              [nzDisabled]="!trinhDuoc(row)"
+              (ngModelChange)="toggle(row)"
+            ></label>
+          </td>
+          <td>{{ stt(i) }}</td>
+          <td class="hr-actions">
+            <button nz-button nzType="text" nzSize="small" (click)="moSua(row)" [disabled]="!trinhDuoc(row)" aria-label="Sửa bản khai">
+              <nz-icon nzType="edit" />
+            </button>
+            <button nz-button nzType="text" nzSize="small" (click)="moChiTiet(row)" aria-label="Xem chi tiết">
+              <nz-icon nzType="eye" />
+            </button>
+          </td>
+          <td><a class="hr-code" (click)="moChiTiet(row)">{{ row.maNhiemVu }}</a></td>
+          <td class="hr-ellipsis" [title]="row.tenNhiemVu">{{ row.tenNhiemVu }}</td>
+          <td class="hr-ellipsis">{{ phanLoaiLabel[row.phanLoai] }}</td>
+          <td class="hr-ellipsis">{{ row.khoi }}</td>
+          <td>{{ formatTien(row.chiPhiNhanCongPheDuyet) }}</td>
+          <td>{{ khoangThoiGian(row.tuNgay, row.denNgay) }}</td>
+          <td>{{ row.ngayKhaiBao }}</td>
+          <td><hr-trang-thai-tag [nhan]="trangThaiLabel[row.trangThai]" [loai]="trangThaiMau[row.trangThai]" /></td>
+        </tr>
+      }
+    </tbody>
+  </nz-table>
+
+  <hr-table-footer
+    [total]="rows().length"
+    [pageIndex]="pageIndex()"
+    [pageSize]="pageSize()"
+    (pageIndexChange)="pageIndex.set($event)"
+    (pageSizeChange)="pageSize.set($event)"
+  />
+</hr-page-card>
+
+<hr-nhiem-vu-form-modal
+  [visible]="modalMo()"
+  [nhiemVu]="dangSua()"
+  (huy)="modalMo.set(false)"
+  (luu)="luu($event)"
+/>

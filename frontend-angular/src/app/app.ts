@@ -4,6 +4,7 @@ import { NzIconService } from 'ng-zorro-antd/icon';
 import {
   APPROVAL_MATRIX_ICONS,
   EFORM_ICONS,
+  HR_TOOLS_ICONS,
   INTEGRATION_ICONS,
   NAV_ICONS,
   NHIEM_VU_ICONS,
@@ -27,6 +28,7 @@ export class App {
       ...NHIEM_VU_ICONS,
       ...INTEGRATION_ICONS,
       ...PROCESS_CATALOG_ICONS,
+      ...HR_TOOLS_ICONS,
     );
   }
 }

@@ -14,6 +14,50 @@ import { AppListPage } from './pages/app-list/app-list';
 export const routes: Routes = [
   { path: 'dang-nhap', component: LoginPage, canActivate: [loginPageGuard] },
   { path: 'chon-ung-dung', component: AppListPage, canActivate: [authGuard] },
+  // Phân hệ Quản lý chi phí nhân công (HR Tools) dùng SHELL RIÊNG dựng theo design system VHT
+  // (topbar tối full-width + sider trắng) — xem `layout/hr-shell/hr-shell.ts`. Các màn cũ giữ
+  // `Shell` cũ; chuyển cả app sang thiết kế mới sau này chỉ là đổi `component:` ở đây.
+  {
+    path: 'hr',
+    // `loadComponent` chứ không `component:` — shell riêng của HR Tools không cần nằm trong bundle
+    // khởi động của các phân hệ khác. Route cha vẫn có `children` bình thường.
+    loadComponent: () => import('./layout/hr-shell/hr-shell').then((m) => m.HrShell),
+    canActivate: [authGuard],
+    canActivateChild: [appChildGuard],
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'nhiem-vu' },
+      {
+        path: 'nhiem-vu',
+        loadComponent: () => import('./pages/hr-nhiem-vu-list/hr-nhiem-vu-list').then((m) => m.HrNhiemVuListPage),
+        data: { title: 'Danh mục nhiệm vụ', app: 'hrtools' },
+      },
+      {
+        path: 'nhiem-vu/:ma',
+        loadComponent: () => import('./pages/hr-nhiem-vu-detail/hr-nhiem-vu-detail').then((m) => m.HrNhiemVuDetailPage),
+        data: { title: 'Chi tiết nhiệm vụ', app: 'hrtools' },
+      },
+      {
+        path: 'khai-bao-nhiem-vu',
+        loadComponent: () => import('./pages/hr-khai-bao-list/hr-khai-bao-list').then((m) => m.HrKhaiBaoListPage),
+        data: { title: 'Khai báo nhiệm vụ', app: 'hrtools' },
+      },
+      {
+        path: 'nhan-su',
+        loadComponent: () => import('./pages/hr-nhan-su-list/hr-nhan-su-list').then((m) => m.HrNhanSuListPage),
+        data: { title: 'Danh sách nhân sự', app: 'hrtools' },
+      },
+      {
+        path: 'nhan-su/moi',
+        loadComponent: () => import('./pages/hr-nhan-su-form/hr-nhan-su-form').then((m) => m.HrNhanSuFormPage),
+        data: { title: 'Thêm nhân sự vào nhiệm vụ', app: 'hrtools' },
+      },
+      {
+        path: 'nhan-su/:id/sua',
+        loadComponent: () => import('./pages/hr-nhan-su-form/hr-nhan-su-form').then((m) => m.HrNhanSuFormPage),
+        data: { title: 'Sửa phân công nhân sự', app: 'hrtools' },
+      },
+    ],
+  },
   {
     path: '',
     component: Shell,

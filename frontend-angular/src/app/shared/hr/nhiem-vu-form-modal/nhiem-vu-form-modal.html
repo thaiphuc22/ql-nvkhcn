@@ -1,0 +1,176 @@
+<nz-modal
+  [nzVisible]="visible()"
+  [nzTitle]="nhiemVu() ? 'Sửa nhiệm vụ' : 'Khai báo nhiệm vụ'"
+  [nzWidth]="720"
+  nzOkText="Lưu"
+  nzCancelText="Huỷ"
+  (nzOnCancel)="huy.emit()"
+  (nzOnOk)="xacNhan()"
+>
+  <div *nzModalContent class="hr-form">
+    @if (loi().length) {
+      <ul class="hr-form__errors">
+        @for (m of loi(); track m) { <li>{{ m }}</li> }
+      </ul>
+    }
+
+    <div class="hr-form__row">
+      <label class="hr-field">
+        <span>Mã nhiệm vụ <b>*</b></span>
+        <input nz-input [ngModel]="form().maNhiemVu" (ngModelChange)="capNhat('maNhiemVu', $event)" [disabled]="!!nhiemVu()" />
+      </label>
+      <label class="hr-field">
+        <span>Tình trạng phân bổ</span>
+        <nz-select [ngModel]="form().tinhTrangPhanBo" (ngModelChange)="capNhat('tinhTrangPhanBo', $event)">
+          @for (o of tinhTrangOptions; track o.value) { <nz-option [nzValue]="o.value" [nzLabel]="o.label" /> }
+        </nz-select>
+      </label>
+    </div>
+
+    <label class="hr-field">
+      <span>Tên nhiệm vụ <b>*</b></span>
+      <input nz-input [ngModel]="form().tenNhiemVu" (ngModelChange)="capNhat('tenNhiemVu', $event)" />
+    </label>
+
+    <div class="hr-form__row">
+      <label class="hr-field">
+        <span>Phân loại <b>*</b></span>
+        <nz-select [ngModel]="form().phanLoai" (ngModelChange)="capNhat('phanLoai', $event)">
+          @for (o of phanLoaiOptions; track o.value) { <nz-option [nzValue]="o.value" [nzLabel]="o.label" /> }
+        </nz-select>
+      </label>
+      <label class="hr-field">
+        <span>Phân nguồn <b>*</b></span>
+        <nz-select [ngModel]="form().phanNguon" (ngModelChange)="doiNguon($event)">
+          @for (o of phanNguonOptions; track o.value) { <nz-option [nzValue]="o.value" [nzLabel]="o.label" /> }
+        </nz-select>
+      </label>
+    </div>
+
+    <!-- Chỉ nhiệm vụ nguồn KHCN mới thuộc một đề tài — xem ghi chú ở nhiem-vu-form-modal.ts. -->
+    @if (laNguonKHCN()) {
+      <div class="hr-form__row">
+        <label class="hr-field">
+          <span>Mã đề tài</span>
+          <input
+            nz-input
+            placeholder="VD: 011-24-TĐ-RDP-QS"
+            [ngModel]="form().maDeTai"
+            (ngModelChange)="capNhat('maDeTai', $event)"
+          />
+        </label>
+        <label class="hr-field">
+          <span>Tên đề tài</span>
+          <input nz-input [ngModel]="form().tenDeTai" (ngModelChange)="capNhat('tenDeTai', $event)" />
+        </label>
+      </div>
+    }
+
+    <div class="hr-form__row">
+      <label class="hr-field">
+        <span>Khối (đơn vị cấp 4) <b>*</b></span>
+        <nz-select nzPlaceHolder="Chọn khối" [ngModel]="form().khoi" (ngModelChange)="doiKhoi($event)">
+          @for (o of khoiOptions; track o) { <nz-option [nzValue]="o" [nzLabel]="o" /> }
+        </nz-select>
+      </label>
+      <label class="hr-field">
+        <span>Đơn vị chủ trì <b>*</b></span>
+        <nz-select
+          nzShowSearch
+          nzPlaceHolder="Chọn đơn vị cấp 5"
+          [nzDisabled]="!form().khoi"
+          [ngModel]="form().donViChuTri"
+          (ngModelChange)="doiDonViChuTri($event)"
+        >
+          @for (o of donViOptions(); track o) { <nz-option [nzValue]="o" [nzLabel]="o" /> }
+        </nz-select>
+      </label>
+    </div>
+
+    <label class="hr-field">
+      <span>Đơn vị phân bổ <b>*</b></span>
+      <nz-select
+        nzMode="multiple"
+        nzPlaceHolder="Các đơn vị cùng phân bổ nhân công"
+        [nzDisabled]="!form().khoi"
+        [ngModel]="form().donViPhanBo"
+        (ngModelChange)="capNhat('donViPhanBo', $event)"
+      >
+        @for (o of donViOptions(); track o) { <nz-option [nzValue]="o" [nzLabel]="o" /> }
+      </nz-select>
+    </label>
+
+    <div class="hr-form__row">
+      <label class="hr-field">
+        <span>PM — Chủ nhiệm nhiệm vụ <b>*</b></span>
+        <nz-select nzShowSearch [ngModel]="form().pmMaNhanVien" (ngModelChange)="capNhat('pmMaNhanVien', $event)" nzPlaceHolder="Chọn PM">
+          @for (u of nhanSuOptions; track u.maNhanVien) {
+            <nz-option [nzValue]="u.maNhanVien" [nzLabel]="u.hoTen + ' (' + u.email + ')'" />
+          }
+        </nz-select>
+      </label>
+      <label class="hr-field">
+        <span>PA — Trợ lý đơn vị chủ trì <b>*</b></span>
+        <nz-select nzShowSearch [ngModel]="form().paMaNhanVien" (ngModelChange)="capNhat('paMaNhanVien', $event)" nzPlaceHolder="Chọn PA">
+          @for (u of nhanSuOptions; track u.maNhanVien) {
+            <nz-option [nzValue]="u.maNhanVien" [nzLabel]="u.hoTen + ' (' + u.email + ')'" />
+          }
+        </nz-select>
+      </label>
+    </div>
+
+    <div class="hr-form__row">
+      <label class="hr-field">
+        <span>Tổng dự toán (đồng) <b>*</b></span>
+        <nz-input-number
+          class="hr-field__full"
+          [ngModel]="form().tongDuToan"
+          (ngModelChange)="capNhat('tongDuToan', $event)"
+          [nzMin]="0"
+          [nzStep]="1000000"
+        />
+      </label>
+      <label class="hr-field">
+        <span>CPNC được phê duyệt (đồng) <b>*</b></span>
+        <nz-input-number
+          class="hr-field__full"
+          [ngModel]="form().chiPhiNhanCongPheDuyet"
+          (ngModelChange)="capNhat('chiPhiNhanCongPheDuyet', $event)"
+          [nzMin]="0"
+          [nzStep]="1000000"
+          [nzDisabled]="laBaoHanh()"
+        />
+        @if (laBaoHanh()) {
+          <small class="hr-muted">Nguồn Bảo hành chỉ theo dõi số đã phân bổ, không lập dự toán.</small>
+        }
+      </label>
+    </div>
+
+    <div class="hr-form__row">
+      <label class="hr-field">
+        <span>Dự phòng (đồng)</span>
+        <nz-input-number
+          class="hr-field__full"
+          [ngModel]="form().duPhong"
+          (ngModelChange)="capNhat('duPhong', $event)"
+          [nzMin]="0"
+          [nzStep]="1000000"
+          [nzDisabled]="laBaoHanh()"
+        />
+        <small class="hr-muted">Nguồn đã lập dự toán = CPNC phê duyệt + dự phòng.</small>
+      </label>
+      <div class="hr-field">
+        <span>Thời gian thực hiện <b>*</b></span>
+        <div class="hr-form__row">
+          <input nz-input type="date" [ngModel]="form().tuNgay" (ngModelChange)="capNhat('tuNgay', $event)" />
+          <input nz-input type="date" [ngModel]="form().denNgay" (ngModelChange)="capNhat('denNgay', $event)" />
+        </div>
+      </div>
+    </div>
+
+    <label class="hr-field">
+      <span>Mô tả</span>
+      <textarea nz-input rows="3" [ngModel]="form().moTa" (ngModelChange)="capNhat('moTa', $event)"></textarea>
+    </label>
+  </div>
+</nz-modal>

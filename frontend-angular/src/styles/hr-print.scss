@@ -1,0 +1,79 @@
+/*
+ * Quy tắc in cho phân hệ HR Tools. Phải để ở GLOBAL chứ không nằm trong component: style của
+ * Angular component bị đóng khung bởi thuộc tính `_ngcontent-*`, không với tới được chrome do
+ * component khác (`HrShell`) render — mà ẩn chrome chính là việc cần làm khi in.
+ *
+ * Cách dùng: bọc phần cần in trong `<div class="hr-print-only">`, mọi thứ khác tự ẩn.
+ */
+
+.hr-print-only {
+  display: none;
+}
+
+@media print {
+  /* Ẩn toàn bộ chrome + các nút thao tác — giấy không bấm được. */
+  .hr-topbar,
+  .hr-sider,
+  .hr-page__head,
+  .hr-page__actions,
+  .hr-tf__pager,
+  .hr-as,
+  [data-no-print] {
+    display: none !important;
+  }
+
+  html,
+  body {
+    background: #fff;
+  }
+
+  .hr-shell,
+  .hr-body,
+  .hr-content {
+    display: block;
+    min-height: 0;
+    padding: 0;
+    background: #fff;
+  }
+
+  .hr-card {
+    padding: 0;
+    background: #fff;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  /* Đảo vai trò: chỉ khối in hiện ra, phần màn hình ẩn đi. */
+  .hr-print-only {
+    display: block;
+  }
+
+  .hr-screen-only {
+    display: none !important;
+  }
+
+  .hr-print-doc {
+    font: 12pt/1.5 'Times New Roman', serif;
+    color: #000;
+  }
+
+  .hr-print-doc table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .hr-print-doc th,
+  .hr-print-doc td {
+    border: 1px solid #000;
+    padding: 4pt 6pt;
+    font-size: 11pt;
+  }
+
+  .hr-print-doc thead {
+    display: table-header-group; /* lặp lại tiêu đề bảng ở mỗi trang giấy */
+  }
+
+  .hr-print-doc tr {
+    break-inside: avoid;
+  }
+}

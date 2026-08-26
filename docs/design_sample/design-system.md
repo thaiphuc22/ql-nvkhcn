@@ -1,3 +1,13 @@
+> # ⛔ TÀI LIỆU NÀY ĐÃ BỊ THAY THẾ
+>
+> Design system chính thức của dự án là **[`docs/design-system/README.md`](../design-system/README.md)**,
+> trích xuất từ Figma của khách hàng ngày 2026-08-26.
+>
+> File này có nguồn gốc khác hẳn: Google Stitch (Material 3 + Tailwind), không phải Figma của VHT.
+> Giữ lại **chỉ để tra xuất xứ** của mấy giá trị cũ còn sót trong code — `--vht-red-chrome: #bf0027`,
+> `--vht-success: #006e0d`, `--vht-warning: #daa520`, `--vht-danger: #ba1a1a`. Những giá trị đó
+> **không thuộc design system chính thức**. Đừng dựng UI mới từ file này.
+
 # QTKHCN Design System — "VHT Military Red" (tham chiếu từ Google Stitch)
 
 > Nguồn: Google Stitch project `4924415709161706342` ("Military Process Management Dashboard

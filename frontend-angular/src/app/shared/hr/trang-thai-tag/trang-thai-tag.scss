@@ -1,0 +1,46 @@
+:host {
+  display: inline-block;
+}
+
+.hr-tt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font: var(--vht-font-label);
+  letter-spacing: var(--vht-tracking-label);
+  white-space: nowrap;
+}
+
+.hr-tt__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.hr-tt--default {
+  background: var(--vht-gray-95);
+  color: var(--vht-gray-40);
+}
+
+.hr-tt--processing {
+  background: var(--vht-info-95);
+  color: var(--vht-info-50);
+}
+
+.hr-tt--success {
+  background: var(--vht-success-95);
+  color: var(--vht-success-50);
+}
+
+.hr-tt--warning {
+  background: var(--vht-warning-95);
+  color: var(--vht-warning-50);
+}
+
+.hr-tt--error {
+  background: var(--vht-danger-95);
+  color: var(--vht-danger-50);
+}

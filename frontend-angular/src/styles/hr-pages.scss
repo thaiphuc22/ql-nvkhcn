@@ -1,0 +1,211 @@
+/*
+ * Lớp dùng chung cho các trang HR Tools (hàng lọc, bảng, form trong popup). Để ở GLOBAL vì cùng
+ * một bộ lớp lặp lại ở 5 trang; chép vào từng `.scss` component là 5 bản sao sẽ lệch nhau sau vài
+ * lần sửa. Mọi lớp đều mang tiền tố `hr-` nên không đụng các trang cũ.
+ */
+
+/* ------------------------------------------------------- hàng lọc căn phải */
+
+.hr-filters {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end; /* CĂN PHẢI — đúng bản thiết kế, khác các màn cũ căn trái */
+  gap: var(--vht-space-8);
+  flex-wrap: wrap;
+  margin-bottom: var(--vht-space-16);
+}
+
+.hr-filters__select {
+  min-width: 180px;
+}
+
+.hr-filters__search {
+  width: 280px;
+  max-width: 100%;
+}
+
+.hr-filters__spacer {
+  margin-right: auto;
+}
+
+/* ------------------------------------------------------------------- bảng */
+
+.hr-table {
+  .ant-table-thead > tr > th {
+    background: var(--vht-gray-95);
+    color: var(--vht-ink-2);
+    font: var(--vht-font-label);
+    letter-spacing: var(--vht-tracking-label);
+  }
+
+  .ant-table-tbody > tr > td {
+    font: var(--vht-font-body);
+    color: var(--vht-gray-20);
+  }
+}
+
+/* Dòng cảnh báo (vd. nhân sự vượt 100% phân bổ) — nền đỏ nhạt, không chỉ là chữ đỏ dễ bỏ sót. */
+.hr-row-canhbao > td {
+  background: var(--vht-brand-99) !important;
+}
+
+.hr-actions {
+  white-space: nowrap;
+
+  button {
+    padding: 0 4px;
+  }
+}
+
+/* Nút "duyệt" — xanh success, phân biệt rõ với nút chính đỏ và nút xoá đỏ. */
+.hr-ok {
+  color: var(--vht-success-50) !important;
+}
+
+/* Mã là LINK ĐỎ GẠCH CHÂN theo bản thiết kế. */
+.hr-code {
+  color: var(--vht-brand-50);
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 500;
+
+  &:hover {
+    color: var(--vht-brand-40);
+  }
+}
+
+.hr-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hr-muted {
+  color: var(--vht-ink-3);
+}
+
+/* -------------------------------------------------------------------- form */
+
+.hr-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vht-space-16);
+}
+
+.hr-form__row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--vht-space-16);
+}
+
+@media (max-width: 640px) {
+  .hr-form__row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.hr-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+
+  > span {
+    font: var(--vht-font-label);
+    letter-spacing: var(--vht-tracking-label);
+    color: var(--vht-ink-2);
+
+    b {
+      color: var(--vht-brand-50);
+    }
+  }
+}
+
+.hr-field__full {
+  width: 100%;
+}
+
+.hr-form__errors {
+  margin: 0;
+  padding: var(--vht-space-12) var(--vht-space-16) var(--vht-space-12) var(--vht-space-32);
+  border: 1px solid var(--vht-brand-80);
+  border-radius: var(--vht-radius-8);
+  background: var(--vht-brand-95);
+  color: var(--vht-brand-30);
+  font: var(--vht-font-body);
+}
+
+/* -------------------------------------------------------- khối phụ trợ trang */
+
+.hr-section-title {
+  margin: 0 0 var(--vht-space-12);
+  font: var(--vht-font-title);
+  color: var(--vht-ink);
+}
+
+.hr-stats {
+  display: flex;
+  gap: var(--vht-space-12);
+  flex-wrap: wrap;
+  margin-bottom: var(--vht-space-16);
+}
+
+.hr-stat {
+  flex: 1 1 160px;
+  padding: var(--vht-space-12) var(--vht-space-16);
+  border: 1px solid var(--vht-border);
+  border-radius: var(--vht-radius-8);
+  background: var(--vht-gray-99);
+
+  small {
+    display: block;
+    font: var(--vht-font-caption);
+    letter-spacing: var(--vht-tracking-caption);
+    color: var(--vht-ink-3);
+  }
+
+  strong {
+    font: var(--vht-font-title);
+    color: var(--vht-ink);
+  }
+
+  &.is-canhbao {
+    border-color: var(--vht-brand-80);
+    background: var(--vht-brand-95);
+
+    strong {
+      color: var(--vht-brand-40);
+    }
+  }
+}
+
+.hr-desc {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--vht-space-12) var(--vht-space-24);
+
+  > div {
+    display: flex;
+    gap: var(--vht-space-8);
+    font: var(--vht-font-body);
+  }
+
+  dt,
+  .hr-desc__label {
+    flex: 0 0 150px;
+    color: var(--vht-ink-3);
+  }
+
+  dd,
+  .hr-desc__value {
+    margin: 0;
+    color: var(--vht-ink);
+    font-weight: 500;
+  }
+}
+
+@media (max-width: 900px) {
+  .hr-desc {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

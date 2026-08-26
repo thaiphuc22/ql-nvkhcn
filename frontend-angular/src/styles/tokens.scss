@@ -1,45 +1,159 @@
 /*
- * VHT brand tokens — port từ webapp/src/branding/tokens.css (D17: kế thừa token cũ làm điểm
- * xuất phát cho design-system refresh, KHÔNG thiết kế lại từ số 0). Giữ nguyên tên biến
- * --vht-* để đối chiếu 1:1 với bản React. Dùng cho phần UI Angular tự viết (layout shell,
- * pages) — phần component ng-zorro-antd đọc theme qua ../theme.less (biến Less riêng).
+ * VHT design tokens — trích xuất từ 2 file Figma của VHT ngày 2026-08-26:
+ *   · `VHT design system` (fileKey OZKhYr4HsliEVd9ggj1xhJ) — Color Primitive `3444:1812`,
+ *     Semantic `3444:13292`, Typography `2354:3`, Grid & Spacing `2458:571`, Elevation `58102:5861`.
+ *   · `VHT UI DESIGN` (fileKey OEJIdripupJIAC1LFCbMYi) — page *UI Design Done* `324:88659`.
+ *
+ * ⚠ BẪY — phần CHỮ trong file design system bị lệch, KHÔNG dùng. Bảng semantic ghi
+ * `interactive/primary #F95E00` (cam) → `brand/60`, nhưng ramp `brand/60` render ra #FF3B4A và
+ * `brand/50` = #EE0033; toàn bộ màn thiết kế thật đều dùng đỏ. Nhãn chữ là dấu vết template cũ ⇒
+ * giá trị dưới đây lấy theo **màu render + màn thiết kế thật**. Ai đọc phần chữ của file DS rồi
+ * sửa lại theo nó sẽ ra một app màu cam.
+ *
+ * Kế thừa D17 (token cũ là điểm xuất phát, không thiết kế lại từ số 0): mọi tên biến `--vht-*` đã
+ * dùng ở các trang cũ được GIỮ NGUYÊN dưới dạng alias trỏ vào ramp mới — đổi tên là mọi `.scss`
+ * của trang cũ hỏng im lặng. Phần component ng-zorro-antd đọc theme qua ../theme.less (biến Less
+ * riêng), không đọc các custom property ở đây.
  */
 :root {
-  /* Màu thương hiệu Viettel High Tech — "VHT Military Red" design system. */
-  --vht-red: #ee0033; /* primary-container — CTA / brand */
-  --vht-red-chrome: #bf0027; /* primary — sidebar / chrome */
-  --vht-red-dark: #bf0027;
-  --vht-red-050: #fff1f3;
-  --vht-red-100: #ffdad8; /* primary-fixed */
+  /* ---------- Ramp thương hiệu (brand/danger dùng CHUNG một ramp — nút chính và nút xoá
+     cùng đỏ, đúng ý đồ thiết kế, không phải nhầm lẫn) ---------- */
+  --vht-brand-10: #3c0006;
+  --vht-brand-20: #61000e;
+  --vht-brand-30: #890019;
+  --vht-brand-40: #b30024;
+  --vht-brand-50: #ee0033; /* primary — CTA, pill sider, link, nút xoá */
+  --vht-brand-60: #ff3b4a;
+  --vht-brand-70: #ff7f7e;
+  --vht-brand-80: #ffaeab;
+  --vht-brand-90: #ffd8d6;
+  --vht-brand-95: #ffecea;
+  --vht-brand-99: #fffbfa;
 
-  /* Màu ngữ nghĩa (Material 3 tokens) */
-  --vht-success: #006e0d; /* tertiary */
-  --vht-warning: #daa520; /* amber */
-  --vht-danger: #ba1a1a; /* error */
+  /* ---------- Coolgray ---------- */
+  --vht-gray-10: #1a1c1e;
+  --vht-gray-20: #2f3033;
+  --vht-gray-30: #45474a;
+  --vht-gray-40: #5d5e61;
+  --vht-gray-50: #76777a;
+  --vht-gray-60: #909094;
+  --vht-gray-70: #aaabae;
+  --vht-gray-80: #c6c6c9;
+  --vht-gray-90: #e2e2e5;
+  --vht-gray-95: #f1f0f4;
+  --vht-gray-99: #fcfcff;
 
-  /* Mực & phụ */
-  --vht-ink: #1b1c1c; /* on-surface */
-  --vht-ink-2: #5a6675;
-  --vht-ink-3: #8593a3;
+  /* ---------- Ngữ nghĩa (mức 50 = màu chính, mức 95 = nền nhạt cho tag/alert) ---------- */
+  --vht-success-50: #008e50;
+  --vht-success-95: #ceffd9;
+  --vht-warning-50: #996f00;
+  --vht-warning-95: #ffeed6;
+  --vht-info-50: #5573c7;
+  --vht-info-95: #eef0ff;
+  --vht-danger-50: var(--vht-brand-50);
+  --vht-danger-95: var(--vht-brand-95);
 
-  /* Bề mặt & viền */
-  --vht-surface: #ffffff; /* surface-container-lowest */
-  --vht-surface-2: #fbf9f9; /* background / surface (nền ấm) */
-  --vht-surface-3: #f5f3f3; /* surface-container-low */
-  --vht-border: #e6e9ee;
-  --vht-border-strong: #c7cfda;
+  /* Bí danh `-subtle` — dùng cho nền tag/alert, khỏi phải nhớ "95 là mức nào". */
+  --vht-brand-subtle: var(--vht-brand-95);
+  --vht-success-subtle: var(--vht-success-95);
+  --vht-warning-subtle: var(--vht-warning-95);
+  --vht-info-subtle: var(--vht-info-95);
+  --vht-danger-subtle: var(--vht-danger-95);
 
-  /* Sider tối */
-  --vht-dark: #0f1722;
-  --vht-dark-border: #1d2937;
+  /* ---------- Thang giãn cách (4pt + 8pt) ---------- */
+  --vht-space-4: 4px;
+  --vht-space-8: 8px;
+  --vht-space-12: 12px;
+  --vht-space-16: 16px;
+  --vht-space-20: 20px;
+  --vht-space-24: 24px;
+  --vht-space-32: 32px;
+  --vht-space-40: 40px;
+  --vht-space-48: 48px;
+  --vht-space-56: 56px;
+  --vht-space-64: 64px;
+  --vht-space-72: 72px;
+  --vht-space-80: 80px;
+  --vht-space-88: 88px;
+  --vht-space-96: 96px;
 
-  /* Hình học */
-  --vht-radius: 8px;
-  --vht-radius-sm: 6px;
+  /* ---------- Bo góc ---------- */
+  --vht-radius-4: 4px;
+  --vht-radius-8: 8px;
+  --vht-radius-12: 12px;
+  --vht-radius-16: 16px;
+  --vht-radius-20: 20px;
+  --vht-radius-24: 24px;
+  --vht-radius-32: 32px;
 
-  /* Font hệ thống */
+  /* ---------- Elevation (6 mức, bản Light) ---------- */
+  --vht-shadow-none: none;
+  --vht-shadow-sm: 0 1px 2px rgba(26, 28, 30, 0.06), 0 1px 3px rgba(26, 28, 30, 0.08);
+  --vht-shadow-md: 0 2px 4px rgba(26, 28, 30, 0.06), 0 4px 8px rgba(26, 28, 30, 0.08);
+  --vht-shadow-lg: 0 4px 8px rgba(26, 28, 30, 0.06), 0 8px 16px rgba(26, 28, 30, 0.1);
+  --vht-shadow-xl: 0 8px 16px rgba(26, 28, 30, 0.08), 0 16px 32px rgba(26, 28, 30, 0.12);
+  --vht-shadow-2xl: 0 16px 32px rgba(26, 28, 30, 0.1), 0 32px 64px rgba(26, 28, 30, 0.14);
+
+  /* ---------- Chữ (Inter) ---------- */
   --vht-font: Inter, system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --vht-font-mono: 'IBM Plex Mono', 'Cascadia Mono', Consolas, monospace;
+
+  /* 8 lớp typography dạng shorthand `font:` (weight size/line-height family). `letter-spacing`
+     không nằm được trong shorthand nên tách ra `--vht-tracking-*` — dùng kèm, đừng quên. */
+  --vht-font-display: 600 28px/120% var(--vht-font);
+  --vht-font-heading: 600 22px/125% var(--vht-font);
+  --vht-font-title: 600 18px/130% var(--vht-font);
+  --vht-font-subtitle: 500 16px/135% var(--vht-font);
+  --vht-font-body: 400 14px/150% var(--vht-font);
+  --vht-font-body-emphasis: 500 14px/150% var(--vht-font);
+  --vht-font-label: 500 13px/140% var(--vht-font);
+  --vht-font-caption: 400 12px/140% var(--vht-font);
+
+  --vht-tracking-display: -0.5px;
+  --vht-tracking-heading: -0.25px;
+  --vht-tracking-title: 0;
+  --vht-tracking-subtitle: 0;
+  --vht-tracking-body: 0;
+  --vht-tracking-label: 0.1px;
+  --vht-tracking-caption: 0.2px;
+
+  /* ================================================================================
+   * ALIAS TƯƠNG THÍCH NGƯỢC — tên biến các trang cũ đang dùng. Giữ nguyên tên, chỉ đổi
+   * giá trị sang ramp DS. Xoá/đổi tên ở đây = hỏng im lặng các `.scss` đã viết.
+   * ================================================================================ */
+
+  /* Màu thương hiệu */
+  --vht-red: var(--vht-brand-50);
+  --vht-red-chrome: var(--vht-brand-40); /* chrome tối hơn primary một bậc */
+  --vht-red-dark: var(--vht-brand-30);
+  --vht-red-050: var(--vht-brand-99);
+  --vht-red-100: var(--vht-brand-90);
+
+  /* Màu ngữ nghĩa */
+  --vht-success: var(--vht-success-50);
+  --vht-warning: var(--vht-warning-50);
+  --vht-danger: var(--vht-danger-50);
+  --vht-info: var(--vht-info-50);
+
+  /* Mực & phụ */
+  --vht-ink: var(--vht-gray-10);
+  --vht-ink-2: var(--vht-gray-40);
+  --vht-ink-3: var(--vht-gray-60);
+
+  /* Bề mặt & viền */
+  --vht-surface: #ffffff;
+  --vht-surface-2: var(--vht-gray-95);
+  --vht-surface-3: var(--vht-gray-90);
+  --vht-border: var(--vht-gray-90);
+  --vht-border-strong: var(--vht-gray-80);
+
+  /* Chrome tối (topbar HR Tools, sider các trang cũ) */
+  --vht-dark: var(--vht-gray-10);
+  --vht-dark-border: var(--vht-gray-20);
+
+  /* Hình học */
+  --vht-radius: var(--vht-radius-8);
+  --vht-radius-sm: var(--vht-radius-4);
 
   /* Bề rộng sider */
   --vht-sider-w: 230px;

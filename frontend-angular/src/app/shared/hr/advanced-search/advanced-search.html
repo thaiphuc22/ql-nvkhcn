@@ -1,0 +1,15 @@
+<section class="hr-as" [class.is-collapsed]="!mo()">
+  <button type="button" class="hr-as__head" (click)="toggle()" [attr.aria-expanded]="mo()">
+    <nz-icon nzType="filter" />
+    <span>{{ tieuDe() }}</span>
+    <nz-icon [nzType]="mo() ? 'up' : 'down'" class="hr-as__caret" />
+  </button>
+
+  <div class="hr-as__body">
+    <div class="hr-as__grid"><ng-content /></div>
+    <div class="hr-as__actions">
+      <button nz-button type="button" (click)="lamMoi.emit()"><nz-icon nzType="reload" /> Làm mới</button>
+      <button nz-button nzType="primary" type="button" (click)="timKiem.emit()"><nz-icon nzType="search" /> Tìm kiếm</button>
+    </div>
+  </div>
+</section>

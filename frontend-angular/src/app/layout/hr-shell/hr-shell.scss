@@ -1,0 +1,352 @@
+/* Chrome theo bản thiết kế VHT: topbar TỐI full-width + sider TRẮNG + nội dung nền xám nhạt.
+   Mọi màu/khoảng cách lấy từ token DS ở src/styles/tokens.scss — không hardcode hex ở đây. */
+
+:host {
+  display: block;
+  height: 100%;
+}
+
+.hr-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--vht-surface-2);
+}
+
+/* ------------------------------------------------------------------ topbar */
+
+.hr-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vht-space-16);
+  height: 56px;
+  padding: 0 var(--vht-space-20);
+  background: var(--vht-dark);
+  color: #fff;
+}
+
+.hr-topbar__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--vht-space-12);
+  min-width: 0;
+}
+
+.hr-logo {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border-radius: var(--vht-radius-8);
+  background: var(--vht-brand-50);
+  color: #fff;
+  font: var(--vht-font-label);
+  font-weight: 800;
+  letter-spacing: var(--vht-tracking-label);
+}
+
+.hr-brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  min-width: 0;
+
+  strong {
+    font: var(--vht-font-body-emphasis);
+    color: #fff;
+  }
+
+  small {
+    font: var(--vht-font-caption);
+    letter-spacing: var(--vht-tracking-caption);
+    color: var(--vht-gray-70);
+  }
+}
+
+.hr-topbar__right {
+  display: flex;
+  align-items: center;
+  gap: var(--vht-space-16);
+}
+
+.hr-icon-btn {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: var(--vht-radius-8);
+  background: transparent;
+  color: var(--vht-gray-80);
+  font-size: 18px;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
+}
+
+.hr-account {
+  display: flex;
+  align-items: center;
+  gap: var(--vht-space-8);
+  padding: 4px 8px;
+  border-radius: var(--vht-radius-8);
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.hr-account__name {
+  font: var(--vht-font-label);
+  letter-spacing: var(--vht-tracking-label);
+  color: #fff;
+}
+
+.hr-account__caret {
+  font-size: 10px;
+  color: var(--vht-gray-70);
+}
+
+.hr-avatar {
+  background: var(--vht-brand-50);
+  color: #fff;
+  font-weight: 700;
+}
+
+.hr-account__meta {
+  line-height: 1.35;
+  padding: 2px 4px;
+
+  small {
+    color: var(--vht-ink-2);
+  }
+}
+
+@media (max-width: 820px) {
+  .hr-account__name,
+  .hr-account__caret {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------------- sider */
+
+.hr-body {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.hr-sider {
+  position: relative;
+  flex: 0 0 var(--vht-sider-w);
+  width: var(--vht-sider-w);
+  display: flex;
+  flex-direction: column;
+  padding: var(--vht-space-16) var(--vht-space-12) var(--vht-space-8);
+  background: var(--vht-surface);
+  border-right: 1px solid var(--vht-border);
+  transition: flex-basis 0.18s ease, width 0.18s ease;
+
+  &.is-collapsed {
+    flex-basis: 72px;
+    width: 72px;
+    padding-left: var(--vht-space-8);
+    padding-right: var(--vht-space-8);
+  }
+}
+
+/* Nút thu gọn NỔI ở mép phải của sider, không nằm trong luồng — đúng bản thiết kế. */
+.hr-collapse {
+  position: absolute;
+  top: 26px;
+  right: -13px;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--vht-border);
+  border-radius: 50%;
+  background: var(--vht-surface);
+  box-shadow: var(--vht-shadow-sm);
+  color: var(--vht-ink-2);
+  font-size: 11px;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--vht-brand-50);
+    border-color: var(--vht-brand-80);
+  }
+}
+
+.hr-appcard {
+  display: flex;
+  align-items: center;
+  gap: var(--vht-space-12);
+  width: 100%;
+  padding: var(--vht-space-12);
+  margin-bottom: var(--vht-space-16);
+  border: 1px solid var(--vht-border);
+  border-radius: var(--vht-radius-12);
+  background: var(--vht-gray-99);
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--vht-brand-80);
+    background: var(--vht-brand-99);
+  }
+}
+
+.hr-appcard__icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--vht-radius-8);
+  background: var(--vht-brand-95);
+  color: var(--vht-brand-50);
+  font-size: 17px;
+}
+
+.hr-appcard__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+
+  small {
+    font: var(--vht-font-caption);
+    letter-spacing: 0.4px;
+    color: var(--vht-ink-3);
+  }
+
+  strong {
+    font: var(--vht-font-label);
+    letter-spacing: var(--vht-tracking-label);
+    color: var(--vht-ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.hr-nav {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--vht-space-4);
+}
+
+.hr-nav__grouphead,
+.hr-nav__leaf {
+  display: flex;
+  align-items: center;
+  gap: var(--vht-space-12);
+  width: 100%;
+  padding: 9px var(--vht-space-12);
+  border: 0;
+  border-radius: var(--vht-radius-8);
+  background: transparent;
+  color: var(--vht-gray-30);
+  font: var(--vht-font-body-emphasis);
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--vht-gray-95);
+    color: var(--vht-ink);
+  }
+}
+
+.hr-nav__icon {
+  flex: 0 0 auto;
+  font-size: 16px;
+}
+
+.hr-nav__label {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hr-nav__caret {
+  flex: 0 0 auto;
+  font-size: 10px;
+  color: var(--vht-ink-3);
+}
+
+.hr-nav__children {
+  list-style: none;
+  margin: 2px 0 var(--vht-space-4);
+  padding: 0 0 0 var(--vht-space-8);
+
+  a {
+    display: block;
+    padding: 8px var(--vht-space-12) 8px 34px;
+    border-radius: var(--vht-radius-8);
+    color: var(--vht-gray-30);
+    font: var(--vht-font-body);
+    text-decoration: none;
+
+    &:hover {
+      background: var(--vht-gray-95);
+      color: var(--vht-ink);
+    }
+
+    /* Pill ĐỎ ĐẶC, bo 8px, chữ trắng — dấu hiệu "mục đang chọn" của bản thiết kế. */
+    &.is-active {
+      background: var(--vht-brand-50);
+      color: #fff;
+      font-weight: 500;
+    }
+  }
+}
+
+.hr-nav__leaf.is-active {
+  background: var(--vht-brand-50);
+  color: #fff;
+
+  &:hover {
+    background: var(--vht-brand-50);
+    color: #fff;
+  }
+}
+
+.hr-sider__footer {
+  flex: 0 0 auto;
+  padding: var(--vht-space-12) var(--vht-space-12) var(--vht-space-4);
+  border-top: 1px solid var(--vht-border);
+  color: var(--vht-ink-3);
+  font: var(--vht-font-caption);
+  letter-spacing: var(--vht-tracking-caption);
+  text-align: center;
+}
+
+/* ----------------------------------------------------------------- content */
+
+.hr-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: var(--vht-space-24);
+  background: var(--vht-surface-2);
+}
+
+@media (max-width: 720px) {
+  .hr-content {
+    padding: var(--vht-space-16);
+  }
+}

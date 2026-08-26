@@ -1,0 +1,18 @@
+<div class="hr-page">
+  <div class="hr-page__head">
+    <div class="hr-page__title">
+      @if (backTo()) {
+        <a class="hr-page__back" [routerLink]="backTo()" aria-label="Quay lại"><nz-icon nzType="arrow-left" /></a>
+      }
+      <div class="hr-page__titletext">
+        <h1>{{ tieuDe() }}</h1>
+        @if (moTa()) { <p>{{ moTa() }}</p> }
+      </div>
+    </div>
+    <div class="hr-page__actions"><ng-content select="[actions]" /></div>
+  </div>
+
+  <!-- MỘT `ng-content` mặc định duy nhất, đổi diện mạo bằng class. Đặt hai `ng-content` trong hai
+       nhánh @if/@else là bẫy: nội dung chỉ được chiếu vào một chỗ, nhánh còn lại trống rỗng. -->
+  <section class="hr-card" [class.hr-card--plain]="khongCard()"><ng-content /></section>
+</div>

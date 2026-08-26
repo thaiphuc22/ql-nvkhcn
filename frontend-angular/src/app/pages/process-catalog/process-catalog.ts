@@ -35,6 +35,7 @@ import {
   ReadinessStatus,
   RunningInstanceResponse,
 } from '../../core/models/process-definition';
+import { nativeUploadFile } from '../../core/utils/upload-file';
 
 /** Trang quản lý quy trình: nhập file tạo draft trong App; deploy chỉ là thao tác phát hành riêng. */
 @Component({
@@ -558,8 +559,6 @@ export class ProcessCatalogPage {
   }
 }
 
-/** NzUpload may pass either the browser File itself or a list wrapper containing originFileObj. */
-export function nativeUploadFile(upload: NzUploadFile): File | null {
-  if (upload.originFileObj instanceof File) return upload.originFileObj;
-  return upload instanceof File ? upload : null;
-}
+// Giữ tên cũ ở đây để `process-catalog.spec.ts` và mọi chỗ import cũ không phải sửa; định nghĩa
+// thật đã chuyển sang `core/utils/upload-file.ts` khi màn nhập nhân sự HR cần dùng lại.
+export { nativeUploadFile };

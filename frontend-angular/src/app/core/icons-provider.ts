@@ -83,6 +83,17 @@ import {
   WarningOutline,
   ArrowLeftOutline,
   ArrowRightOutline,
+  BellOutline,
+  CheckOutline,
+  DownOutline,
+  DownloadOutline,
+  InfoCircleOutline,
+  LeftOutline,
+  PrinterOutline,
+  ProjectOutline,
+  RightOutline,
+  StopOutline,
+  UpOutline,
 } from '@ant-design/icons-angular/icons';
 
 /** Icon dùng trong shell (sider/header) + login — đăng ký tường minh, tránh bundle cả bộ icon. */
@@ -206,4 +217,23 @@ export const PROCESS_CATALOG_ICONS = [
   ReloadOutline,
   SearchOutline,
   UploadOutline,
+];
+
+/**
+ * Icon dùng trong phân hệ HR Tools (`/hr/...`, shell riêng `layout/hr-shell`) — đăng ký tường minh
+ * cùng lý do với các nhóm phía trên: `nz-icon` với mã chưa đăng ký phải fetch SVG động qua HTTP,
+ * tức cần mạng và không chạy được trong unit test. Chỉ liệt kê mã CHƯA có ở nhóm nào khác.
+ */
+export const HR_TOOLS_ICONS = [
+  BellOutline,
+  CheckOutline,
+  DownOutline,
+  DownloadOutline,
+  InfoCircleOutline,
+  LeftOutline,
+  PrinterOutline,
+  ProjectOutline,
+  RightOutline,
+  StopOutline,
+  UpOutline,
 ];

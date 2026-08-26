@@ -1,0 +1,122 @@
+.hr-picker {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: var(--vht-space-16);
+}
+
+@media (max-width: 720px) {
+  .hr-picker {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.hr-picker__tree {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding: var(--vht-space-8);
+  border: 1px solid var(--vht-border);
+  border-radius: var(--vht-radius-8);
+  background: var(--vht-gray-99);
+}
+
+.hr-picker__treehead {
+  padding: 4px var(--vht-space-8) var(--vht-space-8);
+  font: var(--vht-font-label);
+  letter-spacing: var(--vht-tracking-label);
+  color: var(--vht-ink-3);
+  text-transform: uppercase;
+}
+
+.hr-picker__node {
+  display: flex;
+  align-items: center;
+  gap: var(--vht-space-8);
+  padding: 7px var(--vht-space-8);
+  border: 0;
+  border-radius: var(--vht-radius-4);
+  background: transparent;
+  color: var(--vht-gray-30);
+  font: var(--vht-font-body);
+  text-align: left;
+  cursor: pointer;
+
+  &--child {
+    padding-left: var(--vht-space-24);
+  }
+
+  &:hover {
+    background: var(--vht-gray-95);
+  }
+
+  &.is-active {
+    background: var(--vht-brand-95);
+    color: var(--vht-brand-40);
+    font-weight: 500;
+  }
+}
+
+.hr-picker__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vht-space-12);
+  min-width: 0;
+}
+
+.hr-picker__tablewrap {
+  max-height: 372px;
+  overflow: auto;
+  border: 1px solid var(--vht-border);
+  border-radius: var(--vht-radius-8);
+}
+
+.hr-picker__table {
+  width: 100%;
+  border-collapse: collapse;
+  font: var(--vht-font-body);
+
+  th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 10px var(--vht-space-12);
+    background: var(--vht-gray-95);
+    color: var(--vht-ink-2);
+    font: var(--vht-font-label);
+    letter-spacing: var(--vht-tracking-label);
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 9px var(--vht-space-12);
+    border-top: 1px solid var(--vht-border);
+    color: var(--vht-gray-20);
+  }
+
+  tbody tr {
+    cursor: pointer;
+
+    &:hover td {
+      background: var(--vht-brand-99);
+    }
+
+    &.is-locked {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+  }
+}
+
+.hr-picker__pick {
+  width: 44px;
+  text-align: center;
+}
+
+.hr-picker__note {
+  display: block;
+  color: var(--vht-ink-3);
+  font: var(--vht-font-caption);
+}

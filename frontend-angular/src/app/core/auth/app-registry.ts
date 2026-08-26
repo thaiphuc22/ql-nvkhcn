@@ -1,4 +1,4 @@
-export type AppCode = 'qlnvkhcn' | 'quytrinh' | 'he-thong';
+export type AppCode = 'qlnvkhcn' | 'quytrinh' | 'he-thong' | 'hrtools';
 
 export interface AppDefinition {
   code: AppCode;
@@ -22,6 +22,13 @@ export const APP_REGISTRY: readonly AppDefinition[] = [
     moTa: 'Thiết kế, cấu hình, giám sát quy trình và theo dõi tích hợp.',
     icon: 'partition',
     defaultRoute: '/tong-quan',
+  },
+  {
+    code: 'hrtools',
+    label: 'Quản lý chi phí nhân công',
+    moTa: 'Nhiệm vụ/dự án, nhân sự, bảng công, bảng lương và chi phí nhân công.',
+    icon: 'team',
+    defaultRoute: '/hr/nhiem-vu',
   },
   {
     code: 'he-thong',

@@ -1,0 +1,57 @@
+<div class="hr-print-only hr-print-doc">
+  <div class="pd-head">
+    <div class="pd-org">
+      <div>TẬP ĐOÀN CÔNG NGHIỆP - VIỄN THÔNG QUÂN ĐỘI</div>
+      <strong>TỔNG CÔNG TY CÔNG NGHỆ CAO VIETTEL</strong>
+    </div>
+    <div class="pd-quochieu">
+      <strong>CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong>
+      <div>Độc lập - Tự do - Hạnh phúc</div>
+    </div>
+  </div>
+
+  <h1 class="pd-title">{{ tenBieuMau() }}</h1>
+  @if (moTa()) { <p class="pd-sub">{{ moTa() }}</p> }
+
+  @if (thongTin().length) {
+    <div class="pd-meta">
+      @for (m of thongTin(); track m.nhan) {
+        <div><span>{{ m.nhan }}:</span> <strong>{{ m.giaTri }}</strong></div>
+      }
+    </div>
+  }
+
+  @if (cot().length) {
+    <table>
+      <thead>
+        <tr>
+          <th>STT</th>
+          @for (c of cot(); track c) { <th>{{ c }}</th> }
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of dong(); track $index) {
+          <tr>
+            <td>{{ $index + 1 }}</td>
+            @for (cell of row; track $index) { <td>{{ cell }}</td> }
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+
+  <div class="pd-sign">
+    <div class="pd-sign__col">
+      <em>{{ noiKy() }}, ngày ..... tháng ..... năm .....</em>
+      <strong>NGƯỜI LẬP BIỂU</strong>
+      <small>(Ký, ghi rõ họ tên)</small>
+      <span class="pd-sign__name">{{ nguoiLap() }}</span>
+    </div>
+    <div class="pd-sign__col">
+      <em>&nbsp;</em>
+      <strong>THỦ TRƯỞNG ĐƠN VỊ</strong>
+      <small>(Ký, đóng dấu)</small>
+      <span class="pd-sign__name">&nbsp;</span>
+    </div>
+  </div>
+</div>

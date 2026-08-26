@@ -12,17 +12,26 @@
 @root-entry-name: default;
 @import 'ng-zorro-antd/ng-zorro-antd.less';
 
-// Ánh xạ 1:1 từ webapp/src/branding/tokens.css (D17 — "sửa lại design system" kế thừa
-// từ token cũ, không thiết kế lại từ số 0). Giữ tên biến gốc của ng-zorro để dễ tra cứu
-// docs, KHÔNG đổi tên biến — chỉ đổi giá trị.
-@primary-color: #ee0033; // --vht-red
-@link-color: #ee0033; // --vht-red
-@success-color: #006e0d; // --vht-success
-@warning-color: #daa520; // --vht-warning
-@error-color: #ba1a1a; // --vht-danger
-@border-radius-base: 8px; // --vht-radius
+// Ánh xạ 1:1 từ src/styles/tokens.scss (D17 — "sửa lại design system" kế thừa từ token cũ,
+// không thiết kế lại từ số 0). Giữ tên biến gốc của ng-zorro để dễ tra cứu docs, KHÔNG đổi
+// tên biến — chỉ đổi giá trị. Giá trị lấy theo design system VHT trích ngày 2026-08-26; xem
+// ghi chú "bẫy phần chữ trong file DS bị lệch" ở đầu tokens.scss trước khi sửa bất kỳ màu nào.
+@primary-color: #ee0033; // --vht-brand-50
+@link-color: #ee0033; // --vht-brand-50
+@success-color: #008e50; // --vht-success-50
+@warning-color: #996f00; // --vht-warning-50
+@error-color: #ee0033; // --vht-danger-50 — danger ramp TRÙNG brand ramp trong DS (chủ ý)
+@info-color: #5573c7; // --vht-info-50
+@border-radius-base: 8px; // --vht-radius-8
 @font-size-base: 14px;
 @font-family: Inter, system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; // --vht-font
+
+// Thang chữ/viền theo coolgray của DS — trước đây để mặc định Ant (xám xanh), lệch với
+// bản thiết kế. Đổi 4 biến này kéo theo toàn bộ text/heading/border của mọi component.
+@heading-color: #1a1c1e; // --vht-gray-10
+@text-color: #2f3033; // --vht-gray-20
+@text-color-secondary: #5d5e61; // --vht-gray-40
+@border-color-base: #e2e2e5; // --vht-gray-90
 
 // Sider/menu tối — port từ webapp/src/theme.ts (Layout.siderBg=INK, Menu.darkItemSelectedBg=RED).
 // Sider KHÔNG phải nền đỏ đặc — nền mực đen ấm (INK), đỏ chỉ dùng làm điểm nhấn mục đang chọn.

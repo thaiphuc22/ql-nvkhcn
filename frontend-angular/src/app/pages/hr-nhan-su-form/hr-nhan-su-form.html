@@ -1,0 +1,155 @@
+<hr-page-card
+  [tieuDe]="laSua() ? 'Sửa phân công nhân sự' : 'Thêm nhân sự vào nhiệm vụ'"
+  moTa="Chọn nhiệm vụ, chọn nhân sự và khai nội dung công việc tham gia."
+  backTo="/hr/nhan-su"
+>
+  <div actions>
+    <button nz-button (click)="huy()">Huỷ</button>
+    <button nz-button nzType="primary" (click)="luu()"><nz-icon nzType="save" /> Lưu</button>
+  </div>
+
+  @if (loi().length) {
+    <ul class="hr-form__errors">
+      @for (m of loi(); track m) { <li>{{ m }}</li> }
+    </ul>
+  }
+
+  <h2 class="hr-section-title">Thông tin chung</h2>
+  <div class="hr-form__row">
+    <label class="hr-field">
+      <span>Nhiệm vụ <b>*</b></span>
+      <nz-select
+        nzShowSearch
+        nzPlaceHolder="Chọn nhiệm vụ"
+        [ngModel]="nhiemVuId()"
+        (ngModelChange)="doiNhiemVu($event)"
+        [nzDisabled]="laSua()"
+      >
+        @for (o of nhiemVuOptions(); track o.value) { <nz-option [nzValue]="o.value" [nzLabel]="o.label" /> }
+      </nz-select>
+    </label>
+    <label class="hr-field">
+      <span>Đơn vị chủ trì</span>
+      <input nz-input [value]="nhiemVu()?.donViChuTri ?? ''" readonly placeholder="Tự điền theo nhiệm vụ" />
+    </label>
+  </div>
+
+  <div class="hr-members">
+    <div class="hr-members__head">
+      <h2 class="hr-section-title">Danh sách nhân sự tham gia</h2>
+      @if (!laSua()) {
+        <button nz-button (click)="moPicker()"><nz-icon nzType="team" /> Chọn nhân sự</button>
+      }
+    </div>
+
+    @if (nhiemVuId() && !noiDungOptions().length) {
+      <div class="hr-warnbar">
+        <nz-icon nzType="info-circle" />
+        Nhiệm vụ này chưa khai <b>nội dung công việc</b> nào. Với đề tài KHCN và phương án kinh doanh,
+        hãy khai ở tab “Nội dung công việc” của màn chi tiết nhiệm vụ trước — chấm công ở đợt sau gán
+        ngày vào nội dung công việc, không gán thẳng vào nhiệm vụ.
+      </div>
+    }
+
+    @if (coVuot()) {
+      <div class="hr-warnbar">
+        <nz-icon nzType="warning" />
+        Có nhân sự vượt <b>100%</b> tổng tỷ lệ dự kiến trong kỳ chồng lấn. Giảm tỷ lệ hoặc thu hẹp thời
+        gian tham gia trước khi lưu.
+      </div>
+    }
+
+    <div class="hr-members__tablewrap">
+      <table class="hr-members__table">
+        <thead>
+          <tr>
+            <th class="c-stt">STT</th>
+            <th class="c-ma">Mã NV</th>
+            <th>Họ tên / Đơn vị</th>
+            <th class="c-vaitro">Vai trò tham gia <b>*</b></th>
+            <th class="c-noidung">Nội dung công việc tham gia</th>
+            <th class="c-tyle">{{ tyLeNhan }}</th>
+            <th class="c-ngay">Từ ngày</th>
+            <th class="c-ngay">Đến ngày</th>
+            <th class="c-ghichu">Ghi chú</th>
+            <th class="c-xoa"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (tv of thanhVien(); track tv.maNhanVien + tv.tuNgay; let i = $index) {
+            <tr [class.is-vuot]="vuot(tv)">
+              <td>{{ i + 1 }}</td>
+              <td><code>{{ tv.maNhanVien }}</code></td>
+              <td>
+                <div>{{ tv.hoTen }}</div>
+                <small class="hr-muted">{{ tv.donVi }} · {{ tv.chucDanh }}</small>
+              </td>
+              <td>
+                <nz-select
+                  [ngModel]="tv.vaiTroThamGia"
+                  (ngModelChange)="capNhatDong(i, 'vaiTroThamGia', $event)"
+                  nzPlaceHolder="Chọn vai trò"
+                >
+                  @for (o of vaiTroOptions; track o) { <nz-option [nzValue]="o" [nzLabel]="o" /> }
+                </nz-select>
+              </td>
+              <td>
+                <nz-select
+                  nzMode="multiple"
+                  [ngModel]="tv.noiDungCongViecIds"
+                  (ngModelChange)="capNhatDong(i, 'noiDungCongViecIds', $event)"
+                  [nzDisabled]="!noiDungOptions().length"
+                  nzPlaceHolder="Chọn nội dung công việc"
+                >
+                  @for (o of noiDungOptions(); track o.id) { <nz-option [nzValue]="o.id" [nzLabel]="o.ten" /> }
+                </nz-select>
+              </td>
+              <td>
+                <!-- Để trống là hợp lệ — BM1 không có cột tỷ lệ. -->
+                <nz-input-number
+                  class="hr-field__full"
+                  [ngModel]="tv.tyLePhanBo"
+                  (ngModelChange)="capNhatDong(i, 'tyLePhanBo', $event)"
+                  [nzMin]="1"
+                  [nzMax]="100"
+                  nzPlaceHolder="Không bắt buộc"
+                />
+                @if (vuot(tv)) {
+                  <small class="hr-vuot">Tổng {{ tongPhanBo(tv) }}%</small>
+                }
+              </td>
+              <td>
+                <input nz-input type="date" [ngModel]="tv.tuNgay" (ngModelChange)="capNhatDong(i, 'tuNgay', $event)" />
+              </td>
+              <td>
+                <input nz-input type="date" [ngModel]="tv.denNgay" (ngModelChange)="capNhatDong(i, 'denNgay', $event)" />
+              </td>
+              <td>
+                <input nz-input [ngModel]="tv.ghiChu" (ngModelChange)="capNhatDong(i, 'ghiChu', $event)" />
+              </td>
+              <td>
+                @if (!laSua()) {
+                  <button nz-button nzType="text" nzDanger nzSize="small" (click)="boDong(i)" aria-label="Bỏ khỏi danh sách">
+                    <nz-icon nzType="delete" />
+                  </button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="10"><nz-empty nzNotFoundContent="Chưa chọn nhân sự nào. Bấm “Chọn nhân sự” để thêm." /></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</hr-page-card>
+
+<hr-nhan-su-picker
+  [visible]="pickerMo()"
+  [nhieu]="true"
+  [daCo]="daCoTrongNhiemVu()"
+  (huy)="pickerMo.set(false)"
+  (xacNhan)="themTuPicker($event)"
+/>

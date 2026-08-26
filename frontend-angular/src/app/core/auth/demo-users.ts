@@ -38,13 +38,16 @@ const NO_STATIC_ROLES: string[] = Object.freeze([] as string[]) as string[];
 export const DEMO_PASSWORD = '123456';
 
 export const DEMO_USERS: DemoUser[] = [
-  { hoTen: 'Lê Văn Cường', email: 'admin@example.com', chucDanh: 'Quản trị hệ thống', isAdmin: true, roleCodes: NO_STATIC_ROLES, apps: ['qlnvkhcn', 'quytrinh', 'he-thong'] },
+  { hoTen: 'Lê Văn Cường', email: 'admin@example.com', chucDanh: 'Quản trị hệ thống', isAdmin: true, roleCodes: NO_STATIC_ROLES, apps: ['qlnvkhcn', 'quytrinh', 'hrtools', 'he-thong'] },
   { hoTen: 'Trần Văn Nam', email: 'pm@example.com', chucDanh: 'Chủ nhiệm đề tài (PM)', isAdmin: false, roleCodes: NO_STATIC_ROLES, apps: ['qlnvkhcn'] },
   { hoTen: 'Phạm Thu Hà', email: 'cqnv@example.com', chucDanh: 'Cơ quan nghiệp vụ VHT', isAdmin: false, roleCodes: NO_STATIC_ROLES, apps: ['qlnvkhcn', 'quytrinh'] },
   { hoTen: 'Phạm Quang Vinh', email: 'tgd@example.com', chucDanh: 'Tổng Giám đốc VHT', isAdmin: false, roleCodes: NO_STATIC_ROLES, apps: ['qlnvkhcn'] },
   { hoTen: 'Ngô Thị Thanh Hằng', email: 'hdkhcn@example.com', chucDanh: 'Thường trực HĐ KHCN VHT', isAdmin: false, roleCodes: NO_STATIC_ROLES, apps: ['qlnvkhcn'] },
   { hoTen: 'Đỗ Văn Mạnh', email: 'gd-ttms@example.com', chucDanh: 'Giám đốc Trung tâm Mua sắm', isAdmin: false, roleCodes: NO_STATIC_ROLES, apps: ['qlnvkhcn'] },
-  { hoTen: 'Nguyễn Thu Hương', email: 'tp-ns@example.com', chucDanh: 'Trưởng phòng Nhân sự', isAdmin: false, roleCodes: NO_STATIC_ROLES, apps: ['qlnvkhcn'] },
+  // TP Nhân sự là người dùng chính của phân hệ Quản lý chi phí nhân công (khai báo đề tài,
+  // quản lý nhân sự tham gia, tỷ lệ phân bổ) — tài khoản không-admin duy nhất được cấp `hrtools`
+  // ở đợt này, để kiểm chứng được cả đường vào lẫn đường fail-closed của `appChildGuard`.
+  { hoTen: 'Nguyễn Thu Hương', email: 'tp-ns@example.com', chucDanh: 'Trưởng phòng Nhân sự', isAdmin: false, roleCodes: NO_STATIC_ROLES, apps: ['qlnvkhcn', 'hrtools'] },
   { hoTen: 'Trần Quốc Dũng', email: 'tp-tckt@example.com', chucDanh: 'Trưởng phòng Tài chính Kế toán', isAdmin: false, roleCodes: NO_STATIC_ROLES, apps: ['qlnvkhcn'] },
   // Cấp Tập đoàn (RD02.02) — mỗi vai một tài khoản, cố ý không gộp để demo được phân tách thẩm
   // quyền qua 4 cấp. Vai trò nay lấy từ `user_role_assignments`; nhưng phía SERVER

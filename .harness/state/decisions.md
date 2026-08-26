@@ -319,6 +319,123 @@ user/role/permission; đăng nhập SSO thật và JWT resource-server vẫn ch�
 
 ---
 
+## P1 (LOCKED 2026-08-26) — `DeTai` và `NhiemVu` (HR) là hai thực thể khác nhau, quan hệ THAM CHIẾU
+
+**Date**: 2026-08-26 (thay thế hoàn toàn bản ĐỀ XUẤT cùng ngày, vốn ghi ngược chiều)
+
+**Decision**: Trong phân hệ HR Tools, `NhiemVu` (HR) là thực thể gốc — tương ứng đúng một dòng
+`PHÂN LOẠI = Chính` của biểu mẫu BM5. `DeTai` **không phải cha của nó** và **không phải một thực thể
+do HR Tools quản lý**. Đề tài được tham chiếu bằng cặp trường **`maDeTai` / `tenDeTai` trên `NhiemVu`,
+NULLABLE**. Dưới `NhiemVu` là `NoiDungCongViec` (dòng `Thành phần` của BM5) — đây mới là nơi chấm công
+gán ngày vào.
+
+```
+DeTai (bên QTKHCN, RD01–RD10)  ◄── maDeTai (nullable) ── NhiemVu (HR) ──► NoiDungCongViec ──► PhanBoCong
+```
+
+**Evidence**: BM5 (`2025.08.01_HR_tool_Khach hang gui.xlsx`, sheet `BM5.DS Nhiem vu`, dữ liệu thật của
+Khối 1 / Trung tâm CHĐK) có cột `MÃ ĐỀ TÀI` và `TÊN ĐỀ TÀI/DỰ ÁN` nằm **trên chính dòng nhiệm vụ**, ví
+dụ `011-24-TĐ-RDP-QS` — không có dòng riêng nào ở tầng trên. Tên cột là *"đề tài **hoặc** dự án"* vì
+nhiệm vụ SXKD `PO-92166` không thuộc đề tài nào, nó định danh bằng mã PO. ⇒ Nullable là bắt buộc, không
+phải tuỳ chọn: bắt buộc `maDeTai` thì không khai được nhiệm vụ SXKD / Bán hàng / Bảo hành, tức phần lớn
+dữ liệu thật.
+
+**Trả lời 3 câu "còn thiếu để khoá" của bản ĐỀ XUẤT**:
+(a) một đề tài sinh nhiều `NhiemVu`? — câu hỏi sai chiều, bỏ; (b) `maDeTai` là **khoá nghiệp vụ** trên
+`NhiemVu`, không phải nhãn hiển thị; (c) `nhiem_vu_hr.ma_de_tai` **NULLABLE**.
+
+**⚠ Bẫy tên gọi — đọc trước khi làm đợt 6**: `NhiemVu` trong `services/ho-so-service` (luồng RD01–RD10)
+**chính là thứ khách gọi là "đề tài"**. `NhiemVu` của HR Tools là thực thể KHÁC, phạm vi rộng hơn (gồm
+SXKD, Bán hàng, Bảo hành, ĐTPT — những thứ không bao giờ đi qua RD01–RD10). **Hai bảng không được gộp.**
+`nhiem_vu_hr.ma_de_tai` chính là khoá ngoại sẽ trỏ sang `nhiem_vu` của ho-so-service. Đứng cạnh D8
+(`NhiemVu` vs `HoSo`) — cùng loại lỗi "hai thứ nhìn giống nhau nên gộp lại", và D8 đã phải ghi ra vì
+lý do y hệt.
+
+**Trạng thái thi công**: **nợ đổi tên ĐÃ TRẢ ngày 2026-08-26** (bước 1 của kế hoạch thi công). Code
+hiện tại: `core/models/hr/nhiem-vu.ts` (`NhiemVu` với `maDeTai`/`tenDeTai` nullable),
+`core/models/hr/noi-dung-cong-viec.ts`, `core/models/hr/vai-tro-nhiem-vu.ts`, route `/hr/nhiem-vu`,
+5 màn `hr-nhiem-vu-*` / `hr-khai-bao-list` / `hr-nhan-su-*`. **Không còn ký hiệu `DeTai` nào trong
+`frontend-angular/src/app/**/hr*`** — `maDeTai`/`tenDeTai` chỉ còn là hai trường tham chiếu. Chưa có
+migration, chưa có backend (đợt 6).
+
+**Status**: LOCKED. Không mở lại nếu không có biểu mẫu mới của khách mâu thuẫn với BM5.
+
+---
+
+## P2 (ĐỀ XUẤT, CHƯA KHOÁ) — Design system VHT là nguồn token chính thức của frontend
+
+**Date**: 2026-08-26
+
+**Proposal**: Bộ token màu / chữ / spacing / radius / elevation trong `src/styles/tokens.scss` và
+`src/theme.less` lấy từ 2 file Figma của VHT (`VHT design system` — fileKey `OZKhYr4HsliEVd9ggj1xhJ`;
+`VHT UI DESIGN` — fileKey `OEJIdripupJIAC1LFCbMYi`, page *UI Design Done* `324:88659`), trích ngày
+2026-08-26. Mọi màu mới phải lấy từ ramp đã khai, không tự đặt hex rời.
+
+**⚠ BẪY BẮT BUỘC ĐỌC TRƯỚC KHI SỬA MÀU**: phần **chữ** trong file design system BỊ LỆCH so với màu
+render. Bảng semantic ghi `interactive/primary #F95E00` (cam) → `brand/60`, nhưng ramp `brand/60` render
+ra **#FF3B4A** và `brand/50` = **#EE0033**; toàn bộ màn thiết kế thật đều dùng đỏ. Kết luận: nhãn chữ là
+dấu vết template cũ ⇒ **lấy theo giá trị render + màn thiết kế**, bỏ qua phần chữ. Ai đọc phần chữ rồi
+"sửa lại cho đúng file DS" sẽ biến cả app thành màu cam.
+
+Ghi chú kèm: ramp `danger` **trùng hoàn toàn** ramp `brand` — nút chính và nút xoá cùng đỏ. Đây là chủ ý
+của bản thiết kế, không phải lỗi sao chép.
+
+**Còn thiếu để khoá**: (a) xác nhận với bên thiết kế rằng nhãn `#F95E00` là rác template chứ không phải
+hướng rebrand đang chờ; (b) chốt bộ Elevation bản Dark (đợt 1 mới áp bản Light).
+
+**Status**: ĐỀ XUẤT — token đã áp toàn app từ 2026-08-26, nhưng chưa được bên thiết kế xác nhận chính thức.
+
+---
+
+## P3 (ĐỀ XUẤT, CHƯA CÀI ĐẶT) — CPNC phân bổ là vector 13 khoản mục pro-rata, kèm quy tắc công thừa
+
+**Date**: 2026-08-26
+
+**Proposal**: Chi phí nhân công phân bổ cho một (nhân sự × nhiệm vụ × nội dung công việc) trong một kỳ
+tính theo tỷ lệ tuyến tính, **áp cho TỪNG khoản mục** chứ không cho một con số tổng:
+
+```
+tyLe = congPhanBo / congTinhLuong          ← mẫu số là công tính lương CỦA CHÍNH NGƯỜI ĐÓ (BM0)
+CPNC_phanBo[khoanMuc] = CPNC_thang[khoanMuc] × tyLe      (13 khoản + CỘNG)
+```
+
+**Evidence**: BM3 (`Bang TH phan bo`) dòng 5 — Lê Trần Sự, `congTinhLuong = 21`, `congPhanBo = 6`:
+Lương tháng 113.316.438 × 6/21 = 32.376.125 (khớp đúng đến đồng); BHXH cá nhân 1.503.216 → 429.490 ✓;
+ăn ca/điện thoại 1.730.000 → 494.286 ✓. Làm tròn tới **đồng**, không có hệ số nào khác.
+
+**Hai điểm dễ cài sai** (bản kế hoạch trước đã sai đúng hai chỗ này):
+1. Mẫu số **không phải** số công chuẩn của kỳ — nó là công tính lương của từng người, khác nhau giữa
+   người này với người kia trong cùng một kỳ.
+2. CPNC **không phải một số tổng**. Gộp lại thì BM3.1/BM3.2 không dựng được vì hai biểu mẫu này in
+   tách từng khoản.
+
+**Quy tắc công thừa (BM3 dòng 13, nguyên văn)**: *"Số ngày công của nhân sự đã được phân bổ ở một số
+nhiệm vụ nhưng chưa full công tính lương thì sẽ chuyển hết vào Nội dung nhiệm vụ khác và thuộc nguồn
+Chi phí quản lý."* ⇒ hệ thống **tự sinh** dòng bù `congPhanBo = congTinhLuong − Σ congDaPhanBo`, gán
+`phanNguon = Quản lý`. Bỏ quy tắc này thì tỷ lệ PBNC của mọi báo cáo luôn < 100% một cách vô nghĩa.
+
+**Còn thiếu để khoá**: (a) Q6 — "Nhiệm vụ khác / Chi phí quản lý" là một nhiệm vụ ảo dùng chung toàn
+VHT hay mỗi đơn vị một cái; (b) Q7 — mẫu số của tỷ lệ PBNC là quỹ lương toàn đơn vị cấp 5 hay chỉ nhân
+sự có tham gia nhiệm vụ.
+
+**Nơi cài đặt khi tới đợt 4**: **một chỗ duy nhất** `core/services/hr/cpnc.service.ts`. Để mỗi màn tự
+tính lại là cách chắc chắn để 5 báo cáo ra 5 con số.
+
+**Status**: ĐỀ XUẤT — chưa có dòng code nào cài công thức này; đợt 1 mới dựng nhiệm vụ + nhân sự.
+
+---
+
+## Nợ kỹ thuật đã ghi nhận có chủ ý
+
+- **Kho mẫu thông báo sẽ có 2 nguồn song song** (ghi 2026-08-26). `SEND_NOTIFICATION` của phân hệ Quy
+  trình đã có `templateCode` + `channels` (`core/models/service-task.ts`) nhưng **không có bảng catalog
+  mẫu nào trong 39 migration** — `templateCode` hiện là chuỗi gõ tay. HR Tools sẽ dựng kho mẫu **riêng**
+  ở đợt 5 theo quyết định của người dùng ("để sau"). Hợp nhất khi có yêu cầu; để hợp nhất còn rẻ, mã mẫu
+  của HR Tools dùng **cùng quy ước đặt mã** với `templateCode` và giữ đúng 4 kênh
+  `email | in_app | sms | zalo`. Đây là lựa chọn có ý thức, không phải sót.
+
+---
+
 ## Open decisions blocking Foundation 1 (Project Scaffold)
 
 **RESOLVED 2026-07-15** — backend language/framework (D14), domain database engine (D15), and the Camunda 8 *dev-environment* deployment model (D16) are now locked above. Foundation 1 is unblocked for scaffold work; see `DELIVERY_STATE.md`.

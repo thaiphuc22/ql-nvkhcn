@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 
+import { ALL_APP_CODES } from './app-registry';
 import { AuthService } from './auth.service';
 
 describe('AuthService app entitlement', () => {
@@ -25,7 +26,9 @@ describe('AuthService app entitlement', () => {
   it('gives an admin all registered apps', () => {
     const auth = TestBed.inject(AuthService);
     auth.login('admin@example.com', '123456');
-    expect(auth.entitledApps()).toEqual(['qlnvkhcn', 'quytrinh', 'he-thong']);
+    // So với ALL_APP_CODES thay vì danh sách chép tay: thêm phân hệ mới (HR Tools, 2026-08-26) là
+    // đúng nghĩa "admin có tất cả", không phải một thay đổi phải sửa test mới xanh lại.
+    expect(auth.entitledApps()).toEqual([...ALL_APP_CODES]);
   });
 
   it('only selects an entitled app and clears the selection on logout', () => {
