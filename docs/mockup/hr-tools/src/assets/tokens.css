@@ -1,0 +1,162 @@
+/* =============================================================================
+ * VHT / HR Tools — design tokens cho bộ mockup tĩnh
+ *
+ * NGUỒN: chép nguyên giá trị từ `frontend-angular/src/styles/tokens.scss` (ramp DS Figma) và
+ * nhóm `--vht-built-*` (6 chỗ phân hệ Danh mục dùng chung ĐÃ BUILD lệch DS — D23 chốt bản đã
+ * build thắng). KHÔNG sửa số ở đây: sửa ở `tokens.scss` trước, rồi đồng bộ sang.
+ *
+ * Khác một điểm có chủ ý so với `tokens.scss`: ở đó `--vht-font` là **Inter** vì ba phân hệ
+ * ng-zorro cũ dùng Inter. Bộ mockup này CHỈ có HR Tools ⇒ font nền là **Roboto**
+ * (`--vht-built-font`), đúng bản đã build.
+ * ========================================================================== */
+
+/* --------------------------------------------------------------- Roboto self-host
+ * Đường dẫn TƯƠNG ĐỐI (khác app Angular dùng đường tuyệt đối `/fonts/...`) để mở file dist bằng
+ * `file://` vẫn ra đúng chữ. Khi dán code vào plugin Figma thì URL này hỏng — không sao: plugin
+ * đọc TÊN font từ `font-family`, và Figma có sẵn Roboto.
+ * semibold 600 cố ý ánh xạ vào 700: Roboto không có 600, để trình duyệt béo hoá sẽ ra nét khác
+ * bản đã build. -------------------------------------------------------------------------- */
+@font-face { font-family: 'Roboto'; font-style: normal; font-weight: 300; font-display: swap;
+  src: url('fonts/roboto/roboto-latin-300-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: 'Roboto'; font-style: normal; font-weight: 300; font-display: swap;
+  src: url('fonts/roboto/roboto-vietnamese-300-normal.woff2') format('woff2');
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB; }
+@font-face { font-family: 'Roboto'; font-style: normal; font-weight: 400; font-display: swap;
+  src: url('fonts/roboto/roboto-latin-400-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: 'Roboto'; font-style: normal; font-weight: 400; font-display: swap;
+  src: url('fonts/roboto/roboto-vietnamese-400-normal.woff2') format('woff2');
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB; }
+@font-face { font-family: 'Roboto'; font-style: normal; font-weight: 500; font-display: swap;
+  src: url('fonts/roboto/roboto-latin-500-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: 'Roboto'; font-style: normal; font-weight: 500; font-display: swap;
+  src: url('fonts/roboto/roboto-vietnamese-500-normal.woff2') format('woff2');
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB; }
+@font-face { font-family: 'Roboto'; font-style: normal; font-weight: 700; font-display: swap;
+  src: url('fonts/roboto/roboto-latin-700-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: 'Roboto'; font-style: normal; font-weight: 700; font-display: swap;
+  src: url('fonts/roboto/roboto-vietnamese-700-normal.woff2') format('woff2');
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB; }
+
+:root {
+  /* ---- Ramp thương hiệu (brand & danger DÙNG CHUNG một ramp — cố ý, xem DS §1.1) ---- */
+  --vht-brand-10: #3c0006;
+  --vht-brand-20: #61000e;
+  --vht-brand-30: #890019;
+  --vht-brand-40: #b30024;
+  --vht-brand-50: #ee0033;
+  --vht-brand-60: #ff3b4a;
+  --vht-brand-70: #ff7f7e;
+  --vht-brand-80: #ffaeab;
+  --vht-brand-90: #ffd8d6;
+  --vht-brand-95: #ffecea;
+  --vht-brand-99: #fffbfa;
+
+  /* ---- Coolgray ---- */
+  --vht-gray-10: #1a1c1e;
+  --vht-gray-20: #2f3033;
+  --vht-gray-30: #45474a;
+  --vht-gray-40: #5d5e61;
+  --vht-gray-50: #76777a;
+  --vht-gray-60: #909094;
+  --vht-gray-70: #aaabae;
+  --vht-gray-80: #c6c6c9;
+  --vht-gray-90: #e2e2e5;
+  --vht-gray-95: #f1f0f4;
+  --vht-gray-99: #fcfcff;
+
+  /* ---- Success / Warning / Info (3 ramp này dừng ở bậc 95, đúng DS — đừng thêm bậc 99) ---- */
+  --vht-success-10: #00230f; --vht-success-20: #003b1e; --vht-success-30: #00552e;
+  --vht-success-40: #00713f; --vht-success-50: #008e50; --vht-success-60: #0eac63;
+  --vht-success-70: #3ec87c; --vht-success-80: #5fe495; --vht-success-90: #8bffb4;
+  --vht-success-95: #ceffd9;
+
+  --vht-warning-10: #261900; --vht-warning-20: #412d00; --vht-warning-30: #5d4200;
+  --vht-warning-40: #7a5800; --vht-warning-50: #996f00; --vht-warning-60: #ba8700;
+  --vht-warning-70: #dba000; --vht-warning-80: #feba00; --vht-warning-90: #ffdea3;
+  --vht-warning-95: #ffeed6;
+
+  --vht-info-10: #00174a; --vht-info-20: #002976; --vht-info-30: #1e4193;
+  --vht-info-40: #3a59ad; --vht-info-50: #5573c7; --vht-info-60: #6f8de3;
+  --vht-info-70: #8ba7ff; --vht-info-80: #b3c4ff; --vht-info-90: #dbe1ff;
+  --vht-info-95: #eef0ff;
+
+  /* Danger trùng brand — khai bằng var() để nếu DS tách hai ramp thì chỉ sửa một chỗ.
+     HỆ QUẢ BẮT BUỘC NHỚ: không phân biệt hành động phá huỷ bằng MÀU, phải bằng chữ + icon +
+     bước xác nhận. */
+  --vht-danger-30: var(--vht-brand-30);
+  --vht-danger-40: var(--vht-brand-40);
+  --vht-danger-50: var(--vht-brand-50);
+  --vht-danger-95: var(--vht-brand-95);
+
+  /* Vòng focus XANH — cố ý không đỏ, vì brand và danger cùng ramp đỏ nên focus đỏ lẫn với lỗi. */
+  --vht-focus-ring: rgba(22, 119, 255, 0.5);
+
+  --vht-brand-subtle: var(--vht-brand-95);
+  --vht-success-subtle: var(--vht-success-95);
+  --vht-warning-subtle: var(--vht-warning-95);
+  --vht-info-subtle: var(--vht-info-95);
+
+  /* ---- Giãn cách (4pt + 8pt) ---- */
+  --vht-space-4: 4px;   --vht-space-8: 8px;   --vht-space-12: 12px; --vht-space-16: 16px;
+  --vht-space-20: 20px; --vht-space-24: 24px; --vht-space-32: 32px; --vht-space-40: 40px;
+  --vht-space-48: 48px; --vht-space-56: 56px; --vht-space-64: 64px;
+
+  /* ---- Bo góc ---- */
+  --vht-radius-4: 4px;   --vht-radius-8: 8px;   --vht-radius-12: 12px;
+  --vht-radius-16: 16px; --vht-radius-20: 20px; --vht-radius-24: 24px;
+
+  /* ---- Elevation. Mức 0 KHÔNG phải "không bóng" — nó là viền 1px vẽ bằng shadow. ---- */
+  --vht-shadow-none: 0 0 0 1px rgba(0, 0, 0, 0.08);
+  --vht-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06), 0 1px 3px -1px rgba(0, 0, 0, 0.04);
+  --vht-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.08), 0 4px 8px -2px rgba(0, 0, 0, 0.06);
+  --vht-shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.1), 0 8px 16px -4px rgba(0, 0, 0, 0.08);
+  --vht-shadow-xl: 0 8px 16px rgba(0, 0, 0, 0.12), 0 16px 32px -8px rgba(0, 0, 0, 0.1);
+  --vht-shadow-2xl: 0 12px 24px rgba(0, 0, 0, 0.14), 0 20px 40px -10px rgba(0, 0, 0, 0.12);
+
+  /* ---- Chữ ---- */
+  --vht-built-font: Roboto, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --vht-font: var(--vht-built-font);
+  --vht-font-mono: 'Roboto Mono', 'Cascadia Mono', Consolas, monospace;
+
+  --vht-font-display: 600 28px/120% var(--vht-font);
+  --vht-font-heading: 600 22px/125% var(--vht-font);
+  --vht-font-title: 600 18px/130% var(--vht-font);
+  --vht-font-subtitle: 500 16px/135% var(--vht-font);
+  --vht-font-body: 400 14px/150% var(--vht-font);
+  --vht-font-body-emphasis: 500 14px/150% var(--vht-font);
+  --vht-font-label: 500 13px/140% var(--vht-font);
+  --vht-font-caption: 400 12px/140% var(--vht-font);
+
+  --vht-tracking-display: -0.5px;
+  --vht-tracking-heading: -0.25px;
+  --vht-tracking-label: 0.1px;
+  --vht-tracking-caption: 0.2px;
+
+  /* =========================================================================
+   * NHÓM `--vht-built-*` — 6 chỗ BẢN ĐÃ BUILD lệch DS Figma (D23: bản đã build thắng).
+   * Số đo bằng Playwright trên `vht-ecat-dev.viettelsoftware.com/common-catalog` 2026-08-26.
+   * ====================================================================== */
+  --vht-built-control-h: 40px;          /* nút & ô nhập — DS ghi 36 */
+  --vht-built-table-header-h: 40px;     /* header bảng — DS ghi 36 */
+  --vht-built-table-cell-h: 56px;       /* ô dữ liệu — DS khớp, mặc định thư viện ~39 */
+  --vht-built-nav-pill-radius: 12px;    /* pill nav đang chọn — DS ghi 8 */
+  --vht-built-card-radius: 16px;        /* card — DS ghi 12 */
+  --vht-built-pager-active-bg: #f2f2f2; /* trang hiện tại: NỀN XÁM, không viền đỏ, không tô đỏ */
+  --vht-built-topbar-h: 60px;           /* DS và bản build KHỚP */
+  --vht-built-sider-w: 256px;           /* DS và bản build KHỚP */
+
+  /* ---- Alias ---- */
+  --vht-ink: var(--vht-gray-10);
+  --vht-ink-2: var(--vht-gray-40);
+  --vht-ink-3: var(--vht-gray-60);
+  --vht-surface: #ffffff;
+  --vht-surface-2: var(--vht-gray-95);
+  --vht-surface-3: var(--vht-gray-90);
+  --vht-border: var(--vht-gray-90);
+  --vht-border-strong: var(--vht-gray-80);
+  --vht-dark: var(--vht-gray-10);
+}

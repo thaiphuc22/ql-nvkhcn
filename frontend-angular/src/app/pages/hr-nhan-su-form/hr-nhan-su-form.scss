@@ -63,14 +63,30 @@
     background: var(--vht-brand-99);
   }
 
-  .c-stt { width: 56px; }
-  .c-ma { width: 100px; }
-  .c-vaitro { width: 170px; }
-  .c-noidung { width: 240px; }
-  .c-tyle { width: 150px; }
-  .c-ngay { width: 160px; }
-  .c-ghichu { width: 200px; }
-  .c-xoa { width: 56px; }
+  .c-stt {
+    width: 56px;
+  }
+  .c-ma {
+    width: 100px;
+  }
+  .c-vaitro {
+    width: 170px;
+  }
+  .c-noidung {
+    width: 240px;
+  }
+  .c-tyle {
+    width: 150px;
+  }
+  .c-ngay {
+    width: 160px;
+  }
+  .c-ghichu {
+    width: 200px;
+  }
+  .c-xoa {
+    width: 56px;
+  }
 }
 
 .hr-vuot {
@@ -78,4 +94,19 @@
   margin-top: 2px;
   color: var(--vht-brand-50);
   font: var(--vht-font-caption);
+}
+
+/* Hai card của trang form cách nhau — `screens/04`. `hr-page-card` đã đặt `khongCard` nên phần bọc
+   ngoài trong suốt; khoảng cách phải do chính card con tạo. */
+:host ::ng-deep cmm-card-wrapper + cmm-card-wrapper {
+  display: block;
+  margin-top: var(--vht-space-16);
+}
+
+/* Dòng trống của bảng thành viên — thay `nz-empty`, PrimeNG không có component tương đương gọn hơn
+   một dòng chữ căn giữa. */
+.hr-members__empty {
+  padding: var(--vht-space-32) 0;
+  color: var(--vht-ink-3);
+  text-align: center;
 }

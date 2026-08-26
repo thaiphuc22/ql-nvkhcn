@@ -14,49 +14,18 @@ import { AppListPage } from './pages/app-list/app-list';
 export const routes: Routes = [
   { path: 'dang-nhap', component: LoginPage, canActivate: [loginPageGuard] },
   { path: 'chon-ung-dung', component: AppListPage, canActivate: [authGuard] },
-  // Phân hệ Quản lý chi phí nhân công (HR Tools) dùng SHELL RIÊNG dựng theo design system VHT
-  // (topbar tối full-width + sider trắng) — xem `layout/hr-shell/hr-shell.ts`. Các màn cũ giữ
-  // `Shell` cũ; chuyển cả app sang thiết kế mới sau này chỉ là đổi `component:` ở đây.
+  // Phân hệ Quản lý chi phí nhân công (HR Tools) — nạp LƯỜI cả cây route qua `loadChildren`, không
+  // phải `loadComponent` cho riêng shell. Lý do đo được (2026-08-26): HR Tools chạy PrimeNG (D23) và
+  // preset theme `@khcn-core/theme` nặng ~188 kB; hễ `THEMES` bị nhắc tới trong file này thì nó rơi
+  // vào bundle KHỞI ĐỘNG của cả 4 phân hệ (initial 2,54 MB → 2,68 MB). Đưa cả `providers` lẫn shell
+  // sang `hr.routes.ts` thì toàn bộ nằm trong lazy chunk /hr.
+  //
+  // ⚠ Khối này phải đứng TRƯỚC route `''`, nếu không parent `''` khớp trước và không tìm thấy con.
   {
     path: 'hr',
-    // `loadComponent` chứ không `component:` — shell riêng của HR Tools không cần nằm trong bundle
-    // khởi động của các phân hệ khác. Route cha vẫn có `children` bình thường.
-    loadComponent: () => import('./layout/hr-shell/hr-shell').then((m) => m.HrShell),
     canActivate: [authGuard],
     canActivateChild: [appChildGuard],
-    children: [
-      { path: '', pathMatch: 'full', redirectTo: 'nhiem-vu' },
-      {
-        path: 'nhiem-vu',
-        loadComponent: () => import('./pages/hr-nhiem-vu-list/hr-nhiem-vu-list').then((m) => m.HrNhiemVuListPage),
-        data: { title: 'Danh mục nhiệm vụ', app: 'hrtools' },
-      },
-      {
-        path: 'nhiem-vu/:ma',
-        loadComponent: () => import('./pages/hr-nhiem-vu-detail/hr-nhiem-vu-detail').then((m) => m.HrNhiemVuDetailPage),
-        data: { title: 'Chi tiết nhiệm vụ', app: 'hrtools' },
-      },
-      {
-        path: 'khai-bao-nhiem-vu',
-        loadComponent: () => import('./pages/hr-khai-bao-list/hr-khai-bao-list').then((m) => m.HrKhaiBaoListPage),
-        data: { title: 'Khai báo nhiệm vụ', app: 'hrtools' },
-      },
-      {
-        path: 'nhan-su',
-        loadComponent: () => import('./pages/hr-nhan-su-list/hr-nhan-su-list').then((m) => m.HrNhanSuListPage),
-        data: { title: 'Danh sách nhân sự', app: 'hrtools' },
-      },
-      {
-        path: 'nhan-su/moi',
-        loadComponent: () => import('./pages/hr-nhan-su-form/hr-nhan-su-form').then((m) => m.HrNhanSuFormPage),
-        data: { title: 'Thêm nhân sự vào nhiệm vụ', app: 'hrtools' },
-      },
-      {
-        path: 'nhan-su/:id/sua',
-        loadComponent: () => import('./pages/hr-nhan-su-form/hr-nhan-su-form').then((m) => m.HrNhanSuFormPage),
-        data: { title: 'Sửa phân công nhân sự', app: 'hrtools' },
-      },
-    ],
+    loadChildren: () => import('./hr.routes').then((m) => m.HR_ROUTES),
   },
   {
     path: '',
@@ -67,64 +36,88 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: '/chon-ung-dung' },
       {
         path: 'tong-quan',
-        loadComponent: () => import('./pages/tong-quan/tong-quan').then((module) => module.TongQuanPage),
+        loadComponent: () =>
+          import('./pages/tong-quan/tong-quan').then((module) => module.TongQuanPage),
         data: { title: 'Tổng quan', app: 'quytrinh' },
       },
       {
         path: 'viec-cua-toi',
-        loadComponent: () => import('./pages/worklist/worklist').then((module) => module.WorklistPage),
+        loadComponent: () =>
+          import('./pages/worklist/worklist').then((module) => module.WorklistPage),
         data: { title: 'Việc của tôi', app: 'qlnvkhcn' },
       },
       {
         path: 'nhiem-vu',
-        loadComponent: () => import('./pages/nhiem-vu-list/nhiem-vu-list').then((module) => module.NhiemVuListPage),
+        loadComponent: () =>
+          import('./pages/nhiem-vu-list/nhiem-vu-list').then((module) => module.NhiemVuListPage),
         data: { title: 'Danh sách NV KHCN', app: 'qlnvkhcn' },
       },
       {
         path: 'nhiem-vu/moi',
-        loadComponent: () => import('./pages/nhiem-vu-create/nhiem-vu-create').then((module) => module.NhiemVuCreatePage),
+        loadComponent: () =>
+          import('./pages/nhiem-vu-create/nhiem-vu-create').then(
+            (module) => module.NhiemVuCreatePage,
+          ),
         data: { title: 'Tạo Nhiệm vụ KHCN', app: 'qlnvkhcn' },
       },
       {
         path: 'nhiem-vu/:ma',
-        loadComponent: () => import('./pages/nhiem-vu-detail/nhiem-vu-detail').then((module) => module.NhiemVuDetailPage),
+        loadComponent: () =>
+          import('./pages/nhiem-vu-detail/nhiem-vu-detail').then(
+            (module) => module.NhiemVuDetailPage,
+          ),
         data: { title: 'Chi tiết Nhiệm vụ KHCN', app: 'qlnvkhcn' },
       },
-      { path: 'ho-so', component: HoSoListPage, data: { title: 'Danh sách Hồ sơ KHCN', app: 'qlnvkhcn' } },
+      {
+        path: 'ho-so',
+        component: HoSoListPage,
+        data: { title: 'Danh sách Hồ sơ KHCN', app: 'qlnvkhcn' },
+      },
       {
         path: 'hoi-dong',
-        loadComponent: () => import('./pages/hoi-dong-list/hoi-dong-list').then((module) => module.HoiDongListPage),
+        loadComponent: () =>
+          import('./pages/hoi-dong-list/hoi-dong-list').then((module) => module.HoiDongListPage),
         data: { title: 'Quản lý Hội đồng', app: 'qlnvkhcn' },
       },
       {
         path: 'hoi-dong/moi',
-        loadComponent: () => import('./pages/hoi-dong-form/hoi-dong-form').then((module) => module.HoiDongFormPage),
+        loadComponent: () =>
+          import('./pages/hoi-dong-form/hoi-dong-form').then((module) => module.HoiDongFormPage),
         data: { title: 'Tạo mới Hội đồng', app: 'qlnvkhcn' },
       },
       {
         path: 'hoi-dong/:id/sua',
-        loadComponent: () => import('./pages/hoi-dong-form/hoi-dong-form').then((module) => module.HoiDongFormPage),
+        loadComponent: () =>
+          import('./pages/hoi-dong-form/hoi-dong-form').then((module) => module.HoiDongFormPage),
         data: { title: 'Sửa Hội đồng', app: 'qlnvkhcn' },
       },
       {
         path: 'ho-so/tao-moi',
-        loadComponent: () => import('./pages/ho-so-create/ho-so-create').then((module) => module.HoSoCreatePage),
+        loadComponent: () =>
+          import('./pages/ho-so-create/ho-so-create').then((module) => module.HoSoCreatePage),
         data: { title: 'Tạo mới Hồ sơ', app: 'qlnvkhcn' },
       },
       {
         path: 'ho-so/:id',
-        loadComponent: () => import('./pages/ho-so-detail/ho-so-detail').then((module) => module.HoSoDetailPage),
+        loadComponent: () =>
+          import('./pages/ho-so-detail/ho-so-detail').then((module) => module.HoSoDetailPage),
         data: { title: 'Chi tiết Hồ sơ', app: 'qlnvkhcn' },
       },
-      { path: 'quy-trinh', component: ProcessCatalogPage, data: { title: 'Quản lý quy trình', app: 'quytrinh' } },
+      {
+        path: 'quy-trinh',
+        component: ProcessCatalogPage,
+        data: { title: 'Quản lý quy trình', app: 'quytrinh' },
+      },
       {
         path: 'quy-trinh/ve',
-        loadComponent: () => import('./pages/bpmn-editor/bpmn-editor').then((module) => module.BpmnEditorPage),
+        loadComponent: () =>
+          import('./pages/bpmn-editor/bpmn-editor').then((module) => module.BpmnEditorPage),
         data: { title: 'Tạo & vẽ BPMN', app: 'quytrinh' },
       },
       {
         path: 'quy-trinh/nhap/:draftId/ve',
-        loadComponent: () => import('./pages/bpmn-editor/bpmn-editor').then((module) => module.BpmnEditorPage),
+        loadComponent: () =>
+          import('./pages/bpmn-editor/bpmn-editor').then((module) => module.BpmnEditorPage),
         data: { title: 'Vẽ / sửa BPMN', app: 'quytrinh' },
       },
       {
@@ -150,7 +143,9 @@ export const routes: Routes = [
       {
         path: 'ma-tran-phe-duyet',
         loadComponent: () =>
-          import('./pages/approval-matrix/approval-matrix').then((module) => module.ApprovalMatrixPage),
+          import('./pages/approval-matrix/approval-matrix').then(
+            (module) => module.ApprovalMatrixPage,
+          ),
         data: { title: 'Ma trận phê duyệt', app: 'quytrinh' },
       },
       {
@@ -162,19 +157,25 @@ export const routes: Routes = [
       {
         path: 'cau-hinh-service-task',
         loadComponent: () =>
-          import('./pages/service-task-config/service-task-config').then((module) => module.ServiceTaskConfigPage),
+          import('./pages/service-task-config/service-task-config').then(
+            (module) => module.ServiceTaskConfigPage,
+          ),
         data: { title: 'Tác vụ hệ thống', app: 'quytrinh' },
       },
       {
         path: 'giam-sat',
         loadComponent: () =>
-          import('./pages/process-monitor/process-monitor').then((module) => module.ProcessMonitorPage),
+          import('./pages/process-monitor/process-monitor').then(
+            (module) => module.ProcessMonitorPage,
+          ),
         data: { title: 'Giám sát tiến trình', app: 'quytrinh' },
       },
       {
         path: 'tich-hop',
         loadComponent: () =>
-          import('./pages/integration-status/integration-status').then((module) => module.IntegrationStatusPage),
+          import('./pages/integration-status/integration-status').then(
+            (module) => module.IntegrationStatusPage,
+          ),
         data: { title: 'Tích hợp', app: 'quytrinh' },
       },
       {
@@ -184,30 +185,40 @@ export const routes: Routes = [
       },
       {
         path: 'phan-he/PH2/co-cau-to-chuc',
-        loadComponent: () => import('./pages/org-management/org-management').then((module) => module.OrgManagementPage),
+        loadComponent: () =>
+          import('./pages/org-management/org-management').then(
+            (module) => module.OrgManagementPage,
+          ),
         data: { title: 'Quản trị đơn vị', app: 'he-thong' },
       },
       {
         path: 'phan-he/PH2/nguoi-dung',
         loadComponent: () =>
-          import('./pages/user-management/user-management').then((module) => module.UserManagementPage),
+          import('./pages/user-management/user-management').then(
+            (module) => module.UserManagementPage,
+          ),
         data: { title: 'Quản trị người dùng', app: 'he-thong' },
       },
       {
         path: 'phan-he/PH2/phan-quyen',
         loadComponent: () =>
-          import('./pages/role-permission/role-permission').then((module) => module.RolePermissionPage),
+          import('./pages/role-permission/role-permission').then(
+            (module) => module.RolePermissionPage,
+          ),
         data: { title: 'Phân quyền', app: 'he-thong' },
       },
       {
         path: 'phan-he/PH3/bieu-mau',
-        loadComponent: () => import('./pages/form-library/form-library').then((module) => module.FormLibraryPage),
+        loadComponent: () =>
+          import('./pages/form-library/form-library').then((module) => module.FormLibraryPage),
         data: { title: 'Thư viện biểu mẫu', app: 'he-thong' },
       },
       {
         path: 'phan-he/PH3/bieu-mau/:key/thiet-ke',
         loadComponent: () =>
-          import('./pages/form-designer-page/form-designer-page').then((module) => module.FormDesignerPage),
+          import('./pages/form-designer-page/form-designer-page').then(
+            (module) => module.FormDesignerPage,
+          ),
         data: { title: 'Thiết kế biểu mẫu', app: 'he-thong' },
       },
     ],

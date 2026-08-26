@@ -1,0 +1,161 @@
+/*
+ * Cầu nối token cho `@khcn-core/ui` + hiệu chỉnh về đúng số đo của bản đã build.
+ *
+ * ==========================================================================================
+ * PHẦN 1 — VÌ SAO FILE NÀY TỒN TẠI (đọc trước khi định xoá)
+ * ==========================================================================================
+ *
+ * `@khcn-core/ui` **không tự đủ**. Style của nó gọi 26 custom property KHÔNG do nó và cũng không
+ * do `@khcn-core/theme` định nghĩa — `--primary-color`, `--white`, `--gray-20`, `--text-color`,
+ * `--radius-12`… Chúng đến từ stylesheet nền của chính app *Danh mục dùng chung*, thứ **không nằm
+ * trong `UI-ubck/`** (thư mục này chỉ có 4 package biên dịch sẵn).
+ *
+ * Hệ quả nếu thiếu: những chỗ có giá trị dự phòng (`var(--gray-20, #f2f4f7)`) vẫn chạy, còn những
+ * chỗ khai trần (`background: var(--white)`, `var(--gray-20)`, `var(--gray-1010)`, `var(--gray-1060)`)
+ * thì thuộc tính **mất giá trị** — nền trong suốt, chữ đổi màu — mà DevTools chỉ hiện "invalid at
+ * computed-value time", rất khó lần ra. Kiểm chứng bằng cách quét chuỗi trong
+ * `UI-ubck/ui-0.0.1-v21/package/fesm2022/khcn-core-ui.mjs` ngày 2026-08-26.
+ *
+ * Nên: khai lại đúng bộ đó, **trỏ về token `--vht-*`** của mình để một nguồn màu duy nhất vẫn được
+ * giữ. Không chép hex rời — đổi design system là phải đổi được ở `tokens.scss`, không phải ở đây.
+ *
+ * Để ở `:root`, KHÔNG bọc trong lớp riêng của HR Tools: dialog, panel của select, overlay… đều được
+ * PrimeNG gắn thẳng vào `<body>`, nằm ngoài mọi lớp bọc. Tên biến đã kiểm tra không đụng ng-zorro
+ * (ng-zorro dùng tiền tố `--ant-`) và không đụng biến nào đang có trong `src/`.
+ *
+ * ==========================================================================================
+ * PHẦN 2 — HIỆU CHỈNH VỀ SỐ ĐO BẢN ĐÃ BUILD (D23)
+ * ==========================================================================================
+ *
+ * Thư viện vendor **không khớp** bản đã triển khai ở vài chỗ đo được — nó là ảnh chụp một thời
+ * điểm, không phải chính bản đang chạy. Ba chỗ đã đối chiếu:
+ *
+ *   · `CardWrapperComponent` bo **12px**, bản đã build bo **16px**;
+ *   · nút / ô nhập theo mặc định PrimeNG **36px**, bản đã build **40px**;
+ *   · ô dữ liệu bảng mặc định thấp hơn nhiều, bản đã build **56px**, header **40px**.
+ *
+ * D23 chốt bản đã build thắng ⇒ ghi đè ở đây, lấy số từ nhóm `--vht-built-*` trong `tokens.scss`
+ * (nơi ghi rõ từng chỗ lệch DS và vì sao). Ghi đè bằng biến `--p-*` của PrimeNG chứ không phải
+ * `!important` lên selector — đúng đường mà PrimeNG mở ra cho việc này.
+ */
+
+:root {
+  /* ---- màu ---- */
+  --primary-color: var(--vht-brand-50);
+  --primaryColor-500: var(--vht-brand-50);
+  --primaryColor-10: var(--vht-brand-95);
+  --text-color: var(--vht-ink);
+  --text-color-secondary: var(--vht-ink-2);
+  --white: #ffffff;
+  --black: var(--vht-gray-10);
+  --surface-0: #ffffff;
+  --surface-card: #ffffff;
+  --hover-background: var(--vht-gray-95);
+  --blue-10: var(--vht-info-95);
+
+  /* Thang xám của thư viện — KHÔNG cùng hệ đánh số với `--vht-gray-*` (thư viện đánh 20/1010/1060
+     kiểu Tailwind trộn Figma). Ánh xạ theo ĐỘ SÁNG chứ không theo con số, nên đừng "sửa cho khớp
+     số": `--gray-20` là nền xám rất nhạt, `--gray-1010`/`--gray-1060` là chữ xám đậm. */
+  --gray-20: var(--vht-gray-95);
+  --gray-1010: var(--vht-gray-30);
+  --gray-1060: var(--vht-gray-20);
+
+  /* ---- trạng thái (chữ trên nền nhạt ⇒ lấy bậc đậm của ramp) ---- */
+  --global-success-text-light: var(--vht-success-30);
+  --global-error-text-light: var(--vht-brand-40);
+  --global-warn-text-light: var(--vht-warning-30);
+  --global-info-text-light: var(--vht-info-30);
+
+  /* ---- hình học & chữ ---- */
+  --radius-10: 10px;
+  --radius-12: var(--vht-radius-12);
+  --box-shadow: var(--vht-shadow-sm);
+  --font-size: 14px;
+  --font-size-s: 12px;
+  --font-size-m: 14px;
+  --font-size-md: 14px;
+  --font-size-l: 16px;
+
+}
+
+/*
+ * ==========================================================================================
+ * PHẦN 3 — BIẾN `--p-*` CỦA PRIMENG: PHẢI ĐẶT Ở `:root:has(app-hr-layout)`
+ * ==========================================================================================
+ *
+ * Preset theme của PrimeNG **không** nằm trong file .css nào: nó được sinh lúc chạy và chèn vào
+ * `<head>` dưới dạng `<style data-primeng-style-id="semantic-variables">` — tức là **sau** mọi
+ * stylesheet của app. Cùng độ ưu tiên `:root` thì cái chèn sau thắng, nên mọi `--p-*` khai ở khối
+ * `:root` bên trên **thua im lặng**: đo 2026-08-27 thấy `--p-button-padding-y` vẫn là `0.75rem`
+ * của preset dù ở trên khai `0`.
+ *
+ * `:root:has(app-hr-layout)` có độ ưu tiên (0,1,1) > `:root` (0,1,0) nên thắng bất kể thứ tự, và
+ * `:has` giữ đúng phạm vi HR Tools (ba phân hệ ng-zorro không có phần tử này). Neo ở `html` nên
+ * overlay PrimeNG gắn vào `<body>` vẫn thừa hưởng.
+ */
+:root:has(app-hr-layout) {
+  /* ---- ramp màu chính: preset vendor là XANH LÁ `#0F5A43`, thương hiệu VHT là ĐỎ `#EE0033` ----
+     Preset trong `UI-ubck/theme-*` là ảnh chụp bản chưa nhuộm màu của sản phẩm khác. Không sửa file
+     vendor (nó sẽ bị ghi đè lần cập nhật sau) — ánh xạ sang ramp `--vht-brand-*`, một nguồn màu
+     duy nhất. Thang PrimeNG đi từ 50 (nhạt nhất) đến 950 (đậm nhất), ngược chiều thang `--vht-*`. */
+  --p-primary-50: var(--vht-brand-99);
+  --p-primary-100: var(--vht-brand-95);
+  --p-primary-200: var(--vht-brand-90);
+  --p-primary-300: var(--vht-brand-80);
+  --p-primary-400: var(--vht-brand-70);
+  --p-primary-500: var(--vht-brand-50);
+  --p-primary-600: var(--vht-brand-40);
+  --p-primary-700: var(--vht-brand-30);
+  --p-primary-800: var(--vht-brand-20);
+  --p-primary-900: var(--vht-brand-10);
+  --p-primary-950: var(--vht-brand-10);
+
+  /* ---- hiệu chỉnh về số đo bản đã build (xem PHẦN 2) ---- */
+  --p-button-padding-y: 0;
+  --p-button-sm-padding-y: 0;
+  --p-inputtext-padding-y: 0;
+  --p-datatable-header-cell-padding: 0 12px;
+  --p-datatable-body-cell-padding: 0 12px;
+}
+
+/* Chiều cao control 40px. Đặt qua `min-height` trên chính phần tử: PrimeNG tính chiều cao từ
+   padding, mà padding đã ép về 0 ở trên để chữ không đội chiều cao lên quá 40. */
+.p-button,
+.p-inputtext,
+.p-select,
+.p-datepicker-input,
+.p-multiselect {
+  min-height: var(--vht-built-control-h);
+}
+
+/* Nhịp bảng: header 40, ô dữ liệu 56 — dấu hiệu dễ nhận ra nhất khi đặt hai phân hệ cạnh nhau. */
+.p-datatable-thead > tr > th {
+  height: var(--vht-built-table-header-h);
+  background: var(--vht-gray-95);
+  color: var(--vht-ink-2);
+}
+
+.p-datatable-tbody > tr > td {
+  height: var(--vht-built-table-cell-h);
+}
+
+/* Card bo 16, không phải 12 như `CardWrapperComponent` khai cứng. Viền + nền phải khai lại vì
+   chính component đó gọi `var(--gray-20)` / `var(--white)` (đã vá ở PHẦN 1, để đây cho chắc). */
+/* `.p-component` trong selector KHÔNG thừa: `CardWrapperComponent` khai `border-radius: 12px` bằng
+   selector `[_nghost-ng-c…] .p-card` — độ ưu tiên (0,2,0), cao hơn `cmm-card-wrapper .p-card`
+   (0,1,1) nên bản vá cũ thua im lặng, đo ngày 2026-08-27 vẫn ra 12px. Thêm một lớp nữa thành
+   (0,2,1) là đủ thắng mà không cần `!important`. */
+cmm-card-wrapper .p-card.p-component {
+  border-radius: var(--vht-built-card-radius);
+  border: 1px solid var(--vht-border);
+  background: #ffffff;
+}
+
+/* Trang hiện tại của pager: ô NỀN XÁM `#F2F2F2`, KHÔNG viền đỏ và KHÔNG tô đỏ đặc.
+   Đây là chỗ từng sai theo cả hai hướng — xem `--vht-built-pager-active-bg` trong `tokens.scss`. */
+.p-paginator .p-paginator-page.p-paginator-page-selected {
+  background: var(--vht-built-pager-active-bg);
+  color: var(--vht-ink);
+  font-weight: 600;
+  border: 0;
+}

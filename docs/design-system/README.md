@@ -189,7 +189,12 @@ toggle đỏ (bật/tắt) hoặc tag có chấm tròn (`● Hoàn thành` nền
 gạch chân**. Hàng đang chọn có nền đỏ rất nhạt.
 
 **Footer bảng** — trái: `Hiển thị bản ghi/trang: [25 ▾]`. Phải: `Tổng số bản ghi: 1000` rồi tới pager
-`« ‹ 1 2 3 4 … 99 › »`, trang hiện tại là ô viền đỏ.
+`« ‹ 1 2 3 4 … 99 › »`. Trang hiện tại là ô **nền xám `#F2F2F2` bo tròn, chữ đậm, KHÔNG viền đỏ**.
+
+> ⚠ **Bẫy tài liệu đã sửa 2026-08-26.** Bản trước của dòng này ghi "trang hiện tại là ô viền đỏ" — sai.
+> Ảnh `components/pagination.png` cho thấy ô nền xám nhạt bo tròn, số thường không viền, chỉ mũi tên
+> mới có khung; và phân hệ Danh mục dùng chung **đã build** cũng đúng như vậy. Chính tài liệu này dặn
+> *"khi hai thứ lệch nhau, mở ảnh trong `components/` để đối chiếu"* ⇒ **ảnh đúng, chữ sai**. Xem D23.
 
 **Dialog** — rộng 520px cho form thêm/sửa, 400px cho hộp xác nhận, 1360px cho pop-up chọn dữ liệu có
 bảng. Tiêu đề trái + nút `✕` phải, đường kẻ dưới tiêu đề, nút `Huỷ` (viền) + nút chính đỏ ở góc phải

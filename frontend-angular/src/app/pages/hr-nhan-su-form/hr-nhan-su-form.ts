@@ -3,13 +3,19 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 
-import { NzButtonModule } from 'ng-zorro-antd/button';
-import { NzEmptyModule } from 'ng-zorro-antd/empty';
-import { NzIconModule } from 'ng-zorro-antd/icon';
-import { NzInputModule } from 'ng-zorro-antd/input';
-import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
-import { NzMessageService } from 'ng-zorro-antd/message';
-import { NzSelectModule } from 'ng-zorro-antd/select';
+import { DatePicker } from 'primeng/datepicker';
+import {
+  CardWrapperComponent,
+  CmmButtonComponent,
+  CmmInputText,
+  CmmInputnumberComponent,
+  CmmMultiselectComponent,
+  CmmSelectComponent,
+  DeleteIconComponent,
+  ToastService,
+} from '@khcn-core/ui';
+
+import { HR_DATE_FORMAT, hrToDate, hrToIso } from '../../core/utils/hr-date';
 
 import { AuthService } from '../../core/auth/auth.service';
 import {
@@ -54,17 +60,34 @@ interface ThanhVien {
  *
  * Cảnh báo vượt tỷ lệ dự kiến vẫn chạy **ngay khi gõ**, cộng cả các dòng đang soạn trên form với dữ
  * liệu đã có; nhưng đây là ràng buộc *tham khảo*, chỉ nổ khi người dùng thực sự khai số.
+ *
+ * ## Hai card, không phải một (D23, giai đoạn 4)
+ *
+ * `docs/design-system/screens/04-themmoi-hoidong.png` cho thấy trang form đầy đủ gồm **hai card
+ * tách rời**: "Thông tin chung" ở trên, bảng con nhập liệu ở dưới. Bản đợt 1 gộp tất cả vào một
+ * card. Vì vậy `hr-page-card` ở đây đặt `khongCard` (chỉ còn tiêu đề + cụm nút) và trang tự dựng
+ * hai `cmm-card-wrapper`.
+ *
+ * ## Bảng thành viên vẫn là `<table>` viết tay, KHÔNG phải `UbckTable`
+ *
+ * `UbckTable` render ô bằng `{{ rowData[col.field] }}` hoặc một `TemplateRef` **dùng chung cho mọi
+ * dòng** — hợp với bảng để ĐỌC. Bảng này là **lưới nhập liệu**: mỗi ô là một control ràng buộc vào
+ * đúng chỉ số dòng (`capNhatDong(i, ...)`), có ô khoá theo trạng thái và cảnh báo riêng từng dòng.
+ * Nhét nó vào `UbckTable` sẽ phải luồn chỉ số dòng qua ngữ cảnh template và mất kiểu — đổi lấy đúng
+ * một thứ là "trông giống bảng kia". Các control BÊN TRONG thì vẫn là component thư viện.
  */
 @Component({
   selector: 'app-hr-nhan-su-form',
   imports: [
     FormsModule,
-    NzButtonModule,
-    NzEmptyModule,
-    NzIconModule,
-    NzInputModule,
-    NzInputNumberModule,
-    NzSelectModule,
+    DatePicker,
+    CardWrapperComponent,
+    CmmButtonComponent,
+    CmmInputText,
+    CmmInputnumberComponent,
+    CmmMultiselectComponent,
+    CmmSelectComponent,
+    DeleteIconComponent,
     HrNhanSuPicker,
     HrPageCard,
   ],
@@ -78,17 +101,21 @@ export class HrNhanSuFormPage {
   private readonly nhiemVuService = inject(NhiemVuService);
   private readonly ndcvService = inject(NoiDungCongViecService);
   private readonly auth = inject(AuthService);
-  private readonly message = inject(NzMessageService);
+  private readonly toast = inject(ToastService);
 
-  readonly vaiTroOptions = VAI_TRO_THAM_GIA_OPTIONS;
+  /** `cmm-select` cần `{ value, label }`; `VAI_TRO_THAM_GIA_OPTIONS` là mảng chuỗi. */
+  readonly vaiTroOptions = VAI_TRO_THAM_GIA_OPTIONS.map((value) => ({ value, label: value }));
   readonly tyLeNhan = TY_LE_PHAN_BO_NHAN;
+  readonly dateFormat = HR_DATE_FORMAT;
 
   private readonly params = toSignal(this.route.paramMap, { requireSync: true });
   readonly rowId = computed(() => this.params().get('id'));
   readonly laSua = computed(() => this.rowId() !== null);
 
   readonly nhiemVuOptions = computed(() =>
-    this.nhiemVuService.rows().map((d) => ({ value: d.maNhiemVu, label: `${d.maNhiemVu} — ${d.tenNhiemVu}` })),
+    this.nhiemVuService
+      .rows()
+      .map((d) => ({ value: d.maNhiemVu, label: `${d.maNhiemVu} — ${d.tenNhiemVu}` })),
   );
 
   readonly nhiemVuId = signal('');
@@ -111,8 +138,24 @@ export class HrNhanSuFormPage {
 
   /** Nội dung công việc của nhiệm vụ đang chọn — nguồn cho cột "Nội dung công việc tham gia". */
   readonly noiDungOptions = computed(() =>
-    this.ndcvService.rows().filter((r) => r.nhiemVuId === this.nhiemVuId()),
+    this.ndcvService
+      .rows()
+      .filter((r) => r.nhiemVuId === this.nhiemVuId())
+      .map((r) => ({ value: r.id, label: r.ten })),
   );
+
+  /*
+   * Ngày: model giữ chuỗi ISO, `p-datepicker` cần `Date` — đổi kiểu ở đúng biên này.
+   * Xem `core/utils/hr-date.ts` (kèm cái bẫy lệch ngày do múi giờ, và lý do dùng `p-datepicker`
+   * chứ không phải `cmm-datepicker`).
+   */
+  ngayDate(tv: ThanhVien, key: 'tuNgay' | 'denNgay'): Date | null {
+    return hrToDate(tv[key]);
+  }
+
+  doiNgay(index: number, key: 'tuNgay' | 'denNgay', value: Date | null): void {
+    this.capNhatDong(index, key, hrToIso(value));
+  }
 
   constructor() {
     const id = this.rowId();
@@ -147,7 +190,13 @@ export class HrNhanSuFormPage {
   tongPhanBo(tv: ThanhVien): number {
     const daLuu = this.service.tongPhanBo(tv.maNhanVien, tv, this.rowId() ?? undefined);
     const trenForm = this.thanhVien()
-      .filter((t) => t !== tv && t.maNhanVien === tv.maNhanVien && t.tuNgay <= tv.denNgay && tv.tuNgay <= t.denNgay)
+      .filter(
+        (t) =>
+          t !== tv &&
+          t.maNhanVien === tv.maNhanVien &&
+          t.tuNgay <= tv.denNgay &&
+          tv.tuNgay <= t.denNgay,
+      )
       .reduce((sum, t) => sum + (t.tyLePhanBo ?? 0), 0);
     return daLuu + trenForm + (tv.tyLePhanBo ?? 0);
   }
@@ -231,7 +280,9 @@ export class HrNhanSuFormPage {
       if (!tv.tuNgay || !tv.denNgay) loi.push(`${nhan}: chưa nhập thời gian tham gia.`);
       else if (tv.tuNgay > tv.denNgay) loi.push(`${nhan}: từ ngày phải trước đến ngày.`);
       else if (nv && (tv.tuNgay < nv.tuNgay || tv.denNgay > nv.denNgay)) {
-        loi.push(`${nhan}: thời gian tham gia phải nằm trong khung ${nv.tuNgay} → ${nv.denNgay} của nhiệm vụ.`);
+        loi.push(
+          `${nhan}: thời gian tham gia phải nằm trong khung ${nv.tuNgay} → ${nv.denNgay} của nhiệm vụ.`,
+        );
       } else if (this.vuot(tv)) {
         loi.push(`${nhan}: tổng tỷ lệ dự kiến trong kỳ đạt ${this.tongPhanBo(tv)}% (> 100%).`);
       }
@@ -245,13 +296,20 @@ export class HrNhanSuFormPage {
 
     if (id) {
       const tv = ds[0];
-      this.service.update(id, { ...tv, tyLePhanBo: tv.tyLePhanBo ?? undefined, nhiemVuId: this.nhiemVuId() }, actor);
-      this.message.success(`Đã cập nhật phân công của ${tv.hoTen}.`);
+      this.service.update(
+        id,
+        { ...tv, tyLePhanBo: tv.tyLePhanBo ?? undefined, nhiemVuId: this.nhiemVuId() },
+        actor,
+      );
+      this.toast.success(`Đã cập nhật phân công của ${tv.hoTen}.`);
     } else {
       for (const tv of ds) {
-        this.service.create({ ...tv, tyLePhanBo: tv.tyLePhanBo ?? undefined, nhiemVuId: this.nhiemVuId() }, actor);
+        this.service.create(
+          { ...tv, tyLePhanBo: tv.tyLePhanBo ?? undefined, nhiemVuId: this.nhiemVuId() },
+          actor,
+        );
       }
-      this.message.success(`Đã thêm ${ds.length} nhân sự vào nhiệm vụ ${this.nhiemVuId()}.`);
+      this.toast.success(`Đã thêm ${ds.length} nhân sự vào nhiệm vụ ${this.nhiemVuId()}.`);
     }
     void this.router.navigate(['/hr/nhan-su']);
   }

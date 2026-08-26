@@ -1,10 +1,18 @@
 import { Component, effect, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { NzInputModule } from 'ng-zorro-antd/input';
-import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
-import { NzModalModule } from 'ng-zorro-antd/modal';
-import { NzSelectModule } from 'ng-zorro-antd/select';
+import { DatePicker } from 'primeng/datepicker';
+import {
+  CmmButtonComponent,
+  CmmDialogComponent,
+  CmmInputText,
+  CmmInputnumberComponent,
+  CmmMultiselectComponent,
+  CmmSelectComponent,
+  CmmTextareaDirective,
+} from '@khcn-core/ui';
+
+import { HR_DATE_FORMAT, hrToDate, hrToIso } from '../../../core/utils/hr-date';
 
 import { KHOI_OPTIONS, donViCap5Cua } from '../../../core/models/hr/don-vi';
 import { UNG_VIEN_NHAN_SU } from '../../../core/models/hr/nhan-su';
@@ -64,7 +72,17 @@ function formTrong(maGoiY: string): NhiemVuInput {
 
 @Component({
   selector: 'hr-nhiem-vu-form-modal',
-  imports: [FormsModule, NzInputModule, NzInputNumberModule, NzModalModule, NzSelectModule],
+  imports: [
+    FormsModule,
+    DatePicker,
+    CmmButtonComponent,
+    CmmDialogComponent,
+    CmmInputText,
+    CmmInputnumberComponent,
+    CmmMultiselectComponent,
+    CmmSelectComponent,
+    CmmTextareaDirective,
+  ],
   templateUrl: './nhiem-vu-form-modal.html',
 })
 export class HrNhiemVuFormModal {
@@ -77,20 +95,32 @@ export class HrNhiemVuFormModal {
   readonly huy = output<void>();
   readonly luu = output<NhiemVuInput>();
 
-  readonly khoiOptions = KHOI_OPTIONS;
-  readonly nhanSuOptions = UNG_VIEN_NHAN_SU;
+  /** `cmm-select` nhận `{ value, label }` — mảng chuỗi trần không dùng được. */
+  readonly khoiOptions = KHOI_OPTIONS.map((value) => ({ value, label: value }));
+
+  readonly nhanSuOptions = UNG_VIEN_NHAN_SU.map((u) => ({
+    value: u.maNhanVien,
+    label: `${u.hoTen} (${u.email})`,
+  }));
+
+  readonly dateFormat = HR_DATE_FORMAT;
 
   readonly phanLoaiOptions = (Object.keys(PHAN_LOAI_LABEL) as PhanLoaiNhiemVu[]).map((value) => ({
     value,
     label: PHAN_LOAI_LABEL[value],
   }));
 
-  readonly phanNguonOptions = PHAN_NGUON_CHON_DUOC.map((value) => ({ value, label: PHAN_NGUON_LABEL[value] }));
-
-  readonly tinhTrangOptions = (Object.keys(TINH_TRANG_PHAN_BO_LABEL) as TinhTrangPhanBo[]).map((value) => ({
+  readonly phanNguonOptions = PHAN_NGUON_CHON_DUOC.map((value) => ({
     value,
-    label: TINH_TRANG_PHAN_BO_LABEL[value],
+    label: PHAN_NGUON_LABEL[value],
   }));
+
+  readonly tinhTrangOptions = (Object.keys(TINH_TRANG_PHAN_BO_LABEL) as TinhTrangPhanBo[]).map(
+    (value) => ({
+      value,
+      label: TINH_TRANG_PHAN_BO_LABEL[value],
+    }),
+  );
 
   readonly form = signal<NhiemVuInput>(formTrong(''));
   readonly loi = signal<string[]>([]);
@@ -130,8 +160,20 @@ export class HrNhiemVuFormModal {
   }
 
   /** Đơn vị cấp 5 của khối đang chọn — nguồn cho cả "Đơn vị chủ trì" lẫn "Đơn vị phân bổ". */
-  donViOptions(): readonly string[] {
-    return donViCap5Cua(this.form().khoi);
+  donViOptions(): { value: string; label: string }[] {
+    return donViCap5Cua(this.form().khoi).map((value) => ({ value, label: value }));
+  }
+
+  /*
+   * Ngày: model giữ chuỗi ISO `YYYY-MM-DD`, `cmm-datepicker` cần `Date`. Đổi kiểu ở đúng biên này
+   * chứ không đổi model — xem `core/utils/hr-date.ts` (có cả cái bẫy lệch ngày do múi giờ).
+   */
+  ngayDate(key: 'tuNgay' | 'denNgay'): Date | null {
+    return hrToDate(this.form()[key]);
+  }
+
+  doiNgay(key: 'tuNgay' | 'denNgay', value: Date | null): void {
+    this.capNhat(key, hrToIso(value));
   }
 
   laNguonKHCN(): boolean {
@@ -167,7 +209,9 @@ export class HrNhiemVuFormModal {
     this.form.update((f) => ({
       ...f,
       donViChuTri,
-      donViPhanBo: f.donViPhanBo.includes(donViChuTri) ? f.donViPhanBo : [donViChuTri, ...f.donViPhanBo],
+      donViPhanBo: f.donViPhanBo.includes(donViChuTri)
+        ? f.donViPhanBo
+        : [donViChuTri, ...f.donViPhanBo],
     }));
   }
 
@@ -177,21 +221,25 @@ export class HrNhiemVuFormModal {
     const loi: string[] = [];
 
     if (!f.maNhiemVu.trim()) loi.push('Mã nhiệm vụ không được để trống.');
-    else if (!dangSua && this.service.daTonTai(f.maNhiemVu)) loi.push(`Mã nhiệm vụ ${f.maNhiemVu} đã tồn tại.`);
+    else if (!dangSua && this.service.daTonTai(f.maNhiemVu))
+      loi.push(`Mã nhiệm vụ ${f.maNhiemVu} đã tồn tại.`);
     if (!f.tenNhiemVu.trim()) loi.push('Tên nhiệm vụ không được để trống.');
     if (!f.khoi) loi.push('Chưa chọn khối (đơn vị cấp 4).');
     if (!f.donViChuTri) loi.push('Chưa chọn đơn vị chủ trì.');
     if (!f.donViPhanBo.length) loi.push('Chưa chọn đơn vị phân bổ nào.');
     if (!f.pmMaNhanVien) loi.push('Chưa chọn PM của nhiệm vụ.');
     if (!f.paMaNhanVien) loi.push('Chưa chọn PA của đơn vị chủ trì.');
-    if (f.pmMaNhanVien && f.pmMaNhanVien === f.paMaNhanVien) loi.push('PM và PA phải là hai người khác nhau.');
+    if (f.pmMaNhanVien && f.pmMaNhanVien === f.paMaNhanVien)
+      loi.push('PM và PA phải là hai người khác nhau.');
 
     if (!(f.tongDuToan > 0)) loi.push('Tổng dự toán phải lớn hơn 0.');
     if (this.laBaoHanh()) {
       // Không phải "quên nhập": nguồn Bảo hành chỉ theo dõi số đã phân bổ (kế hoạch §2.4).
-      if (f.chiPhiNhanCongPheDuyet !== 0) loi.push('Nguồn Bảo hành không lập dự toán — để CPNC phê duyệt bằng 0.');
+      if (f.chiPhiNhanCongPheDuyet !== 0)
+        loi.push('Nguồn Bảo hành không lập dự toán — để CPNC phê duyệt bằng 0.');
     } else {
-      if (!(f.chiPhiNhanCongPheDuyet > 0)) loi.push('Chi phí nhân công được phê duyệt phải lớn hơn 0.');
+      if (!(f.chiPhiNhanCongPheDuyet > 0))
+        loi.push('Chi phí nhân công được phê duyệt phải lớn hơn 0.');
       else if (f.chiPhiNhanCongPheDuyet > f.tongDuToan) {
         loi.push('Chi phí nhân công được phê duyệt không được lớn hơn tổng dự toán.');
       }

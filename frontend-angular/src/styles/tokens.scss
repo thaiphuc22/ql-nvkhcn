@@ -43,15 +43,60 @@
   --vht-gray-95: #f1f0f4;
   --vht-gray-99: #fcfcff;
 
-  /* ---------- Ngữ nghĩa (mức 50 = màu chính, mức 95 = nền nhạt cho tag/alert) ---------- */
-  --vht-success-50: #008e50;
-  --vht-success-95: #ceffd9;
+  /* ---------- Ngữ nghĩa — ĐỦ 10 BẬC (README §1.1)
+     Trước 2026-08-26 ở đây chỉ có bậc 50 và 95, nên mọi trạng thái hover/pressed/disabled của tag
+     và alert đều phải chế màu tại chỗ bằng `rgba()` tự đoán. Ba ramp này chỉ dừng ở 95 (không có
+     99) — đúng như DS, đừng thêm bậc 99 tự nghĩ ra. ---------- */
+  --vht-success-10: #00230f;
+  --vht-success-20: #003b1e;
+  --vht-success-30: #00552e;
+  --vht-success-40: #00713f;
+  --vht-success-50: #008e50; /* màu chính */
+  --vht-success-60: #0eac63;
+  --vht-success-70: #3ec87c;
+  --vht-success-80: #5fe495;
+  --vht-success-90: #8bffb4;
+  --vht-success-95: #ceffd9; /* nền nhạt cho tag/alert */
+
+  --vht-warning-10: #261900;
+  --vht-warning-20: #412d00;
+  --vht-warning-30: #5d4200;
+  --vht-warning-40: #7a5800;
   --vht-warning-50: #996f00;
+  --vht-warning-60: #ba8700;
+  --vht-warning-70: #dba000;
+  --vht-warning-80: #feba00;
+  --vht-warning-90: #ffdea3;
   --vht-warning-95: #ffeed6;
+
+  --vht-info-10: #00174a;
+  --vht-info-20: #002976;
+  --vht-info-30: #1e4193;
+  --vht-info-40: #3a59ad;
   --vht-info-50: #5573c7;
+  --vht-info-60: #6f8de3;
+  --vht-info-70: #8ba7ff;
+  --vht-info-80: #b3c4ff;
+  --vht-info-90: #dbe1ff;
   --vht-info-95: #eef0ff;
+
+  /* Danger TRÙNG HOÀN TOÀN ramp brand — thiết kế cố ý để nút chính và nút xoá cùng đỏ. Khai bằng
+     `var()` thay vì chép số: nếu sau này DS tách hai ramp thì chỉ sửa một chỗ. Hệ quả bắt buộc
+     nhớ: KHÔNG được phân biệt hành động phá huỷ bằng màu — phải bằng chữ, icon và bước xác nhận. */
+  --vht-danger-10: var(--vht-brand-10);
+  --vht-danger-20: var(--vht-brand-20);
+  --vht-danger-30: var(--vht-brand-30);
+  --vht-danger-40: var(--vht-brand-40);
   --vht-danger-50: var(--vht-brand-50);
+  --vht-danger-60: var(--vht-brand-60);
+  --vht-danger-70: var(--vht-brand-70);
+  --vht-danger-80: var(--vht-brand-80);
+  --vht-danger-90: var(--vht-brand-90);
   --vht-danger-95: var(--vht-brand-95);
+
+  /* Vòng focus bàn phím — XANH, cố ý không phải đỏ thương hiệu: brand và danger dùng chung ramp
+     đỏ nên vòng focus đỏ sẽ lẫn với trạng thái lỗi. README §1.2 `focus/ring` = #1677FF ở 50%. */
+  --vht-focus-ring: rgba(22, 119, 255, 0.5);
 
   /* Bí danh `-subtle` — dùng cho nền tag/alert, khỏi phải nhớ "95 là mức nào". */
   --vht-brand-subtle: var(--vht-brand-95);
@@ -86,13 +131,23 @@
   --vht-radius-24: 24px;
   --vht-radius-32: 32px;
 
-  /* ---------- Elevation (6 mức, bản Light) ---------- */
-  --vht-shadow-none: none;
-  --vht-shadow-sm: 0 1px 2px rgba(26, 28, 30, 0.06), 0 1px 3px rgba(26, 28, 30, 0.08);
-  --vht-shadow-md: 0 2px 4px rgba(26, 28, 30, 0.06), 0 4px 8px rgba(26, 28, 30, 0.08);
-  --vht-shadow-lg: 0 4px 8px rgba(26, 28, 30, 0.06), 0 8px 16px rgba(26, 28, 30, 0.1);
-  --vht-shadow-xl: 0 8px 16px rgba(26, 28, 30, 0.08), 0 16px 32px rgba(26, 28, 30, 0.12);
-  --vht-shadow-2xl: 0 16px 32px rgba(26, 28, 30, 0.1), 0 32px 64px rgba(26, 28, 30, 0.14);
+  /* ---------- Elevation — 6 mức, bản Light, chép nguyên từ README §4.
+     Bộ giá trị trước 2026-08-26 là TỰ ĐẶT (không có nguồn): sai cả màu bóng (dùng #1A1C1E thay vì
+     đen), sai độ mờ, và thiếu spread âm ở lớp thứ hai nên bóng loang rộng hơn thiết kế. ---------- */
+
+  /* Mức 0 KHÔNG PHẢI "không có bóng" — nó là VIỀN 1px vẽ bằng shadow. Để `none` ở đây là mọi card
+     mất đường bao mà không ai thấy lỗi ở đâu. Đây là cái bẫy README §4 dặn riêng. */
+  --vht-shadow-none: 0 0 0 1px rgba(0, 0, 0, 0.08);
+  --vht-shadow-sm:
+    0 1px 2px rgba(0, 0, 0, 0.06), 0 1px 3px -1px rgba(0, 0, 0, 0.04); /* 1 — Raised */
+  --vht-shadow-md:
+    0 2px 4px rgba(0, 0, 0, 0.08), 0 4px 8px -2px rgba(0, 0, 0, 0.06); /* 2 — Hover */
+  --vht-shadow-lg:
+    0 4px 8px rgba(0, 0, 0, 0.1), 0 8px 16px -4px rgba(0, 0, 0, 0.08); /* 3 — Floating */
+  --vht-shadow-xl:
+    0 8px 16px rgba(0, 0, 0, 0.12), 0 16px 32px -8px rgba(0, 0, 0, 0.1); /* 4 — Overlay */
+  --vht-shadow-2xl:
+    0 12px 24px rgba(0, 0, 0, 0.14), 0 20px 40px -10px rgba(0, 0, 0, 0.12); /* 5 — Top Overlay */
 
   /* ---------- Chữ (Inter) ---------- */
   --vht-font: Inter, system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -116,6 +171,59 @@
   --vht-tracking-body: 0;
   --vht-tracking-label: 0.1px;
   --vht-tracking-caption: 0.2px;
+
+  /* ================================================================================
+   * NHÓM `--vht-built-*` — 6 CHỖ BẢN ĐÃ BUILD LỆCH DESIGN SYSTEM
+   *
+   * Phân hệ *Danh mục dùng chung* đã bàn giao cho khách
+   * (`vht-ecat-dev.viettelsoftware.com/common-catalog`) chạy lệch DS Figma ở đúng 6 điểm dưới đây.
+   * D23 chốt: **khi DS và bản đã build lệch nhau thì bản đã build thắng** — HR Tools phải trông
+   * không phân biệt được với nó.
+   *
+   * Vì sao khai riêng thành nhóm thay vì sửa đè lên token DS ở trên: token DS là bản chép của
+   * thiết kế, sửa đè là xoá mất bằng chứng thiết kế nói gì. Tách ra thì (a) đọc là biết ngay chỗ
+   * nào đang cố tình lệch DS và lệch vì lý do gì, (b) hôm nào khách đồng bộ lại bản build theo DS
+   * thì sửa đúng khối này, không phải đi dò khắp file.
+   *
+   * Số đo lấy bằng Playwright đo trực tiếp trên bản đã build ngày 2026-08-26, không phải ước lượng
+   * từ ảnh chụp. Chỉ HR Tools (`/hr/**`) dùng nhóm này; ba phân hệ cũ vẫn theo D17 + token DS.
+   * ================================================================================ */
+
+  /* Roboto, không phải Inter (DS §2). `@khcn-core/theme` đã khai sẵn
+     `typography.fontFamily.base = "Roboto", ...` nên mọi component PrimeNG dưới `/hr` tự lấy đúng
+     font — biến này dành cho phần HTML tự viết nằm ngoài component thư viện.
+     File font self-host ở `public/fonts/roboto/`, khai `@font-face` tại `styles/fonts-roboto.scss`.
+     LƯU Ý: `--vht-font` ở trên VẪN là Inter và VẪN đúng — ba phân hệ ng-zorro không đổi font. */
+  --vht-built-font:
+    Roboto, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+
+  /* Nút và ô nhập cao 40px, DS ghi 36. Đây là nhịp kích thước dễ nhận ra nhất khi đặt hai phân hệ
+     cạnh nhau — sai 4px là lộ ngay ở hàng lọc. */
+  --vht-built-control-h: 40px;
+
+  /* Header bảng 40px, DS ghi 36. */
+  --vht-built-table-header-h: 40px;
+
+  /* Ô dữ liệu bảng 56px — chỗ này DS và bản build KHỚP nhau, khai ở đây vì mặc định của thư viện
+     component thấp hơn nhiều (~39px) nên vẫn phải đặt tường minh. */
+  --vht-built-table-cell-h: 56px;
+
+  /* Pill mục nav đang chọn bo 12px, DS §5 ghi 8. */
+  --vht-built-nav-pill-radius: 12px;
+
+  /* Card bo 16px, DS §5 ghi 12. */
+  --vht-built-card-radius: 16px;
+
+  /* Trang hiện tại của pager: ô NỀN XÁM `#F2F2F2`, chữ đậm, KHÔNG viền và KHÔNG tô đỏ.
+     Đây là chỗ từng sai theo cả hai hướng: bản HR Tools đợt 1 tô đỏ đặc, còn phần chữ của
+     `docs/design-system/` (đã sửa 2026-08-26) thì ghi "viền đỏ". Ảnh `components/pagination.png`
+     và bản đã build đều là nền xám — xem D23 và README §5. */
+  --vht-built-pager-active-bg: #f2f2f2;
+
+  /* Topbar 60px / sider 256px — DS và bản đã build KHỚP nhau ở hai số này; alias `--vht-sider-w`
+     bên dưới vẫn để 230px cho ba phân hệ cũ nên HR Tools phải đọc biến riêng. */
+  --vht-built-topbar-h: 60px;
+  --vht-built-sider-w: 256px;
 
   /* ================================================================================
    * ALIAS TƯƠNG THÍCH NGƯỢC — tên biến các trang cũ đang dùng. Giữ nguyên tên, chỉ đổi
@@ -157,6 +265,24 @@
 
   /* Bề rộng sider */
   --vht-sider-w: 230px;
+}
+
+/*
+ * Elevation bản Dark (README §4). CHƯA DÙNG — sản phẩm chạy sáng, và `providePrimeNG` trong
+ * `hr.routes.ts` cố ý ghim `darkModeSelector` vào cùng lớp `.vht-dark-chua-dung` này thay vì để
+ * PrimeNG mặc định `system` (máy bật dark mode ở OS sẽ thấy HR Tools tối trong khi ba phân hệ
+ * ng-zorro vẫn sáng — lệch nhau ngay trong một app).
+ *
+ * Chép sẵn ở đây vì DS có đủ cả hai bản: hôm nào bật dark thì gắn lớp này lên `<html>` là token
+ * và component PrimeNG lật CÙNG một lúc. Đổi tên lớp thì phải đổi cả ở `hr.routes.ts`.
+ */
+.vht-dark-chua-dung {
+  --vht-shadow-none: 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --vht-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  --vht-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.5);
+  --vht-shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.56);
+  --vht-shadow-xl: 0 8px 16px rgba(0, 0, 0, 0.64), 0 0 0 1px rgba(255, 255, 255, 0.07);
+  --vht-shadow-2xl: 0 12px 24px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 body {

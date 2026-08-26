@@ -1,0 +1,107 @@
+<app-common-layout [props]="layoutProps">
+  <!-- ------------------------------------------------------------- topbar -->
+  <header header class="hr-topbar">
+    <div class="hr-topbar__brand">
+      <span class="hr-logo">VHT</span>
+      <span class="hr-brand-text">
+        <strong>QTKHCN</strong>
+        <small>{{ activeApp()?.label ?? 'Quản trị KHCN' }}</small>
+      </span>
+    </div>
+
+    <div class="hr-topbar__right">
+      <p-overlaybadge [value]="soThongBao" class="hr-noti">
+        <i class="pi pi-bell" aria-label="Thông báo"></i>
+      </p-overlaybadge>
+
+      <span class="hr-topbar__divider" aria-hidden="true"></span>
+
+      <button
+        type="button"
+        class="hr-account"
+        (click)="userMenu.toggle($event)"
+        aria-haspopup="true"
+      >
+        <p-avatar [label]="userInitials()" shape="circle" styleClass="hr-avatar" />
+        <span class="hr-account__name">{{ user()?.hoTen }}</span>
+        <i class="pi pi-chevron-down hr-account__caret"></i>
+      </button>
+      <cmm-menu #userMenu [model]="userMenuItems()" [popup]="true" />
+    </div>
+  </header>
+
+  <!-- -------------------------------------------------------------- sider -->
+  <aside left class="hr-sider" [class.is-collapsed]="collapsed()">
+    <button
+      type="button"
+      class="hr-collapse"
+      (click)="toggleCollapsed()"
+      [attr.aria-label]="collapsed() ? 'Mở rộng menu' : 'Thu gọn menu'"
+    >
+      <i class="pi" [class.pi-angle-right]="collapsed()" [class.pi-angle-left]="!collapsed()"></i>
+    </button>
+
+    <button type="button" class="hr-appcard" (click)="switchApp()" title="Đổi ứng dụng">
+      <span class="hr-appcard__icon"><i [class]="icon(activeApp()?.icon)"></i></span>
+      @if (!collapsed()) {
+        <span class="hr-appcard__text">
+          <small>PHÂN HỆ</small>
+          <strong>{{ activeApp()?.label ?? 'Chọn ứng dụng' }}</strong>
+        </span>
+      }
+    </button>
+
+    <nav class="hr-nav">
+      @for (item of navItems(); track item.key) {
+        @if (isGroup(item)) {
+          <div class="hr-nav__group" [class.is-open]="isOpen(item)">
+            <button
+              type="button"
+              class="hr-nav__grouphead"
+              [class.has-active-child]="hasActiveChild(item) && !isOpen(item)"
+              (click)="toggleGroup(item.key)"
+            >
+              <i [class]="icon(item.icon)" class="hr-nav__icon"></i>
+              @if (!collapsed()) {
+                <span class="hr-nav__label">{{ item.label }}</span>
+                <i
+                  class="pi hr-nav__caret"
+                  [class.pi-chevron-up]="isOpen(item)"
+                  [class.pi-chevron-down]="!isOpen(item)"
+                ></i>
+              }
+            </button>
+            @if (isOpen(item) && !collapsed()) {
+              <ul class="hr-nav__children">
+                @for (leaf of item.children; track leaf.key) {
+                  <li>
+                    <a [routerLink]="leaf.route" routerLinkActive="is-active">{{ leaf.label }}</a>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        } @else {
+          <a class="hr-nav__leaf" [routerLink]="item.route" routerLinkActive="is-active">
+            <i [class]="icon(item.icon)" class="hr-nav__icon"></i>
+            @if (!collapsed()) {
+              <span class="hr-nav__label">{{ item.label }}</span>
+            }
+          </a>
+        }
+      }
+    </nav>
+
+    <div class="hr-sider__footer">@if (!collapsed()) { v1.0 - © {{ year }} } @else { © }</div>
+  </aside>
+
+  <!-- ------------------------------------------------------------ nội dung -->
+  <div content class="hr-content">
+    <router-outlet />
+  </div>
+</app-common-layout>
+
+<!-- Nơi `ToastService` của `@khcn-core/ui` vẽ thông báo. Phải nằm NGOÀI `app-common-layout`: khung
+     đó khoá `overflow: hidden` ở cả 3 vùng, đặt bên trong là toast bị cắt mất. Đặt ở shell (một
+     lần) chứ không ở từng trang — hai `<app-toast>` cùng lúc thì mỗi thông báo hiện hai bản. -->
+<app-toast />

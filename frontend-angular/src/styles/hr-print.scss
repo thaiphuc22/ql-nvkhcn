@@ -1,7 +1,7 @@
 /*
  * Quy tắc in cho phân hệ HR Tools. Phải để ở GLOBAL chứ không nằm trong component: style của
  * Angular component bị đóng khung bởi thuộc tính `_ngcontent-*`, không với tới được chrome do
- * component khác (`HrShell`) render — mà ẩn chrome chính là việc cần làm khi in.
+ * component khác (`HrLayout`) render — mà ẩn chrome chính là việc cần làm khi in.
  *
  * Cách dùng: bọc phần cần in trong `<div class="hr-print-only">`, mọi thứ khác tự ẩn.
  */
@@ -27,13 +27,29 @@
     background: #fff;
   }
 
-  .hr-shell,
-  .hr-body,
+  /* Khung của `app-common-layout` (`@khcn-core/ui`) bị khoá `height: 100vh; overflow: hidden` —
+     `:host` bằng style component, còn `.cmm-layout` / `.cmm-*-content` bằng style INLINE do
+     directive đặt qua `Renderer2`. Không gỡ là bản in cụt đúng một trang màn hình, phần còn lại
+     mất hẳn. Inline style chỉ thua `!important`, nên ở đây bắt buộc phải có. */
+  app-common-layout,
+  .cmm-layout,
+  .cmm-content,
+  .cmm-right-content,
   .hr-content {
-    display: block;
-    min-height: 0;
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
     padding: 0;
     background: #fff;
+  }
+
+  /* Vùng `[left]` chứa sider; ẩn cả vùng chứ không chỉ `.hr-sider`, nếu không còn lại một cột
+     trắng rộng 256px đẩy nội dung sang phải trên giấy. */
+  .cmm-left-content,
+  .cmm-header {
+    display: none !important;
   }
 
   .hr-card {
@@ -53,7 +69,9 @@
   }
 
   .hr-print-doc {
-    font: 12pt/1.5 'Times New Roman', serif;
+    font:
+      12pt/1.5 'Times New Roman',
+      serif;
     color: #000;
   }
 

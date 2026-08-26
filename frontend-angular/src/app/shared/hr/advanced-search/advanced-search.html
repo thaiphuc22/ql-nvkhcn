@@ -1,15 +1,30 @@
 <section class="hr-as" [class.is-collapsed]="!mo()">
-  <button type="button" class="hr-as__head" (click)="toggle()" [attr.aria-expanded]="mo()">
-    <nz-icon nzType="filter" />
-    <span>{{ tieuDe() }}</span>
-    <nz-icon [nzType]="mo() ? 'up' : 'down'" class="hr-as__caret" />
-  </button>
+  <!-- Nút thu/mở nằm GÓC PHẢI TRÊN, dạng nút chữ (link), không phải hàng tiêu đề có chevron —
+       đúng `docs/design-system/screens/06-tim-kiem-nang-cao.png`. -->
+  <div class="hr-as__bar">
+    <cmm-button
+      [label]="nhanToggle()"
+      [icon]="mo() ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+      iconPos="right"
+      [link]="true"
+      type="button"
+      styleClass="hr-as__toggle"
+      (onClick)="toggle()"
+    />
+  </div>
 
   <div class="hr-as__body">
     <div class="hr-as__grid"><ng-content /></div>
     <div class="hr-as__actions">
-      <button nz-button type="button" (click)="lamMoi.emit()"><nz-icon nzType="reload" /> Làm mới</button>
-      <button nz-button nzType="primary" type="button" (click)="timKiem.emit()"><nz-icon nzType="search" /> Tìm kiếm</button>
+      <cmm-button
+        label="Làm mới"
+        icon="pi pi-refresh"
+        [outlined]="true"
+        severity="secondary"
+        type="button"
+        (onClick)="lamMoi.emit()"
+      />
+      <cmm-button label="Tìm kiếm" icon="pi pi-search" type="button" (onClick)="timKiem.emit()" />
     </div>
   </div>
 </section>

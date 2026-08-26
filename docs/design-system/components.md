@@ -112,7 +112,8 @@ Chiều cao 36px thống nhất cho cả nút và ô nhập ⇒ đặt cạnh nh
 
 ### Phân trang
 Ô số trang **33×33**, bo ~12px, nền trắng, viền `#E6E6E6`, chữ 14px `#666666`; trang hiện tại đổi
-sang viền đỏ.
+sang **nền xám `#F2F2F2`, chữ đậm — không phải viền đỏ** (sửa 2026-08-26: bản cũ ghi "viền đỏ", trái
+với `components/pagination.png` và với phân hệ đã build; ảnh thắng chữ — xem D23).
 
 ---
 

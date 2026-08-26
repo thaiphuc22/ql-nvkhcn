@@ -67,6 +67,7 @@ Two committed hooks in [`.claude/settings.json`](.claude/settings.json) give the
 | `.harness/workflows/feature-delivery.md` | Feature module delivery workflow |
 | `.harness/rules/` | Coding standards, review policy, e2e testing policy, approval policy |
 | `.claude/hooks/` | Enforcement hooks (SessionStart digest, foundations guard) |
+| `UI-ubck/` | Vendored `@khcn-core/{common,theme,ui,echarts}` — the shipped subsystem UI library, wired into `frontend-angular` via `file:` deps (D23). Read `*/package/types/*.d.ts` for what it exports before hand-writing any HR Tools component |
 
 ---
 
@@ -90,23 +91,35 @@ stale. Read `.harness/state/DELIVERY_STATE.md` for exact foundation status befor
 
 | Path | What it is | Status |
 |---|---|---|
-| `frontend-angular/` | Angular 21 + ng-zorro-antd 21 | **Active development target** — the real client of the backend services |
+| `frontend-angular/` | Angular 21 — ng-zorro-antd 21, plus PrimeNG + `@khcn-core/*` for HR Tools (D23) | **Active development target** — the real client of the backend services |
 | `webapp/` | React 18 + Vite + Ant Design v5 | Legacy mock; still the one CI builds and deploys to GitHub Pages (`.github/workflows/deploy-pages.yml`) |
 
 ## Tech Stack
 
-- **Frontend (active)**: Angular 21 + ng-zorro-antd 21, standalone components + signals,
-  Vietnamese locale. Styling: `src/theme.less` (ng-zorro Less variable overrides — the only
-  place theme colors are set) + `src/styles/tokens.scss` (`--vht-*` custom properties for
-  hand-written UI). Tests: **vitest** (`npm run test`), not Karma.
+- **Frontend (active)**: Angular 21, standalone components + signals, Vietnamese locale.
+  Tests: **vitest** (`npm run test`), not Karma. **Two component libraries coexist on purpose
+  (D23)** — do not "unify" them:
+
+| Phân hệ | Thư viện | Ghi chú |
+|---|---|---|
+| `qlnvkhcn`, `quytrinh`, `he-thong` | **ng-zorro-antd 21** (D17) | Styling: `src/theme.less` (ng-zorro Less overrides — the only place theme colors are set) |
+| **`hrtools`** (`/hr/**`) | **PrimeNG 21 + `@khcn-core/*`** (D23) | Packages vendored in `UI-ubck/`, wired via `file:` deps. Theme from `@khcn-core/theme` |
+
+  `src/styles/tokens.scss` (`--vht-*` custom properties) is shared by both.
 - **Design system**: `docs/design-system/README.md` is the **official source** for every colour,
   type size, spacing, radius and shadow — extracted from the customer's Figma on 2026-08-26 and
   kept in-repo because the Figma access token was revoked afterwards. Read it before writing any
-  UI. Two traps documented there: the Figma file's *written* semantic colour labels are stale
-  (they say orange `#F95E00`; the real brand is red `#EE0033` — trust the rendered values), and
-  the Brand and Danger ramps are deliberately identical, so destructive actions must never be
-  distinguished by colour alone. `docs/design_sample/design-system.md` is the superseded
-  Google-Stitch-derived predecessor — kept only to explain leftover values, not to build from.
+  UI. Three traps documented there: the Figma file's *written* semantic colour labels are stale
+  (they say orange `#F95E00`; the real brand is red `#EE0033` — trust the rendered values); the
+  Brand and Danger ramps are deliberately identical, so destructive actions must never be
+  distinguished by colour alone; and the pagination text says the current page is a *red-outlined*
+  cell while `components/pagination.png` (and the shipped subsystem) show a **grey `#F2F2F2` filled**
+  cell — the image wins. **When the design system disagrees with the already-shipped Danh mục dùng
+  chung subsystem (`vht-ecat-dev.viettelsoftware.com/common-catalog`), the shipped build wins** (D23).
+  Six measured differences: font **Roboto** not Inter · buttons/inputs **40px** not 36 · table header
+  **40px** · table cell **56px** · nav pill radius **12** not 8 · card radius **16** not 12.
+  `docs/design_sample/design-system.md` is the superseded Google-Stitch-derived predecessor — kept
+  only to explain leftover values, not to build from.
 - **Frontend (legacy mock)**: React 18 + TypeScript, Vite, Ant Design v5, React Router v6.
 - **BPMN/Forms** (both frontends): `bpmn-js` + `bpmn-js-properties-panel` + `zeebe-bpmn-moddle`;
   `@bpmn-io/form-js` (Camunda Forms rendered in custom UI, not default Tasklist).

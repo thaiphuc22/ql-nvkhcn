@@ -1,62 +1,67 @@
+/*
+ * Pop-up chọn nhân sự — khổ 1360px, cây đơn vị bên trái + bảng ứng viên bên phải
+ * (`docs/design-system/screens/05-popup-chon-nhansu.png`).
+ *
+ * Nhiều selector phải đi qua `::ng-deep` vì bảng, cây và avatar đều là cây DOM của `@khcn-core/ui`
+ * / PrimeNG, không mang `_ngcontent-*` của component này. Tất cả đều ghim dưới `:host` nên không
+ * rò ra ngoài — trừ `.hr-picker__row` (xem chú thích tại chỗ).
+ */
+
 .hr-picker {
   display: grid;
-  grid-template-columns: 240px minmax(0, 1fr);
-  gap: var(--vht-space-16);
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: var(--vht-space-20);
+  min-height: 460px;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 1000px) {
   .hr-picker {
     grid-template-columns: minmax(0, 1fr);
   }
 }
 
+/* ------------------------------------------------------------ cây đơn vị */
+
 .hr-picker__tree {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  max-height: 420px;
-  overflow-y: auto;
-  padding: var(--vht-space-8);
+  gap: var(--vht-space-8);
+  padding: var(--vht-space-12);
   border: 1px solid var(--vht-border);
-  border-radius: var(--vht-radius-8);
+  border-radius: var(--vht-built-card-radius);
   background: var(--vht-gray-99);
+  overflow: auto;
+  max-height: 520px;
 }
 
 .hr-picker__treehead {
-  padding: 4px var(--vht-space-8) var(--vht-space-8);
   font: var(--vht-font-label);
+  font-family: var(--vht-built-font);
   letter-spacing: var(--vht-tracking-label);
   color: var(--vht-ink-3);
   text-transform: uppercase;
 }
 
-.hr-picker__node {
-  display: flex;
-  align-items: center;
-  gap: var(--vht-space-8);
-  padding: 7px var(--vht-space-8);
+/* Cây của thư viện tự vẽ nền trắng + viền; ở đây nó đã nằm trong khung riêng nên bỏ đi. */
+:host ::ng-deep cmm-tree .p-tree {
+  padding: 0;
   border: 0;
-  border-radius: var(--vht-radius-4);
   background: transparent;
-  color: var(--vht-gray-30);
-  font: var(--vht-font-body);
-  text-align: left;
-  cursor: pointer;
+  font-family: var(--vht-built-font);
+}
 
-  &--child {
-    padding-left: var(--vht-space-24);
-  }
+/* Node đang chọn: pill đỏ đặc, cùng ngôn ngữ với mục nav đang chọn ở sider. */
+:host ::ng-deep cmm-tree .p-tree-node-selected .p-tree-node-content {
+  background: var(--vht-brand-50);
+  color: #fff;
 
-  &:hover {
-    background: var(--vht-gray-95);
-  }
-
-  &.is-active {
-    background: var(--vht-brand-95);
-    color: var(--vht-brand-40);
-    font-weight: 500;
+  .p-tree-node-toggle-button,
+  .p-tree-node-icon {
+    color: #fff;
   }
 }
+
+/* --------------------------------------------------------------- bên phải */
 
 .hr-picker__main {
   display: flex;
@@ -65,58 +70,101 @@
   min-width: 0;
 }
 
-.hr-picker__tablewrap {
-  max-height: 372px;
-  overflow: auto;
-  border: 1px solid var(--vht-border);
-  border-radius: var(--vht-radius-8);
+/* Ô tìm kiếm rộng hết khung phải, khác mặc định 280px của `.hr-search` ở hàng lọc. */
+:host ::ng-deep .hr-search {
+  width: 100%;
 }
 
-.hr-picker__table {
-  width: 100%;
-  border-collapse: collapse;
-  font: var(--vht-font-body);
+/* Ô chọn: vòng tròn rỗng → dấu tích đỏ. Dùng icon thay vì checkbox thật vì pop-up có cả chế độ
+   chọn một người, mà checkbox thì đọc là "chọn được nhiều". */
+:host ::ng-deep .hr-picker__tick {
+  font-size: 18px;
+  color: var(--vht-gray-70);
 
-  th {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    padding: 10px var(--vht-space-12);
-    background: var(--vht-gray-95);
-    color: var(--vht-ink-2);
-    font: var(--vht-font-label);
-    letter-spacing: var(--vht-tracking-label);
-    text-align: left;
+  &.is-on {
+    color: var(--vht-brand-50);
+  }
+}
+
+.hr-picker__nguoi {
+  display: flex;
+  align-items: center;
+  gap: var(--vht-space-12);
+  min-width: 0;
+}
+
+:host ::ng-deep .hr-picker__avatar {
+  flex: 0 0 auto;
+  background: var(--vht-brand-95);
+  color: var(--vht-brand-50);
+  font-weight: 700;
+}
+
+.hr-picker__nguoitext {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.35;
+  min-width: 0;
+
+  strong {
+    color: var(--vht-ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  td {
-    padding: 9px var(--vht-space-12);
-    border-top: 1px solid var(--vht-border);
-    color: var(--vht-gray-20);
+  small {
+    color: var(--vht-ink-3);
+    font: var(--vht-font-caption);
   }
-
-  tbody tr {
-    cursor: pointer;
-
-    &:hover td {
-      background: var(--vht-brand-99);
-    }
-
-    &.is-locked {
-      cursor: not-allowed;
-      opacity: 0.55;
-    }
-  }
-}
-
-.hr-picker__pick {
-  width: 44px;
-  text-align: center;
 }
 
 .hr-picker__note {
-  display: block;
-  color: var(--vht-ink-3);
-  font: var(--vht-font-caption);
+  color: var(--vht-brand-50) !important;
+}
+
+/*
+ * Trạng thái dòng.
+ *
+ * KHÔNG ghim dưới `:host` được: `UbckTable` gắn lớp này lên `<tr>` bên trong cây DOM của thư viện,
+ * và `cmm-dialog` lại chuyển cả hộp thoại ra `<body>` — ngoài phạm vi `:host`. Tiền tố
+ * `hr-picker__row` đủ hẹp để không đụng bảng nào khác.
+ */
+::ng-deep tr.hr-picker__row {
+  cursor: pointer;
+}
+
+/* Dòng đang chọn: nền ĐỎ RẤT NHẠT (`brand/99`), không phải đỏ đặc — đỏ đặc dành cho nút và pill
+   nav, dùng cho cả dòng thì chữ trong dòng mất tương phản. */
+::ng-deep tr.hr-picker__row.is-picked > td {
+  background: var(--vht-brand-99);
+}
+
+/* Dòng đã có trong đề tài: mờ + không bấm được. Báo trước lý do bằng chữ ("đã có trong đề tài")
+   thay vì để người dùng bấm rồi mới nhận thông báo trùng. */
+::ng-deep tr.hr-picker__row.is-locked {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Nút bọc ô tích — trong suốt, chỉ để có vùng bấm và tiêu điểm bàn phím thật sự. */
+.hr-picker__tickbtn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--vht-radius-8);
+  background: transparent;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--vht-brand-50);
+    outline-offset: 1px;
+  }
+}
+
+.hr-picker__nguoi--clickable {
+  cursor: pointer;
 }

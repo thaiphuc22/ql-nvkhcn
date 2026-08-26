@@ -24,6 +24,9 @@
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
+            "externalDependencies": [
+              "quill"
+            ],
             "assets": [
               {
                 "glob": "**/*",
@@ -32,6 +35,7 @@
             ],
             "styles": [
               "src/theme.less",
+              "node_modules/primeicons/primeicons.css",
               "node_modules/bpmn-js/dist/assets/diagram-js.css",
               "node_modules/bpmn-js/dist/assets/bpmn-js.css",
               "node_modules/bpmn-js/dist/assets/bpmn-font/css/bpmn.css",

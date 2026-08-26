@@ -319,6 +319,62 @@ user/role/permission; đăng nhập SSO thật và JWT resource-server vẫn ch�
 
 ---
 
+## D23 — HR Tools dùng PrimeNG + `@khcn-core` (thu hẹp phạm vi D17)
+
+**Date**: 2026-08-26
+
+**Decision**: Phân hệ **HR Tools** (`app` code `hrtools`, route `/hr/**`) dựng giao diện bằng
+**PrimeNG 21 + bộ thư viện nội bộ `@khcn-core/{common,theme,ui,echarts}`** thay cho `ng-zorro-antd`.
+Nguồn package là thư mục `UI-ubck/` đã git-track trong repo, khai bằng `file:` trong `package.json`.
+
+**D17 vẫn hiệu lực nguyên vẹn cho ba phân hệ còn lại** (`qlnvkhcn`, `quytrinh`, `he-thong`) — chúng
+tiếp tục chạy `ng-zorro-antd` và **không được đụng tới** trong phạm vi quyết định này. Hai thư viện
+component cùng tồn tại trong một app là **có chủ ý**, không phải nợ kỹ thuật bỏ quên.
+
+**Trọng tài khi tài liệu lệch bản đã build**: `docs/design-system/` vẫn là nguồn **token** chính thức
+(P2 giữ nguyên), nhưng khi nó lệch với **phân hệ Danh mục dùng chung đã build**
+(`vht-ecat-dev.viettelsoftware.com/common-catalog`) thì **bản đã build thắng**. Sáu điểm lệch đã đo
+bằng Playwright ngày 2026-08-26: font **Roboto** (không phải Inter) · nút và ô nhập **40px** (không
+phải 36) · header bảng **40px** · ô dữ liệu bảng **56px** · pill nav bo **12** (không phải 8) · card bo
+**16** (không phải 12) · pager trang hiện tại **nền xám `#F2F2F2`** (không phải viền đỏ).
+
+**Rationale**: Ba lý do, xếp theo sức nặng.
+
+1. **Phân hệ anh em đã build thật và chạy trên PrimeNG.** Cùng token màu (`#EE0033`, `#1A1C1E`) nhưng
+   khác thư viện, khác font, khác nhịp kích thước ⇒ người dùng nhìn ra hai sản phẩm khác nhau dù
+   "chung design system". Đích của HR Tools là *không phân biệt được* với phân hệ đó.
+2. **`UI-ubck/` đã có sẵn phần lớn thứ HR Tools đang tự viết lại.** Kiểm chứng trực tiếp trong
+   `types/khcn-core-ui.d.ts`: `CommonLayoutComponent` · `UbckTable` · `UBCKPaginator` ·
+   `CardWrapperComponent` · `CmmTagComponent` · `DialogImportFile` + `UbckImport` + `ImportFileService`
+   + `FileValidationService` · `CmmDynamicFormComponent` · `CmmTreeComponent` · `CmmChartComponent` ·
+   `ValidationModule`. Đây đúng là bộ mà **các đợt 1.5 → 5 sắp cần** (danh mục 8 tab, import BM0, cây
+   đơn vị 5 cấp, 5 dashboard).
+3. **Chi phí chuyển đổi không tuyến tính.** Chuyển ở thời điểm này = viết lại **5 màn**. Chuyển sau khi
+   xong đợt 6 = viết lại **~25 màn**, và 20 màn ở giữa lại phải tự dựng thứ thư viện đã có.
+
+**Source**: Quyết định trực tiếp của người dùng, phiên 2026-08-26 — đúng tiền lệ D17 thay D7. Kế hoạch
+thi công: `docs/plan/hr-tools-chuyen-sang-khcn-core-2026-08-26.md`.
+
+**Hệ quả bắt buộc ghi kèm**:
+
+- `docs/plan/hr-tools-ke-hoach-thi-cong-2026-08-26.md` §1 ghi *"chrome dựng shell riêng
+  `layout/hr-shell/`… giữ nguyên"* — câu đó **bị D23 thay thế**; `hr-shell` bị xoá, thay bằng
+  `CommonLayoutComponent`. Phần **nghiệp vụ** của kế hoạch đó (§2, §4, §6–§9) **không đổi một chữ**:
+  D23 chỉ nói về thư viện UI.
+- `@khcn-core/*` khai peer `@angular/core: "21.2.5"` **chính xác một bản** trong khi repo chạy dải
+  `^21.2.0`. Xử lý bằng `.npmrc` cấp project (`legacy-peer-deps=true`); **không sửa `package.json` của
+  package vendor**.
+- **Lỗi trong package vendor, đã kiểm chứng**: cả 4 package khai `"main": "./fesm2022/ubck-core-*.mjs"`
+  nhưng file thật tên `khcn-core-*.mjs`. `exports` và `module` trỏ đúng nên bundler của Angular không
+  sao; công cụ nào phân giải qua `main` thì hỏng. Đây là lý do phải chạy `npm run test` (vitest) ngay ở
+  cổng chặn chứ không chỉ `ng build`.
+- Icon: `@khcn-core/ui` chỉ có **6 icon component** (`Edit`, `Delete`, `DeletePopup`, `Eye`, `History`,
+  `Undo`). Phần còn lại tạm dùng **PrimeIcons** — xem mục *Nợ kỹ thuật*.
+
+**Status**: LOCKED (hướng) — thi công bắt đầu 2026-08-26, cổng chặn Giai đoạn 1 là điều kiện đi tiếp.
+
+---
+
 ## P1 (LOCKED 2026-08-26) — `DeTai` và `NhiemVu` (HR) là hai thực thể khác nhau, quan hệ THAM CHIẾU
 
 **Date**: 2026-08-26 (thay thế hoàn toàn bản ĐỀ XUẤT cùng ngày, vốn ghi ngược chiều)
@@ -433,6 +489,22 @@ tính lại là cách chắc chắn để 5 báo cáo ra 5 con số.
   ở đợt 5 theo quyết định của người dùng ("để sau"). Hợp nhất khi có yêu cầu; để hợp nhất còn rẻ, mã mẫu
   của HR Tools dùng **cùng quy ước đặt mã** với `templateCode` và giữ đúng 4 kênh
   `email | in_app | sms | zalo`. Đây là lựa chọn có ý thức, không phải sót.
+
+- **HR Tools dùng PrimeIcons thay icon SVG thật của design system** (ghi 2026-08-26, kèm D23). Hai ràng
+  buộc đã kiểm chứng, không phải phỏng đoán: (a) `docs/design-system/figma-raw/` **không có dữ liệu
+  vector** — quét cả 8 file, `fillGeometry` và `strokeGeometry` đều bằng 0, bộ DS chỉ có ảnh PNG của
+  icon; (b) `@khcn-core/ui` chỉ lộ **6 icon component** (`Edit`, `Delete`, `DeletePopup`, `Eye`,
+  `History`, `Undo`) và `@khcn-core/common` không có icon nào. ⇒ Dùng 6 icon đó cho cột Thao tác, phần
+  còn lại (plus, search, bell, filter, upload, download, printer, check, stop, warning, chevron, save,
+  send, arrow-left…) dùng **PrimeIcons** đi kèm PrimeNG. Đường trả nợ đã biết: sau **2026-08-31** (Figma
+  mở khoá `files/nodes`) export bằng `/v1/images?format=svg` — quota ảnh là quota riêng, không bị khoá;
+  hoặc xin thẳng thư mục `/icons/` từ đội làm phân hệ Danh mục dùng chung.
+
+- **Hai thư viện component cùng sống trong một Angular app** (ghi 2026-08-26, kèm D23). HR Tools chạy
+  PrimeNG, ba phân hệ còn lại chạy ng-zorro. Đây là lựa chọn có ý thức để không phải viết lại 3 phân hệ
+  đang demo được, **không** phải giai đoạn quá độ có hạn chót. Cái giá: bundle mang cả hai bộ style, và
+  mọi thay đổi token phải kiểm chứng ở cả hai phía. Hợp nhất chỉ đặt ra khi có yêu cầu chuyển nốt 3 phân
+  hệ cũ.
 
 ---
 

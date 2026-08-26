@@ -1,7 +1,23 @@
 # HR Tools — chuyển sang `@khcn-core` + PrimeNG để khớp phân hệ đã build
 
-> Kế hoạch thi công, lập 2026-08-26. Trạng thái: **CHỜ DUYỆT — chưa code dòng nào.**
-> Thay thế §4.3 (shell + component tự dựng) của
+> Kế hoạch thi công, lập 2026-08-26. Trạng thái: **ĐÃ THI CÔNG XONG cả 6 giai đoạn (2026-08-26); §10.4
+> · §10.5 · §10.6 · §10.7 đã chạy thật ngày 2026-08-27 — xem "Kết quả kiểm chứng" ở §10.**
+>
+> ⚠ Kiểm chứng ngày 2026-08-27 tìm ra **7 lỗi chặn**, trong đó 4 lỗi làm màn hình không dùng được mà
+> build vẫn xanh và console vẫn sạch. Toàn bộ đã sửa; chi tiết ở §10.
+>
+> ⚠ **Bốn chỗ kế hoạch này giả định sai về `@khcn-core`, đã kiểm chứng khi làm** — đọc
+> `.harness/state/active-task.md` §"Bốn chỗ thư viện KHÔNG dùng được như kế hoạch giả định" trước khi
+> dùng lại bản kế hoạch này làm chuẩn: (1) `CommonLayoutComponent` **không phải shell**, chỉ là khung
+> chia vùng, không có topbar/menu; (2) `CmmDatepickerComponent` **không được export**;
+> (3) `UbckImport` là luồng **do máy chủ xử lý**, cần `httpService` + `uploadEndpoint`;
+> (4) thư viện gọi 26 CSS custom property mà **không package nào định nghĩa**, và cần từ điển
+> `@ngx-translate`. Ngoài ra `CardWrapperComponent` bo 12px trong khi bản đã build bo 16px.
+>
+> **Còn nợ**: §10.4, §10.5 và §10.7 (soi bằng mắt, chạy luồng đầu-cuối, hồi quy 3 phân hệ ng-zorro)
+> **chưa chạy** — build xanh không thay được ba bước đó.
+>
+> Kế hoạch này thay thế §4.3 (shell + component tự dựng) của
 > [`hr-tools-chi-phi-nhan-cong-dot-1-2026-08-26.md`](hr-tools-chi-phi-nhan-cong-dot-1-2026-08-26.md).
 
 ## 1. Bối cảnh
@@ -230,6 +246,60 @@ Cách làm:
    `appChildGuard` đẩy về `/chon-ung-dung`.
 7. **Hồi quy hai thư viện cùng tồn tại**: mở `/nhiem-vu`, `/ho-so`, `/ma-tran-phe-duyet`,
    `/phan-he/PH2/nguoi-dung` xác nhận PrimeNG không làm vỡ trang ng-zorro.
+
+### Kết quả kiểm chứng — chạy thật 2026-08-27
+
+Chạy trên `ng serve` + Chrome (Playwright), tài khoản `admin@example.com`, backend **không** bật (mọi
+lỗi `500 /api/...` dưới đây là do đó, không liên quan giao diện).
+
+**§10.4 — 8 số đo, sau khi sửa: ĐẠT cả 8.** Không đặt cạnh bản ecat được: `vht-ecat-dev.viettelsoftware.com`
+**không truy cập được** từ máy này (curl trả `000`, nghi cần VPN nội bộ), nên mốc so sánh là bảng số đo
+ở §1 (đã đo từ bản ecat trước đó) + `docs/design-system/screens/`. Đo bằng `getComputedStyle` /
+`getBoundingClientRect`, không ước lượng bằng mắt:
+
+| Điểm | Trước khi sửa | Sau khi sửa |
+|---|---|---|
+| Topbar 60 | 60 ✓ | 60 ✓ |
+| Sider 256 | 256 ✓ | 256 ✓ |
+| Mục nav 224×48 | **223**×48 | 224×48 ✓ |
+| Header bảng 40 | 40 ✓ | 40 ✓ |
+| Ô dữ liệu 56 | 56 ✓ | 56 ✓ |
+| Nút 40 | 40 ✓ | 40 ✓ |
+| Card bo 16 | **12** | 16 ✓ |
+| Pager trang hiện tại nền `#F2F2F2` | ✓ | ✓ |
+| (kèm) chữ Roboto | **Inter ở 17 chỗ** | Roboto ✓ |
+
+**§10.5 — luồng đầu-cuối: ĐẠT** (đăng nhập → 4 tile → khai báo `NV-2026-008` → trình duyệt → duyệt →
+chi tiết → nhân sự → nhập file 5 dòng *(2 hợp lệ / 3 lỗi, mỗi lỗi nêu đúng nguyên nhân: thiếu mã +
+email sai · nhiệm vụ không tồn tại · sai định dạng ngày)* → nhập 2 dòng → thêm nhân sự qua pop-up cây
+đơn vị *(nút xác nhận hiện "Chọn Phạm Thu Hà")* → xuất `.xls` *(file bắt đầu bằng `EF BB BF`, tiếng
+Việt nguyên vẹn)* → in *(BM.06, chrome ẩn, có khối ký)*). Hộp xoá nêu rõ tên bản ghi, thông báo
+"Đã xoá phân công của Phạm Thu Hà." hiện đúng.
+
+**§10.6 — fail-closed: ĐẠT.** `pm@example.com` vào thẳng `/hr/nhiem-vu` bị đẩy về `/chon-ung-dung`.
+
+**§10.7 — hồi quy ng-zorro: ĐẠT.** `/nhiem-vu`, `/ho-so`, `/ma-tran-phe-duyet`,
+`/phan-he/PH2/nguoi-dung`: layout nguyên vẹn, sider 230px, chữ Inter, **0 phần tử `.p-component`**
+(PrimeNG không rò sang), không tràn ngang, không lỗi console ngoài lỗi gọi backend.
+
+### Bảy lỗi chặn tìm ra khi kiểm chứng (đã sửa hết)
+
+Bốn lỗi đầu **không** hiện ra ở `tsc`, `ng build` hay console — đó là lý do build xanh mà màn hình vẫn
+sai. Ghi lại để không ai "sửa ngược".
+
+| # | Triệu chứng | Nguyên nhân | Chỗ sửa |
+|---|---|---|---|
+| 1 | `ng serve` chết ngay khi vào `/hr/**` | `@khcn-core/ui` `import("quill")` mà **không package nào khai `quill`** (kể cả peerDependency) | `angular.json` → `externalDependencies: ["quill"]` |
+| 2 | Tab treo cứng (đo được **4386 giây CPU**), không một dòng lỗi | `[ngModel]="ngayDate(...)"` trả `new Date()` mỗi lần gọi ⇒ `<p-datepicker>` thấy input đổi mỗi vòng CD ⇒ lặp vô hạn | `core/utils/hr-date.ts` — bộ nhớ đệm ISO → `Date` |
+| 3 | Bảng có 14 tiêu đề, đúng số dòng, **mọi ô trống** | `computedColumn` của thư viện lọc `filter(item => item?.index)`, mà `index` khai là **tuỳ chọn** | `shared/hr/table-columns.ts` (`hrColumns`), dùng ở cả 5 bảng |
+| 4 | Nút không có nền, ô nhập mất khung, thẻ mất màu | `providePrimeNG()` gói cấu hình trong `provideAppInitializer` ⇒ **không chạy** ở provider của route nạp lười ⇒ không có biến `--p-*` | `hr.routes.ts` → `provideEnvironmentInitializer(() => inject(PrimeNG).setThemeConfig(...))` |
+| 5 | Nút chính **xanh lá** thay vì đỏ VHT | preset trong `UI-ubck/theme-*` là ảnh chụp chưa nhuộm màu (`#0F5A43`); biến `--p-*` do PrimeNG chèn vào `<head>` lúc chạy nên khai ở `:root` thường thua | `khcn-core-compat.scss` PHẦN 3 — `:root:has(app-hr-layout)`, ánh xạ ramp sang `--vht-brand-*` |
+| 6 | Lưu xong: dữ liệu đã đổi nhưng **popup không đóng** | `ToastService` là `providedIn: 'root'` nên tra `MessageService` ở injector **gốc**; provider cấp route không với tới ⇒ `NG0201` | `app.config.ts` — `MessageService` lên gốc |
+| 7 | Tab **Lịch sử trắng** + `TypeError ... reading 'hanhDong'` mỗi vòng CD; pop-up chọn nhân sự **không chọn được ai** | `cmm-timeline` dựng `#content` với ngữ cảnh rỗng (host không vào DOM); `UbckTable` **không bind `(onClickRow)`** nên `(onClickRecord)` là output chết | tự dựng `.hr-timeline`; `nhan-su-picker` tự gắn `(click)` ở ô tích + tên |
+
+⇒ Danh sách "**chỗ thư viện KHÔNG dùng được như kế hoạch giả định**" tăng từ 4 lên **7**: thêm (5)
+`ColumnDefinition.index` bắt buộc trên thực tế, (6) `cmm-timeline` không dùng được, (7) `onClickRecord`
+của `UbckTable` không bao giờ bắn.
 
 ## 11. Ngoài phạm vi đợt này
 

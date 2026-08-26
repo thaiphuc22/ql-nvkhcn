@@ -5,7 +5,7 @@ import { Component, input } from '@angular/core';
  * dữ liệu, khối ký. Chỉ hiện khi in (`.hr-print-only`, xem `src/styles/hr-print.scss`).
  *
  * Component chỉ dựng nội dung; quy tắc `@media print` ẩn chrome nằm ở file style GLOBAL vì style
- * component không với tới được `HrShell`. Trang gọi `window.print()` — xem {@link inTrang}.
+ * component không với tới được `HrLayout`. Trang gọi `window.print()` — xem {@link inTrang}.
  */
 
 export interface PrintColumn {

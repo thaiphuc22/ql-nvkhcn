@@ -7,14 +7,25 @@
 > [`hr-tools-chi-phi-nhan-cong-dot-1-2026-08-26.md`](hr-tools-chi-phi-nhan-cong-dot-1-2026-08-26.md) **vẫn giữ giá trị** nhưng với vai trò khác: nó là **hồ sơ as-built của đợt 1 đã code xong** (lý do chọn shell riêng, danh sách component, dữ liệu DS đã trích xuất). Phần nghiệp vụ trong đó bị file này thay thế — §3 dưới đây là phiếu sửa.
 >
 > Trạng thái: **ĐANG THI CÔNG.** **Bước 1 (§3 — hiệu chỉnh đợt 1) đã DONE ngày 2026-08-26**: build GREEN, chạy thử thật, harness state đã cập nhật. Bước 1.5 → 7 chưa code dòng nào.
+>
+> **⚠ CHÈN NGANG 2026-08-26 — đọc trước khi mở bước 1.5.** Trước bước 1.5 có một đợt **chuyển thư viện UI**:
+> HR Tools bỏ ng-zorro, sang **PrimeNG + `@khcn-core/*`** theo **D23**, kế hoạch riêng ở
+> [`hr-tools-chuyen-sang-khcn-core-2026-08-26.md`](hr-tools-chuyen-sang-khcn-core-2026-08-26.md).
+> Lý do xếp lên trước: chuyển bây giờ là viết lại **5 màn**, chuyển sau bước 6 là viết lại **~25 màn** —
+> và `UI-ubck/` đã có sẵn đúng bộ mà bước 1.5 → 5 cần (`DialogImportFile`, `CmmDynamicFormComponent`,
+> `UbckTable`, `CmmTreeComponent`, `CmmChartComponent`).
+>
+> **Phần nghiệp vụ của file này không đổi một chữ.** D23 chỉ nói về thư viện UI. Duy nhất §1 (câu về
+> `layout/hr-shell/`) bị thay thế — đã ghi tại chỗ.
 
 ## 0. Nguồn chuẩn — ai thắng ai
 
 | Chủ đề | Nguồn chuẩn | Ghi chú |
 |---|---|---|
 | **Nghiệp vụ** (mô hình dữ liệu, công thức, trạng thái, quyền, ngưỡng cảnh báo) | [`docs/hr_tool/`](../hr_tool/) — bộ tài liệu khách gửi 2026-08-26 | Thắng Figma ở mọi điểm |
-| **Hình thức** (token màu/chữ, spacing, khuôn màn, shell, component) | [`docs/design-system/`](../design-system/README.md) | Thắng mọi tài liệu khác, kể cả phần chữ trong file Figma gốc |
-| **Kiến trúc chung repo** | `.harness/state/decisions.md` + `CLAUDE.md` | D3, D8, D9, D17 áp dụng nguyên vẹn |
+| **Hình thức — token** (màu, chữ, spacing, radius, shadow) | [`docs/design-system/`](../design-system/README.md) | Thắng mọi tài liệu khác, kể cả phần chữ trong file Figma gốc |
+| **Hình thức — shell, khuôn màn, component** | **Phân hệ Danh mục dùng chung đã build** + `@khcn-core/*` (`UI-ubck/`) | **D23**: khi DS lệch bản đã build thì bản đã build thắng (font Roboto, control 40, header bảng 40, ô bảng 56, pill bo 12, card bo 16, pager active nền xám) |
+| **Kiến trúc chung repo** | `.harness/state/decisions.md` + `CLAUDE.md` | D3, D8, D9 áp dụng nguyên vẹn. **D17 chỉ còn cho 3 phân hệ cũ**; HR Tools theo **D23** |
 
 Hai vai trò trên không xung đột nhau: khách mô tả *cái gì phải tính đúng*, Figma mô tả *trông ra sao*.
 
@@ -40,7 +51,11 @@ Bộ tài liệu khách gồm:
 
 Sản phẩm giai đoạn hiện tại: **màn hình Angular chạy trên mock data, chưa có backend**. Backend là đợt 6, sau khi chốt xong nghiệp vụ 1–5. Vị trí: phân hệ mới ngay trong repo `ql-nvkhcn`, app code `hrtools`.
 
-Phạm vi áp Design System đã chốt ở đợt 1 và **giữ nguyên**: token áp **toàn app** (`theme.less` + `tokens.scss`); chrome (topbar tối full-width + sider trắng) dựng **shell riêng** `layout/hr-shell/` cho HR Tools, các màn cũ giữ shell cũ. Lý do: hạ tầng theme sửa 2 file là xong, còn chrome thì ngược cấu trúc shell hiện tại — sửa shell chung sẽ đổi giao diện mọi màn đang demo. Shell mới viết **không phụ thuộc gì vào HR Tools**, để sau này muốn chuyển cả app sang thiết kế mới thì chỉ đổi một dòng ở `app.routes.ts`.
+> **⛔ ĐOẠN DƯỚI ĐÂY BỊ D23 THAY THẾ (2026-08-26).** `layout/hr-shell/` bị xoá, thay bằng
+> `CommonLayoutComponent` của `@khcn-core/ui`; bộ `shared/hr/*` viết tay được thay bằng component của
+> thư viện. Token vẫn áp toàn app như cũ. Giữ nguyên văn để giải thích vì sao code đợt 1 trông như vậy.
+
+~~Phạm vi áp Design System đã chốt ở đợt 1 và **giữ nguyên**: token áp **toàn app** (`theme.less` + `tokens.scss`); chrome (topbar tối full-width + sider trắng) dựng **shell riêng** `layout/hr-shell/` cho HR Tools, các màn cũ giữ shell cũ. Lý do: hạ tầng theme sửa 2 file là xong, còn chrome thì ngược cấu trúc shell hiện tại — sửa shell chung sẽ đổi giao diện mọi màn đang demo. Shell mới viết **không phụ thuộc gì vào HR Tools**, để sau này muốn chuyển cả app sang thiết kế mới thì chỉ đổi một dòng ở `app.routes.ts`.~~
 
 ---
 

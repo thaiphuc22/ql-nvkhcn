@@ -1,77 +1,104 @@
-<nz-modal
-  [nzVisible]="visible()"
-  nzTitle="Chọn nhân sự"
-  [nzWidth]="880"
-  [nzFooter]="footer"
-  (nzOnCancel)="huy.emit()"
+<!-- Template ô có cấu trúc — khai TRƯỚC `<ubck-table>`: `columns()` đọc chúng bằng
+     `viewChild.required`, đặt sau bảng thì lần dựng view đầu ném NG0951. -->
+<ng-template #tplChon let-row="rowData">
+  <!-- Ô chọn tự vẽ chứ không dùng `isShowCheckBox` của `UbckTable`: ô tích của thư viện luôn là
+       nhiều-chọn, còn pop-up này có chế độ chọn ĐÚNG MỘT người (`nhieu = false`).
+
+       Sự kiện bấm cũng phải tự gắn ở đây. `(onClickRecord)` của `<ubck-table>` **không bao giờ
+       bắn** trong bản vendor: `UBCKTableBody` có `output onClickRow`, nhưng `UbckTable` dựng
+       `<tr ubck-table-body [props]="...">` mà KHÔNG bind `(onClickRow)` — quét cả file
+       `khcn-core-ui.mjs` ngày 2026-08-27 được 0 chỗ bind. Hậu quả: bấm vào dòng không chọn được
+       ai, nút xác nhận vĩnh viễn `disabled`, không lỗi nào hiện ra. -->
+  <button
+    type="button"
+    class="hr-picker__tickbtn"
+    [attr.aria-pressed]="daTich(row.maNhanVien)"
+    [attr.aria-label]="(daTich(row.maNhanVien) ? 'Bỏ chọn ' : 'Chọn ') + row.hoTen"
+    (click)="toggle(row.maNhanVien)"
+  >
+    <i
+      class="pi hr-picker__tick"
+      [class.pi-check-circle]="daTich(row.maNhanVien)"
+      [class.pi-circle]="!daTich(row.maNhanVien)"
+      [class.is-on]="daTich(row.maNhanVien)"
+      [attr.aria-hidden]="true"
+    ></i>
+  </button>
+</ng-template>
+
+<ng-template #tplNguoi let-hoTen let-row="rowData">
+  <!-- Bấm vào tên cũng chọn được người — xem lý do phải tự gắn `(click)` ở `#tplChon`. -->
+  <div class="hr-picker__nguoi hr-picker__nguoi--clickable" (click)="toggle(row.maNhanVien)">
+    <p-avatar [label]="chuTat(hoTen)" shape="circle" styleClass="hr-picker__avatar" />
+    <span class="hr-picker__nguoitext">
+      <strong>{{ hoTen }}</strong>
+      <small>{{ row.email }}</small>
+      @if (bicKhoa(row.maNhanVien)) {
+        <small class="hr-picker__note">đã có trong đề tài</small>
+      }
+    </span>
+  </div>
+</ng-template>
+
+<cmm-dialog
+  [visible]="visible()"
+  (visibleChange)="!$event && huy.emit()"
+  header="Chọn nhân sự"
+  [modal]="true"
+  [style]="{ width: '1360px', maxWidth: '96vw' }"
 >
-  <div *nzModalContent class="hr-picker">
+  <div class="hr-picker">
     <aside class="hr-picker__tree">
       <div class="hr-picker__treehead">Đơn vị</div>
-      <button type="button" class="hr-picker__node" [class.is-active]="donViDangChon() === null" (click)="chonDonVi(null)">
-        <nz-icon nzType="apartment" /> Tất cả đơn vị
-      </button>
-      @for (donVi of donViList; track donVi) {
-        <button
-          type="button"
-          class="hr-picker__node hr-picker__node--child"
-          [class.is-active]="donViDangChon() === donVi"
-          (click)="chonDonVi(donVi)"
-        >
-          {{ donVi }}
-        </button>
-      }
+      <!-- Tên input ngoài là `value` (bí danh của `treeValue` bên trong) — bind `[treeValue]` sẽ
+           đỏ ngay ở build với NG8002. -->
+      <cmm-tree
+        [value]="cayDonVi()"
+        selectionMode="single"
+        [selection]="nodeDangChon()"
+        (onNodeSelect)="chonNode($event.node)"
+        emptyMessage="Không có đơn vị nào."
+      />
     </aside>
 
     <div class="hr-picker__main">
-      <nz-input-group nzPrefixIcon="search">
-        <input nz-input placeholder="Tìm theo mã, họ tên, email..." [ngModel]="tuKhoa()" (ngModelChange)="tuKhoa.set($event)" />
-      </nz-input-group>
+      <span class="hr-search">
+        <i class="pi pi-search hr-search__icon"></i>
+        <input
+          cmmInputText
+          type="text"
+          placeholder="Tìm theo mã, họ tên, email..."
+          [value]="tuKhoa()"
+          (input)="timKiem($any($event.target).value)"
+        />
+      </span>
 
-      <div class="hr-picker__tablewrap">
-        <table class="hr-picker__table">
-          <thead>
-            <tr>
-              <th class="hr-picker__pick"></th>
-              <th>Mã NV</th>
-              <th>Họ tên</th>
-              <th>Đơn vị</th>
-              <th>Chức danh</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (u of ungVien(); track u.maNhanVien) {
-              <tr [class.is-locked]="bicKhoa(u.maNhanVien)" (click)="toggle(u.maNhanVien)">
-                <td class="hr-picker__pick">
-                  @if (nhieu()) {
-                    <label nz-checkbox [ngModel]="daTich(u.maNhanVien)" [nzDisabled]="bicKhoa(u.maNhanVien)"></label>
-                  } @else {
-                    <label nz-radio [ngModel]="daTich(u.maNhanVien)" [nzDisabled]="bicKhoa(u.maNhanVien)"></label>
-                  }
-                </td>
-                <td><code>{{ u.maNhanVien }}</code></td>
-                <td>
-                  {{ u.hoTen }}
-                  @if (bicKhoa(u.maNhanVien)) { <small class="hr-picker__note">đã có trong đề tài</small> }
-                </td>
-                <td>{{ u.donVi }}</td>
-                <td>{{ u.chucDanh }}</td>
-              </tr>
-            } @empty {
-              <tr>
-                <td colspan="5"><nz-empty nzNotFoundContent="Không có nhân sự khớp điều kiện lọc." /></td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
+      <!-- KHÔNG bind `(onClickRecord)`: output đó chết trong bản vendor (xem `#tplChon`). Vùng bấm
+           được là ô tích và tên người, cả hai đều tự gắn `(click)`. -->
+      <ubck-table
+        class="hr-picker__table"
+        [columns]="columns()"
+        [dataSources]="pagedUngVien()"
+        [props]="tableProps"
+      />
+
+      <ubck-paginator [props]="paginatorProps()" (onPageChange)="doiTrang($event)" />
     </div>
   </div>
-</nz-modal>
 
-<ng-template #footer>
-  <button nz-button type="button" (click)="huy.emit()">Huỷ</button>
-  <button nz-button nzType="primary" type="button" [disabled]="soDaChon() === 0" (click)="xacNhanChon()">
-    Chọn ({{ soDaChon() }})
-  </button>
-</ng-template>
+  <ng-template #footer>
+    <cmm-button
+      label="Huỷ"
+      [outlined]="true"
+      severity="secondary"
+      type="button"
+      (onClick)="huy.emit()"
+    />
+    <cmm-button
+      [label]="nhanXacNhan()"
+      type="button"
+      [disabled]="soDaChon() === 0"
+      (onClick)="xacNhanChon()"
+    />
+  </ng-template>
+</cmm-dialog>

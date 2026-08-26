@@ -3,13 +3,17 @@ import {
   ApartmentOutline,
   ApiOutline,
   AppstoreOutline,
+  ArrowLeftOutline,
+  ArrowRightOutline,
   BankOutline,
+  BellOutline,
   BlockOutline,
   BookOutline,
   BranchesOutline,
   CalendarOutline,
   CarryOutOutline,
   CheckCircleOutline,
+  CheckOutline,
   CheckSquareOutline,
   ClockCircleOutline,
   CloseCircleOutline,
@@ -21,19 +25,21 @@ import {
   DatabaseOutline,
   DeleteOutline,
   DisconnectOutline,
+  DownOutline,
   DownSquareOutline,
+  DownloadOutline,
   EditOutline,
   ExclamationCircleOutline,
   ExperimentOutline,
   EyeInvisibleOutline,
   EyeOutline,
   FieldNumberOutline,
-  FileTextOutline,
+  FileAddOutline,
   FileExcelOutline,
   FilePdfOutline,
+  FileTextOutline,
   FileZipOutline,
   FilterOutline,
-  FileAddOutline,
   FolderOpenOutline,
   FontSizeOutline,
   FormOutline,
@@ -41,7 +47,9 @@ import {
   GroupOutline,
   HistoryOutline,
   Html5Outline,
+  InfoCircleOutline,
   KeyOutline,
+  LeftOutline,
   LinkOutline,
   LockOutline,
   LoginOutline,
@@ -56,10 +64,13 @@ import {
   PictureOutline,
   PlayCircleOutline,
   PlusOutline,
+  PrinterOutline,
   ProfileOutline,
+  ProjectOutline,
   RedoOutline,
   ReloadOutline,
   RetweetOutline,
+  RightOutline,
   RobotOutline,
   SafetyCertificateOutline,
   SafetyOutline,
@@ -69,6 +80,7 @@ import {
   SettingOutline,
   ShoppingCartOutline,
   SolutionOutline,
+  StopOutline,
   SwapOutline,
   SyncOutline,
   TableOutline,
@@ -78,22 +90,10 @@ import {
   ToolOutline,
   UndoOutline,
   UnorderedListOutline,
+  UpOutline,
   UploadOutline,
   UserOutline,
   WarningOutline,
-  ArrowLeftOutline,
-  ArrowRightOutline,
-  BellOutline,
-  CheckOutline,
-  DownOutline,
-  DownloadOutline,
-  InfoCircleOutline,
-  LeftOutline,
-  PrinterOutline,
-  ProjectOutline,
-  RightOutline,
-  StopOutline,
-  UpOutline,
 } from '@ant-design/icons-angular/icons';
 
 /** Icon dùng trong shell (sider/header) + login — đăng ký tường minh, tránh bundle cả bộ icon. */
@@ -196,7 +196,14 @@ export const EFORM_ICONS = [
   UploadOutline,
 ];
 
-export const NHIEM_VU_ICONS = [ArrowLeftOutline, FileAddOutline, FileExcelOutline, FilePdfOutline, FileZipOutline, FolderOpenOutline];
+export const NHIEM_VU_ICONS = [
+  ArrowLeftOutline,
+  FileAddOutline,
+  FileExcelOutline,
+  FilePdfOutline,
+  FileZipOutline,
+  FolderOpenOutline,
+];
 
 /**
  * Icon dùng trong màn Trạng thái Tích hợp (`/tich-hop`, D17 Angular migration) —
@@ -204,7 +211,12 @@ export const NHIEM_VU_ICONS = [ArrowLeftOutline, FileAddOutline, FileExcelOutlin
  * `database`/`disconnect`/`link`/`team` đã có sẵn ở NAV_ICONS/khác, chỉ thêm phần
  * chưa đăng ký (icon tile SystemCard + nút Cấu hình/Kết nối).
  */
-export const INTEGRATION_ICONS = [BankOutline, SafetyCertificateOutline, SettingOutline, ShoppingCartOutline];
+export const INTEGRATION_ICONS = [
+  BankOutline,
+  SafetyCertificateOutline,
+  SettingOutline,
+  ShoppingCartOutline,
+];
 
 /**
  * Icon dùng ở màn Danh mục quy trình (`/quy-trinh`) — cùng lý do với các nhóm trên: chưa có nhóm
@@ -220,11 +232,20 @@ export const PROCESS_CATALOG_ICONS = [
 ];
 
 /**
- * Icon dùng trong phân hệ HR Tools (`/hr/...`, shell riêng `layout/hr-shell`) — đăng ký tường minh
- * cùng lý do với các nhóm phía trên: `nz-icon` với mã chưa đăng ký phải fetch SVG động qua HTTP,
- * tức cần mạng và không chạy được trong unit test. Chỉ liệt kê mã CHƯA có ở nhóm nào khác.
+ * Icon **dùng động** — mã icon đến từ DỮ LIỆU chứ không viết cứng trong template.
+ *
+ * Trước 2026-08-26 nhóm này tên `HR_TOOLS_ICONS` và được cho là chỉ phục vụ phân hệ HR Tools. Sai:
+ * `ho-so-detail.html`, `action-studio.html` và `app-list.html` bind `[nzType]="item.icon"` với mã
+ * lấy từ danh mục hành động / `APP_REGISTRY`, nên các mã này vẫn nổ ra ở ba phân hệ ng-zorro.
+ *
+ * Bằng chứng, không phải suy đoán: HR Tools chuyển sang PrimeNG (D23) rồi gỡ nhóm này đi thì
+ * `ho-so-detail.spec.ts` từ 8 fail có sẵn vọt lên 16 và `ho-so-create.spec.ts` thêm 1 fail —
+ * `nz-icon` với mã chưa đăng ký phải fetch SVG động qua HTTP, mà unit test không có mạng.
+ *
+ * ⚠ Vì vậy **đừng gỡ nhóm này** khi thấy HR Tools không còn dùng `nz-icon`. Muốn gỡ mã nào thì phải
+ * soát cả các chỗ bind `[nzType]` động trước.
  */
-export const HR_TOOLS_ICONS = [
+export const DYNAMIC_NZ_ICONS = [
   BellOutline,
   CheckOutline,
   DownOutline,

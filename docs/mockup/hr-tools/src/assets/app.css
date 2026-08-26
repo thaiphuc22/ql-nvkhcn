@@ -1,0 +1,581 @@
+/* =============================================================================
+ * HR Tools — component tĩnh cho mockup kết xuất Figma
+ *
+ * Chép hình thức từ code thật: `styles/khcn-core-compat.scss`, `styles/hr-pages.scss`,
+ * `layout/hr-layout/hr-layout.scss`. Mọi con số đọc từ `tokens.css`.
+ *
+ * ==========================================================================================
+ * SÁU LUẬT VIẾT CSS Ở FILE NÀY — đặt ra vì đích đến là html.to.design, không phải trình duyệt
+ * ==========================================================================================
+ * 1. CHỈ flexbox. Không `display: grid` — plugin map grid thành layer TỰ DO, mất Auto Layout,
+ *    và đó là thứ tốn nhiều giờ nhất để dọn tay trong Figma.
+ * 2. Không `position: absolute/fixed` — TRỪ ĐÚNG BỐN LỚP phủ: `.stack__dim`, `.toaster`,
+ *    `.overlay-*`. Mọi thứ còn lại nằm trong luồng. Ngoại lệ này có lý do: hộp thoại và toast
+ *    phải thấy được MÀN NỀN BỊ LÀM MỜ ở dưới thì mới duyệt được trạng thái, mà xếp chồng thì
+ *    không có cách nào khác. html.to.design đọc `getBoundingClientRect()` nên layer chồng vẫn ra
+ *    đúng toạ độ và thành layer "absolute position" trong Auto Layout của Figma — đúng cách
+ *    Figma mô tả overlay. Tuyệt đối không dùng absolute để bố cục thứ khác; `check.js` canh
+ *    danh sách selector này.
+ * 3. Không `::before` / `::after` có `content`. Chúng KHÔNG được import ⇒ icon vẽ bằng chúng sẽ
+ *    biến mất không báo lỗi. Icon luôn là `<svg>` inline.
+ * 4. Không `transform`. Plugin đọc hộp bố cục, không đọc ma trận biến đổi ⇒ lệch vị trí.
+ * 5. Không `overflow: hidden` để cắt bớt dữ liệu. Mockup phải vẽ ĐỦ số dòng cần thấy; cắt bằng
+ *    CSS thì Figma nhận được layer rỗng bên dưới.
+ * 6. Bảng dựng bằng div + flex, KHÔNG dùng `<table>`. Thuật toán bảng của trình duyệt sinh ra
+ *    kích thước mà plugin phải hạ xuống toạ độ tuyệt đối; div flex thì mỗi hàng ra một Auto
+ *    Layout ngang, mỗi ô là một frame — đúng thứ cần để làm component trong Figma.
+ * ========================================================================================== */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--vht-gray-90);
+  color: var(--vht-ink);
+  font: var(--vht-font-body);
+  font-family: var(--vht-built-font);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Khung artboard 1440 — mỗi file dist là MỘT frame. Không đặt chiều cao cố định: chiều cao do
+   nội dung quyết định, để bảng dài không bị cắt (luật 5). */
+.artboard {
+  width: 1440px;
+  margin: 0 auto;
+  background: var(--vht-surface);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Artboard khổ rộng — CHỈ dùng cho màn có bảng rộng hơn khung 1440 (ma trận 31 ngày, BM3 51 cột).
+   Thực tế trong app vùng nội dung vẫn 1440 và bảng CUỘN NGANG; ở mockup vẽ đủ chiều ngang để duyệt
+   được toàn bộ dữ liệu (luật 5: không cắt bằng CSS).
+
+   `max-content` chứ KHÔNG phải một con số cứng: các màn này rộng khác nhau rất xa — ma trận chấm
+   công ~2000px, BM3 (51 cột) ~3160px. Đặt cứng 2200 thì BM3 tràn ra ngoài card mà không ai thấy
+   cho tới lúc mở trình duyệt. Để artboard tự ôm nội dung là mỗi frame ra đúng bề rộng thật của nó. */
+.artboard--wide { width: max-content; min-width: 1440px; }
+
+/* ======================================================================= SHELL */
+
+.shell { display: flex; flex-direction: column; }
+
+/* ---------------------------------------------------------------------- topbar */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vht-space-16);
+  height: var(--vht-built-topbar-h);
+  padding: 0 var(--vht-space-24);
+  background: var(--vht-dark);
+  color: #fff;
+  flex: 0 0 auto;
+}
+.topbar__brand { display: flex; align-items: center; gap: var(--vht-space-12); }
+.topbar__logo {
+  display: flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px;
+  border-radius: var(--vht-radius-8);
+  background: var(--vht-brand-50);
+  color: #fff;
+  font: var(--vht-font-label);
+  font-weight: 700;
+  letter-spacing: var(--vht-tracking-label);
+}
+.topbar__text { display: flex; flex-direction: column; }
+.topbar__text strong { font: var(--vht-font-body-emphasis); font-family: var(--vht-built-font); color: #fff; }
+.topbar__text small { font: var(--vht-font-caption); font-family: var(--vht-built-font); color: var(--vht-gray-70); }
+.topbar__right { display: flex; align-items: center; gap: var(--vht-space-16); }
+.topbar__bell { display: flex; align-items: flex-start; gap: 2px; color: var(--vht-gray-80); }
+.topbar__badge {
+  display: flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: 999px;
+  background: var(--vht-brand-60);
+  color: #fff;
+  font: var(--vht-font-caption);
+  font-family: var(--vht-built-font);
+}
+.topbar__divider { width: 1px; height: 24px; background: var(--vht-gray-40); }
+.topbar__account { display: flex; align-items: center; gap: var(--vht-space-8); padding: 4px 8px; border-radius: var(--vht-radius-8); }
+.topbar__avatar {
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 999px;
+  background: var(--vht-brand-50); color: #fff;
+  font: var(--vht-font-label); font-family: var(--vht-built-font); font-weight: 700;
+}
+.topbar__name { font: var(--vht-font-label); font-family: var(--vht-built-font); color: #fff; }
+
+/* ------------------------------------------------------------------ thân trang */
+.shell__body { display: flex; align-items: stretch; }
+
+/* ----------------------------------------------------------------------- sider */
+.sider {
+  width: var(--vht-built-sider-w);
+  flex: 0 0 var(--vht-built-sider-w);
+  display: flex; flex-direction: column;
+  padding: var(--vht-space-16);
+  background: var(--vht-surface);
+  border-right: 1px solid var(--vht-border);
+}
+.sider__appcard {
+  display: flex; align-items: center; gap: var(--vht-space-12);
+  padding: var(--vht-space-12);
+  margin-bottom: var(--vht-space-16);
+  border: 1px solid var(--vht-border);
+  border-radius: var(--vht-built-card-radius);
+  background: var(--vht-gray-99);
+}
+.sider__appicon {
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; flex: 0 0 32px;
+  border-radius: var(--vht-radius-8);
+  background: var(--vht-brand-95); color: var(--vht-brand-50);
+}
+.sider__apptext { display: flex; flex-direction: column; }
+.sider__apptext small { font: var(--vht-font-caption); font-family: var(--vht-built-font); letter-spacing: 0.4px; color: var(--vht-ink-3); }
+.sider__apptext strong { font: var(--vht-font-label); font-family: var(--vht-built-font); color: var(--vht-ink); }
+
+.nav { display: flex; flex-direction: column; gap: var(--vht-space-4); flex: 1 1 auto; }
+/* Mục nav 224×48 bo 12 (224 = 256 − 2×16 padding). Bo 12 là số của bản đã build; DS ghi 8. */
+.nav__item {
+  display: flex; align-items: center; gap: var(--vht-space-12);
+  height: 48px; padding: 0 var(--vht-space-12);
+  border-radius: var(--vht-built-nav-pill-radius);
+  color: var(--vht-gray-30);
+  font: var(--vht-font-body-emphasis);
+  font-family: var(--vht-built-font);
+  text-decoration: none;
+}
+.nav__item .ico { flex: 0 0 auto; }
+.nav__label { flex: 1 1 auto; }
+.nav__caret { flex: 0 0 auto; color: var(--vht-ink-3); }
+/* Nhóm đang chứa route hiện tại nhưng bị đóng: CHỮ ĐỎ, không tô pill — pill đỏ chỉ dành cho
+   đúng mục lá đang mở. */
+.nav__item--parent-active { color: var(--vht-brand-50); }
+.nav__children { display: flex; flex-direction: column; gap: var(--vht-space-4); margin: 2px 0 var(--vht-space-4); }
+.nav__child {
+  display: flex; align-items: center;
+  height: 48px; padding: 0 var(--vht-space-12) 0 40px;
+  border-radius: var(--vht-built-nav-pill-radius);
+  color: var(--vht-gray-30);
+  font: var(--vht-font-body); font-family: var(--vht-built-font);
+  text-decoration: none;
+}
+/* Pill ĐỎ ĐẶC chữ trắng — dấu hiệu "đang chọn" của bản thiết kế. */
+.nav__child--active, .nav__item--active { background: var(--vht-brand-50); color: #fff; font-weight: 500; }
+.sider__footer {
+  padding: var(--vht-space-12) var(--vht-space-12) var(--vht-space-4);
+  border-top: 1px solid var(--vht-border);
+  color: var(--vht-ink-3);
+  font: var(--vht-font-caption); font-family: var(--vht-built-font);
+  text-align: center;
+}
+
+/* --------------------------------------------------------------------- content */
+.content {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: var(--vht-space-24);
+  background: var(--vht-surface-2);
+  display: flex; flex-direction: column; gap: var(--vht-space-20);
+}
+
+/* ======================================================================== TRANG */
+
+.page { display: flex; flex-direction: column; gap: var(--vht-space-16); }
+.page__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--vht-space-16); }
+.page__title { display: flex; align-items: center; gap: var(--vht-space-12); }
+.page__back {
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; flex: 0 0 32px;
+  border: 1px solid var(--vht-border); border-radius: var(--vht-radius-8);
+  background: var(--vht-surface); color: var(--vht-ink-2);
+}
+.page__titletext { display: flex; flex-direction: column; gap: 2px; }
+.page__titletext h1 { margin: 0; font: var(--vht-font-heading); letter-spacing: var(--vht-tracking-heading); color: var(--vht-ink); }
+.page__titletext p { margin: 0; font: var(--vht-font-body); color: var(--vht-ink-2); }
+.page__actions { display: flex; align-items: center; gap: var(--vht-space-8); flex: 0 0 auto; }
+
+/* Card bo 16 — bản đã build, DS ghi 12. */
+.card {
+  padding: var(--vht-space-16);
+  border: 1px solid var(--vht-border);
+  border-radius: var(--vht-built-card-radius);
+  background: var(--vht-surface);
+  box-shadow: var(--vht-shadow-sm);
+  display: flex; flex-direction: column; gap: var(--vht-space-16);
+}
+.card--plain { border: 0; background: transparent; box-shadow: none; padding: 0; }
+.card__title { margin: 0; font: var(--vht-font-title); color: var(--vht-ink); }
+.card__head { display: flex; align-items: center; justify-content: space-between; gap: var(--vht-space-16); }
+
+.section-title { margin: 0; font: var(--vht-font-title); color: var(--vht-ink); }
+.muted { color: var(--vht-ink-3); }
+.caption { font: var(--vht-font-caption); font-family: var(--vht-built-font); letter-spacing: var(--vht-tracking-caption); color: var(--vht-ink-3); }
+.strong { font-weight: 500; }
+.num { font-variant-numeric: tabular-nums; }
+.text-right { text-align: right; justify-content: flex-end; }
+.text-center { text-align: center; justify-content: center; }
+.row { display: flex; align-items: center; gap: var(--vht-space-8); }
+.row--between { justify-content: space-between; }
+.row--wrap { flex-wrap: wrap; }
+.col { display: flex; flex-direction: column; gap: var(--vht-space-8); }
+.col--16 { gap: var(--vht-space-16); }
+.grow { flex: 1 1 auto; min-width: 0; }
+.spacer { flex: 1 1 auto; }
+
+/* ========================================================================= NÚT */
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: var(--vht-built-control-h);          /* 40 — bản đã build; DS ghi 36 */
+  padding: 0 var(--vht-space-16);
+  border: 1px solid transparent;
+  border-radius: var(--vht-radius-12);
+  background: var(--vht-brand-50);
+  color: #fff;
+  font: var(--vht-font-body-emphasis);
+  font-family: var(--vht-built-font);
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.btn--secondary { background: var(--vht-surface); border-color: var(--vht-border-strong); color: var(--vht-ink); }
+.btn--ghost { background: transparent; border-color: transparent; color: var(--vht-ink-2); }
+/* Nút phá huỷ KHÔNG được phân biệt bằng màu (brand và danger cùng ramp đỏ) ⇒ luôn kèm CHỮ và
+   ICON rõ nghĩa. Lớp này chỉ để giữ đúng hình, không phải để "màu cảnh báo". */
+.btn--danger { background: var(--vht-brand-50); color: #fff; }
+.btn--hover { background: var(--vht-brand-40); }
+.btn--pressed { background: var(--vht-brand-30); }
+.btn--disabled { background: var(--vht-gray-90); color: var(--vht-gray-70); border-color: transparent; }
+.btn--focus { box-shadow: 0 0 0 3px var(--vht-focus-ring); }
+.btn--sm { height: 32px; padding: 0 var(--vht-space-12); font: var(--vht-font-label); font-family: var(--vht-built-font); font-weight: 600; }
+.btn--icon { width: var(--vht-built-control-h); padding: 0; }
+.btn--icon.btn--sm { width: 32px; }
+
+/* ==================================================================== Ô NHẬP */
+
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field__label { font: var(--vht-font-label); font-family: var(--vht-built-font); letter-spacing: var(--vht-tracking-label); color: var(--vht-ink-2); }
+.field__label .req { color: var(--vht-brand-50); }
+.field__help { font: var(--vht-font-caption); font-family: var(--vht-built-font); color: var(--vht-ink-3); }
+.field__error { font: var(--vht-font-caption); font-family: var(--vht-built-font); color: var(--vht-brand-40); }
+
+.input {
+  display: flex; align-items: center; gap: var(--vht-space-8);
+  height: var(--vht-built-control-h);
+  padding: 0 var(--vht-space-12);
+  border: 1px solid var(--vht-border-strong);
+  border-radius: var(--vht-radius-12);
+  background: var(--vht-surface);
+  color: var(--vht-ink);
+  font: var(--vht-font-body); font-family: var(--vht-built-font);
+}
+.input__text { flex: 1 1 auto; min-width: 0; }
+.input--placeholder .input__text { color: var(--vht-ink-3); }
+.input--focus { border-color: var(--vht-brand-50); box-shadow: 0 0 0 3px var(--vht-focus-ring); }
+.input--error { border-color: var(--vht-brand-50); }
+.input--disabled { background: var(--vht-gray-95); color: var(--vht-gray-70); }
+.input--readonly { background: var(--vht-gray-95); }
+.input__icon { flex: 0 0 auto; color: var(--vht-ink-3); }
+.input--area { height: auto; min-height: 96px; align-items: flex-start; padding: var(--vht-space-12); }
+
+.select { min-width: 180px; }
+.search { width: 280px; }
+.search--wide { width: 360px; }
+
+/* Hàng lọc CĂN PHẢI trong card — đúng bản thiết kế, khác các màn ng-zorro cũ căn trái. */
+.filters { display: flex; align-items: center; justify-content: flex-end; gap: var(--vht-space-8); flex-wrap: wrap; }
+.filters__left { margin-right: auto; display: flex; align-items: center; gap: var(--vht-space-8); }
+
+/* Tìm kiếm nâng cao — lưới 3 cột dựng bằng flex-wrap (luật 1: không dùng grid). */
+.advsearch { display: flex; flex-direction: column; gap: var(--vht-space-16); padding: var(--vht-space-16); border: 1px solid var(--vht-border); border-radius: var(--vht-radius-12); background: var(--vht-gray-99); }
+.advsearch__grid { display: flex; flex-wrap: wrap; gap: var(--vht-space-16); }
+.advsearch__grid > .field { flex: 1 1 calc(33.333% - 11px); min-width: 220px; }
+.advsearch__foot { display: flex; align-items: center; justify-content: flex-end; gap: var(--vht-space-8); }
+
+.checkbox { display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; flex: 0 0 20px; border: 1px solid var(--vht-gray-90); border-radius: var(--vht-radius-4); background: var(--vht-surface); color: #fff; }
+.checkbox--on { background: var(--vht-brand-50); border-color: var(--vht-brand-50); }
+.radio { width: 20px; height: 20px; flex: 0 0 20px; border: 1px solid var(--vht-gray-80); border-radius: 999px; background: var(--vht-surface); display: flex; align-items: center; justify-content: center; }
+.radio__dot { width: 10px; height: 10px; border-radius: 999px; background: var(--vht-brand-50); }
+.switch { display: flex; align-items: center; width: 36px; height: 20px; flex: 0 0 36px; padding: 2px; border-radius: 999px; background: var(--vht-gray-80); }
+.switch--on { background: var(--vht-brand-50); justify-content: flex-end; }
+.switch__knob { width: 16px; height: 16px; border-radius: 999px; background: #fff; }
+.choice { display: flex; align-items: center; gap: var(--vht-space-8); font: var(--vht-font-body); font-family: var(--vht-built-font); }
+
+/* ======================================================================= BẢNG
+ * div + flex (luật 6). Nhịp: header 40 · ô 56 · nền header xám — ba con số nhận ra ngay khi đặt
+ * cạnh phân hệ Danh mục dùng chung. */
+
+.tbl { display: flex; flex-direction: column; border: 1px solid var(--vht-border); border-radius: var(--vht-radius-8); background: var(--vht-surface); }
+.tbl--flush { border: 0; border-radius: 0; }
+.tbl__scroll { display: flex; flex-direction: column; overflow-x: auto; }
+.tbl__head, .tbl__row { display: flex; align-items: stretch; }
+.tbl__head { background: var(--vht-gray-95); }
+.tbl__th, .tbl__td { display: flex; align-items: center; padding: 0 var(--vht-space-12); min-width: 0; }
+.tbl__th {
+  height: var(--vht-built-table-header-h);
+  color: var(--vht-ink-2);
+  font: var(--vht-font-label); font-family: var(--vht-built-font);
+  letter-spacing: var(--vht-tracking-label);
+}
+.tbl__td {
+  height: var(--vht-built-table-cell-h);
+  color: var(--vht-gray-20);
+  font: var(--vht-font-body); font-family: var(--vht-built-font);
+}
+.tbl__row { border-top: 1px solid var(--vht-border); }
+.tbl__row--hover { background: var(--vht-gray-95); }
+.tbl__row--selected { background: var(--vht-brand-99); }
+/* Dòng cảnh báo: NỀN đỏ nhạt, không chỉ chữ đỏ — chữ đỏ giữa bảng dày đặc là bỏ sót. */
+.tbl__row--warn { background: var(--vht-brand-99); }
+.tbl__row--group { background: var(--vht-gray-95); font-weight: 500; }
+.tbl__row--total { background: var(--vht-gray-95); font-weight: 600; border-top: 2px solid var(--vht-border-strong); }
+.tbl__td--num { justify-content: flex-end; font-variant-numeric: tabular-nums; }
+.tbl__th--num { justify-content: flex-end; }
+.tbl__td--center, .tbl__th--center { justify-content: center; }
+
+/* Cột Thao tác: icon ngăn nhau bằng GẠCH ĐỨNG (screens/01). */
+.actions { display: flex; align-items: center; gap: 6px; }
+.actions__sep { width: 1px; height: 16px; background: var(--vht-border); }
+.iconbtn { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; color: var(--vht-ink-2); }
+.iconbtn--danger { color: var(--vht-brand-50); }
+
+/* Mã định danh là LINK ĐỎ GẠCH CHÂN. */
+.code-link { color: var(--vht-brand-50); text-decoration: underline; font-weight: 500; }
+
+/* Bề rộng cột — khai bằng lớp để HTML đọc được, và vì plugin đọc số px cuối cùng chứ không đọc %. */
+.w-48 { width: 48px; flex: 0 0 48px; }
+.w-56 { width: 56px; flex: 0 0 56px; }
+.w-64 { width: 64px; flex: 0 0 64px; }
+.w-80 { width: 80px; flex: 0 0 80px; }
+.w-90 { width: 90px; flex: 0 0 90px; }
+.w-100 { width: 100px; flex: 0 0 100px; }
+.w-110 { width: 110px; flex: 0 0 110px; }
+.w-120 { width: 120px; flex: 0 0 120px; }
+.w-140 { width: 140px; flex: 0 0 140px; }
+.w-160 { width: 160px; flex: 0 0 160px; }
+.w-180 { width: 180px; flex: 0 0 180px; }
+.w-190 { width: 190px; flex: 0 0 190px; }
+.w-200 { width: 200px; flex: 0 0 200px; }
+.w-220 { width: 220px; flex: 0 0 220px; }
+.w-170 { width: 170px; flex: 0 0 170px; }
+.w-240 { width: 240px; flex: 0 0 240px; }
+.w-260 { width: 260px; flex: 0 0 260px; }
+.w-300 { width: 300px; flex: 0 0 300px; }
+.w-280 { width: 280px; flex: 0 0 280px; }
+.w-320 { width: 320px; flex: 0 0 320px; }
+
+/* ---------------------------------------------------------------- footer bảng */
+.tblfoot { display: flex; align-items: center; justify-content: space-between; gap: var(--vht-space-16); padding-top: var(--vht-space-16); }
+.tblfoot__left { display: flex; align-items: center; gap: var(--vht-space-8); font: var(--vht-font-body); font-family: var(--vht-built-font); color: var(--vht-ink-2); }
+.tblfoot__right { display: flex; align-items: center; gap: var(--vht-space-16); }
+.pager { display: flex; align-items: center; gap: var(--vht-space-4); }
+.pager__btn { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 1px solid var(--vht-border); border-radius: var(--vht-radius-8); background: var(--vht-surface); color: var(--vht-ink-2); }
+.pager__page { display: flex; align-items: center; justify-content: center; min-width: 32px; height: 32px; padding: 0 6px; border-radius: var(--vht-radius-8); color: var(--vht-ink-2); font: var(--vht-font-body); font-family: var(--vht-built-font); }
+/* Trang hiện tại: NỀN XÁM #F2F2F2, chữ đậm, KHÔNG viền đỏ và KHÔNG tô đỏ. Chỗ này từng sai theo
+   cả hai hướng — xem `--vht-built-pager-active-bg`. */
+.pager__page--active { background: var(--vht-built-pager-active-bg); color: var(--vht-ink); font-weight: 600; }
+
+/* ========================================================================= TAG */
+
+.tag { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 999px; background: var(--vht-gray-90); border: 1px solid var(--vht-gray-80); color: var(--vht-ink-2); font: var(--vht-font-label); font-family: var(--vht-built-font); white-space: nowrap; }
+.tag__dot { width: 8px; height: 8px; flex: 0 0 8px; border-radius: 999px; background: currentColor; }
+.tag--success { background: var(--vht-success-95); border-color: var(--vht-success-70); color: var(--vht-success-30); }
+.tag--warning { background: var(--vht-warning-95); border-color: var(--vht-warning-70); color: var(--vht-warning-30); }
+.tag--info { background: var(--vht-info-95); border-color: var(--vht-info-70); color: var(--vht-info-30); }
+.tag--danger { background: var(--vht-brand-95); border-color: var(--vht-brand-70); color: var(--vht-brand-30); }
+.badge { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; background: var(--vht-brand-60); color: #fff; font: var(--vht-font-caption); font-family: var(--vht-built-font); }
+
+/* ================================================================= KHỐI PHỤ TRỢ */
+
+.stats { display: flex; gap: var(--vht-space-12); flex-wrap: wrap; }
+.stat { flex: 1 1 160px; display: flex; flex-direction: column; gap: 2px; padding: var(--vht-space-12) var(--vht-space-16); border: 1px solid var(--vht-border); border-radius: var(--vht-radius-8); background: var(--vht-gray-99); }
+.stat small { font: var(--vht-font-caption); font-family: var(--vht-built-font); color: var(--vht-ink-3); }
+.stat strong { font: var(--vht-font-title); font-family: var(--vht-built-font); color: var(--vht-ink); }
+.stat--warn { border-color: var(--vht-brand-80); background: var(--vht-brand-95); }
+.stat--warn strong { color: var(--vht-brand-40); }
+.stat--ok { border-color: var(--vht-success-70); background: var(--vht-success-95); }
+.stat--ok strong { color: var(--vht-success-30); }
+
+/* Danh sách mô tả 2 cột — flex-wrap thay grid. */
+.desc { display: flex; flex-wrap: wrap; gap: var(--vht-space-12) var(--vht-space-24); }
+.desc__item { display: flex; gap: var(--vht-space-8); flex: 1 1 calc(50% - 12px); min-width: 280px; font: var(--vht-font-body); font-family: var(--vht-built-font); }
+.desc__label { flex: 0 0 170px; color: var(--vht-ink-3); }
+.desc__value { color: var(--vht-ink); font-weight: 500; }
+
+.tabs { display: flex; align-items: center; gap: var(--vht-space-24); border-bottom: 1px solid var(--vht-border); }
+.tab { display: flex; align-items: center; gap: 6px; height: 44px; color: var(--vht-ink-2); font: var(--vht-font-body-emphasis); font-family: var(--vht-built-font); border-bottom: 2px solid transparent; }
+.tab--active { color: var(--vht-brand-50); border-bottom-color: var(--vht-brand-50); font-weight: 600; }
+
+.breadcrumb { display: flex; align-items: center; gap: var(--vht-space-8); font: var(--vht-font-caption); font-family: var(--vht-built-font); color: var(--vht-ink-3); }
+.breadcrumb__sep { color: var(--vht-gray-80); }
+
+.alert { display: flex; align-items: flex-start; gap: var(--vht-space-12); padding: var(--vht-space-12) var(--vht-space-16); border: 1px solid var(--vht-info-70); border-radius: var(--vht-radius-8); background: var(--vht-info-95); color: var(--vht-info-20); font: var(--vht-font-body); font-family: var(--vht-built-font); }
+.alert--warn { border-color: var(--vht-warning-70); background: var(--vht-warning-95); color: var(--vht-warning-20); }
+.alert--error { border-color: var(--vht-brand-70); background: var(--vht-brand-95); color: var(--vht-brand-30); }
+.alert--success { border-color: var(--vht-success-70); background: var(--vht-success-95); color: var(--vht-success-20); }
+.alert__body { display: flex; flex-direction: column; gap: 4px; }
+.alert__title { font-weight: 600; }
+
+/* --------------------------------------------------- trạng thái rỗng / lỗi / chờ */
+.state { display: flex; flex-direction: column; align-items: center; gap: var(--vht-space-12); padding: var(--vht-space-48) var(--vht-space-24); text-align: center; }
+.state__icon { display: flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 999px; background: var(--vht-gray-95); color: var(--vht-gray-60); }
+.state__title { font: var(--vht-font-subtitle); font-family: var(--vht-built-font); color: var(--vht-ink); }
+.state__desc { font: var(--vht-font-body); font-family: var(--vht-built-font); color: var(--vht-ink-3); max-width: 460px; }
+.skel { border-radius: var(--vht-radius-4); background: var(--vht-gray-90); }
+.skel--text { height: 12px; }
+.skel--line { height: 16px; }
+
+/* ------------------------------------------------------------------- biểu đồ
+ * Cột/vạch dựng bằng div flex — không SVG path, không canvas: cả hai đều không ra layer sửa
+ * được trong Figma. */
+.chart { display: flex; flex-direction: column; gap: var(--vht-space-12); }
+.chart__plot { display: flex; align-items: flex-end; gap: var(--vht-space-12); height: 220px; padding-top: var(--vht-space-8); border-bottom: 1px solid var(--vht-border); }
+.chart__col { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; height: 100%; }
+.chart__bar { width: 100%; max-width: 40px; border-radius: var(--vht-radius-4) var(--vht-radius-4) 0 0; background: var(--vht-brand-50); }
+.chart__bar--muted { background: var(--vht-gray-80); }
+.chart__bar--warn { background: var(--vht-warning-60); }
+.chart__bar--ok { background: var(--vht-success-50); }
+.chart__xlabel { font: var(--vht-font-caption); font-family: var(--vht-built-font); color: var(--vht-ink-3); }
+.chart__legend { display: flex; align-items: center; gap: var(--vht-space-16); flex-wrap: wrap; }
+.legend { display: inline-flex; align-items: center; gap: 6px; font: var(--vht-font-caption); font-family: var(--vht-built-font); color: var(--vht-ink-2); }
+.legend__swatch { width: 12px; height: 12px; flex: 0 0 12px; border-radius: 3px; background: var(--vht-brand-50); }
+.progress { display: flex; height: 8px; border-radius: 999px; background: var(--vht-gray-90); overflow: hidden; }
+.progress__fill { background: var(--vht-brand-50); }
+.progress__fill--ok { background: var(--vht-success-50); }
+.progress__fill--warn { background: var(--vht-warning-60); }
+
+/* =================================================== MA TRẬN CHẤM CÔNG / BẢNG CÔNG
+ * Ô ngày 36px. Bốn kiểu ô phải phân biệt được KHÔNG CHỈ bằng màu (in đen trắng vẫn phải đọc
+ * được): ô khoá có ký hiệu, ô cuối tuần nền xám đậm hơn, ô đã chấm có mã nội dung CV. */
+.matrix__day { width: 34px; flex: 0 0 34px; justify-content: center; padding: 0; }
+.matrix__th-day { width: 34px; flex: 0 0 34px; justify-content: center; padding: 0; flex-direction: column; gap: 0; }
+.matrix__dow { font: var(--vht-font-caption); font-family: var(--vht-built-font); color: var(--vht-ink-3); }
+.cell { display: flex; align-items: center; justify-content: center; width: 32px; height: 40px; border-radius: var(--vht-radius-4); font: var(--vht-font-caption); font-family: var(--vht-built-font); font-weight: 500; }
+.cell--empty { background: transparent; color: var(--vht-gray-70); }
+.cell--locked { background: var(--vht-gray-90); color: var(--vht-gray-50); }       /* T7/CN, nghỉ, ngoài hạn */
+.cell--weekend { background: var(--vht-gray-95); color: var(--vht-gray-60); }
+.cell--taken { background: var(--vht-gray-80); color: var(--vht-gray-30); }        /* đã chấm ở nhiệm vụ khác */
+.cell--a { background: var(--vht-info-90); color: var(--vht-info-20); }
+.cell--b { background: var(--vht-success-90); color: var(--vht-success-20); }
+.cell--c { background: var(--vht-warning-90); color: var(--vht-warning-20); }
+.cell--d { background: var(--vht-brand-90); color: var(--vht-brand-20); }
+.cell--missing { background: var(--vht-surface); border: 1px dashed var(--vht-brand-50); color: var(--vht-brand-50); }
+
+/* ================================================== LỚP PHỦ: DIM · DIALOG · TOAST
+ * Ngoại lệ duy nhất của luật 2 — xem giải thích ở đầu file.
+ *
+ * `.stack` là chính artboard khi có lớp phủ. Nền mờ phủ TOÀN BỘ chiều cao artboard (kể cả artboard
+ * cao 3.000px) nên bản import vào Figma đọc ra ngay "màn này đang bị chặn tương tác".
+ *
+ * Hộp thoại căn TRÊN (`flex-start` + padding 120) chứ không căn giữa theo chiều dọc: căn giữa một
+ * artboard cao 2.400px thì hộp thoại rơi xuống tận giữa trang, không giống thứ người dùng thấy
+ * trong khung nhìn 800px. 120px xấp xỉ vị trí thật của modal PrimeNG trong khung nhìn. */
+.stack { position: relative; }
+.stack__dim {
+  position: absolute; inset: 0;
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 120px var(--vht-space-24) var(--vht-space-48);
+  background: rgba(26, 28, 30, 0.45);
+}
+
+/* Toast xếp chồng ở góc phải trên, DƯỚI topbar 60px + 16px thở. Trên cả lớp mờ: thông báo kết quả
+   phải đọc được ngay cả khi hộp thoại đang mở (đúng hành vi PrimeNG). */
+.toaster { position: absolute; top: 76px; right: var(--vht-space-24); display: flex; flex-direction: column; gap: var(--vht-space-12); }
+.toast { display: flex; align-items: flex-start; gap: var(--vht-space-12); width: 400px; padding: var(--vht-space-16); border-radius: var(--vht-radius-12); border: 1px solid var(--vht-border); border-left: 4px solid var(--vht-gray-60); background: var(--vht-surface); box-shadow: var(--vht-shadow-2xl); }
+.toast__icon { flex: 0 0 auto; }
+.toast__body { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; }
+.toast__title { font: var(--vht-font-body-emphasis); font-family: var(--vht-built-font); color: var(--vht-ink); }
+.toast__msg { font: var(--vht-font-caption); font-family: var(--vht-built-font); color: var(--vht-ink-2); }
+.toast__close { flex: 0 0 auto; color: var(--vht-ink-3); }
+.toast--success { border-left-color: var(--vht-success-50); }
+.toast--success .toast__icon { color: var(--vht-success-40); }
+.toast--info { border-left-color: var(--vht-info-50); }
+.toast--info .toast__icon { color: var(--vht-info-50); }
+.toast--warn { border-left-color: var(--vht-warning-50); }
+.toast--warn .toast__icon { color: var(--vht-warning-40); }
+/* Toast lỗi dùng ramp brand — brand ≡ danger trong design system này. Vì vậy nhãn PHẢI nói rõ
+   "Lỗi/Thất bại"; màu một mình không phân biệt được với toast thương hiệu. */
+.toast--error { border-left-color: var(--vht-brand-50); }
+.toast--error .toast__icon { color: var(--vht-brand-50); }
+
+/* Lớp phủ "đang xử lý": thanh tiến trình XÁC ĐỊNH thay cho spinner — spinner là hoạt ảnh, chụp
+   tĩnh chỉ ra một cung tròn cụt, và Figma cũng không dựng được hoạt ảnh. */
+.overlay-busy { display: flex; flex-direction: column; align-items: center; gap: var(--vht-space-16); width: 400px; padding: var(--vht-space-32); border-radius: var(--vht-radius-12); background: var(--vht-surface); box-shadow: var(--vht-shadow-2xl); text-align: center; }
+.progress { width: 100%; height: 8px; border-radius: 999px; background: var(--vht-gray-90); display: flex; }
+.progress__bar { height: 8px; border-radius: 999px; background: var(--vht-brand-50); }
+
+/* ==================================================================== DIALOG */
+.dialog-stage { display: flex; align-items: center; justify-content: center; padding: var(--vht-space-48); background: rgba(26, 28, 30, 0.45); }
+.dialog { display: flex; flex-direction: column; border-radius: var(--vht-radius-12); background: var(--vht-surface); box-shadow: var(--vht-shadow-2xl); }
+.dialog--confirm { width: 400px; }
+.dialog--form { width: 520px; }
+.dialog--picker { width: 1360px; }
+.dialog--wide { width: 900px; }
+.dialog__head { display: flex; align-items: center; justify-content: space-between; gap: var(--vht-space-16); height: 60px; padding: 0 var(--vht-space-24); border-bottom: 1px solid var(--vht-border); }
+.dialog__title { font: var(--vht-font-title); font-family: var(--vht-built-font); color: var(--vht-ink); }
+.dialog__body { display: flex; flex-direction: column; gap: var(--vht-space-16); padding: var(--vht-space-24); }
+.dialog__foot { display: flex; align-items: center; justify-content: flex-end; gap: var(--vht-space-8); padding: var(--vht-space-16) var(--vht-space-24); border-top: 1px solid var(--vht-border); }
+
+/* Panel gợi ý của ô nhập (autocomplete / select đang mở). Vẽ NGAY DƯỚI ô, trong luồng — panel
+   thật nổi lên bằng `position:absolute`, nhưng ở mockup vẽ trong luồng thì Figma nhận được một
+   Auto Layout dọc gồm ô nhập + panel, đúng thứ cần để làm component "select đang mở". */
+.ddpanel { display: flex; flex-direction: column; padding: var(--vht-space-4); margin-top: 4px; border: 1px solid var(--vht-border); border-radius: var(--vht-radius-8); background: var(--vht-surface); box-shadow: var(--vht-shadow-lg); }
+.ddopt { display: flex; align-items: center; gap: var(--vht-space-12); height: 44px; padding: 0 var(--vht-space-12); border-radius: var(--vht-radius-8); font: var(--vht-font-body); font-family: var(--vht-built-font); color: var(--vht-ink); }
+.ddopt--active { background: var(--vht-brand-95); color: var(--vht-brand-30); }
+.ddopt__meta { margin-left: auto; font: var(--vht-font-caption); font-family: var(--vht-built-font); color: var(--vht-ink-3); }
+
+/* Vùng thả file. Viền đứt để đọc ra là vùng thả kể cả khi in đen trắng. */
+.dropzone { display: flex; flex-direction: column; align-items: center; gap: var(--vht-space-8); padding: var(--vht-space-32); border: 1px dashed var(--vht-border-strong); border-radius: var(--vht-radius-12); background: var(--vht-gray-99); text-align: center; }
+
+/* =================================================================== TIMELINE
+ * Tab "Lịch sử" của màn chi tiết nhiệm vụ (`cmm-timeline` của @khcn-core). Trục dựng bằng div
+ * trong luồng — không dùng `::before` (luật 3), nếu không đường trục sẽ biến mất khi import. */
+.tline { display: flex; flex-direction: column; }
+.tline__item { display: flex; gap: var(--vht-space-12); }
+.tline__rail { display: flex; flex-direction: column; align-items: center; flex: 0 0 12px; }
+.tline__dot { width: 10px; height: 10px; border-radius: 999px; background: var(--vht-brand-50); margin-top: 6px; }
+.tline__bar { width: 2px; flex: 1 1 auto; min-height: 28px; background: var(--vht-border); }
+.tline__body { display: flex; flex-direction: column; gap: 2px; padding-bottom: var(--vht-space-16); }
+
+/* ================================================================== CÂY ĐƠN VỊ */
+.tree { display: flex; flex-direction: column; gap: 2px; }
+.treenode { display: flex; align-items: center; gap: var(--vht-space-8); height: 36px; padding: 0 var(--vht-space-8); border-radius: var(--vht-radius-8); font: var(--vht-font-body); font-family: var(--vht-built-font); color: var(--vht-ink); }
+.treenode--active { background: var(--vht-brand-95); color: var(--vht-brand-30); font-weight: 500; }
+.treenode__indent { flex: 0 0 auto; }
+.treenode__caret { flex: 0 0 auto; color: var(--vht-ink-3); }
+
+/* ============================================================== KHUÔN BIỂU MẪU IN
+ * Biểu mẫu là văn bản pháp lý (QĐ 3021/QĐ-CNVTQĐ-CNCNC): quốc hiệu, tiêu ngữ, dòng "Hà Nội,
+ * ngày…", vùng ký. Không tự bịa bố cục. */
+.paper { background: #fff; padding: 40px 48px; display: flex; flex-direction: column; gap: var(--vht-space-20); font-family: 'Times New Roman', Times, serif; color: #000; }
+.paper__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--vht-space-32); }
+.paper__block { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
+.paper__title { text-align: center; font-size: 16px; font-weight: 700; text-transform: uppercase; }
+.paper__sub { text-align: center; font-size: 13px; font-style: italic; }
+.paper__date { text-align: right; font-size: 13px; font-style: italic; }
+.paper__signs { display: flex; align-items: flex-start; justify-content: space-around; gap: var(--vht-space-32); padding-top: var(--vht-space-16); }
+.paper__sign { display: flex; flex-direction: column; align-items: center; gap: 56px; font-size: 13px; }
+.paper__sign strong { text-transform: uppercase; }
+.paper .tbl__th, .paper .tbl__td { font-family: 'Times New Roman', Times, serif; font-size: 12px; }
+.paper .tbl__th { height: 32px; background: #f0f0f0; color: #000; }
+.paper .tbl__td { height: 28px; color: #000; }
+.paper .tbl, .paper .tbl__row { border-color: #999; }
+
+/* ==================================================== BẢNG CHÚ THÍCH CHO NGƯỜI ĐỌC
+ * Chỉ dùng trong mockup — ghi chú nghiệp vụ cạnh artboard. Khi import vào Figma thì XOÁ layer
+ * này đi, hoặc giữ lại làm annotation. */
+.note { display: flex; flex-direction: column; gap: 6px; margin: 0 auto; width: 100%; padding: var(--vht-space-16) var(--vht-space-24); background: var(--vht-gray-10); color: var(--vht-gray-90); font: var(--vht-font-caption); font-family: var(--vht-built-font); }
+.note strong { color: #fff; font-size: 13px; }
+.note ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; }
+
+/* Trang mục lục — chỉ phục vụ điều hướng khi xem, KHÔNG import vào Figma. */
+.toc { width: 1000px; margin: 40px auto; display: flex; flex-direction: column; gap: var(--vht-space-24); }
+.toc__group { display: flex; flex-direction: column; gap: var(--vht-space-8); }
+.toc__list { display: flex; flex-direction: column; gap: 2px; }
+.toc__item { display: flex; align-items: center; gap: var(--vht-space-12); padding: var(--vht-space-8) var(--vht-space-12); border-radius: var(--vht-radius-8); background: var(--vht-surface); color: var(--vht-ink); text-decoration: none; font: var(--vht-font-body); font-family: var(--vht-built-font); }
+.toc__code { flex: 0 0 56px; color: var(--vht-ink-3); font-family: var(--vht-font-mono); font-size: 12px; }
+.toc__tag { margin-left: auto; }

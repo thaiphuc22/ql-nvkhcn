@@ -1,46 +1,64 @@
+/*
+ * Màu + chấm tròn cho tag trạng thái.
+ *
+ * Phải dùng `::ng-deep`: `styleClass` được `cmm-tag` chuyển tiếp xuống `p-tag` bên trong — phần tử
+ * đó thuộc cây của THƯ VIỆN, không mang thuộc tính `_ngcontent-*` của component này, nên selector
+ * đóng khung bình thường không với tới. Đã ghim dưới `:host` nên vẫn không rò ra ngoài.
+ *
+ * Màu lấy từ cặp token `-95` (nền) / `-50` (chữ + chấm) ⇒ design system đổi giá trị là tag tự đúng.
+ * KHÔNG dùng `severity` của PrimeNG: bộ màu đó là của PrimeNG, không phải của VHT.
+ */
+
 :host {
   display: inline-block;
 }
 
-.hr-tt {
+:host ::ng-deep .hr-tt {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 3px 10px;
   border-radius: 999px;
   font: var(--vht-font-label);
+  font-family: var(--vht-built-font);
   letter-spacing: var(--vht-tracking-label);
   white-space: nowrap;
+
+  /* Chấm tròn của bản thiết kế. `p-tag` không có chỗ cắm chấm nên vẽ bằng `::before` —
+     `currentColor` để chấm luôn cùng màu chữ, khỏi khai màu hai lần cho mỗi loại. */
+  &::before {
+    content: '';
+    flex: 0 0 auto;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
 }
 
-.hr-tt__dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.hr-tt--default {
+:host ::ng-deep .hr-tt--default {
   background: var(--vht-gray-95);
   color: var(--vht-gray-40);
 }
 
-.hr-tt--processing {
+:host ::ng-deep .hr-tt--processing {
   background: var(--vht-info-95);
   color: var(--vht-info-50);
 }
 
-.hr-tt--success {
+:host ::ng-deep .hr-tt--success {
   background: var(--vht-success-95);
   color: var(--vht-success-50);
 }
 
-.hr-tt--warning {
+:host ::ng-deep .hr-tt--warning {
   background: var(--vht-warning-95);
   color: var(--vht-warning-50);
 }
 
-.hr-tt--error {
+/* Danger dùng CHUNG ramp với brand (thiết kế cố ý) — tag lỗi và tag "đang là nút chính" cùng đỏ.
+   Vì vậy trạng thái phá huỷ/không đạt phải phân biệt bằng CHỮ, không dựa vào màu. */
+:host ::ng-deep .hr-tt--error {
   background: var(--vht-danger-95);
   color: var(--vht-danger-50);
 }

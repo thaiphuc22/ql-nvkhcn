@@ -1,17 +1,22 @@
-import { Component, computed, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, TemplateRef, computed, inject, signal, viewChild } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { NzButtonModule } from 'ng-zorro-antd/button';
-import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
-import { NzIconModule } from 'ng-zorro-antd/icon';
-import { NzInputModule } from 'ng-zorro-antd/input';
-import { NzMessageService } from 'ng-zorro-antd/message';
-import { NzModalModule } from 'ng-zorro-antd/modal';
-import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
-import { NzSelectModule } from 'ng-zorro-antd/select';
-import { NzTableModule } from 'ng-zorro-antd/table';
-import { NzUploadFile, NzUploadModule } from 'ng-zorro-antd/upload';
+import {
+  CmmButtonComponent,
+  CmmDialogComponent,
+  CmmFileUploadComponent,
+  CmmInputText,
+  CmmSelectComponent,
+  CmmTextareaDirective,
+  ColumnDefinition,
+  DeleteIconComponent,
+  EditIconComponent,
+  PaginatorProps,
+  ToastService,
+  UBCKPaginatorModule,
+  UBCKPaginatorState,
+  UBCKTableModule,
+} from '@khcn-core/ui';
 
 import { AuthService } from '../../core/auth/auth.service';
 import {
@@ -29,11 +34,14 @@ import {
   NhanSuService,
 } from '../../core/services/hr/nhan-su.service';
 import { exportCsv, exportTableToXls } from '../../core/utils/export-bieu-mau';
-import { nativeUploadFile } from '../../core/utils/upload-file';
 import { HrBieuMauPrint, inTrang } from '../../shared/hr/bieu-mau-print/bieu-mau-print';
 import { HrPageCard } from '../../shared/hr/page-card/page-card';
-import { HrTableFooter } from '../../shared/hr/table-footer/table-footer';
+import { hrColumns } from '../../shared/hr/table-columns';
+import { HR_PAGE_SIZE_MAC_DINH, hrPaginatorProps } from '../../shared/hr/paginator-props';
 import { HrTrangThaiTag } from '../../shared/hr/trang-thai-tag/trang-thai-tag';
+
+/** Dòng đưa vào bảng: bản ghi gốc + các ô đã định dạng sẵn. */
+type DongHienThi = Record<string, unknown> & { nhanSu: NhanSuNhiemVu; id: string };
 
 /**
  * Danh sách nhân sự tham gia nhiệm vụ — màn "nặng" nhất của đợt 1: lọc, import từ file, sửa/xoá,
@@ -46,23 +54,35 @@ import { HrTrangThaiTag } from '../../shared/hr/trang-thai-tag/trang-thai-tag';
  *     dòng + đếm ở thẻ thống kê. Lưu ý: từ bản hiệu chỉnh theo tài liệu khách, `tyLePhanBo` là
  *     **trường tham khảo có thể bỏ trống** (BM1 không có cột này), nên cảnh báo chỉ nổ khi người
  *     dùng thực sự khai số — xem ghi chú đầu `core/models/hr/nhan-su.ts`.
+ *
+ * ## ⚠ Vì sao KHÔNG dùng `UbckImport` / `DialogImportFile` / `ImportFileService`
+ *
+ * Kế hoạch chuyển đổi (§7) định thay hộp nhập file tự viết bằng bộ import của `@khcn-core/ui`.
+ * Đọc kiểu của nó thì **không dùng được ở đợt này**: `ImportConfig` bắt buộc `httpService`,
+ * `uploadEndpoint` và `downloadFileUrl` — nghĩa là luồng **do máy chủ xử lý**: đẩy file lên, chờ,
+ * rồi nhận về `{ successCount, errorCount, errorFileName }` và tải file lỗi. HR Tools đợt 1 chạy
+ * **dữ liệu mô phỏng, chưa có backend**, và phần giá trị nhất của màn này là *nêu đúng nguyên nhân
+ * từng dòng ngay trước khi nhập* — thứ mà API kia không trả về.
+ *
+ * Nên: giữ luồng soát lỗi tại chỗ, còn **vỏ** thì dựng lại bằng component thư viện
+ * (`cmm-dialog` + `cmm-fileUpload` + `ubck-table` cho bảng preview). Khi có endpoint import thật
+ * thì đổi sang `UbckImport` là hợp lý — đã ghi thành nợ tường minh trong `DELIVERY_STATE.md`.
  */
 @Component({
   selector: 'app-hr-nhan-su-list',
   imports: [
-    FormsModule,
-    NzButtonModule,
-    NzCheckboxModule,
-    NzIconModule,
-    NzInputModule,
-    NzModalModule,
-    NzPopconfirmModule,
-    NzSelectModule,
-    NzTableModule,
-    NzUploadModule,
+    UBCKTableModule,
+    UBCKPaginatorModule,
+    CmmButtonComponent,
+    CmmDialogComponent,
+    CmmFileUploadComponent,
+    CmmInputText,
+    CmmSelectComponent,
+    CmmTextareaDirective,
+    DeleteIconComponent,
+    EditIconComponent,
     HrBieuMauPrint,
     HrPageCard,
-    HrTableFooter,
     HrTrangThaiTag,
   ],
   templateUrl: './hr-nhan-su-list.html',
@@ -73,32 +93,35 @@ export class HrNhanSuListPage {
   private readonly nhiemVuService = inject(NhiemVuService);
   private readonly ndcvService = inject(NoiDungCongViecService);
   private readonly auth = inject(AuthService);
-  private readonly message = inject(NzMessageService);
+  private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
 
-  readonly trangThaiLabel = NHAN_SU_TRANG_THAI_LABEL;
-  readonly trangThaiMau = NHAN_SU_TRANG_THAI_COLOR;
-
-  readonly trangThaiOptions = (Object.keys(NHAN_SU_TRANG_THAI_LABEL) as NhanSuTrangThaiDuyet[]).map((value) => ({
-    value,
-    label: NHAN_SU_TRANG_THAI_LABEL[value],
-  }));
+  readonly trangThaiOptions = (Object.keys(NHAN_SU_TRANG_THAI_LABEL) as NhanSuTrangThaiDuyet[]).map(
+    (value) => ({ value, label: NHAN_SU_TRANG_THAI_LABEL[value] }),
+  );
 
   readonly nhiemVuOptions = computed(() =>
-    this.nhiemVuService.rows().map((d) => ({ value: d.maNhiemVu, label: `${d.maNhiemVu} — ${d.tenNhiemVu}` })),
+    this.nhiemVuService
+      .rows()
+      .map((d) => ({ value: d.maNhiemVu, label: `${d.maNhiemVu} — ${d.tenNhiemVu}` })),
   );
 
   readonly tuKhoa = signal('');
   readonly nhiemVuFilter = signal<string | null>(null);
   readonly trangThaiFilter = signal<NhanSuTrangThaiDuyet | null>(null);
   readonly pageIndex = signal(1);
-  readonly pageSize = signal(25);
-  readonly daChon = signal<ReadonlySet<string>>(new Set());
+  readonly pageSize = signal(HR_PAGE_SIZE_MAC_DINH);
+
+  /** Dòng đang tích — do `UbckTable` ghi vào. */
+  readonly chonDong = signal<DongHienThi[]>([]);
 
   readonly importMo = signal(false);
   readonly importPreview = signal<ImportPreviewRow[]>([]);
   readonly importTenFile = signal('');
   readonly importLoiDoc = signal<string | null>(null);
+
+  readonly xoaMo = signal(false);
+  readonly xoaTarget = signal<NhanSuNhiemVu | null>(null);
 
   readonly tuChoiMo = signal(false);
   readonly tuChoiLyDo = signal('');
@@ -122,12 +145,23 @@ export class HrNhanSuListPage {
     });
   });
 
-  readonly pagedRows = computed(() => {
+  readonly pagedRows = computed<DongHienThi[]>(() => {
     const start = (this.pageIndex() - 1) * this.pageSize();
-    return this.rows().slice(start, start + this.pageSize());
+    return this.rows()
+      .slice(start, start + this.pageSize())
+      .map((row) => ({
+        ...row,
+        nhanSu: row,
+        // `UbckTable` gắn lớp này lên `<tr>` từ trường `rowcCustomClasses` — tên viết tắt sai chính
+        // tả là của thư viện, không phải lỗi gõ ở đây; đổi cho "đúng" là mất tô đỏ dòng cảnh báo.
+        rowcCustomClasses: this.laVuot(row) ? 'hr-row-canhbao' : '',
+        _thoiGian: `${row.tuNgay} - ${row.denNgay}`,
+        _noiDung: this.tenNoiDung(row.noiDungCongViecIds),
+        _tyLe: row.tyLePhanBo == null ? '—' : `${row.tyLePhanBo}%`,
+      }));
   });
 
-  readonly soDaChon = computed(() => this.daChon().size);
+  readonly soDaChon = computed(() => this.chonDong().length);
   readonly soChoDuyet = this.service.soChoDuyet;
   readonly soVuot = computed(() => this.vuotPhanBo().size);
 
@@ -159,8 +193,112 @@ export class HrNhanSuListPage {
     'Trạng thái',
   ];
 
-  stt(i: number): number {
-    return (this.pageIndex() - 1) * this.pageSize() + i + 1;
+  // ------------------------------------------------------------------- bảng
+
+  private readonly tplThaoTac = viewChild.required<TemplateRef<unknown>>('tplThaoTac');
+  private readonly tplNguoi = viewChild.required<TemplateRef<unknown>>('tplNguoi');
+  private readonly tplNhiemVu = viewChild.required<TemplateRef<unknown>>('tplNhiemVu');
+  private readonly tplTrangThai = viewChild.required<TemplateRef<unknown>>('tplTrangThai');
+
+  readonly columns = computed<ColumnDefinition[][]>(() =>
+    hrColumns([
+      {
+        field: 'thaoTac',
+        header: 'Thao tác',
+        customTemplate: this.tplThaoTac(),
+        maxWidth: '110px',
+      },
+      { field: 'maNhanVien', header: 'Mã NV', maxWidth: '110px' },
+      { field: 'hoTen', header: 'Họ và tên', customTemplate: this.tplNguoi(), maxWidth: '240px' },
+      { field: 'donVi', header: 'Đơn vị', maxWidth: '180px' },
+      {
+        field: 'nhiemVuId',
+        header: 'Mã nhiệm vụ',
+        customTemplate: this.tplNhiemVu(),
+        maxWidth: '150px',
+      },
+      { field: 'vaiTroThamGia', header: 'Vai trò tham gia', maxWidth: '170px' },
+      { field: '_noiDung', header: 'Nội dung công việc', maxWidth: '240px' },
+      { field: '_tyLe', header: 'Tỷ lệ dự kiến', maxWidth: '130px' },
+      { field: '_thoiGian', header: 'Thời gian tham gia', maxWidth: '200px' },
+      {
+        field: 'trangThaiDuyet',
+        header: 'Trạng thái',
+        customTemplate: this.tplTrangThai(),
+        maxWidth: '150px',
+      },
+    ]),
+  );
+
+  readonly tableProps = {
+    isShowOrder: true,
+    colOrderName: 'STT',
+    isShowCheckBox: true,
+    selectionMode: 'multiple' as const,
+    selectionPageOnly: true,
+    showIndeterminateCheckAll: true,
+    dataKey: 'id',
+    scrollable: true,
+    rowHover: true,
+  };
+
+  readonly paginatorProps = computed<PaginatorProps>(() =>
+    hrPaginatorProps(this.rows().length, this.pageIndex(), this.pageSize()),
+  );
+
+  doiTrang(state: UBCKPaginatorState): void {
+    this.pageIndex.set(state.currentPage);
+    this.pageSize.set(state.recordPerPage);
+    this.chonDong.set([]);
+  }
+
+  // ---------------------------------------------------------- bảng preview import
+
+  private readonly tplPreviewKetQua = viewChild.required<TemplateRef<unknown>>('tplPreviewKetQua');
+
+  readonly previewColumns = computed<ColumnDefinition[][]>(() =>
+    hrColumns([
+      {
+        field: 'ketQua',
+        header: 'Kết quả',
+        customTemplate: this.tplPreviewKetQua(),
+        maxWidth: '260px',
+      },
+      { field: '_maNhanVien', header: 'Mã NV', maxWidth: '110px' },
+      { field: '_hoTen', header: 'Họ và tên', maxWidth: '200px' },
+      { field: '_nhiemVuId', header: 'Mã nhiệm vụ', maxWidth: '140px' },
+      { field: '_vaiTro', header: 'Vai trò', maxWidth: '160px' },
+    ]),
+  );
+
+  readonly previewProps = { isShowOrder: true, colOrderName: 'Dòng', scrollable: true };
+
+  /** Dòng preview đưa vào bảng — `raw` là dữ liệu thô đọc từ file, có thể thiếu trường. */
+  readonly previewRows = computed<Record<string, unknown>[]>(() =>
+    this.importPreview().map((p) => ({
+      preview: p,
+      rowcCustomClasses: p.hopLe ? '' : 'hr-row-canhbao',
+      _maNhanVien: p.raw.maNhanVien ?? '',
+      _hoTen: p.raw.hoTen ?? '',
+      _nhiemVuId: p.raw.nhiemVuId ?? '',
+      _vaiTro: p.raw.vaiTroThamGia ?? '',
+    })),
+  );
+
+  /*
+   * Nhãn + màu tag đọc qua HÀM chứ không tra bảng thẳng trong template.
+   *
+   * Biến ngầm định của `<ng-template>` mà `UbckTable` truyền vào luôn có kiểu `any`, mà chế độ
+   * kiểm kiểu template nghiêm ngặt của Angular không cho `any` làm khoá của `Record<...>`
+   * (TS7053) — build đỏ. Hàm nhận tham số đã khai kiểu thì `any` truyền vào được, và chỗ khai kiểu
+   * nằm ở đây, một chỗ, thay vì rải `$any(...)` khắp template.
+   */
+  nhanTrangThai(tt: NhanSuTrangThaiDuyet) {
+    return NHAN_SU_TRANG_THAI_LABEL[tt];
+  }
+
+  mauTrangThai(tt: NhanSuTrangThaiDuyet) {
+    return NHAN_SU_TRANG_THAI_COLOR[tt];
   }
 
   private actor(): string {
@@ -195,23 +333,6 @@ export class HrNhanSuListPage {
     this.pageIndex.set(1);
   }
 
-  // ----------------------------------------------------------------- chọn dòng
-
-  daTich(id: string): boolean {
-    return this.daChon().has(id);
-  }
-
-  toggle(row: NhanSuNhiemVu): void {
-    const next = new Set(this.daChon());
-    if (next.has(row.id)) next.delete(row.id);
-    else next.add(row.id);
-    this.daChon.set(next);
-  }
-
-  tichTatCa(checked: boolean): void {
-    this.daChon.set(checked ? new Set(this.pagedRows().map((r) => r.id)) : new Set());
-  }
-
   // ------------------------------------------------------------------ thao tác
 
   themMoi(): void {
@@ -226,41 +347,53 @@ export class HrNhanSuListPage {
     void this.router.navigate(['/hr/nhan-su', row.id, 'sua']);
   }
 
-  xoa(row: NhanSuNhiemVu): void {
+  moXoa(row: NhanSuNhiemVu): void {
+    this.xoaTarget.set(row);
+    this.xoaMo.set(true);
+  }
+
+  xacNhanXoa(): void {
+    const row = this.xoaTarget();
+    if (!row) return;
     this.service.remove(row.id);
-    this.message.success(`Đã xoá phân công của ${row.hoTen}.`);
+    this.xoaMo.set(false);
+    this.toast.success(`Đã xoá phân công của ${row.hoTen}.`);
+  }
+
+  private idsDangChon(): string[] {
+    return this.chonDong().map((d) => d.id);
   }
 
   trinhDuyet(): void {
-    const chon = [...this.daChon()];
+    const chon = this.idsDangChon();
     if (!chon.length) return;
     this.service.submit(chon, this.actor());
-    this.daChon.set(new Set());
-    this.message.success(`Đã trình duyệt ${chon.length} dòng.`);
+    this.chonDong.set([]);
+    this.toast.success(`Đã trình duyệt ${chon.length} dòng.`);
   }
 
   duyet(): void {
-    const chon = [...this.daChon()];
+    const chon = this.idsDangChon();
     if (!chon.length) return;
     this.service.approve(chon, this.actor());
-    this.daChon.set(new Set());
-    this.message.success(`Đã duyệt ${chon.length} dòng.`);
+    this.chonDong.set([]);
+    this.toast.success(`Đã duyệt ${chon.length} dòng.`);
   }
 
   moTuChoi(): void {
-    if (!this.daChon().size) return;
+    if (!this.soDaChon()) return;
     this.tuChoiLyDo.set('');
     this.tuChoiMo.set(true);
   }
 
   xacNhanTuChoi(): void {
     const lyDo = this.tuChoiLyDo().trim();
-    const chon = [...this.daChon()];
+    const chon = this.idsDangChon();
     if (!lyDo || !chon.length) return;
     this.service.reject(chon, this.actor(), lyDo);
-    this.daChon.set(new Set());
+    this.chonDong.set([]);
     this.tuChoiMo.set(false);
-    this.message.success(`Đã từ chối ${chon.length} dòng.`);
+    this.toast.success(`Đã từ chối ${chon.length} dòng.`);
   }
 
   // --------------------------------------------------------------- xuất & in
@@ -276,7 +409,10 @@ export class HrNhanSuListPage {
         { header: 'Chức danh', value: (r) => r.chucDanh },
         { header: 'Mã nhiệm vụ', value: (r) => r.nhiemVuId },
         { header: 'Vai trò tham gia', value: (r) => r.vaiTroThamGia },
-        { header: 'Nội dung công việc tham gia', value: (r) => this.tenNoiDung(r.noiDungCongViecIds) },
+        {
+          header: 'Nội dung công việc tham gia',
+          value: (r) => this.tenNoiDung(r.noiDungCongViecIds),
+        },
         // Bỏ trống thì để trống trong file xuất — điền 0 sẽ bị đọc thành "phân bổ 0%".
         { header: 'Tỷ lệ dự kiến (%)', value: (r) => r.tyLePhanBo ?? '' },
         { header: 'Từ ngày', value: (r) => r.tuNgay },
@@ -287,7 +423,7 @@ export class HrNhanSuListPage {
       'danh-sach-nhan-su-nhiem-vu',
       'DANH SÁCH NHÂN SỰ THAM GIA NHIỆM VỤ',
     );
-    this.message.success('Đã kết xuất file Excel.');
+    this.toast.success('Đã kết xuất file Excel.');
   }
 
   /** Tên `in()` không dùng được trong template Angular — `in` là toán tử của biểu thức. */
@@ -309,15 +445,17 @@ export class HrNhanSuListPage {
   }
 
   /**
-   * Chặn upload thật (`return false`) rồi tự đọc nội dung bằng `FileReader` — cùng cách
-   * `pages/process-catalog/process-catalog.ts` xử lý file BPMN. Đợt này không có backend để nhận
-   * file, và kể cả khi có thì việc soát lỗi vẫn nên chạy trước ở client.
+   * Người dùng chọn file → đọc bằng `FileReader` và soát lỗi NGAY TẠI CLIENT, không gửi đi đâu.
+   *
+   * `cmm-fileUpload` chạy ở chế độ `customUpload` + `auto = false` và ta chỉ nghe `onSelect`; không
+   * có `url` nên component không tự đẩy file lên đâu cả. Đây là cùng cách
+   * `pages/process-catalog/process-catalog.ts` xử lý file BPMN.
    */
-  beforeUpload = (file: NzUploadFile): boolean => {
-    const raw = nativeUploadFile(file);
-    if (!raw) {
+  chonFile(files: readonly File[]): void {
+    const file = files[0];
+    if (!file) {
       this.importLoiDoc.set('Trình duyệt không cung cấp nội dung file. Vui lòng chọn lại.');
-      return false;
+      return;
     }
     this.importTenFile.set(file.name);
     this.importLoiDoc.set(null);
@@ -334,14 +472,14 @@ export class HrNhanSuListPage {
       this.importPreview.set(this.service.phanTichFileImport(raws));
     };
     reader.onerror = () => this.importLoiDoc.set('Không đọc được nội dung file.');
-    reader.readAsText(raw, 'utf-8');
-    return false;
-  };
+    reader.readAsText(file, 'utf-8');
+  }
 
   nhapDuLieu(): void {
+    const soLoi = this.soDongLoi();
     const so = this.service.importRows(this.importPreview(), this.actor());
     this.importMo.set(false);
     this.pageIndex.set(1);
-    this.message.success(`Đã nhập ${so} dòng hợp lệ${this.soDongLoi() ? `, bỏ qua ${this.soDongLoi()} dòng lỗi` : ''}.`);
+    this.toast.success(`Đã nhập ${so} dòng hợp lệ${soLoi ? `, bỏ qua ${soLoi} dòng lỗi` : ''}.`);
   }
 }

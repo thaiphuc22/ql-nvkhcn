@@ -1,5 +1,10 @@
 /* You can add global styles to this file, and also import other style files */
+/* `@font-face` phải nạp TRƯỚC token — token khai `--vht-built-font: Roboto` và font phải sẵn
+   sàng ở thời điểm đó, nếu không lần vẽ đầu bị nháy sang font hệ thống. */
+@use './styles/fonts-roboto.scss';
 @use './styles/tokens.scss';
+/* Sau `tokens.scss` — file này ĐỌC các biến `--vht-*` khai ở trên, đảo thứ tự là nhận giá trị rỗng. */
+@use './styles/khcn-core-compat.scss';
 @use './styles/bpmn-modeler-panel.scss';
 @use './styles/form-designer-canvas.scss';
 @use './styles/hr-pages.scss';
@@ -10,4 +15,3 @@ body {
   height: 100%;
   margin: 0;
 }
-

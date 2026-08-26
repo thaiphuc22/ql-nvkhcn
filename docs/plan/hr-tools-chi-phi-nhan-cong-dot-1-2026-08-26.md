@@ -152,6 +152,12 @@ nhật cả hai cùng lúc.
 
 ### 4.3 Shell + component dùng chung theo DS
 
+> **⛔ MỤC NÀY ĐÃ BỊ THAY THẾ — 2026-08-26.** Shell tự dựng `layout/hr-shell/` và bộ `shared/hr/*`
+> viết tay mô tả dưới đây **không còn là hướng thi công**. HR Tools chuyển sang **PrimeNG +
+> `@khcn-core/*`** theo **D23** (`.harness/state/decisions.md`); kế hoạch chuyển đổi ở
+> [`hr-tools-chuyen-sang-khcn-core-2026-08-26.md`](hr-tools-chuyen-sang-khcn-core-2026-08-26.md).
+> Giữ mục này lại chỉ để giải thích vì sao code đợt 1 trông như vậy — **không dựng thêm gì theo nó**.
+
 - `layout/hr-shell/` — topbar tối full-width (logo + chuông + avatar), sider trắng có thẻ phân hệ ở
   đầu, pill đỏ cho mục đang chọn, nút thu gọn nổi ở mép, footer `v1.0 - © {{year}}`. Đọc
   `navItemsForApp('hrtools')` — **không hardcode menu**.

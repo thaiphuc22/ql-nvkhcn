@@ -58,15 +58,24 @@
   flex: 0 0 auto;
 }
 
-.hr-card {
-  padding: var(--vht-space-20);
-  border-radius: var(--vht-radius-12);
-  background: var(--vht-surface);
+/*
+ * Card là `p-card` bên trong `cmm-card-wrapper` ⇒ phần tử của THƯ VIỆN, không mang `_ngcontent-*`
+ * của component này, nên bắt buộc `::ng-deep` (ghim dưới `:host` để không rò ra ngoài).
+ *
+ * Bo góc KHÔNG khai ở đây: `CardWrapperComponent` khai cứng 12px với `!important` ở vài thuộc tính,
+ * và card còn xuất hiện trong dialog/overlay gắn thẳng vào `<body>` — chỗ ghi đè duy nhất là
+ * `styles/khcn-core-compat.scss`. Khai hai nơi là bảo đảm hai nơi lệch nhau sau vài lần sửa.
+ */
+:host ::ng-deep .hr-card {
   box-shadow: var(--vht-shadow-sm);
+}
 
-  &--plain {
-    padding: 0;
-    background: transparent;
-    box-shadow: none;
-  }
+/* Biến thể "không card": trang tự dựng nhiều khối riêng thì phần bọc phải tàng hình hoàn toàn.
+   `padding` phải ghi đè bằng `!important` vì `CardWrapperComponent` đặt padding qua `::ng-deep`
+   với độ ưu tiên cao hơn selector này. */
+:host ::ng-deep .hr-card--plain {
+  padding: 0 !important;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }

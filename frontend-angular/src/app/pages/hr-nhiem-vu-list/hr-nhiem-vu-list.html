@@ -1,129 +1,115 @@
-<hr-page-card tieuDe="Danh mục nhiệm vụ" moTa="Toàn bộ nhiệm vụ/dự án đang theo dõi chi phí nhân công (BM5).">
+<!--
+  Template cho các ô có cấu trúc — khai TRƯỚC `<ubck-table>` một cách CỐ Ý.
+
+  `columns()` đọc chúng qua `viewChild.required`, mà truy vấn kiểu signal chỉ trả về kết quả khi
+  node đã được tạo. Đặt các `<ng-template>` này xuống dưới bảng thì lần dựng view đầu tiên bảng đọc
+  phải truy vấn chưa có giá trị và Angular ném NG0951 — trang trắng, thông báo lỗi chẳng liên quan
+  gì tới bảng. Thứ tự ở đây là một ràng buộc, không phải sở thích trình bày.
+
+  Ngữ cảnh do `UbckTable` truyền vào là `{ $implicit: rowData[col.field], rowData, col }` ⇒
+  `let-row="rowData"` là cả bản ghi, còn biến ngầm định là GIÁ TRỊ của riêng ô đó.
+  `row.nhiemVu` là bản ghi `NhiemVu` gốc (xem `pagedRows`).
+-->
+<ng-template #tplThaoTac let-row="rowData">
+  <div class="hr-actions">
+    <cmm-icon-edit (eventClick)="moSua(row.nhiemVu)" title="Sửa nhiệm vụ" />
+    <span class="hr-actions__sep" aria-hidden="true"></span>
+    <cmm-icon-delete (eventClick)="moXoa(row.nhiemVu)" title="Xoá nhiệm vụ" />
+    @if (row.trangThai === 'CHO_DUYET') {
+      <span class="hr-actions__sep" aria-hidden="true"></span>
+      <cmm-button
+        icon="pi pi-check"
+        [text]="true"
+        severity="success"
+        type="button"
+        ariaLabel="Duyệt bản khai"
+        (onClick)="duyet(row.nhiemVu)"
+      />
+      <cmm-button
+        icon="pi pi-ban"
+        [text]="true"
+        severity="danger"
+        type="button"
+        ariaLabel="Từ chối bản khai"
+        (onClick)="moTuChoi(row.nhiemVu)"
+      />
+    }
+  </div>
+</ng-template>
+
+<ng-template #tplMa let-ma let-row="rowData">
+  <a class="hr-code" (click)="moChiTiet(row.nhiemVu)">{{ ma }}</a>
+</ng-template>
+
+<ng-template #tplTinhTrang let-tt>
+  <hr-trang-thai-tag [nhan]="nhanTinhTrang(tt)" [loai]="mauTinhTrang(tt)" />
+</ng-template>
+
+<ng-template #tplTrangThai let-tt>
+  <hr-trang-thai-tag [nhan]="nhanTrangThai(tt)" [loai]="mauTrangThai(tt)" />
+</ng-template>
+
+<hr-page-card
+  tieuDe="Danh mục nhiệm vụ"
+  moTa="Toàn bộ nhiệm vụ/dự án đang theo dõi chi phí nhân công (BM5)."
+>
   <div actions>
-    <button nz-button nzType="primary" (click)="moThemMoi()"><nz-icon nzType="plus" /> Thêm mới</button>
+    <cmm-button label="Thêm mới" icon="pi pi-plus" type="button" (onClick)="moThemMoi()" />
   </div>
 
   <!-- Hàng lọc CĂN PHẢI trong card, đúng bản thiết kế (không phải căn trái như các màn cũ). -->
   <div class="hr-filters">
-    <nz-select
+    <cmm-select
       class="hr-filters__select"
-      nzAllowClear
-      nzPlaceHolder="Khối"
-      [ngModel]="khoiFilter()"
-      (ngModelChange)="locKhoi($event)"
-    >
-      @for (o of khoiOptions; track o) { <nz-option [nzValue]="o" [nzLabel]="o" /> }
-    </nz-select>
-    <nz-select
+      [value]="khoiFilter()"
+      (valueChange)="locKhoi($event)"
+      [props]="{
+        options: khoiOptions,
+        optionValue: 'value',
+        optionLabel: 'label',
+        placeholder: 'Khối',
+        showClear: true,
+      }"
+    />
+    <cmm-select
       class="hr-filters__select"
-      nzAllowClear
-      nzPlaceHolder="Phân loại"
-      [ngModel]="phanLoaiFilter()"
-      (ngModelChange)="locPhanLoai($event)"
-    >
-      @for (o of phanLoaiOptions; track o.value) { <nz-option [nzValue]="o.value" [nzLabel]="o.label" /> }
-    </nz-select>
-    <nz-select
+      [value]="phanLoaiFilter()"
+      (valueChange)="locPhanLoai($event)"
+      [props]="{
+        options: phanLoaiOptions,
+        optionValue: 'value',
+        optionLabel: 'label',
+        placeholder: 'Phân loại',
+        showClear: true,
+      }"
+    />
+    <cmm-select
       class="hr-filters__select"
-      nzAllowClear
-      nzPlaceHolder="Trạng thái"
-      [ngModel]="trangThaiFilter()"
-      (ngModelChange)="locTrangThai($event)"
-    >
-      @for (o of trangThaiOptions; track o.value) { <nz-option [nzValue]="o.value" [nzLabel]="o.label" /> }
-    </nz-select>
-    <nz-input-group nzPrefixIcon="search" class="hr-filters__search">
-      <input nz-input placeholder="Tìm theo mã, tên, mã đề tài..." [ngModel]="tuKhoa()" (ngModelChange)="timKiem($event)" />
-    </nz-input-group>
+      [value]="trangThaiFilter()"
+      (valueChange)="locTrangThai($event)"
+      [props]="{
+        options: trangThaiOptions,
+        optionValue: 'value',
+        optionLabel: 'label',
+        placeholder: 'Trạng thái',
+        showClear: true,
+      }"
+    />
+    <span class="hr-search">
+      <i class="pi pi-search hr-search__icon"></i>
+      <input
+        cmmInputText
+        type="text"
+        placeholder="Tìm theo mã, tên, mã đề tài..."
+        [value]="tuKhoa()"
+        (input)="timKiem($any($event.target).value)"
+      />
+    </span>
   </div>
 
-  <nz-table
-    #table
-    class="hr-table"
-    [nzData]="pagedRows()"
-    [nzFrontPagination]="false"
-    [nzShowPagination]="false"
-    nzTableLayout="fixed"
-    [nzScroll]="{ x: '1760px' }"
-    nzNoResult="Không có nhiệm vụ khớp điều kiện lọc."
-  >
-    <thead>
-      <tr>
-        <th nzWidth="64px">STT</th>
-        <th nzWidth="126px">Thao tác</th>
-        <th nzWidth="140px">Mã nhiệm vụ</th>
-        <th nzWidth="300px">Tên nhiệm vụ</th>
-        <th nzWidth="150px">Mã đề tài</th>
-        <th nzWidth="150px">Khối</th>
-        <th nzWidth="190px">Đơn vị chủ trì</th>
-        <th nzWidth="140px">Phân loại</th>
-        <th nzWidth="110px">Nguồn</th>
-        <th nzWidth="160px">Tổng dự toán</th>
-        <th nzWidth="160px">CPNC phê duyệt</th>
-        <th nzWidth="130px">Thời gian</th>
-        <th nzWidth="150px">Tình trạng PB</th>
-        <th nzWidth="130px">Trạng thái</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (row of table.data; track row.maNhiemVu; let i = $index) {
-        <tr>
-          <td>{{ stt(i) }}</td>
-          <td class="hr-actions">
-            <button nz-button nzType="text" nzSize="small" (click)="moSua(row)" aria-label="Sửa nhiệm vụ">
-              <nz-icon nzType="edit" />
-            </button>
-            <button
-              nz-button
-              nzType="text"
-              nzSize="small"
-              nzDanger
-              nz-popconfirm
-              nzPopconfirmTitle="Xoá nhiệm vụ này?"
-              (nzOnConfirm)="xoa(row)"
-              aria-label="Xoá nhiệm vụ"
-            >
-              <nz-icon nzType="delete" />
-            </button>
-            @if (row.trangThai === 'CHO_DUYET') {
-              <button nz-button nzType="text" nzSize="small" class="hr-ok" (click)="duyet(row)" aria-label="Duyệt bản khai">
-                <nz-icon nzType="check" />
-              </button>
-              <button nz-button nzType="text" nzSize="small" nzDanger (click)="moTuChoi(row)" aria-label="Từ chối bản khai">
-                <nz-icon nzType="stop" />
-              </button>
-            }
-          </td>
-          <td><a class="hr-code" (click)="moChiTiet(row)">{{ row.maNhiemVu }}</a></td>
-          <td class="hr-ellipsis" [title]="row.tenNhiemVu">{{ row.tenNhiemVu }}</td>
-          <!-- Nhiệm vụ SXKD/Bán hàng/Bảo hành KHÔNG thuộc đề tài nào — ô trống ở đây là đúng. -->
-          <td class="hr-ellipsis" [title]="row.tenDeTai ?? ''">{{ row.maDeTai ?? '—' }}</td>
-          <td class="hr-ellipsis">{{ row.khoi }}</td>
-          <td class="hr-ellipsis">{{ row.donViChuTri }}</td>
-          <td class="hr-ellipsis">{{ phanLoaiLabel[row.phanLoai] }}</td>
-          <td>{{ phanNguonLabel[row.phanNguon] }}</td>
-          <td>{{ formatTien(row.tongDuToan) }}</td>
-          <td>{{ formatTien(row.chiPhiNhanCongPheDuyet) }}</td>
-          <td>{{ khoangThoiGian(row.tuNgay, row.denNgay) }}</td>
-          <td>
-            <hr-trang-thai-tag
-              [nhan]="tinhTrangLabel[row.tinhTrangPhanBo]"
-              [loai]="tinhTrangMau[row.tinhTrangPhanBo]"
-            />
-          </td>
-          <td><hr-trang-thai-tag [nhan]="trangThaiLabel[row.trangThai]" [loai]="trangThaiMau[row.trangThai]" /></td>
-        </tr>
-      }
-    </tbody>
-  </nz-table>
+  <ubck-table [columns]="columns()" [dataSources]="pagedRows()" [props]="tableProps" />
 
-  <hr-table-footer
-    [total]="rows().length"
-    [pageIndex]="pageIndex()"
-    [pageSize]="pageSize()"
-    (pageIndexChange)="pageIndex.set($event)"
-    (pageSizeChange)="pageSize.set($event)"
-  />
+  <ubck-paginator [props]="paginatorProps()" (onPageChange)="doiTrang($event)" />
 </hr-page-card>
 
 <hr-nhiem-vu-form-modal
@@ -133,27 +119,62 @@
   (luu)="luu($event)"
 />
 
-<nz-modal
-  [nzVisible]="tuChoiMo()"
-  nzTitle="Từ chối bản khai"
-  [nzWidth]="520"
-  nzOkText="Từ chối"
-  nzCancelText="Huỷ"
-  [nzOkDanger]="true"
-  [nzOkDisabled]="!tuChoiLyDo().trim()"
-  (nzOnCancel)="tuChoiMo.set(false)"
-  (nzOnOk)="xacNhanTuChoi()"
+<!-- Hộp xác nhận xoá: nêu RÕ TÊN bản ghi. Không dựa vào màu để báo "đây là hành động phá huỷ" —
+     ramp brand và danger của design system trùng nhau nên nút chính và nút xoá cùng đỏ. -->
+<cmm-dialog
+  [visible]="xoaMo()"
+  (visibleChange)="xoaMo.set($event)"
+  header="Xoá nhiệm vụ"
+  [modal]="true"
+  [style]="{ width: '400px' }"
 >
-  <div *nzModalContent class="hr-form">
-    <label class="hr-field">
-      <span>Lý do từ chối <b>*</b></span>
-      <textarea
-        nz-input
-        rows="3"
-        placeholder="Nêu rõ điểm cần sửa để người khai biết phải làm gì."
-        [ngModel]="tuChoiLyDo()"
-        (ngModelChange)="tuChoiLyDo.set($event)"
-      ></textarea>
-    </label>
-  </div>
-</nz-modal>
+  <p class="hr-confirm">
+    Xoá nhiệm vụ <strong>{{ xoaTarget()?.maNhiemVu }}</strong> — {{ xoaTarget()?.tenNhiemVu }}? Thao
+    tác này không hoàn tác được.
+  </p>
+  <ng-template #footer>
+    <cmm-button
+      label="Huỷ"
+      [outlined]="true"
+      severity="secondary"
+      type="button"
+      (onClick)="xoaMo.set(false)"
+    />
+    <cmm-button label="Xoá" severity="danger" type="button" (onClick)="xacNhanXoa()" />
+  </ng-template>
+</cmm-dialog>
+
+<cmm-dialog
+  [visible]="tuChoiMo()"
+  (visibleChange)="tuChoiMo.set($event)"
+  header="Từ chối bản khai"
+  [modal]="true"
+  [style]="{ width: '520px' }"
+>
+  <label class="hr-field">
+    <span>Lý do từ chối <b>*</b></span>
+    <textarea
+      cmmTextarea
+      rows="3"
+      placeholder="Nêu rõ điểm cần sửa để người khai biết phải làm gì."
+      [value]="tuChoiLyDo()"
+      (input)="tuChoiLyDo.set($any($event.target).value)"
+    ></textarea>
+  </label>
+  <ng-template #footer>
+    <cmm-button
+      label="Huỷ"
+      [outlined]="true"
+      severity="secondary"
+      type="button"
+      (onClick)="tuChoiMo.set(false)"
+    />
+    <cmm-button
+      label="Từ chối"
+      severity="danger"
+      type="button"
+      [disabled]="!tuChoiLyDo().trim()"
+      (onClick)="xacNhanTuChoi()"
+    />
+  </ng-template>
+</cmm-dialog>

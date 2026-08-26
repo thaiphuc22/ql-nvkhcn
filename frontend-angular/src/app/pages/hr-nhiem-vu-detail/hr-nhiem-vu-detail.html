@@ -2,292 +2,405 @@
   <hr-page-card [tieuDe]="d.tenNhiemVu" [moTa]="d.maNhiemVu" backTo="/hr/nhiem-vu">
     <div actions>
       @if (d.trangThai === 'NHAP' || d.trangThai === 'TU_CHOI') {
-        <button nz-button nzType="primary" (click)="trinhDuyet()"><nz-icon nzType="send" /> Trình duyệt</button>
+        <cmm-button label="Trình duyệt" icon="pi pi-send" type="button" (onClick)="trinhDuyet()" />
       }
       @if (d.trangThai === 'HIEU_LUC') {
-        <button nz-button (click)="tamDung()"><nz-icon nzType="stop" /> Tạm dừng</button>
+        <cmm-button
+          label="Tạm dừng"
+          icon="pi pi-ban"
+          [outlined]="true"
+          severity="secondary"
+          type="button"
+          (onClick)="tamDung()"
+        />
       }
       @if (d.trangThai === 'TAM_DUNG') {
-        <button nz-button nzType="primary" (click)="moLai()"><nz-icon nzType="check" /> Mở lại</button>
+        <cmm-button label="Mở lại" icon="pi pi-check" type="button" (onClick)="moLai()" />
       }
     </div>
 
     <div class="hr-desc">
-      <div><span class="hr-desc__label">Trạng thái</span>
-        <span class="hr-desc__value"><hr-trang-thai-tag [nhan]="trangThaiLabel[d.trangThai]" [loai]="trangThaiMau[d.trangThai]" /></span>
+      <div>
+        <span class="hr-desc__label">Trạng thái</span>
+        <span class="hr-desc__value"
+          ><hr-trang-thai-tag
+            [nhan]="trangThaiLabel[d.trangThai]"
+            [loai]="trangThaiMau[d.trangThai]"
+        /></span>
       </div>
-      <div><span class="hr-desc__label">Tình trạng phân bổ</span>
-        <span class="hr-desc__value"><hr-trang-thai-tag [nhan]="tinhTrangLabel[d.tinhTrangPhanBo]" [loai]="tinhTrangMau[d.tinhTrangPhanBo]" /></span>
+      <div>
+        <span class="hr-desc__label">Tình trạng phân bổ</span>
+        <span class="hr-desc__value"
+          ><hr-trang-thai-tag
+            [nhan]="tinhTrangLabel[d.tinhTrangPhanBo]"
+            [loai]="tinhTrangMau[d.tinhTrangPhanBo]"
+        /></span>
       </div>
-      <div><span class="hr-desc__label">Phân loại</span><span class="hr-desc__value">{{ phanLoaiLabel[d.phanLoai] }}</span></div>
-      <div><span class="hr-desc__label">Phân nguồn</span><span class="hr-desc__value">{{ phanNguonLabel[d.phanNguon] }}</span></div>
+      <div>
+        <span class="hr-desc__label">Phân loại</span
+        ><span class="hr-desc__value">{{ phanLoaiLabel[d.phanLoai] }}</span>
+      </div>
+      <div>
+        <span class="hr-desc__label">Phân nguồn</span
+        ><span class="hr-desc__value">{{ phanNguonLabel[d.phanNguon] }}</span>
+      </div>
       <!-- Trống là HỢP LỆ: nhiệm vụ SXKD/Bán hàng/Bảo hành không thuộc đề tài nào. -->
-      <div><span class="hr-desc__label">Mã đề tài</span><span class="hr-desc__value">{{ d.maDeTai ?? '— (không thuộc đề tài KHCN)' }}</span></div>
-      <div><span class="hr-desc__label">Tên đề tài</span><span class="hr-desc__value">{{ d.tenDeTai ?? '—' }}</span></div>
-      <div><span class="hr-desc__label">Khối</span><span class="hr-desc__value">{{ d.khoi }}</span></div>
-      <div><span class="hr-desc__label">Đơn vị chủ trì</span><span class="hr-desc__value">{{ d.donViChuTri }}</span></div>
-      <div><span class="hr-desc__label">Đơn vị phân bổ</span><span class="hr-desc__value">{{ d.donViPhanBo.join(' · ') }}</span></div>
-      <div><span class="hr-desc__label">PM</span><span class="hr-desc__value">{{ nhanNhanSu(d.pmMaNhanVien) }}</span></div>
-      <div><span class="hr-desc__label">PA đơn vị chủ trì</span><span class="hr-desc__value">{{ nhanNhanSu(d.paMaNhanVien) }}</span></div>
-      <div><span class="hr-desc__label">Tổng dự toán</span><span class="hr-desc__value">{{ formatTien(d.tongDuToan) }}</span></div>
-      <div><span class="hr-desc__label">CPNC được phê duyệt</span><span class="hr-desc__value">{{ formatTien(d.chiPhiNhanCongPheDuyet) }}</span></div>
-      <div><span class="hr-desc__label">Dự phòng</span><span class="hr-desc__value">{{ formatTien(d.duPhong) }}</span></div>
-      <div><span class="hr-desc__label">Thời gian thực hiện</span><span class="hr-desc__value">{{ d.tuNgay }} → {{ d.denNgay }}</span></div>
-      <div><span class="hr-desc__label">Người khai báo</span><span class="hr-desc__value">{{ d.nguoiKhaiBao }} ({{ d.ngayKhaiBao }})</span></div>
-      <div><span class="hr-desc__label">Mô tả</span><span class="hr-desc__value">{{ d.moTa || '—' }}</span></div>
+      <div>
+        <span class="hr-desc__label">Mã đề tài</span
+        ><span class="hr-desc__value">{{ d.maDeTai ?? '— (không thuộc đề tài KHCN)' }}</span>
+      </div>
+      <div>
+        <span class="hr-desc__label">Tên đề tài</span
+        ><span class="hr-desc__value">{{ d.tenDeTai ?? '—' }}</span>
+      </div>
+      <div>
+        <span class="hr-desc__label">Khối</span><span class="hr-desc__value">{{ d.khoi }}</span>
+      </div>
+      <div>
+        <span class="hr-desc__label">Đơn vị chủ trì</span
+        ><span class="hr-desc__value">{{ d.donViChuTri }}</span>
+      </div>
+      <div>
+        <span class="hr-desc__label">Đơn vị phân bổ</span
+        ><span class="hr-desc__value">{{ d.donViPhanBo.join(' · ') }}</span>
+      </div>
+      <div>
+        <span class="hr-desc__label">PM</span
+        ><span class="hr-desc__value">{{ nhanNhanSu(d.pmMaNhanVien) }}</span>
+      </div>
+      <div>
+        <span class="hr-desc__label">PA đơn vị chủ trì</span
+        ><span class="hr-desc__value">{{ nhanNhanSu(d.paMaNhanVien) }}</span>
+      </div>
+      <div>
+        <span class="hr-desc__label">Tổng dự toán</span
+        ><span class="hr-desc__value">{{ formatTien(d.tongDuToan) }}</span>
+      </div>
+      <div>
+        <span class="hr-desc__label">CPNC được phê duyệt</span
+        ><span class="hr-desc__value">{{ formatTien(d.chiPhiNhanCongPheDuyet) }}</span>
+      </div>
+      <div>
+        <span class="hr-desc__label">Dự phòng</span
+        ><span class="hr-desc__value">{{ formatTien(d.duPhong) }}</span>
+      </div>
+      <div>
+        <span class="hr-desc__label">Thời gian thực hiện</span
+        ><span class="hr-desc__value">{{ d.tuNgay }} → {{ d.denNgay }}</span>
+      </div>
+      <div>
+        <span class="hr-desc__label">Người khai báo</span
+        ><span class="hr-desc__value">{{ d.nguoiKhaiBao }} ({{ d.ngayKhaiBao }})</span>
+      </div>
+      <div>
+        <span class="hr-desc__label">Mô tả</span
+        ><span class="hr-desc__value">{{ d.moTa || '—' }}</span>
+      </div>
     </div>
 
-    <nz-tabs [(nzSelectedIndex)]="tabIndex" class="hr-tabs">
-      <nz-tab nzTitle="Nội dung công việc">
-        <div class="hr-stats">
-          <div class="hr-stat"><small>Số nội dung công việc</small><strong>{{ noiDungCV().length }}</strong></div>
-          <div class="hr-stat">
-            <small>Tổng CPNC phê duyệt của các nội dung</small><strong>{{ formatTien(tongCpncNoiDung()) }}</strong>
+    <!-- `p-tabs` chứ không phải `app-tabs` — xem chú thích lớp `HrNhiemVuDetailPage`. -->
+    <p-tabs [(value)]="tabIndex" class="hr-tabs">
+      <p-tablist>
+        <p-tab [value]="0">Nội dung công việc</p-tab>
+        <p-tab [value]="1">Vai trò PM/PA</p-tab>
+        <p-tab [value]="2">Nhân sự tham gia</p-tab>
+        <p-tab [value]="3">Lịch sử</p-tab>
+      </p-tablist>
+
+      <p-tabpanels>
+        <p-tabpanel [value]="0">
+          <div class="hr-stats">
+            <div class="hr-stat">
+              <small>Số nội dung công việc</small><strong>{{ noiDungCV().length }}</strong>
+            </div>
+            <div class="hr-stat">
+              <small>Tổng CPNC phê duyệt của các nội dung</small
+              ><strong>{{ formatTien(tongCpncNoiDung()) }}</strong>
+            </div>
+            <div class="hr-stat">
+              <small>CPNC phê duyệt của nhiệm vụ</small
+              ><strong>{{ formatTien(d.chiPhiNhanCongPheDuyet) }}</strong>
+            </div>
           </div>
-          <div class="hr-stat"><small>CPNC phê duyệt của nhiệm vụ</small><strong>{{ formatTien(d.chiPhiNhanCongPheDuyet) }}</strong></div>
-        </div>
 
-        <div class="hr-filters">
-          <button nz-button nzType="primary" nzSize="small" (click)="moThemNoiDung()">
-            <nz-icon nzType="plus" /> Thêm nội dung công việc
-          </button>
-        </div>
+          <div class="hr-filters">
+            <cmm-button
+              label="Thêm nội dung công việc"
+              icon="pi pi-plus"
+              size="small"
+              type="button"
+              (onClick)="moThemNoiDung()"
+            />
+          </div>
 
-        <nz-table
-          #tblNdcv
-          class="hr-table"
-          [nzData]="noiDungCV()"
-          [nzShowPagination]="false"
-          [nzFrontPagination]="false"
-          nzTableLayout="fixed"
-          [nzScroll]="{ x: '1240px' }"
-          nzNoResult="Nhiệm vụ chưa khai nội dung công việc nào."
-        >
-          <thead>
-            <tr>
-              <th nzWidth="60px">STT</th>
-              <th nzWidth="100px">Thao tác</th>
-              <th nzWidth="260px">Nội dung công việc</th>
-              <th nzWidth="200px">Đơn vị phân bổ</th>
-              <th nzWidth="110px">Nguồn</th>
-              <th nzWidth="160px">CPNC phê duyệt</th>
-              <th nzWidth="140px">Dự phòng</th>
-              <th nzWidth="170px">Nguồn đã lập dự toán</th>
-              <th nzWidth="200px">Thời gian</th>
-              <th nzWidth="150px">Tình trạng PB</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (r of tblNdcv.data; track r.id; let i = $index) {
-              <tr>
-                <td>{{ i + 1 }}</td>
-                <td class="hr-actions">
-                  <button nz-button nzType="text" nzSize="small" (click)="moSuaNoiDung(r)" aria-label="Sửa nội dung công việc">
-                    <nz-icon nzType="edit" />
-                  </button>
-                  <button
-                    nz-button
-                    nzType="text"
-                    nzSize="small"
-                    nzDanger
-                    nz-popconfirm
-                    nzPopconfirmTitle="Xoá nội dung công việc này?"
-                    (nzOnConfirm)="xoaNoiDung(r)"
-                    aria-label="Xoá nội dung công việc"
-                  >
-                    <nz-icon nzType="delete" />
-                  </button>
-                </td>
-                <td class="hr-ellipsis" [title]="r.ten">{{ r.ten }}</td>
-                <td class="hr-ellipsis">{{ r.donViPhanBo }}</td>
-                <td>{{ phanNguonLabel[r.phanNguon] }}</td>
-                <td>{{ formatTien(r.chiPhiNhanCongPheDuyet) }}</td>
-                <td>{{ formatTien(r.duPhong) }}</td>
-                <!-- Nguồn Bảo hành: TRỐNG, không phải 0 — 0 đọc thành "hết nguồn". -->
-                <td>{{ nguonDuToan(r) }}</td>
-                <td>{{ r.tuNgay }} → {{ r.denNgay }}</td>
-                <td><hr-trang-thai-tag [nhan]="tinhTrangLabel[r.tinhTrangPhanBo]" [loai]="tinhTrangMau[r.tinhTrangPhanBo]" /></td>
-              </tr>
-            }
-          </tbody>
-        </nz-table>
-      </nz-tab>
+          <div class="hr-tablewrap">
+            <table class="hr-simple-table">
+              <thead>
+                <tr>
+                  <th style="width: 60px">STT</th>
+                  <th style="width: 110px">Thao tác</th>
+                  <th style="width: 260px">Nội dung công việc</th>
+                  <th style="width: 200px">Đơn vị phân bổ</th>
+                  <th style="width: 110px">Nguồn</th>
+                  <th style="width: 160px">CPNC phê duyệt</th>
+                  <th style="width: 140px">Dự phòng</th>
+                  <th style="width: 170px">Nguồn đã lập dự toán</th>
+                  <th style="width: 200px">Thời gian</th>
+                  <th style="width: 150px">Tình trạng PB</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (r of noiDungCV(); track r.id; let i = $index) {
+                  <tr>
+                    <td>{{ i + 1 }}</td>
+                    <td>
+                      <div class="hr-actions">
+                        <cmm-icon-edit
+                          (eventClick)="moSuaNoiDung(r)"
+                          title="Sửa nội dung công việc"
+                        />
+                        <span class="hr-actions__sep" aria-hidden="true"></span>
+                        <cmm-icon-delete
+                          (eventClick)="moXoaNoiDung(r)"
+                          title="Xoá nội dung công việc"
+                        />
+                      </div>
+                    </td>
+                    <td class="hr-ellipsis" [title]="r.ten">{{ r.ten }}</td>
+                    <td class="hr-ellipsis">{{ r.donViPhanBo }}</td>
+                    <td>{{ phanNguonLabel[r.phanNguon] }}</td>
+                    <td>{{ formatTien(r.chiPhiNhanCongPheDuyet) }}</td>
+                    <td>{{ formatTien(r.duPhong) }}</td>
+                    <!-- Nguồn Bảo hành: TRỐNG, không phải 0 — 0 đọc thành "hết nguồn". -->
+                    <td>{{ nguonDuToan(r) }}</td>
+                    <td>{{ r.tuNgay }} → {{ r.denNgay }}</td>
+                    <td>
+                      <hr-trang-thai-tag
+                        [nhan]="tinhTrangLabel[r.tinhTrangPhanBo]"
+                        [loai]="tinhTrangMau[r.tinhTrangPhanBo]"
+                      />
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="10" class="hr-empty">
+                      Nhiệm vụ chưa khai nội dung công việc nào.
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </p-tabpanel>
 
-      <nz-tab nzTitle="Vai trò PM/PA">
-        @if (loiVaiTro().length) {
-          <ul class="hr-form__errors">
-            @for (m of loiVaiTro(); track m) { <li>{{ m }}</li> }
-          </ul>
-        }
-
-        <div class="hr-filters">
-          <button nz-button nzType="primary" nzSize="small" (click)="moThemVaiTro()">
-            <nz-icon nzType="plus" /> Thêm vai trò
-          </button>
-        </div>
-
-        <nz-table
-          #tblVaiTro
-          class="hr-table"
-          [nzData]="vaiTro()"
-          [nzShowPagination]="false"
-          [nzFrontPagination]="false"
-          nzTableLayout="fixed"
-          [nzScroll]="{ x: '860px' }"
-          nzNoResult="Nhiệm vụ chưa khai vai trò PM/PA."
-        >
-          <thead>
-            <tr>
-              <th nzWidth="60px">STT</th>
-              <th nzWidth="90px">Thao tác</th>
-              <th nzWidth="200px">Vai trò</th>
-              <th nzWidth="280px">Nhân sự</th>
-              <th nzWidth="230px">Đơn vị phụ trách</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (r of tblVaiTro.data; track r.id; let i = $index) {
-              <tr>
-                <td>{{ i + 1 }}</td>
-                <td class="hr-actions">
-                  <button
-                    nz-button
-                    nzType="text"
-                    nzSize="small"
-                    nzDanger
-                    nz-popconfirm
-                    nzPopconfirmTitle="Xoá vai trò này?"
-                    (nzOnConfirm)="xoaVaiTro(r)"
-                    aria-label="Xoá vai trò"
-                  >
-                    <nz-icon nzType="delete" />
-                  </button>
-                </td>
-                <td>{{ vaiTroLabel[r.vaiTro] }}</td>
-                <td class="hr-ellipsis">{{ nhanNhanSu(r.maNhanVien) }}</td>
-                <td class="hr-ellipsis">{{ r.donVi }}</td>
-              </tr>
-            }
-          </tbody>
-        </nz-table>
-      </nz-tab>
-
-      <nz-tab nzTitle="Nhân sự tham gia">
-        <nz-table
-          #tblNhanSu
-          class="hr-table"
-          [nzData]="nhanSu()"
-          [nzShowPagination]="false"
-          [nzFrontPagination]="false"
-          nzTableLayout="fixed"
-          [nzScroll]="{ x: '1080px' }"
-          nzNoResult="Nhiệm vụ chưa có nhân sự tham gia."
-        >
-          <thead>
-            <tr>
-              <th nzWidth="60px">STT</th>
-              <th nzWidth="110px">Mã NV</th>
-              <th nzWidth="200px">Họ tên</th>
-              <th nzWidth="160px">Vai trò tham gia</th>
-              <th nzWidth="240px">Nội dung công việc tham gia</th>
-              <th nzWidth="130px">Tỷ lệ dự kiến</th>
-              <th nzWidth="200px">Thời gian</th>
-              <th nzWidth="120px">Trạng thái</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (r of tblNhanSu.data; track r.id; let i = $index) {
-              <tr>
-                <td>{{ i + 1 }}</td>
-                <td><code>{{ r.maNhanVien }}</code></td>
-                <td class="hr-ellipsis">{{ r.hoTen }}<br /><small class="hr-muted">{{ r.donVi }}</small></td>
-                <td class="hr-ellipsis">{{ r.vaiTroThamGia }}</td>
-                <td class="hr-ellipsis" [title]="tenNoiDung(r.noiDungCongViecIds)">{{ tenNoiDung(r.noiDungCongViecIds) }}</td>
-                <!-- Bỏ trống là dạng dữ liệu ĐÚNG theo BM1 — hiện `—`, không phải 0%. -->
-                <td>{{ r.tyLePhanBo !== undefined ? r.tyLePhanBo + '%' : '—' }}</td>
-                <td>{{ r.tuNgay }} → {{ r.denNgay }}</td>
-                <td><hr-trang-thai-tag [nhan]="nhanSuLabel[r.trangThaiDuyet]" [loai]="nhanSuMau[r.trangThaiDuyet]" /></td>
-              </tr>
-            }
-          </tbody>
-        </nz-table>
-      </nz-tab>
-
-      <nz-tab nzTitle="Lịch sử">
-        <nz-timeline>
-          @for (muc of d.lichSu; track $index) {
-            <nz-timeline-item>
-              <strong>{{ muc.hanhDong }}</strong>
-              <div class="hr-muted">{{ muc.at }} · {{ muc.actor }}</div>
-              @if (muc.ghiChu) { <div>{{ muc.ghiChu }}</div> }
-            </nz-timeline-item>
+        <p-tabpanel [value]="1">
+          @if (loiVaiTro().length) {
+            <ul class="hr-form__errors">
+              @for (m of loiVaiTro(); track m) {
+                <li>{{ m }}</li>
+              }
+            </ul>
           }
-        </nz-timeline>
-      </nz-tab>
-    </nz-tabs>
+
+          <div class="hr-filters">
+            <cmm-button
+              label="Thêm vai trò"
+              icon="pi pi-plus"
+              size="small"
+              type="button"
+              (onClick)="moThemVaiTro()"
+            />
+          </div>
+
+          <div class="hr-tablewrap">
+            <table class="hr-simple-table">
+              <thead>
+                <tr>
+                  <th style="width: 60px">STT</th>
+                  <th style="width: 90px">Thao tác</th>
+                  <th style="width: 200px">Vai trò</th>
+                  <th style="width: 280px">Nhân sự</th>
+                  <th style="width: 230px">Đơn vị phụ trách</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (r of vaiTro(); track r.id; let i = $index) {
+                  <tr>
+                    <td>{{ i + 1 }}</td>
+                    <td>
+                      <div class="hr-actions">
+                        <cmm-icon-delete (eventClick)="moXoaVaiTro(r)" title="Xoá vai trò" />
+                      </div>
+                    </td>
+                    <td>{{ vaiTroLabel[r.vaiTro] }}</td>
+                    <td class="hr-ellipsis">{{ nhanNhanSu(r.maNhanVien) }}</td>
+                    <td class="hr-ellipsis">{{ r.donVi }}</td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="5" class="hr-empty">Nhiệm vụ chưa khai vai trò PM/PA.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </p-tabpanel>
+
+        <p-tabpanel [value]="2">
+          <div class="hr-tablewrap">
+            <table class="hr-simple-table">
+              <thead>
+                <tr>
+                  <th style="width: 60px">STT</th>
+                  <th style="width: 110px">Mã NV</th>
+                  <th style="width: 200px">Họ tên</th>
+                  <th style="width: 160px">Vai trò tham gia</th>
+                  <th style="width: 240px">Nội dung công việc tham gia</th>
+                  <th style="width: 130px">Tỷ lệ dự kiến</th>
+                  <th style="width: 200px">Thời gian</th>
+                  <th style="width: 120px">Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (r of nhanSu(); track r.id; let i = $index) {
+                  <tr>
+                    <td>{{ i + 1 }}</td>
+                    <td>
+                      <code>{{ r.maNhanVien }}</code>
+                    </td>
+                    <td class="hr-ellipsis">
+                      {{ r.hoTen }}<br /><small class="hr-muted">{{ r.donVi }}</small>
+                    </td>
+                    <td class="hr-ellipsis">{{ r.vaiTroThamGia }}</td>
+                    <td class="hr-ellipsis" [title]="tenNoiDung(r.noiDungCongViecIds)">
+                      {{ tenNoiDung(r.noiDungCongViecIds) }}
+                    </td>
+                    <!-- Bỏ trống là dạng dữ liệu ĐÚNG theo BM1 — hiện `—`, không phải 0%. -->
+                    <td>{{ r.tyLePhanBo !== undefined ? r.tyLePhanBo + '%' : '—' }}</td>
+                    <td>{{ r.tuNgay }} → {{ r.denNgay }}</td>
+                    <td>
+                      <hr-trang-thai-tag
+                        [nhan]="nhanSuLabel[r.trangThaiDuyet]"
+                        [loai]="nhanSuMau[r.trangThaiDuyet]"
+                      />
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="8" class="hr-empty">Nhiệm vụ chưa có nhân sự tham gia.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </p-tabpanel>
+
+        <!-- Dòng thời gian tự dựng, KHÔNG dùng `cmm-timeline` của `@khcn-core/ui`: component đó
+             nhận `#content` qua `contentChild` rồi chiếu lại, nhưng khi dùng thật thì host
+             `<cmm-timeline>` không xuất hiện trong DOM còn nội dung `#content` lại được dựng với
+             ngữ cảnh RỖNG ⇒ tab trắng + `TypeError: Cannot read properties of undefined (reading
+             'hanhDong')` lặp mỗi vòng kiểm tra thay đổi. Đo 2026-08-27 khi chạy §10.5; xem
+             `docs/plan/hr-tools-chuyen-sang-khcn-core-2026-08-26.md` (chỗ thư viện không dùng được
+             thứ 6). Markup ở đây ngắn hơn phần chú thích này, nên không đáng đánh đổi lấy rủi ro. -->
+        <p-tabpanel [value]="3">
+          <ol class="hr-timeline">
+            @for (muc of d.lichSu; track $index) {
+              <li class="hr-timeline__item">
+                <span class="hr-timeline__dot" aria-hidden="true"></span>
+                <div class="hr-timeline__body">
+                  <strong>{{ muc.hanhDong }}</strong>
+                  <div class="hr-muted">{{ muc.at }} · {{ muc.actor }}</div>
+                  @if (muc.ghiChu) {
+                    <div>{{ muc.ghiChu }}</div>
+                  }
+                </div>
+              </li>
+            } @empty {
+              <li class="hr-empty">Nhiệm vụ chưa có lịch sử thao tác.</li>
+            }
+          </ol>
+        </p-tabpanel>
+      </p-tabpanels>
+    </p-tabs>
   </hr-page-card>
 
   <!-- ------------------------------------------------- popup nội dung công việc -->
-  <nz-modal
-    [nzVisible]="ndcvMo()"
-    [nzTitle]="ndcvDangSua() ? 'Sửa nội dung công việc' : 'Thêm nội dung công việc'"
-    [nzWidth]="640"
-    nzOkText="Lưu"
-    nzCancelText="Huỷ"
-    (nzOnCancel)="ndcvMo.set(false)"
-    (nzOnOk)="luuNoiDung()"
+  <cmm-dialog
+    [visible]="ndcvMo()"
+    (visibleChange)="ndcvMo.set($event)"
+    [header]="ndcvDangSua() ? 'Sửa nội dung công việc' : 'Thêm nội dung công việc'"
+    [modal]="true"
+    [style]="{ width: '640px' }"
   >
-    <div *nzModalContent class="hr-form">
+    <div class="hr-form">
       @if (ndcvLoi().length) {
         <ul class="hr-form__errors">
-          @for (m of ndcvLoi(); track m) { <li>{{ m }}</li> }
+          @for (m of ndcvLoi(); track m) {
+            <li>{{ m }}</li>
+          }
         </ul>
       }
 
       <label class="hr-field">
         <span>Tên nội dung công việc <b>*</b></span>
-        <input nz-input [ngModel]="ndcvForm().ten" (ngModelChange)="capNhatNdcv('ten', $event)" />
+        <input
+          cmmInputText
+          type="text"
+          [value]="ndcvForm().ten"
+          (input)="capNhatNdcv('ten', $any($event.target).value)"
+        />
       </label>
 
       <div class="hr-form__row">
         <label class="hr-field">
           <span>Đơn vị phân bổ <b>*</b></span>
-          <nz-select nzShowSearch [ngModel]="ndcvForm().donViPhanBo" (ngModelChange)="capNhatNdcv('donViPhanBo', $event)">
-            @for (o of d.donViPhanBo; track o) { <nz-option [nzValue]="o" [nzLabel]="o" /> }
-          </nz-select>
+          <cmm-select
+            [value]="ndcvForm().donViPhanBo"
+            (valueChange)="capNhatNdcv('donViPhanBo', $event)"
+            [props]="{
+              options: donViOptions(),
+              optionValue: 'value',
+              optionLabel: 'label',
+              filter: true,
+            }"
+          />
         </label>
         <label class="hr-field">
           <span>Phân nguồn <b>*</b></span>
-          <nz-select [ngModel]="ndcvForm().phanNguon" (ngModelChange)="doiNguonNdcv($event)">
-            @for (o of nguonOptions; track o.value) { <nz-option [nzValue]="o.value" [nzLabel]="o.label" /> }
-          </nz-select>
+          <cmm-select
+            [value]="ndcvForm().phanNguon"
+            (valueChange)="doiNguonNdcv($event)"
+            [props]="{ options: nguonOptions, optionValue: 'value', optionLabel: 'label' }"
+          />
         </label>
       </div>
 
       <div class="hr-form__row">
         <label class="hr-field">
           <span>CPNC được phê duyệt (đồng) <b>*</b></span>
-          <nz-input-number
-            class="hr-field__full"
-            [ngModel]="ndcvForm().chiPhiNhanCongPheDuyet"
-            (ngModelChange)="capNhatNdcv('chiPhiNhanCongPheDuyet', $event)"
-            [nzMin]="0"
-            [nzStep]="1000000"
-            [nzDisabled]="ndcvLaBaoHanh()"
+          <cmm-inputnumber
+            styleClass="hr-field__full"
+            [value]="ndcvForm().chiPhiNhanCongPheDuyet"
+            (valueChange)="capNhatNdcv('chiPhiNhanCongPheDuyet', $event ?? 0)"
+            [min]="0"
+            [step]="1000000"
+            [disabled]="ndcvLaBaoHanh()"
           />
           @if (ndcvLaBaoHanh()) {
-            <small class="hr-muted">Nguồn Bảo hành chỉ theo dõi số đã phân bổ, không lập dự toán.</small>
+            <small class="hr-muted"
+              >Nguồn Bảo hành chỉ theo dõi số đã phân bổ, không lập dự toán.</small
+            >
           }
         </label>
         <label class="hr-field">
           <span>Dự phòng (đồng)</span>
-          <nz-input-number
-            class="hr-field__full"
-            [ngModel]="ndcvForm().duPhong"
-            (ngModelChange)="capNhatNdcv('duPhong', $event)"
-            [nzMin]="0"
-            [nzStep]="1000000"
-            [nzDisabled]="ndcvLaBaoHanh()"
+          <cmm-inputnumber
+            styleClass="hr-field__full"
+            [value]="ndcvForm().duPhong"
+            (valueChange)="capNhatNdcv('duPhong', $event ?? 0)"
+            [min]="0"
+            [step]="1000000"
+            [disabled]="ndcvLaBaoHanh()"
           />
         </label>
       </div>
@@ -295,66 +408,141 @@
       <div class="hr-form__row">
         <label class="hr-field">
           <span>Từ ngày <b>*</b></span>
-          <input nz-input type="date" [ngModel]="ndcvForm().tuNgay" (ngModelChange)="capNhatNdcv('tuNgay', $event)" />
+          <p-datepicker
+            [ngModel]="ndcvNgay('tuNgay')"
+            (ngModelChange)="doiNdcvNgay('tuNgay', $event)"
+            [dateFormat]="dateFormat"
+            [showIcon]="true"
+            [fluid]="true"
+            placeholder="dd/mm/yyyy"
+          />
         </label>
         <label class="hr-field">
           <span>Đến ngày <b>*</b></span>
-          <input nz-input type="date" [ngModel]="ndcvForm().denNgay" (ngModelChange)="capNhatNdcv('denNgay', $event)" />
+          <p-datepicker
+            [ngModel]="ndcvNgay('denNgay')"
+            (ngModelChange)="doiNdcvNgay('denNgay', $event)"
+            [dateFormat]="dateFormat"
+            [showIcon]="true"
+            [fluid]="true"
+            placeholder="dd/mm/yyyy"
+          />
         </label>
       </div>
 
       <label class="hr-field">
         <span>Tình trạng phân bổ</span>
-        <nz-select [ngModel]="ndcvForm().tinhTrangPhanBo" (ngModelChange)="capNhatNdcv('tinhTrangPhanBo', $event)">
-          @for (o of tinhTrangOptions; track o.value) { <nz-option [nzValue]="o.value" [nzLabel]="o.label" /> }
-        </nz-select>
+        <cmm-select
+          [value]="ndcvForm().tinhTrangPhanBo"
+          (valueChange)="capNhatNdcv('tinhTrangPhanBo', $event)"
+          [props]="{ options: tinhTrangOptions, optionValue: 'value', optionLabel: 'label' }"
+        />
       </label>
     </div>
-  </nz-modal>
+
+    <ng-template #footer>
+      <cmm-button
+        label="Huỷ"
+        [outlined]="true"
+        severity="secondary"
+        type="button"
+        (onClick)="ndcvMo.set(false)"
+      />
+      <cmm-button label="Lưu" type="button" (onClick)="luuNoiDung()" />
+    </ng-template>
+  </cmm-dialog>
 
   <!-- --------------------------------------------------------- popup vai trò -->
-  <nz-modal
-    [nzVisible]="vaiTroMo()"
-    nzTitle="Thêm vai trò PM/PA"
-    [nzWidth]="560"
-    nzOkText="Lưu"
-    nzCancelText="Huỷ"
-    (nzOnCancel)="vaiTroMo.set(false)"
-    (nzOnOk)="luuVaiTro()"
+  <cmm-dialog
+    [visible]="vaiTroMo()"
+    (visibleChange)="vaiTroMo.set($event)"
+    header="Thêm vai trò PM/PA"
+    [modal]="true"
+    [style]="{ width: '560px' }"
   >
-    <div *nzModalContent class="hr-form">
+    <div class="hr-form">
       @if (vaiTroLoiForm().length) {
         <ul class="hr-form__errors">
-          @for (m of vaiTroLoiForm(); track m) { <li>{{ m }}</li> }
+          @for (m of vaiTroLoiForm(); track m) {
+            <li>{{ m }}</li>
+          }
         </ul>
       }
 
       <label class="hr-field">
         <span>Vai trò <b>*</b></span>
-        <nz-select [ngModel]="vaiTroForm().vaiTro" (ngModelChange)="capNhatVaiTro('vaiTro', $event)">
-          @for (o of vaiTroOptions; track o.value) { <nz-option [nzValue]="o.value" [nzLabel]="o.label" /> }
-        </nz-select>
+        <cmm-select
+          [value]="vaiTroForm().vaiTro"
+          (valueChange)="capNhatVaiTro('vaiTro', $event)"
+          [props]="{ options: vaiTroOptions, optionValue: 'value', optionLabel: 'label' }"
+        />
       </label>
 
       <label class="hr-field">
         <span>Nhân sự <b>*</b></span>
-        <nz-select nzShowSearch [ngModel]="vaiTroForm().maNhanVien" (ngModelChange)="capNhatVaiTro('maNhanVien', $event)" nzPlaceHolder="Chọn nhân sự">
-          @for (u of nhanSuOptions; track u.maNhanVien) {
-            <nz-option [nzValue]="u.maNhanVien" [nzLabel]="u.hoTen + ' (' + u.email + ')'" />
-          }
-        </nz-select>
+        <cmm-select
+          [value]="vaiTroForm().maNhanVien"
+          (valueChange)="capNhatVaiTro('maNhanVien', $event)"
+          [props]="{
+            options: nhanSuOptions,
+            optionValue: 'value',
+            optionLabel: 'label',
+            placeholder: 'Chọn nhân sự',
+            filter: true,
+          }"
+        />
       </label>
 
       <label class="hr-field">
         <span>Đơn vị phụ trách <b>*</b></span>
-        <nz-select nzShowSearch [ngModel]="vaiTroForm().donVi" (ngModelChange)="capNhatVaiTro('donVi', $event)">
-          @for (o of d.donViPhanBo; track o) { <nz-option [nzValue]="o" [nzLabel]="o" /> }
-        </nz-select>
+        <cmm-select
+          [value]="vaiTroForm().donVi"
+          (valueChange)="capNhatVaiTro('donVi', $event)"
+          [props]="{
+            options: donViOptions(),
+            optionValue: 'value',
+            optionLabel: 'label',
+            filter: true,
+          }"
+        />
       </label>
     </div>
-  </nz-modal>
+
+    <ng-template #footer>
+      <cmm-button
+        label="Huỷ"
+        [outlined]="true"
+        severity="secondary"
+        type="button"
+        (onClick)="vaiTroMo.set(false)"
+      />
+      <cmm-button label="Lưu" type="button" (onClick)="luuVaiTro()" />
+    </ng-template>
+  </cmm-dialog>
+
+  <!-- Hộp xác nhận xoá dùng CHUNG cho nội dung công việc và vai trò: cùng một câu hỏi, cùng một
+       hình thức, chỉ khác câu mô tả. Hai hộp thoại riêng chỉ để khác mỗi dòng chữ là thừa. -->
+  <cmm-dialog
+    [visible]="xoaMo()"
+    (visibleChange)="xoaMo.set($event)"
+    header="Xác nhận xoá"
+    [modal]="true"
+    [style]="{ width: '400px' }"
+  >
+    <p class="hr-confirm">{{ xoaMoTa() }}</p>
+    <ng-template #footer>
+      <cmm-button
+        label="Huỷ"
+        [outlined]="true"
+        severity="secondary"
+        type="button"
+        (onClick)="xoaMo.set(false)"
+      />
+      <cmm-button label="Xoá" severity="danger" type="button" (onClick)="xacNhanXoa()" />
+    </ng-template>
+  </cmm-dialog>
 } @else {
   <hr-page-card tieuDe="Không tìm thấy nhiệm vụ" backTo="/hr/nhiem-vu">
-    <nz-empty [nzNotFoundContent]="'Không có nhiệm vụ với mã ' + maNhiemVu() + '.'" />
+    <p class="hr-empty">Không có nhiệm vụ với mã {{ maNhiemVu() }}.</p>
   </hr-page-card>
 }

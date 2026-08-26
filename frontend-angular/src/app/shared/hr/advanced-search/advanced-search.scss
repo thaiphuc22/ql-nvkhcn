@@ -1,36 +1,31 @@
+/*
+ * Khối này nằm TRONG card của trang (xem chú thích lớp `HrAdvancedSearch`) nên KHÔNG tự vẽ nền,
+ * viền hay bóng — làm vậy là card lồng card. Chỉ có đường kẻ dưới ngăn với bảng.
+ */
 :host {
   display: block;
   margin-bottom: var(--vht-space-16);
+  padding-bottom: var(--vht-space-16);
+  border-bottom: 1px solid var(--vht-border);
 }
 
-.hr-as {
-  padding: var(--vht-space-16) var(--vht-space-20);
-  border-radius: var(--vht-radius-12);
-  background: var(--vht-surface);
-  box-shadow: var(--vht-shadow-sm);
-}
-
-.hr-as__head {
+/* Hàng chứa nút thu/mở — căn phải. */
+.hr-as__bar {
   display: flex;
-  align-items: center;
-  gap: var(--vht-space-8);
-  width: 100%;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--vht-ink);
-  font: var(--vht-font-subtitle);
-  cursor: pointer;
+  justify-content: flex-end;
 }
 
-.hr-as__caret {
-  margin-left: auto;
-  font-size: 11px;
-  color: var(--vht-ink-3);
+/* Nút chữ: bỏ padding ngang của `p-button` để nó thẳng mép phải với hàng nút bên dưới. */
+:host ::ng-deep .hr-as__toggle {
+  min-height: auto;
+  padding: 0;
+  color: var(--vht-brand-50);
+  font: var(--vht-font-label);
+  font-family: var(--vht-built-font);
 }
 
 .hr-as__body {
-  padding-top: var(--vht-space-16);
+  padding-top: var(--vht-space-12);
 }
 
 .hr-as.is-collapsed .hr-as__body {
@@ -71,6 +66,7 @@
 
   > span {
     font: var(--vht-font-label);
+    font-family: var(--vht-built-font);
     letter-spacing: var(--vht-tracking-label);
     color: var(--vht-ink-2);
   }

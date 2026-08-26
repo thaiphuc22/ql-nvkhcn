@@ -2,17 +2,24 @@
   <div class="hr-page__head">
     <div class="hr-page__title">
       @if (backTo()) {
-        <a class="hr-page__back" [routerLink]="backTo()" aria-label="Quay lại"><nz-icon nzType="arrow-left" /></a>
+        <a class="hr-page__back" [routerLink]="backTo()" aria-label="Quay lại"
+          ><i class="pi pi-arrow-left"></i
+        ></a>
       }
       <div class="hr-page__titletext">
         <h1>{{ tieuDe() }}</h1>
-        @if (moTa()) { <p>{{ moTa() }}</p> }
+        @if (moTa()) {
+          <p>{{ moTa() }}</p>
+        }
       </div>
     </div>
     <div class="hr-page__actions"><ng-content select="[actions]" /></div>
   </div>
 
-  <!-- MỘT `ng-content` mặc định duy nhất, đổi diện mạo bằng class. Đặt hai `ng-content` trong hai
-       nhánh @if/@else là bẫy: nội dung chỉ được chiếu vào một chỗ, nhánh còn lại trống rỗng. -->
-  <section class="hr-card" [class.hr-card--plain]="khongCard()"><ng-content /></section>
+  <!-- MỘT `ng-content` mặc định duy nhất. Đặt hai `ng-content` trong hai nhánh @if/@else là bẫy:
+       nội dung chỉ được chiếu vào một chỗ, nhánh còn lại trống rỗng. Nên khi `khongCard()` cũng
+       vẫn là `cmm-card-wrapper`, chỉ đổi lớp để nó trong suốt (xem `.hr-card--plain` trong .scss). -->
+  <cmm-card-wrapper [styleClassName]="khongCard() ? 'hr-card hr-card--plain' : 'hr-card'">
+    <ng-content />
+  </cmm-card-wrapper>
 </div>

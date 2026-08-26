@@ -1,5 +1,272 @@
 # Active Task
 
+## ★ HR Tools — chuyển sang PrimeNG + `@khcn-core` (D23) — 2026-08-26 (owner Claude)
+
+**Status: GIAI ĐOẠN 0 → 6 — DONE (build GREEN, test đúng baseline). CHƯA soi bằng mắt trên
+trình duyệt, chưa chạy lại luồng nghiệp vụ đầu-cuối — xem *Còn nợ* ở cuối mục này.**
+
+**Kế hoạch nguồn**: `docs/plan/hr-tools-chuyen-sang-khcn-core-2026-08-26.md`.
+Quyết định: **D23** trong `decisions.md`. Chỉ đạo trực tiếp của người dùng phiên 2026-08-26.
+
+**Vì sao chen ngang trước bước 1.5 của kế hoạch thi công**: chuyển ở thời điểm này là viết lại **5
+màn**; chuyển sau đợt 6 là viết lại **~25 màn**. Và `UI-ubck/` có sẵn đúng bộ mà bước 1.5 → 5 cần
+(`DialogImportFile`, `CmmDynamicFormComponent`, `UbckTable`, `CmmTreeComponent`, `CmmChartComponent`).
+
+### Giai đoạn 0 — tài liệu (xong)
+
+| File | Sửa gì |
+|---|---|
+| `.harness/state/decisions.md` | Thêm **D23** (thu hẹp phạm vi D17) + 2 mục **Nợ kỹ thuật** (PrimeIcons; hai thư viện đồng tồn tại) |
+| `CLAUDE.md` | Bảng 2 thư viện theo phân hệ; luật "bản đã build thắng DS" + 6 số đo; thêm `UI-ubck/` vào *Where to find things* |
+| `docs/design-system/README.md` §5, `components.md` §Phân trang | Sửa lỗi tài liệu: pager trang hiện tại là **nền xám `#F2F2F2`**, không phải viền đỏ (ảnh thắng chữ) |
+| `docs/plan/hr-tools-chi-phi-nhan-cong-dot-1-*.md` §4.3 | Đánh dấu bị thay thế |
+| `docs/plan/hr-tools-ke-hoach-thi-cong-*.md` | Chèn khối "đọc trước khi mở bước 1.5"; gạch đoạn §1 về `hr-shell`; sửa bảng §0 |
+
+### Giai đoạn 1 — cổng chặn (xong, GREEN)
+
+Cài: `@khcn-core/{common,theme,ui,echarts}` (`file:../UI-ubck/...`), `primeng ^21.1.7`,
+`primeicons`, `@angular/cdk`, `@ngx-translate/core 17`, `ngx-lottie`, `lottie-web`, `dompurify`,
+`echarts`, **`chart.js`**.
+
+**Bốn thứ vỡ ở cổng và cách đã xử lý — đọc trước khi đụng lại phần cài đặt:**
+
+1. **`file:` dep bị npm SYMLINK** ⇒ esbuild phân giải theo đường dẫn thật `UI-ubck/.../package/`,
+   nơi không có `node_modules`, nên `@angular/core` và `primeng/base` đều *Could not resolve*.
+   ⇒ `.npmrc` thêm **`install-links=true`** (npm chép package vào `node_modules`). Bỏ dòng này là
+   build đỏ ngay dòng import đầu tiên của theme. `legacy-peer-deps=true` cũng ở đó, cho peer
+   `@angular/core: "21.2.5"` ghim chính xác.
+2. **`THEMES` là PRESET, không phải cấu hình theme** ⇒ phải `providePrimeNG({ theme: { preset: THEMES } })`.
+   Truyền thẳng `{ theme: THEMES }` là TS2322.
+3. **`@khcn-core/ui` là barrel** ⇒ import bất cứ thứ gì cũng kéo `CmmChartComponent` →
+   `primeng/chart` → **`chart.js`**. Đây là peer dep NGẦM, kế hoạch không ghi. `quill` thì **không**
+   cần (đã thử gỡ, build vẫn xanh) — đừng cài lại cho "chắc".
+4. **Bundle**: khai `providePrimeNG` ở `app.config.ts` đẩy ~136 kB preset vào bundle KHỞI ĐỘNG của
+   cả 4 phân hệ (2,54 → 2,68 MB). ⇒ Tách **`src/app/hr.routes.ts`** và đổi route `hr` sang
+   `loadChildren`; provider nằm trong đó. Initial trở lại **2,54 MB**, 137 kB nằm trong lazy chunk
+   `hr-routes`.
+
+**Bẫy do chính việc tách file sinh ra, đã sửa + khoá bằng test:** `appChildGuard` bắn cho MỌI hậu duệ
+của route `hr`, mà hậu duệ đầu tiên giờ là route rỗng bọc shell trong `HR_ROUTES`. Guard đọc
+`route.data['app']` và fail-closed khi thiếu ⇒ thiếu `data: { app: 'hrtools' }` ở route rỗng đó là
+**chặn sạch cả phân hệ**, triệu chứng trông y hệt lỗi phân quyền (bấm tile xong bị đá về
+`/chon-ung-dung`). `app.routes.spec.ts` nay có 2 test mới khoá điều này.
+
+### Kiểm chứng đã chạy
+
+- `npx tsc -b --noEmit --force` **sạch**; `npx ng build` **GREEN**, initial **2,54 MB** (baseline
+  2,54 MB — chỉ hơn 1,6 kB).
+- `npx ng test --watch=false`: **264 test** (thêm 2 test mới, đều xanh). Nhân **10 fail baseline**
+  (`nav-items.spec.ts` 2 + `ho-so-detail.spec.ts` 8), **không phát sinh fail mới**. ⇒ Lỗi `"main"`
+  trỏ file không tồn tại (`ubck-core-*.mjs`) trong cả 4 package vendor **không cắn** vitest, vì
+  `install-links` + `exports` map.
+- **⚠ Bộ test đang FLAKY SẴN, phát hiện 2026-08-26 — đừng đọc con số một lần chạy rồi kết luận.**
+  Chạy 3 lần trên **source gốc chưa có thay đổi nào** cho 11 / 12 / 10 fail; file phát sinh đổi theo
+  từng lần (`ho-so-create.spec.ts`, `task-action.service.spec.ts`,
+  `process-definition-draft.service.spec.ts` — đều là spec dựa vào HTTP mock, không liên quan
+  routing). Sau khi áp thay đổi cũng 10 / 10 / 11 y như vậy. **Phần ổn định là đúng 10 fail**; muốn
+  kết luận "có fail mới không" thì phải chạy ≥ 3 lần và so tập file, không so con số.
+- **Đồng tồn tại hai thư viện — đo bằng Playwright, không phải nhìn mắt.** Dựng probe `<cmm-button>`
+  thật trong `/hr/nhiem-vu` để ép PrimeNG tiêm CSS (chỉ `providePrimeNG` thôi thì **chưa** tiêm gì —
+  PrimeNG tiêm lười theo component đầu tiên). Kết quả: probe render đúng (`p-button p-component`),
+  4 style tag / ~20 kB CSS được tiêm. Rồi điều hướng **SPA, không reload** sang
+  `/cau-hinh-service-task` trong cùng document: `th 39px · nút 32px · font Inter · 1 bảng · 3 dòng`
+  — **trùng khít baseline đo trước khi nạp PrimeNG**. Quét CSSOM: chỉ **một** rule thật sự toàn cục
+  là `*,::before,::after{box-sizing:border-box}`, mà ng-zorro cũng đặt y hệt. Probe **đã gỡ**.
+- Fail-closed vẫn sống sau khi đổi sang `loadChildren`: vào thẳng `/hr/nhiem-vu` khi active app là
+  `quytrinh` thì bị đá về `/chon-ung-dung?returnUrl=...`.
+
+### Việc tiếp theo — Giai đoạn 2 → 6
+
+2. Token: 6 shadow Light + 6 Dark theo DS §4 (`--vht-shadow-none` **phải** là `0 0 0 1px rgba(0,0,0,.08)`,
+   là viền 1px vẽ bằng shadow — để `none` là mọi card mất đường bao); `--vht-focus-ring`; nhóm
+   `--vht-built-*` cho 6 điểm bản đã build lệch DS; font **Roboto self-host**.
+3. Shell: xoá `layout/hr-shell/` (556 dòng), thay `CommonLayoutComponent`; menu **vẫn đọc**
+   `navItemsForApp('hrtools')`, không hardcode.
+4. 5 màn: `UbckTable` + `UBCKPaginator` + `CardWrapperComponent` + `CmmTagComponent` +
+   `DialogImportFile`/`UbckImport`; `nhan-su-picker` **làm lại đúng nghĩa** (1360px, cây có cấp bậc +
+   chevron, avatar/email/SĐT, phân trang riêng), không chỉ đổi thư viện.
+   **Giữ nguyên tuyệt đối** `core/models/hr/` và `core/services/hr/` — `nhan-su.service.spec.ts`
+   phải xanh mà **không phải sửa**; phải sửa nghĩa là đã lỡ tay đụng logic nghiệp vụ, dừng lại xem lại.
+5. Icon: 6 icon của `@khcn-core/ui` + PrimeIcons cho phần còn lại (đã ghi nợ trong `decisions.md`).
+6. Dọn: gỡ `HR_TOOLS_ICONS` khỏi `core/icons-provider.ts` nếu HR không còn `nz-icon`.
+
+Sau đó mới quay lại **bước 1.5** của `docs/plan/hr-tools-ke-hoach-thi-cong-2026-08-26.md` (Danh mục).
+
+### Đọc trước khi sửa tiếp
+
+1. **D23** — HR Tools PrimeNG, **3 phân hệ cũ vẫn ng-zorro (D17), không đụng.**
+2. **P1 (LOCKED)** — `DeTai` không phải cha của `NhiemVu` (HR); `NhiemVu` HR ≠ `NhiemVu` ho-so-service.
+3. **P2, mục BẪY** — chữ trong file DS ghi cam `#F95E00`; màu đúng là đỏ `#EE0033` theo giá trị render.
+4. **P3 (ĐỀ XUẤT)** — CPNC pro-rata 13 khoản + quy tắc công thừa, khi cài phải nằm **một chỗ duy nhất**
+   `core/services/hr/cpnc.service.ts`.
+5. **Thêm phân hệ thứ năm** thì nhớ 3 spec chép tay danh sách app: `app.routes.spec.ts`,
+   `nav-items.spec.ts`, `auth.service.spec.ts`.
+6. Việc ngoài code còn nợ: **thu hồi Figma personal access token** đã dùng 2026-08-26 (coi như đã lộ).
+
+---
+
+
+---
+
+## Giai đoạn 2 → 6 — DONE 2026-08-26 (owner Claude)
+
+### Giai đoạn 2 — token + Roboto self-host
+
+- `src/styles/tokens.scss`: 6 shadow Light chép đúng README §4 (bộ cũ **tự đặt, không có nguồn**);
+  `--vht-shadow-none` nay là **viền 1px vẽ bằng shadow**, không phải `none`; thêm 6 shadow Dark dưới
+  `.vht-dark-chua-dung` (cùng lớp mà `hr.routes.ts` ghim `darkModeSelector`, để token và component
+  PrimeNG lật cùng lúc nếu bật dark); đủ **10 bậc** success/warning/info + danger trỏ `var()` sang
+  brand; `--vht-focus-ring` (#1677FF 50%, XANH — brand/danger cùng đỏ nên vòng focus đỏ sẽ lẫn với
+  lỗi); nhóm **`--vht-built-*`** cho 6 điểm lệch DS ↔ bản đã build (+ topbar 60 / sider 256).
+- **Roboto self-host**: 8 file `.woff2` (latin + vietnamese × 300/400/500/700) trong
+  `public/fonts/roboto/`, `@font-face` ở `src/styles/fonts-roboto.scss`. **Thiếu subset
+  `vietnamese` là dấu thanh rơi về font hệ thống** — chữ so le ngay giữa câu. Không thêm dependency
+  `@fontsource`: chỉ cần 8 file, và font git-track thì CI không cần mạng.
+- `--vht-font` (Inter) **giữ nguyên** — ba phân hệ ng-zorro không đổi font. Roboto chỉ áp cho
+  `/hr/**` vì `@khcn-core/theme` tự khai `typography.fontFamily.base = "Roboto"`.
+
+### Giai đoạn 3 — shell
+
+`layout/hr-shell/` (3 file) **đã xoá**, thay bằng `layout/hr-layout/` dựng trên
+`CommonLayoutComponent`. Menu vẫn đọc `navItemsForApp()`, không hardcode.
+
+**Ba chỗ kế hoạch nói được mà thực tế không** — đã kiểm chứng bằng cách đọc thẳng package:
+
+1. `CommonLayoutComponent` **không phải shell**, chỉ là khung 100vh chia `[header]` / `[left]` /
+   `[content]`. Nó **không có** topbar, thẻ phân hệ hay component menu nào; cả `ui` lẫn `common`
+   đều không lộ nav component ⇒ phần chrome vẫn phải tự dựng.
+2. **Không dùng `cmm-header` / `cmm-header-management`**: style của chúng là header **80px nền
+   gradient xám sáng**, khác hẳn topbar **60px nền tối** của DS và của bản đã build.
+3. `cmm-user-action-header` bắt buộc `avatarUrl` là **ảnh**, mà model người dùng không có ảnh ⇒
+   dựng lại đúng cấu trúc đó bằng `p-overlaybadge` + `p-avatar [label]`.
+
+⚠ `ScreenProps.leftPanelWidth` phải để **`auto`**: `CmmLeftContentDirective` áp style trong
+`afterNextRender` **một lần duy nhất**, input không phản ứng lại ⇒ truyền `256px` thì nút thu gọn
+sider bấm xong không đổi được bề rộng.
+
+### Giai đoạn 4 — 5 màn + component dùng chung
+
+Toàn bộ template HR nay dùng `@khcn-core/ui` + PrimeNG; **không còn một dòng `nz-*` nào dưới `/hr`**.
+TS nghiệp vụ giữ nguyên (`core/models/hr/`, `core/services/hr/` không sửa một chữ).
+
+| Thay | Bằng |
+|---|---|
+| `shared/hr/table-footer/` (đã xoá) | `UBCKPaginator` + `shared/hr/paginator-props.ts` |
+| `shared/hr/page-card/` | ruột là `CardWrapperComponent` (giữ selector; hàng tiêu đề tự dựng) |
+| `shared/hr/trang-thai-tag/` | ruột là `CmmTagComponent` (giữ selector: chấm tròn + bảng màu DS) |
+| `shared/hr/advanced-search/` | nút PrimeNG; **chuyển vào TRONG card bảng** (`screens/06`) |
+| `nz-table` | `UbckTable` (cấu hình bằng `ColumnDefinition[][]`) |
+| `nz-modal` | `CmmDialogComponent` |
+| `NzMessageService` | `ToastService` + `<app-toast>` mount ở shell |
+| `nz-popconfirm` | hộp `cmm-dialog` xác nhận, nêu **tên bản ghi bằng chữ** |
+
+**`nhan-su-picker` làm lại đúng nghĩa** (không chỉ đổi thư viện): 1360px · cây đơn vị `cmm-tree` có
+cấp bậc + chevron · bảng có avatar + email + phân trang riêng · dòng đang chọn nền đỏ rất nhạt ·
+nút xác nhận hiện **tên người đã chọn**, không phải con số.
+
+**`hr-nhan-su-form` tách 2 card** ("Thông tin chung" + bảng con), đúng `screens/04`.
+
+### Giai đoạn 5 — icon
+
+`core/hr-icons.ts` dịch tên icon ng-zorro (khai trong `NAV_ITEMS` / `APP_REGISTRY`, dùng chung cho
+cả 4 phân hệ) sang PrimeIcons. 6 icon component của thư viện dùng ở cột Thao tác. Phần còn lại là
+**nợ tường minh** — xem `DELIVERY_STATE.md`.
+
+### Giai đoạn 6 — dọn
+
+⚠ **Gỡ `HR_TOOLS_ICONS` là một lỗi, đã sửa và ghi lại.** Nhóm icon đó **không chỉ** phục vụ HR Tools:
+`ho-so-detail.html`, `action-studio.html`, `app-list.html` bind `[nzType]` **động** với mã lấy từ dữ
+liệu. Gỡ đi thì `ho-so-detail.spec.ts` nhảy từ 8 fail có sẵn lên **16** và `ho-so-create.spec.ts`
+thêm 1 — vì `nz-icon` với mã chưa đăng ký phải fetch SVG qua HTTP mà unit test không có mạng. Nhóm
+đã đổi tên thành **`DYNAMIC_NZ_ICONS`** kèm chú thích cấm gỡ.
+
+### Bảy chỗ thư viện KHÔNG dùng được như kế hoạch giả định
+
+Ghi lại để phiên sau không "sửa ngược", và vì đây là đầu vào để nói chuyện với đội làm `@khcn-core`:
+
+1. **`@khcn-core/ui` không tự đủ về style.** Nó gọi **26 custom property** (`--primary-color`,
+   `--white`, `--gray-20`, `--radius-12`…) mà cả nó lẫn `@khcn-core/theme` **đều không định nghĩa** —
+   chúng đến từ stylesheet nền của app ecat, thứ không nằm trong `UI-ubck/`. Chỗ khai trần (không có
+   giá trị dự phòng) làm thuộc tính **mất giá trị** (nền trong suốt, chữ đổi màu), lỗi chỉ hiện dưới
+   dạng "invalid at computed-value time". ⇒ `src/styles/khcn-core-compat.scss` khai lại đủ bộ, trỏ về
+   token `--vht-*`.
+2. **`@khcn-core/ui` cần từ điển i18n.** 61 chỗ dùng pipe `| translate`. Không cấp thì chân bảng hiện
+   đúng chữ `PAGINATOR.SHOW`. ⇒ `core/khcn-core-i18n.ts` + `provideTranslateService` ở `hr.routes.ts`.
+   `ToastService` cũng cần `MessageService` của PrimeNG trong providers, nếu không mọi thông báo ném
+   `NullInjectorError` **sau khi** dữ liệu đã đổi.
+3. **`CmmDatepickerComponent` không được xuất ra ngoài** (chỉ `CmmDynamicFormModule` dùng nội bộ) ⇒
+   dùng thẳng `p-datepicker` — chính là thứ nó bọc lại. Kèm `core/utils/hr-date.ts` đổi ISO ↔ `Date`
+   theo giờ **địa phương** (`new Date` với chuỗi ISO là UTC ⇒ lùi một ngày ở múi giờ âm).
+4. **Bộ import của thư viện là luồng do MÁY CHỦ xử lý.** `ImportConfig` bắt buộc `httpService` +
+   `uploadEndpoint` + `downloadFileUrl`; HR Tools đợt 1 chưa có backend, và giá trị của màn này là
+   *nêu nguyên nhân từng dòng ngay trước khi nhập* — API kia không trả về. ⇒ giữ luồng soát lỗi tại
+   client, chỉ thay **vỏ** bằng `cmm-dialog` + `cmm-fileUpload` + `ubck-table`.
+5. **`ColumnDefinition.index` khai là tuỳ chọn nhưng BẮT BUỘC trên thực tế.** Thân bảng lọc cột bằng
+   `filter(item => item?.index)` ⇒ cột không đánh số **biến mất khỏi thân bảng** trong khi hàng tiêu
+   đề vẫn đủ: bảng 14 tiêu đề, đúng số dòng, **mọi ô trống**, không lỗi nào. ⇒ mọi bảng HR Tools đi
+   qua `shared/hr/table-columns.ts` (`hrColumns`), tự đánh số 1..n.
+6. **`cmm-timeline` không dùng được.** Host `<cmm-timeline>` không vào DOM, còn `#content` lại được
+   dựng với ngữ cảnh RỖNG ⇒ tab Lịch sử trắng + `TypeError ... reading 'hanhDong'` lặp mỗi vòng kiểm
+   tra thay đổi. ⇒ tự dựng `.hr-timeline` (chấm + đường nối CSS) trong `hr-nhiem-vu-detail.html`.
+7. **`(onClickRecord)` của `UbckTable` là output CHẾT.** `UBCKTableBody` có `output onClickRow`,
+   nhưng `UbckTable` dựng `<tr ubck-table-body [props]="…">` mà không bind `(onClickRow)` — quét cả
+   `khcn-core-ui.mjs` được **0** chỗ bind. ⇒ pop-up chọn nhân sự tự gắn `(click)` ở ô tích và tên
+   người, không trông chờ sự kiện của bảng.
+
+**Ba chỗ khác của tầng nền, cũng chỉ lộ ra khi chạy thật** (2026-08-27):
+
+- `@khcn-core/ui` `import("quill")` mà **không package nào khai `quill`** ⇒ `ng serve` chết ngay khi
+  vào `/hr/**`. ⇒ `angular.json` → `externalDependencies: ["quill"]`.
+- `providePrimeNG()` gói cấu hình trong `provideAppInitializer` ⇒ **không chạy** khi đặt ở provider
+  của route nạp lười: CSS từng component vẫn được chèn nhưng **không có biến `--p-*`** (nút mất nền,
+  ô nhập mất khung). ⇒ `hr.routes.ts` dùng `provideEnvironmentInitializer(() => inject(PrimeNG)
+  .setThemeConfig(...))`.
+- `MessageService` phải nằm ở injector **gốc** (`app.config.ts`), không phải ở route: `ToastService`
+  là `providedIn: 'root'`. Đặt sai ⇒ `NG0201` ngay sau khi dữ liệu đã đổi, popup không đóng.
+
+**Thư viện vendor cũng không khớp bản đã build ở vài chỗ đo được** (nó là ảnh chụp một thời điểm,
+không phải chính bản đang chạy): `CardWrapperComponent` bo **12px** trong khi bản build bo **16px**;
+nút / ô nhập mặc định 36px trong khi bản build 40px. D23 chốt bản đã build thắng ⇒ ghi đè ở
+`khcn-core-compat.scss` bằng biến `--p-*`, không dùng `!important` lên selector.
+
+### Verify (2026-08-26)
+
+- `npx tsc -b --noEmit` sạch.
+- `npx ng build` **GREEN** — initial **2,58 MB** (2,54 MB trước giai đoạn 2; +6 kB token, +10 kB
+  `primeicons.css` toàn cục, phần còn lại là style HR). Ngưỡng cảnh báo 2,50 MB **đã vượt sẵn từ
+  trước**, ngưỡng lỗi 2,80 MB chưa chạm.
+- `npm run test`: **10 fail, đúng baseline** (`nav-items.spec.ts` 2 + `ho-so-detail.spec.ts` 8).
+  8 test `nhan-su.service.spec.ts` xanh và **không sửa một dòng nào** — đúng cổng chặn kế hoạch §10.6.
+
+### Kiểm chứng §10.4 · §10.5 · §10.6 · §10.7 — ĐÃ CHẠY THẬT 2026-08-27, ĐẠT
+
+Chi tiết số đo và bảng 7 lỗi ở `docs/plan/hr-tools-chuyen-sang-khcn-core-2026-08-26.md` §10
+("Kết quả kiểm chứng"). Tóm tắt:
+
+- **§10.4** — 8 số đo **đạt cả 8** sau khi sửa 3 chỗ lệch (nav 223→224 · card 12→16 · chữ Inter→Roboto
+  ở 17 chỗ). ⚠ **Không so trực tiếp được với bản ecat**: `vht-ecat-dev.viettelsoftware.com` không
+  truy cập được từ máy này (curl trả `000`, nghi cần VPN) ⇒ mốc so sánh là bảng số đo §1 + ảnh
+  `docs/design-system/screens/`. Khi nào vào được mạng nội bộ thì soi lại cho chắc.
+- **§10.5** — luồng đầu-cuối chạy trọn: khai báo `NV-2026-008` → trình duyệt → duyệt → chi tiết →
+  nhân sự → nhập file 5 dòng (2 hợp lệ / 3 lỗi, mỗi lỗi nêu đúng nguyên nhân) → nhập 2 dòng → thêm
+  người qua pop-up cây đơn vị (nút xác nhận hiện **tên**) → xuất `.xls` (BOM `EF BB BF`, tiếng Việt
+  nguyên vẹn) → in (BM.06, ẩn chrome, có khối ký).
+- **§10.6** — `pm@example.com` vào `/hr/nhiem-vu` bị đẩy về `/chon-ung-dung`.
+- **§10.7** — `/nhiem-vu`, `/ho-so`, `/ma-tran-phe-duyet`, `/phan-he/PH2/nguoi-dung`: **0 phần tử
+  `.p-component`**, sider 230px, chữ Inter, không tràn ngang, không lỗi console ngoài lỗi gọi backend.
+
+**Bài học ghi lại**: 4 trong 7 lỗi chặn **không** hiện ở `tsc`, `ng build` hay console. "Build xanh"
+không chứng minh được gì về giao diện — lần sau đừng đánh dấu xong khi chưa soi.
+
+### Còn nợ — CHƯA làm, đừng đánh dấu xong
+
+1. **Soi cạnh bản ecat thật** vẫn nợ vì không vào được `vht-ecat-dev.viettelsoftware.com` (xem trên).
+2. **Icon thật của DS** vẫn chưa có (PrimeIcons tạm) — sau 2026-08-31 export bằng
+   `/v1/images?format=svg`, hoặc xin thư mục `/icons/` từ đội làm ecat.
+3. **Cột số điện thoại** trong pop-up chọn nhân sự bỏ trống có chủ ý: `AppUser` không có trường đó.
+4. **Bề rộng cột bảng `/hr/nhiem-vu`**: 14 cột nén trong 1245px nên chữ bị cắt nhiều ("Trung tâ…").
+   Chưa phải lỗi theo checklist §10.4 nhưng cần chốt với khách: cho cuộn ngang hay bỏ bớt cột.
+
 ## ★ HR Tools — hiệu chỉnh đợt 1 theo tài liệu khách (bước 1 của kế hoạch thi công) — 2026-08-26 (owner Claude)
 
 **Status: DONE — typecheck sạch, build GREEN, test không phát sinh fail mới, đã chạy thử thật trên
