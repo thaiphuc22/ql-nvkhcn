@@ -7,50 +7,15 @@
  *   34 · BM.06     — Danh sách nhân sự tham gia nhiệm vụ (BM1), 7 cột, độ khó THẤP
  *   35 · BM.03.01  — Bảng chấm công theo nội dung công việc (BM2.1), 47 cột, header 3 TẦNG
  *   36 · BM.04.02  — Bảng tổng hợp phân bổ CPNC nội bộ (BM4), độ khó trung bình
- *   37 · BM5       — Danh sách nhiệm vụ, có CỘT ĐỘNG theo tháng
+ *   37 · BM5       — Danh sách nhiệm vụ, có CỘT ĐỘNG theo tháng (KHÔNG mang mã BM.xx — xem note)
+ *   38 · BM.03.01  — Biến thể SXKD (BM2.2): thêm Phân nguồn + Sản phẩm, có dòng gom theo sản phẩm
  *
  * Vì sao vẽ bản giấy chứ không chỉ bảng trên màn: bốn cái này là văn bản trình ký (QĐ
  * 3021/QĐ-CNVTQĐ-CNCNC). Quốc hiệu, tiêu ngữ, dòng "Hà Nội, ngày…" và vùng ký là **nội dung bắt
  * buộc**, không phải trang trí — thiếu là văn bản không ký được.
  * ========================================================================== */
 const U = require('../lib/ui');
-const { ico, bare, table, note, days31, money } = U;
-
-/* Đầu văn bản dùng chung — 4 biểu mẫu chỉ khác nhau ở tiêu đề và dòng phụ đề. */
-const dauVanBan = (soHieu) => `
-  <div class="paper__head">
-    <div class="paper__block" style="flex:0 0 340px">
-      <div style="font-size:12px">TẬP ĐOÀN CÔNG NGHIỆP – VIỄN THÔNG QUÂN ĐỘI</div>
-      <div style="font-size:13px;font-weight:700">TỔNG CÔNG TY CN CÔNG NGHỆ CAO VIETTEL</div>
-      <div style="width:150px;border-top:1px solid #000;margin-top:4px"></div>
-      <div style="font-size:12px;margin-top:4px">Số: ......./${soHieu}</div>
-    </div>
-    <div class="paper__block" style="flex:1 1 auto">
-      <div style="font-size:13px;font-weight:700">CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
-      <div style="font-size:14px;font-weight:700">Độc lập – Tự do – Hạnh phúc</div>
-      <div style="width:220px;border-top:1px solid #000;margin-top:4px"></div>
-      <div style="font-size:13px;font-style:italic;margin-top:8px">Hà Nội, ngày ..... tháng ..... năm 20.....</div>
-    </div>
-  </div>`;
-
-const tieuDe = (ten, ma, phu = []) => `
-  <div class="col" style="gap:4px">
-    <div class="paper__title">${ten}</div>
-    <div class="paper__sub">(Ban hành kèm theo Quyết định số 3021/QĐ-CNVTQĐ-CNCNC — mã biểu mẫu ${ma})</div>
-    ${phu.map((p) => `<div class="paper__sub">${p}</div>`).join('')}
-  </div>`;
-
-const vungKy = (cot) => `
-  <div class="paper__signs">
-    ${cot.map((c) => `<div class="paper__sign"><strong>${c[0]}</strong><div>${c[1]}</div></div>`).join('')}
-  </div>`;
-
-const to = (body, w = 1240, wide = false) =>
-  bare(
-    `<div class="paper" style="width:${w}px;margin:0 auto;box-shadow:var(--vht-shadow-lg)">${body}</div>`,
-    `background:var(--vht-gray-90);padding:32px ${wide ? '48px' : '0'}`,
-    { wide },
-  );
+const { ico, table, note, days31, money, dauVanBan, tieuDe, vungKy, giayIn: to } = U;
 
 /* ================================================================== 34 · BM1 (BM.06) */
 const NHANSU_BM1 = [
@@ -293,8 +258,8 @@ const BM5_ROWS = [
 const bm5 = () =>
   to(
     `
-    ${dauVanBan('BM.05')}
-    ${tieuDe('DANH SÁCH NHIỆM VỤ VÀ CHI PHÍ NHÂN CÔNG PHÂN BỔ THEO THÁNG', 'BM5', [
+    ${dauVanBan(null)}
+    ${tieuDe('DANH SÁCH NHIỆM VỤ VÀ CHI PHÍ NHÂN CÔNG PHÂN BỔ THEO THÁNG', null, [
       'Kỳ báo cáo: 6 tháng đầu năm 2025 — Đơn vị: Khối 1, TCT CNC',
     ])}
     <div class="tbl">
@@ -344,15 +309,143 @@ const bm5 = () =>
     true,
   ) +
   note('BM5 — cột động theo tháng là phần phải thiết kế trước, không sửa sau', [
+    '<strong>BM5 KHÔNG phải BM.05.</strong> <code>BM5.DS Nhiem vu</code> là biểu mẫu quản trị nội bộ, <strong>không có mã BM.xx</strong>, không nằm trong QĐ 3021. <code>BM.05</code> là văn bản khác hẳn — <em>Bảng tổng hợp CPNC theo nội dung công việc</em> ở bước <strong>đóng nhiệm vụ</strong> (artboard 63). Bản dựng trước đóng nhầm dấu BM.05 lên đây; sửa 2026-08-27.',
     'Số cột tháng <strong>thay đổi theo kỳ báo cáo</strong>: 6 cột cho báo cáo 6 tháng, 12 cột cho báo cáo năm, 3 cột cho quý. Component bảng phải nhận mảng cột, không được khai cứng.',
     'Đây cũng là biểu mẫu <strong>xuất kèm cảnh báo "nhiệm vụ sắp hết nguồn"</strong> cho toàn VHT (artboard 45) — dùng chính dãy tháng này để ngoại suy 2 tháng tới.',
     'Ô CPNC bằng 0 hiện <strong>—</strong> chứ không hiện <code>0</code>: nhiệm vụ chưa bắt đầu và nhiệm vụ đã tiêu hết 0 đồng là hai chuyện khác nhau.',
     '<code>Mã đề tài</code> rỗng là hợp lệ. Đây là chỗ dễ bị "sửa cho sạch dữ liệu" nhất — đừng.',
   ]);
 
+/* ================================================ 38 · BM2.2 (BM.03.01) — biến thể SXKD
+ * BM2.1 và BM2.2 dùng CHUNG mã biểu mẫu BM.03.01 nhưng KHÔNG chung bố cục: bản SXKD có thêm
+ * `Phân nguồn` và `Sản phẩm`, và các dòng nhân sự GOM THEO SẢN PHẨM (sheet 2.Chấm công §2.3).
+ * Vẽ riêng vì đây là hai bản in khác nhau đưa cho khách ký, không phải một bản có cột ẩn. */
+const W38 = { tt: 48, ma: 90, ten: 170, nguon: 110, sp: 160, ndcv: 180, cong: 110 };
+const W38_INFO = W38.tt + W38.ma + W38.ten + W38.nguon + W38.sp + W38.ndcv;
+const W38_ALL = W38_INFO + W_DAY * 31 + W38.cong * 2;
+
+/* Dữ liệu khớp artboard 26 (chấm công biến thể B): hai sản phẩm, ba phân nguồn.
+ * Nguồn Bảo hành CHỈ theo dõi số đã phân bổ — vẫn chấm công được, chỉ không lập dự toán. */
+const BM22_NHOM = [
+  {
+    sp: 'A — Khối thu phát cao tần',
+    nguoi: [
+      ['805512', 'Lê Thị Hồng Nhung', 'SXKD', 'NDCV-11 Sản xuất loạt 0', 20.0],
+      ['803095', 'Nguyễn Hoàng Anh', 'SXKD', 'NDCV-11 Sản xuất loạt 0', 19.5],
+      ['802217', 'Đỗ Quang Huy', 'Bán hàng', 'NDCV-21 Hỗ trợ bán hàng', 21.0],
+    ],
+  },
+  {
+    sp: 'B — Bộ điều khiển trung tâm',
+    nguoi: [
+      ['801234', 'Trần Minh Quân', 'SXKD', 'NDCV-12 Hiệu chỉnh dây chuyền', 21.0],
+      ['809442', 'Vũ Thị Thu Hà', 'Bảo hành', 'NDCV-31 Xử lý lỗi bảo hành', 21.0],
+    ],
+  },
+];
+
+const bm22 = () => {
+  const th = (w, t, cls = '') => `<div class="tbl__th ${cls}" style="width:${w}px">${t}</div>`;
+  const td = (w, t, cls = '') => `<div class="tbl__td ${cls}" style="width:${w}px">${t}</div>`;
+  const oNgayTh = (d, i) =>
+    `<div class="tbl__td tbl__td--center" style="width:${W_DAY}px${d.weekend ? ';background:var(--vht-gray-95)' : ''}">${oNgay(i, d)}</div>`;
+
+  const headTang1 =
+    `<div class="tbl__head">` +
+    th(W38_INFO, 'Thông tin nhân sự và phân nguồn') +
+    th(W_DAY * 31, 'Ngày trong tháng 05/2025', 'tbl__th--center') +
+    th(W38.cong * 2, 'Tổng hợp', 'tbl__th--center') +
+    `</div>`;
+
+  const headTang2 =
+    `<div class="tbl__head">` +
+    th(W38.tt, 'TT', 'tbl__th--center') + th(W38.ma, 'Mã NV') + th(W38.ten, 'Họ và tên') +
+    th(W38.nguon, 'Phân nguồn') + th(W38.sp, 'Sản phẩm') + th(W38.ndcv, 'Nội dung CV') +
+    days31
+      .map((d) => `<div class="tbl__th tbl__th--center" style="width:${W_DAY}px${d.weekend ? ';background:var(--vht-gray-90)' : ''}">${d.d}</div>`)
+      .join('') +
+    th(W38.cong, 'Công phân bổ', 'tbl__th--num') +
+    th(W38.cong, 'Công tính lương', 'tbl__th--num') +
+    `</div>`;
+
+  const headTang3 =
+    `<div class="tbl__head">` +
+    th(W38_INFO, '') +
+    days31
+      .map((d) => `<div class="tbl__th tbl__th--center" style="width:${W_DAY}px${d.weekend ? ';background:var(--vht-gray-90)' : ''}">${d.dow}</div>`)
+      .join('') +
+    th(W38.cong * 2, '') +
+    `</div>`;
+
+  let stt = 0;
+  let tongPhanBo = 0;
+  let tongTinhLuong = 0;
+  const than = BM22_NHOM.map((g) => {
+    const rowNhom = `<div class="tbl__row tbl__row--group">` + td(W38_ALL, `<strong>SẢN PHẨM ${g.sp}</strong>`) + `</div>`;
+    const rows = g.nguoi
+      .map((p) => {
+        const i = stt++;
+        const k = i % 5;
+        const cong = days31.reduce((s, d) => s + (oNgay(k, d) === '8' ? 1 : 0), 0);
+        tongPhanBo += cong;
+        tongTinhLuong += p[4];
+        return (
+          `<div class="tbl__row">` +
+          td(W38.tt, String(i + 1), 'tbl__td--center') +
+          td(W38.ma, p[0]) + td(W38.ten, p[1]) + td(W38.nguon, p[2]) +
+          td(W38.sp, g.sp.split(' — ')[0]) + td(W38.ndcv, p[3]) +
+          days31.map((d) => oNgayTh(d, k)).join('') +
+          td(W38.cong, `${cong},0`, 'tbl__td--num') +
+          td(W38.cong, String(p[4].toFixed(1)).replace('.', ','), 'tbl__td--num') +
+          `</div>`
+        );
+      })
+      .join('');
+    return rowNhom + rows;
+  }).join('');
+
+  const rowTong =
+    `<div class="tbl__row tbl__row--total">` +
+    td(W38.tt + W38.ma, '') +
+    td(W38.ten + W38.nguon + W38.sp + W38.ndcv, '<strong>Tổng cộng</strong>') +
+    days31.map(() => `<div class="tbl__td" style="width:${W_DAY}px"></div>`).join('') +
+    td(W38.cong, `<strong>${tongPhanBo},0</strong>`, 'tbl__td--num') +
+    td(W38.cong, `<strong>${tongTinhLuong.toFixed(1).replace('.', ',')}</strong>`, 'tbl__td--num') +
+    `</div>`;
+
+  return (
+    to(
+      `
+    ${dauVanBan('BM.03.01')}
+    ${tieuDe('BẢNG CHẤM CÔNG THEO NỘI DUNG CÔNG VIỆC', 'BM.03.01', [
+      'Kỳ: tháng 05 năm 2025 — Đơn vị: Trung tâm Camera, Khối 3 - TCT CNC',
+      'Nhiệm vụ: 012-24-PAKD-CAM — Phương án kinh doanh camera AI thế hệ 2 (phân loại: Phương án kinh doanh)',
+    ])}
+    <div class="tbl">${headTang1}${headTang2}${headTang3}${than}${rowTong}</div>
+    <div style="font-size:12px;font-style:italic">Cùng mã <strong>BM.03.01</strong> với bản KHCN (artboard 35) nhưng khác bố cục: bản này có thêm <strong>Phân nguồn</strong>, <strong>Sản phẩm</strong> và dòng gom theo sản phẩm. Nhân sự chấm vào nguồn <strong>Bảo hành</strong> vẫn xuất bình thường — Bảo hành chỉ không lập dự toán, không phải không được chấm.</div>
+    ${vungKy([
+      ['Người lập biểu', 'Phạm Văn Đức'],
+      ['Chủ nhiệm nhiệm vụ', 'Đỗ Quang Huy'],
+      ['Phòng Nhân sự', 'Nguyễn Thu Hà'],
+      ['Lãnh đạo đơn vị', '(Ký, ghi rõ họ tên)'],
+    ])}
+  `,
+      W38_ALL + 96,
+      true,
+    ) +
+    note('BM2.2 — vì sao phải là bản in RIÊNG, không phải BM2.1 thêm cột', [
+      'Bản đồ mã biểu mẫu cho <strong>BM2.1 và BM2.2 cùng mã BM.03.01</strong>. Rất dễ kết luận nhầm là "một biểu mẫu, ẩn/hiện cột" — nhưng bản SXKD gom dòng <strong>theo sản phẩm</strong>, bản KHCN gom theo nội dung công việc. Hai cấu trúc bảng khác nhau ⇒ hai khuôn kết xuất.',
+      '<strong>Phân nguồn</strong> (KHCN · SXKD · Bán hàng · Bảo hành · Quản lý) và <strong>Phân loại nhiệm vụ</strong> (Đề tài KHCN · PAKD · ĐTPT · QPAN) là hai enum khác nhau. Cột ở đây là <em>phân nguồn</em>; phân loại nằm ở dòng phụ đề bên trên.',
+      'Một nhiệm vụ PAKD có thể có nhiều phân nguồn trên cùng một sản phẩm ⇒ khoá gom là <strong>(sản phẩm, phân nguồn)</strong>, không phải chỉ sản phẩm.',
+      'Bản in đen trắng, ô ngày không tô màu — giống artboard 35.',
+    ])
+  );
+};
+
 module.exports = [
   { code: '34', group: '3 · Biểu mẫu CPNC', title: 'BM.06 Danh sách nhân sự tham gia', desc: 'Bản in BM1 — 8 cột, không có cột tỷ lệ', body: bm1 },
   { code: '35', group: '3 · Biểu mẫu CPNC', title: 'BM.03.01 Bảng chấm công theo nội dung CV', desc: 'Bản in BM2.1 — 47 cột, header 3 tầng — khổ rộng', body: bm21 },
   { code: '36', group: '3 · Biểu mẫu CPNC', title: 'BM.04.02 Bảng tổng hợp phân bổ CPNC', desc: 'Bản in BM4 — có số âm và ô để trống', body: bm4 },
-  { code: '37', group: '3 · Biểu mẫu CPNC', title: 'BM5 Danh sách nhiệm vụ', desc: 'Bản in — cột động theo tháng — khổ rộng', body: bm5 },
+  { code: '37', group: '3 · Biểu mẫu CPNC', title: 'BM5 Danh sách nhiệm vụ', desc: 'Bản in — cột động theo tháng, KHÔNG mang mã BM.xx — khổ rộng', body: bm5 },
+  { code: '38', group: '3 · Biểu mẫu CPNC', title: 'BM.03.01 Bảng chấm công — biến thể SXKD', desc: 'Bản in BM2.2 — thêm Phân nguồn + Sản phẩm, gom theo sản phẩm — khổ rộng', body: bm22 },
 ];

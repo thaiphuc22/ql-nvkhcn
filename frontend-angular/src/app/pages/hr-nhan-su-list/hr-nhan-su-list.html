@@ -30,18 +30,6 @@
   <hr-trang-thai-tag [nhan]="nhanTrangThai(tt)" [loai]="mauTrangThai(tt)" />
 </ng-template>
 
-<ng-template #tplPreviewKetQua let-row="rowData">
-  @if (row.preview.hopLe) {
-    <span class="hr-ok-text"><i class="pi pi-check"></i> Hợp lệ</span>
-  } @else {
-    <ul class="hr-import__errs">
-      @for (m of row.preview.loi; track m) {
-        <li>{{ m }}</li>
-      }
-    </ul>
-  }
-</ng-template>
-
 <hr-page-card
   tieuDe="Danh sách nhân sự"
   moTa="Nhân sự tham gia nhiệm vụ và nội dung công việc được phân công (BM1)."
@@ -178,79 +166,19 @@
 </hr-page-card>
 
 <!-- ------------------------------------------------------------------ import -->
-<cmm-dialog
-  [visible]="importMo()"
-  (visibleChange)="importMo.set($event)"
-  header="Nhập nhân sự từ file"
-  [modal]="true"
-  [style]="{ width: '880px' }"
->
-  <div class="hr-import">
-    <div class="hr-import__head">
-      <cmm-button
-        label="Tải file mẫu (.csv)"
-        icon="pi pi-download"
-        [outlined]="true"
-        severity="secondary"
-        type="button"
-        (onClick)="taiFileMau()"
-      />
-      <!-- `customUpload` + không có `url`: component chỉ làm nút chọn file, KHÔNG gửi đi đâu. Toàn
-           bộ việc soát lỗi chạy tại client (xem chú thích lớp `HrNhanSuListPage`). -->
-      <cmm-fileUpload
-        mode="basic"
-        accept=".csv,text/csv"
-        chooseLabel="Chọn file"
-        chooseIcon="pi pi-upload"
-        [auto]="false"
-        [customUpload]="true"
-        [showUploadButton]="false"
-        [showCancelButton]="false"
-        (onSelect)="chonFile($event.currentFiles)"
-      />
-      @if (importTenFile()) {
-        <span class="hr-muted">{{ importTenFile() }}</span>
-      }
-    </div>
-
-    @if (importLoiDoc()) {
-      <ul class="hr-form__errors">
-        <li>{{ importLoiDoc() }}</li>
-      </ul>
-    }
-
-    @if (importPreview().length) {
-      <p class="hr-import__summary">
-        Đọc được <b>{{ importPreview().length }}</b> dòng —
-        <b class="hr-ok-text">{{ soDongHopLe() }} hợp lệ</b>,
-        <b class="hr-err-text">{{ soDongLoi() }} lỗi</b>. Chỉ dòng hợp lệ được nhập; dòng lỗi giữ
-        nguyên trong file để bạn sửa và nhập lại.
-      </p>
-
-      <ubck-table
-        [columns]="previewColumns()"
-        [dataSources]="previewRows()"
-        [props]="previewProps"
-      />
-    }
-  </div>
-
-  <ng-template #footer>
-    <cmm-button
-      label="Đóng"
-      [outlined]="true"
-      severity="secondary"
-      type="button"
-      (onClick)="importMo.set(false)"
-    />
-    <cmm-button
-      label="Nhập {{ soDongHopLe() }} dòng hợp lệ"
-      type="button"
-      [disabled]="soDongHopLe() === 0"
-      (onClick)="nhapDuLieu()"
-    />
-  </ng-template>
-</cmm-dialog>
+<hr-import-preview
+  [mo]="importMo()"
+  (moChange)="importMo.set($event)"
+  tieuDe="Nhập nhân sự từ file"
+  nhanCotKhoa="Mã NV"
+  nhanCotNhan="Họ và tên"
+  [tenFile]="importTenFile()"
+  [loiDocFile]="importLoiDoc()"
+  [dong]="importDong()"
+  (chonFile)="chonFile($event)"
+  (taiFileMau)="taiFileMau()"
+  (xacNhan)="nhapDuLieu()"
+/>
 
 <!-- --------------------------------------------------------------------- xoá -->
 <cmm-dialog

@@ -82,6 +82,48 @@ export const HR_ROUTES: Routes = [
           import('./pages/hr-khai-bao-list/hr-khai-bao-list').then((m) => m.HrKhaiBaoListPage),
         data: { title: 'Khai báo nhiệm vụ', app: 'hrtools' },
       },
+      /*
+       * Kỳ, bảng công, bảng lương — đợt 2. Ba màn đọc chung `KyService`: kỳ là thứ khoá cả ba,
+       * xem `core/services/hr/ky.service.ts`.
+       */
+      {
+        path: 'ky',
+        loadComponent: () => import('./pages/hr-ky-list/hr-ky-list').then((m) => m.HrKyListPage),
+        data: { title: 'Kỳ chấm công', app: 'hrtools' },
+      },
+      {
+        path: 'bang-cong-thang',
+        loadComponent: () =>
+          import('./pages/hr-bang-cong/hr-bang-cong').then((m) => m.HrBangCongPage),
+        data: { title: 'Bảng công tháng', app: 'hrtools' },
+      },
+      {
+        path: 'bang-luong-thang',
+        loadComponent: () =>
+          import('./pages/hr-bang-luong/hr-bang-luong').then((m) => m.HrBangLuongPage),
+        data: { title: 'Bảng lương tháng', app: 'hrtools' },
+      },
+      /*
+       * Danh mục — đợt 1.5. `don-vi` khai TRƯỚC `:loai` vì route so khớp theo thứ tự: để sau thì
+       * `:loai` nuốt luôn chuỗi `don-vi` và cây đơn vị không bao giờ mở được.
+       */
+      {
+        path: 'danh-muc/don-vi',
+        loadComponent: () => import('./pages/hr-don-vi/hr-don-vi').then((m) => m.HrDonViPage),
+        data: { title: 'Danh mục Đơn vị', app: 'hrtools' },
+      },
+      {
+        path: 'danh-muc/:loai',
+        loadComponent: () =>
+          import('./pages/hr-danh-muc-list/hr-danh-muc-list').then((m) => m.HrDanhMucListPage),
+        data: { title: 'Danh mục', app: 'hrtools' },
+      },
+      {
+        path: 'danh-muc/:loai/:ma',
+        loadComponent: () =>
+          import('./pages/hr-danh-muc-detail/hr-danh-muc-detail').then((m) => m.HrDanhMucDetailPage),
+        data: { title: 'Chi tiết danh mục', app: 'hrtools' },
+      },
       {
         path: 'nhan-su',
         loadComponent: () =>

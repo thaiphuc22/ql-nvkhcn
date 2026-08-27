@@ -14,9 +14,10 @@
 const fs = require('fs');
 const path = require('path');
 
-const DIST = path.join(__dirname, 'dist');
+// Mặc định soi `dist/`; truyền thư mục khác để soi bản gộp: `node check.js dist/bundles`
+const DIST = path.resolve(__dirname, process.argv[2] || 'dist');
 if (!fs.existsSync(DIST)) {
-  console.error('Chưa có dist/. Chạy `node build.js` trước.');
+  console.error(`Chưa có ${path.relative(__dirname, DIST) || 'dist'}/. Chạy \`node build.js\` trước.`);
   process.exit(1);
 }
 

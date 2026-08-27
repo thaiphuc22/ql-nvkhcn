@@ -1,0 +1,265 @@
+<hr-page-card
+  [tieuDe]="'Bảng lương tháng — ' + nhanKyHienTai()"
+  moTa="Import từ BM0, CHỈ ĐỌC. BRD giới hạn rõ: hệ thống không xử lý lương chi tiết — dữ liệu này chỉ làm tử số của công thức phân bổ CPNC."
+  [khongCard]="true"
+>
+  <div actions>
+    <!-- Không có quyền thì nút KHÔNG được render (fail-closed). Ẩn nút chứ không disable: nút
+         disabled vẫn nói cho người dùng biết ở đây có dữ liệu lương xuất được. -->
+    @if (duocXuat()) {
+      <cmm-button
+        label="Xuất BM3.1 / BM3.2"
+        icon="pi pi-download"
+        [outlined]="true"
+        severity="secondary"
+        type="button"
+        (onClick)="xuatExcel()"
+      />
+    }
+    @if (duocNhap()) {
+      <cmm-button
+        label="Nhập BM0 bảng lương"
+        icon="pi pi-upload"
+        type="button"
+        (onClick)="moImport()"
+      />
+    }
+  </div>
+
+  <section class="hr-bl-card">
+    @if (!xemCotTien()) {
+      <!-- HAI thông điệp khác nhau cho hai nguyên nhân khác nhau. Cột tiền không render trong cả
+           hai ca (fail-closed), nhưng "chưa biết vai trò" cần khởi động identity-service, còn
+           "không có quyền" cần đi xin cấp quyền — nói nhầm là chỉ sai đường cho người dùng. -->
+      <div class="hr-canhbao-hop hr-bl-chan">
+        <i class="pi" [class.pi-lock]="!vaiTroChuaBiet()" [class.pi-question-circle]="vaiTroChuaBiet()"></i>
+        @if (vaiTroChuaBiet()) {
+          <div>
+            <strong>Chưa xác định được vai trò của bạn.</strong>
+            Hệ thống chưa nạp được vai trò từ dịch vụ định danh, nên chưa biết bạn có quyền xem dữ
+            liệu lương hay không. Cột tiền tạm ẩn cho tới khi xác định xong — đây <b>không</b> phải
+            kết luận rằng bạn thiếu quyền.
+          </div>
+        } @else {
+          <div>
+            <strong>Bạn không có quyền xem dữ liệu lương.</strong>
+            Ma trận quyền của khách: <b>chỉ vai trò Nhân sự (HR)</b> được xem và xuất bảng lương
+            (BM3.1 / BM3.2). PA đơn vị chủ trì, PA đơn vị khác và PM đều không thấy cột tiền.
+          </div>
+        }
+      </div>
+    }
+
+    <div class="hr-filters">
+      <div class="hr-filters__spacer hr-bl-nguon">
+        <hr-trang-thai-tag
+          [nhan]="nhanVaiTro()"
+          [loai]="xemCotTien() ? 'success' : 'warning'"
+        />
+        @if (lanNhap(); as ln) {
+          <span class="hr-muted">
+            Nguồn: {{ ln.tenFile }} · {{ ln.soDong }} dòng · nhập {{ ln.nhapLuc }}
+          </span>
+        }
+      </div>
+
+      <cmm-select
+        styleClass="hr-filters__select"
+        [value]="maKy()"
+        (valueChange)="maKy.set($event); donViFilter.set(null)"
+        [props]="{ options: kyOptions(), optionValue: 'value', optionLabel: 'label' }"
+      />
+      <cmm-select
+        styleClass="hr-filters__select"
+        [value]="donViFilter()"
+        (valueChange)="donViFilter.set($event)"
+        [props]="{
+          options: donViOptions(),
+          optionValue: 'value',
+          optionLabel: 'label',
+          placeholder: 'Tất cả đơn vị',
+          showClear: true,
+        }"
+      />
+      <span class="hr-search">
+        <i class="pi pi-search hr-search__icon"></i>
+        <input
+          cmmInputText
+          type="text"
+          placeholder="Tìm mã NV / họ tên"
+          [value]="tuKhoa()"
+          (input)="tuKhoa.set($any($event.target).value)"
+        />
+      </span>
+    </div>
+
+    @if (rows().length) {
+      <div class="hr-matrix-wrap">
+        <table class="hr-matrix">
+          <thead>
+            <tr>
+              <th class="hr-matrix__stick hr-matrix__stt">TT</th>
+              <th class="hr-matrix__stick hr-matrix__ma">Mã NV</th>
+              <th class="hr-matrix__stick hr-matrix__ten">Họ và tên</th>
+              <th class="hr-matrix__num">Công TL</th>
+
+              @if (xemCotTien()) {
+                <!-- 14 cột tiền. Cả khối này KHÔNG TỒN TẠI trong DOM khi không có quyền — đó là
+                     định nghĩa của fail-closed ở §7.2, và là thứ nghiệm thu soi trong HTML. -->
+                @for (k of khoanMuc; track k.ma) {
+                  <th class="hr-matrix__num hr-matrix__tien" [attr.title]="k.ten">{{ k.tenNgan }}</th>
+                }
+                <th class="hr-matrix__num hr-matrix__tong">CỘNG</th>
+              } @else {
+                <th class="hr-matrix__num">Công đã phân bổ</th>
+                <th class="hr-matrix__tt">Trạng thái chấm công</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of rows(); track r.id) {
+              <tr>
+                <td class="hr-matrix__stick hr-matrix__stt">{{ $index + 1 }}</td>
+                <td class="hr-matrix__stick hr-matrix__ma">{{ r.maNhanVien }}</td>
+                <td class="hr-matrix__stick hr-matrix__ten">{{ r.hoTen }}</td>
+                <td class="hr-matrix__num">{{ soCong(r.congTinhLuong) }}</td>
+
+                @if (xemCotTien()) {
+                  @for (k of khoanMuc; track k.ma) {
+                    <td class="hr-matrix__num hr-matrix__tien">{{ oKhoan(r, k.ma) }}</td>
+                  }
+                  <td class="hr-matrix__num hr-matrix__tong">
+                    <strong>{{ formatTien(tongDong(r)) }}</strong>
+                  </td>
+                } @else {
+                  <td class="hr-matrix__num">{{ soCong(congDaPhanBo(r.maNhanVien)) }}</td>
+                  <td class="hr-matrix__tt">
+                    <hr-trang-thai-tag
+                      [nhan]="trangThaiPhanBo(r).nhan"
+                      [loai]="trangThaiPhanBo(r).loai"
+                    />
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+
+          @if (xemCotTien()) {
+            <tfoot>
+              <tr class="hr-matrix__tongdong">
+                <td class="hr-matrix__stick hr-matrix__stt"></td>
+                <td class="hr-matrix__stick hr-matrix__ma"></td>
+                <td class="hr-matrix__stick hr-matrix__ten">
+                  Tổng {{ rows().length }} người
+                </td>
+                <td class="hr-matrix__num">{{ soCong(tongCongTinhLuong()) }}</td>
+                @for (k of khoanMuc; track k.ma) {
+                  <!-- Khoản không ai có ⇒ dòng tổng cũng hiện `—`, không phải `0 đ`. Ô người hiện
+                       `—` mà ô tổng hiện `0 đ` là hai cách nói khác nhau cho cùng một sự vắng mặt. -->
+                  <td class="hr-matrix__num hr-matrix__tien">{{ oTongKhoan(k.ma) }}</td>
+                }
+                <td class="hr-matrix__num hr-matrix__tong">
+                  <strong>{{ formatTien(tongCong()) }}</strong>
+                </td>
+              </tr>
+            </tfoot>
+          }
+        </table>
+      </div>
+
+      @if (xemCotTien()) {
+        <p class="hr-muted hr-bl-note">
+          <b>14 khoản mục, chia pro-rata TỪNG khoản.</b> CPNC không phải một con số mà là vector
+          khoản mục:
+          <code>CPNC_phânBổ[khoản] = CPNC_tháng[khoản] × (côngPhânBổ / côngTínhLương)</code> —
+          không nhân vào tổng rồi chia ngược. Mẫu số là công tính lương của <b>chính người đó</b>,
+          không phải ngày công chuẩn của kỳ.
+        </p>
+      }
+
+      @if (soNguoiBangCong() !== rows().length && !donViFilter() && !tuKhoa()) {
+        <!-- Hai bảng lệch danh sách là dấu hiệu một trong hai file import thiếu dòng. Nói ra ở đây
+             rẻ hơn nhiều so với để nó lộ ra ở tổng CPNC cuối đợt 3. -->
+        <p class="hr-muted hr-bl-note">
+          ⚠ Bảng công kỳ này có <b>{{ soNguoiBangCong() }}</b> người, bảng lương có
+          <b>{{ rows().length }}</b>. Hai file nên khớp danh sách — kiểm tra lại lần nhập gần nhất.
+        </p>
+      }
+    } @else {
+      <p class="hr-muted hr-bl-rong">
+        Kỳ {{ maKy() }} chưa có dữ liệu bảng lương.
+        @if (duocNhap()) {
+          Dùng nút <b>Nhập BM0 bảng lương</b> để nhập từ file HRM/SAP.
+        }
+      </p>
+    }
+  </section>
+</hr-page-card>
+
+<!-- ------------------------------------------------------------- import BM0 -->
+
+<hr-import-preview
+  [mo]="importMo()"
+  (moChange)="importMo.set($event)"
+  [tieuDe]="'Nhập BM0 bảng lương — ' + nhanKyHienTai()"
+  nhanCotKhoa="Mã NV"
+  nhanCotNhan="Họ và tên"
+  [tenFile]="importTenFile()"
+  [loiDocFile]="importLoiDoc()"
+  [dong]="importPreview()"
+  [canhBaoChan]="canhBaoChan()"
+  (chonFile)="chonFile($event)"
+  (taiFileMau)="taiFileMau()"
+  (xacNhan)="xacNhanNhap()"
+/>
+
+<!-- --------------------------------------------------- xác nhận ĐÈ CẢ KỲ -->
+
+<cmm-dialog
+  [visible]="deMo()"
+  (visibleChange)="!$event && huyDe()"
+  [header]="'Kỳ ' + maKy() + ' đã có dữ liệu lương'"
+  [modal]="true"
+  [style]="{ width: '440px' }"
+>
+  <div class="hr-form">
+    <div class="hr-canhbao-hop">
+      <strong>Nhập lại sẽ ĐÈ CẢ KỲ.</strong>
+      Toàn bộ <b>{{ tatCa().length }} dòng</b> bảng lương {{ nhanKyHienTai() }} đang có sẽ bị xoá
+      và thay bằng dữ liệu trong file mới.
+    </div>
+
+    <dl class="hr-desc hr-desc--hep">
+      <div>
+        <dt>Đang có</dt>
+        <dd>{{ tatCa().length }} dòng</dd>
+      </div>
+      <div>
+        <dt>File mới</dt>
+        <dd>{{ soHopLe() }} dòng hợp lệ · {{ importTenFile() }}</dd>
+      </div>
+    </dl>
+
+    <label class="hr-choice">
+      <cmm-checkbox [value]="deHieu()" (valueChange)="deHieu.set(!!$event)" [binary]="true" />
+      <span>Tôi hiểu dữ liệu bảng lương cũ của kỳ này sẽ bị xoá</span>
+    </label>
+  </div>
+
+  <ng-template #footer>
+    <cmm-button
+      label="Huỷ"
+      [outlined]="true"
+      severity="secondary"
+      type="button"
+      (onClick)="huyDe()"
+    />
+    <cmm-button
+      label="Xoá và nhập đè cả kỳ"
+      icon="pi pi-upload"
+      type="button"
+      [disabled]="!deHieu()"
+      (onClick)="xacNhanDe()"
+    />
+  </ng-template>
+</cmm-dialog>

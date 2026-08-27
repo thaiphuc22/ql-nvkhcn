@@ -1,0 +1,116 @@
+<cmm-dialog
+  [visible]="mo()"
+  (visibleChange)="moChange.emit($event)"
+  [header]="tieuDe()"
+  [modal]="true"
+  [style]="{ width: '900px' }"
+>
+  <div class="hr-import">
+    <div class="hr-import__head">
+      <cmm-button
+        label="Tải file mẫu (.csv)"
+        icon="pi pi-download"
+        [outlined]="true"
+        severity="secondary"
+        type="button"
+        (onClick)="taiFileMau.emit()"
+      />
+      <!-- `customUpload` + không có `url`: component chỉ làm nút chọn file, KHÔNG gửi đi đâu.
+           Toàn bộ việc soát lỗi chạy tại client — xem chú thích lớp. -->
+      <cmm-fileUpload
+        mode="basic"
+        accept=".csv,.tsv,.txt,text/csv"
+        chooseLabel="Chọn file"
+        chooseIcon="pi pi-upload"
+        [auto]="false"
+        [customUpload]="true"
+        [showUploadButton]="false"
+        [showCancelButton]="false"
+        (onSelect)="chon($event.currentFiles)"
+      />
+      <!-- KHÔNG in `tenFile()` ở đây: `cmm-fileUpload` chế độ `basic` đã tự hiện tên file ngay
+           cạnh nút, thêm một dòng nữa là tên file hiện HAI lần. Input `tenFile` vẫn giữ vì trang
+           dùng nó cho thông báo và cho luồng nhập không qua nút chọn file. -->
+    </div>
+
+    @if (loiDocFile()) {
+      <ul class="hr-import__errs">
+        <li>{{ loiDocFile() }}</li>
+      </ul>
+    }
+
+    @if (dong().length) {
+      <div class="hr-import__stats">
+        <div class="hr-imp-stat hr-imp-stat--ok">
+          <small>Hợp lệ — sẽ nhập</small>
+          <strong>{{ dem().hopLe }} dòng</strong>
+        </div>
+        <div class="hr-imp-stat hr-imp-stat--loi">
+          <small>Lỗi chặn — không nhập</small>
+          <strong>{{ dem().loi }} dòng</strong>
+        </div>
+        <div class="hr-imp-stat hr-imp-stat--canhbao">
+          <small>Cảnh báo — vẫn nhập</small>
+          <strong>{{ dem().canhBao }} dòng</strong>
+        </div>
+      </div>
+
+      <p class="hr-import__note">
+        <b>Lỗi chặn</b> làm dòng đó bị bỏ qua hoàn toàn. <b>Cảnh báo</b> vẫn nhập nhưng được ghi
+        lại để rà sau — ví dụ ký hiệu công lạ sẽ vào danh mục “chờ khai báo”.
+      </p>
+
+      @if (dongCoVanDe().length) {
+        <ubck-table
+          [columns]="previewColumns()"
+          [dataSources]="previewRows()"
+          [props]="previewProps"
+        />
+        <p class="hr-import__note">
+          Hiển thị {{ dongCoVanDe().length }}/{{ dong().length }} dòng có vấn đề. Các dòng còn lại
+          không có ghi chú nào.
+        </p>
+      } @else {
+        <p class="hr-import__note">Không dòng nào có vấn đề — nhập được toàn bộ file.</p>
+      }
+    }
+  </div>
+
+  <ng-template #footer>
+    @if (canhBaoChan()) {
+      <span class="hr-import__chan">{{ canhBaoChan() }}</span>
+    }
+    <cmm-button
+      label="Huỷ"
+      [outlined]="true"
+      severity="secondary"
+      type="button"
+      (onClick)="moChange.emit(false)"
+    />
+    <cmm-button
+      label="Nhập {{ dem().hopLe }} dòng hợp lệ"
+      icon="pi pi-check"
+      type="button"
+      [disabled]="dem().hopLe === 0"
+      (onClick)="xacNhan.emit()"
+    />
+  </ng-template>
+</cmm-dialog>
+
+<!-- Mức: tag đỏ cho lỗi chặn, cam cho cảnh báo. Nhãn BẮT BUỘC có chữ, không chỉ màu — ramp brand
+     và danger của design system trùng nhau nên màu không phân biệt được hai mức. -->
+<ng-template #tplMuc let-value>
+  @if (value === 'LOI') {
+    <hr-trang-thai-tag nhan="Lỗi chặn" loai="error" />
+  } @else {
+    <hr-trang-thai-tag nhan="Cảnh báo" loai="warning" />
+  }
+</ng-template>
+
+<ng-template #tplVanDe let-value>
+  <ul class="hr-import__vande">
+    @for (v of value; track $index) {
+      <li>{{ v.moTa }}</li>
+    }
+  </ul>
+</ng-template>

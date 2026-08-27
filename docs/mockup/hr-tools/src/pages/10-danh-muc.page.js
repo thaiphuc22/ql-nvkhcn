@@ -1,8 +1,10 @@
 /* =============================================================================
  * Đợt 1.5 — Danh mục (§5 kế hoạch thi công).
  *
- * `Book1` liệt kê 6 danh mục, cộng `Ký hiệu công` và `Nhóm công việc` (§2.2) là 8. Mỗi cái đủ
- * `Danh sách · Chi tiết · CRUD · Import · Export`.
+ * `Book1` liệt kê 6 danh mục, cộng `Ký hiệu công` và `Nhóm công việc` (§2.2) là 8. BRD §4.6 nhắc
+ * thêm 4 cái nữa — `loại chi phí nhân công`, `đối tác`, `nhiệm vụ mẫu`, `trạng thái nhiệm vụ` —
+ * bổ sung 2026-08-27, thành 12. Mỗi cái đủ `Danh sách · Chi tiết · CRUD · Import · Export`;
+ * riêng phần **Chi tiết** dùng chung một khuôn, vẽ ở artboard 12B.
  *
  * Bảy màn dùng CHUNG một khuôn (danh sách phẳng theo mẫu DMDC) nên sinh bằng vòng lặp — sửa
  * khuôn là cả bảy đổi theo. Riêng **Đơn vị** khác khuôn: cây 5 cấp bên trái + bảng bên phải.
@@ -11,7 +13,7 @@
  * vị, ký hiệu công đều là số liệu thật của khách, KHÔNG bịa thêm tên mới.
  * ========================================================================== */
 const U = require('../lib/ui');
-const { ico, frame, bare, DIM, dlg, toast, pageHead, btn, input, select, search, field, tag, table, tableFoot, rowActions, note } = U;
+const { ico, frame, bare, DIM, dlg, toast, pageHead, btn, input, select, search, field, tag, table, tableFoot, rowActions, note, money } = U;
 
 const sw = (on) => `<div class="switch${on ? ' switch--on' : ''}"><div class="switch__knob"></div></div>`;
 const STT = { t: 'STT', w: 'w-56', cls: 'tbl__th--center' };
@@ -202,6 +204,70 @@ const FLAT = [
     ],
     total: 6,
   },
+  {
+    code: '13B', nav: 'dm-loai-cpnc', title: 'Danh mục Loại chi phí nhân công',
+    desc: 'BRD §4.6. Đúng 14 khoản mục của BM3, giữ nguyên THỨ TỰ trong file gốc — thêm hoặc bớt một khoản là đổi bố cục cả BM3, BM3.1 và BM4.',
+    filters: `${select('Nhóm khoản mục', { placeholder: true })}${select('Trạng thái', { placeholder: true })}${search('Tìm theo tên khoản mục')}`,
+    cols: [{ t: 'Mã khoản', w: 'w-140' }, { t: 'Tên khoản mục CPNC', w: 'w-320' }, { t: 'Nhóm', w: 'w-160' }, { t: 'Thứ tự BM3', w: 'w-120', cls: 'tbl__th--center' }, { t: 'Ghi chú' }],
+    rows: [
+      ['LCP-01', 'Lương tháng', 'Lương', { h: '1', cls: 'tbl__td--center' }, 'Khoản lớn nhất — chiếm phần lớn CPNC'],
+      ['LCP-02', 'Lương tháng (trừ BH cá nhân)', 'Lương', { h: '2', cls: 'tbl__td--center' }, 'Là <strong>dẫn xuất</strong> của LCP-01, không cộng dồn hai lần'],
+      ['LCP-03', 'Truy thu/truy lĩnh (lương tháng lần 2)', 'Lương', { h: '3', cls: 'tbl__td--center' }, 'Có thể <strong>âm</strong> khi truy thu'],
+      ['LCP-04', 'Lương SXKD (nếu có)', 'Lương', { h: '4', cls: 'tbl__td--center' }, 'Chỉ nhiệm vụ phân loại PAKD'],
+      ['LCP-05', 'Lương thử việc, tập nghề', 'Lương', { h: '5', cls: 'tbl__td--center' }, ''],
+      ['LCP-06', 'Lương kinh doanh thử việc, tập nghề', 'Lương', { h: '6', cls: 'tbl__td--center' }, ''],
+      ['LCP-07', 'BHXH — Cá nhân', 'Bảo hiểm', { h: '7', cls: 'tbl__td--center' }, ''],
+      ['LCP-08', 'BHXH — Đơn vị', 'Bảo hiểm', { h: '8', cls: 'tbl__td--center' }, ''],
+      ['LCP-09', 'BHYT — Cá nhân', 'Bảo hiểm', { h: '9', cls: 'tbl__td--center' }, ''],
+      ['LCP-10', 'BHYT — Đơn vị', 'Bảo hiểm', { h: '10', cls: 'tbl__td--center' }, ''],
+      ['LCP-11', 'BHTN — Cá nhân', 'Bảo hiểm', { h: '11', cls: 'tbl__td--center' }, ''],
+      ['LCP-12', 'BHTN — Đơn vị', 'Bảo hiểm', { h: '12', cls: 'tbl__td--center' }, ''],
+      ['LCP-13', 'KPCĐ', 'Bảo hiểm', { h: '13', cls: 'tbl__td--center' }, ''],
+      ['LCP-14', 'Các khoản ăn ca, điện thoại, chi phí phụ cấp', 'Phụ cấp', { h: '14', cls: 'tbl__td--center' }, 'Gộp nhiều khoản nhỏ — BM3 để một cột'],
+    ],
+    total: 14,
+  },
+  {
+    code: '14B', nav: 'dm-doi-tac', title: 'Danh mục Đối tác',
+    desc: 'BRD §4.6. Đối tác ngoài tham gia nhiệm vụ. Nhân công thuê ngoài KHÔNG có mã NV trong HRM nên không đi qua BM0 — chi phí của họ vào nhiệm vụ theo đường hợp đồng, không theo bảng chấm công.',
+    filters: `${select('Loại đối tác', { placeholder: true })}${select('Trạng thái', { placeholder: true })}${search('Tìm theo mã, tên hoặc mã số thuế')}`,
+    cols: [{ t: 'Mã đối tác', w: 'w-140' }, { t: 'Tên đối tác' }, { t: 'Loại', w: 'w-180' }, { t: 'Mã số thuế', w: 'w-160' }, { t: 'Nhiệm vụ tham gia', w: 'w-180', cls: 'tbl__th--num' }],
+    rows: [
+      ['DT-001', 'Viện Khoa học và Công nghệ Quân sự', 'Viện nghiên cứu', '0100109106', { h: '4', cls: 'tbl__td--num' }],
+      ['DT-002', 'Đại học Bách khoa Hà Nội', 'Trường đại học', '0100686656', { h: '2', cls: 'tbl__td--num' }],
+      ['DT-003', 'Công ty CP Công nghệ Tân Tiến', 'Nhà thầu phụ', '0106284117', { h: '7', cls: 'tbl__td--num' }],
+      ['DT-004', 'Trung tâm Đo lường Chất lượng 1', 'Đơn vị kiểm định', '0100233583', { h: '1', cls: 'tbl__td--num' }],
+    ],
+    total: 18,
+  },
+  {
+    code: '15B', nav: 'dm-nhiem-vu-mau', title: 'Danh mục Nhiệm vụ mẫu',
+    desc: 'BRD §4.6. Bộ nội dung công việc dựng sẵn theo phân loại — chọn mẫu khi khai nhiệm vụ mới thì sinh luôn danh sách nội dung CV. Khác Thư viện công việc: thư viện là TỪNG nội dung CV rời, mẫu là cả BỘ.',
+    filters: `${select('Phân loại', { placeholder: true })}${select('Trạng thái', { placeholder: true })}${search('Tìm theo tên nhiệm vụ mẫu')}`,
+    cols: [{ t: 'Mã mẫu', w: 'w-140' }, { t: 'Tên nhiệm vụ mẫu' }, { t: 'Phân loại áp dụng', w: 'w-200' }, { t: 'Số nội dung CV', w: 'w-160', cls: 'tbl__th--num' }, { t: 'Lần dùng', w: 'w-120', cls: 'tbl__th--num' }],
+    rows: [
+      ['NVM-01', 'Đề tài nghiên cứu chế tạo thiết bị', 'Đề tài KHCN', { h: '8', cls: 'tbl__td--num' }, { h: '23', cls: 'tbl__td--num' }],
+      ['NVM-02', 'Đề tài nghiên cứu vật liệu', 'Đề tài KHCN', { h: '6', cls: 'tbl__td--num' }, { h: '9', cls: 'tbl__td--num' }],
+      ['NVM-03', 'Phương án kinh doanh sản phẩm mới', 'Phương án kinh doanh', { h: '7', cls: 'tbl__td--num' }, { h: '14', cls: 'tbl__td--num' }],
+      ['NVM-04', 'Dự án đầu tư dây chuyền sản xuất', 'Dự án ĐTPT', { h: '5', cls: 'tbl__td--num' }, { h: '4', cls: 'tbl__td--num' }],
+      ['NVM-05', 'Nhiệm vụ quốc phòng an ninh', 'Nhiệm vụ QPAN', { h: '5', cls: 'tbl__td--num' }, { h: '6', cls: 'tbl__td--num' }],
+    ],
+    total: 12,
+  },
+  {
+    code: '17B', nav: 'dm-trang-thai-nv', title: 'Danh mục Trạng thái nhiệm vụ',
+    desc: 'BRD §4.6. Hai cột giữa ĐIỀU KHIỂN luật khoá ô chấm công (artboard 28) và nút Đóng nhiệm vụ (artboard 62) — không phải nhãn hiển thị. Sửa một ô ở đây là đổi hành vi màn chấm công.',
+    filters: `${search('Tìm theo tên trạng thái')}`,
+    cols: [{ t: 'Mã', w: 'w-180' }, { t: 'Tên trạng thái', w: 'w-220' }, { t: 'Cho chấm công', w: 'w-160', cls: 'tbl__th--center' }, { t: 'Cho sửa nhiệm vụ', w: 'w-180', cls: 'tbl__th--center' }, { t: 'Ghi chú' }],
+    rows: [
+      ['DANG_TRINH_PD', 'Đang trình phê duyệt', { h: tag('Không', 'danger'), cls: 'tbl__td--center' }, { h: tag('Có', 'success'), cls: 'tbl__td--center' }, 'Chưa có quyết định phê duyệt CPNC nên chưa có nguồn để phân bổ'],
+      ['DANG_PHAN_BO', 'Đang phân bổ', { h: tag('Có', 'success'), cls: 'tbl__td--center' }, { h: tag('Có', 'success'), cls: 'tbl__td--center' }, '<strong>Trạng thái DUY NHẤT cho chấm công.</strong> Luật khoá ô §6.4 dựa vào đúng dòng này'],
+      ['TAM_DUNG', 'Tạm dừng', { h: tag('Không', 'danger'), cls: 'tbl__td--center' }, { h: tag('Có', 'success'), cls: 'tbl__td--center' }, 'Giữ nguyên số đã phân bổ, chỉ chặn chấm mới'],
+      ['DA_HET_HAN', 'Đã hết hạn', { h: tag('Không', 'danger'), cls: 'tbl__td--center' }, { h: tag('Không', 'danger'), cls: 'tbl__td--center' }, 'Quá thời gian kết thúc — hệ thống tự chuyển, người dùng không đặt tay'],
+      ['DA_DONG', 'Đã đóng', { h: tag('Không', 'danger'), cls: 'tbl__td--center' }, { h: tag('Không', 'danger'), cls: 'tbl__td--center' }, 'Đã trình ký BM.05 xong (artboard 62) — chốt sổ, không quay lại được'],
+    ],
+    total: 5,
+  },
 ];
 
 /* ---------------------------------------- 12 · Nhân viên (có tìm kiếm nâng cao) */
@@ -247,6 +313,102 @@ const nhanVien = (opts = {}) =>
     </div>`,
     opts,
   );
+
+/* ------------------------------------------- 12B · Màn hình CHI TIẾT của một danh mục
+ * `Book1` yêu cầu mỗi danh mục đủ năm chức năng: `Danh sách · CHI TIẾT · CRUD · Import · Export`.
+ * Bộ dựng trước chỉ có danh sách + dialog thêm/sửa, thiếu hẳn màn chi tiết — dialog 520px không
+ * chứa nổi phần "người này đang dính vào những nhiệm vụ nào".
+ *
+ * Đây là KHUÔN chi tiết dùng chung cho cả tám danh mục: đầu trang có nút quay lại → khối `desc`
+ * thuộc tính → các bảng con "đang được dùng ở đâu". Nhân viên là ví dụ nặng nhất; bảy danh mục
+ * còn lại là bản rút gọn của chính khuôn này, không cần vẽ thêm artboard. */
+const chiTietNhanVien = () =>
+  frame(
+    'dm-nhan-vien',
+    `<div class="page">
+      <div class="breadcrumb">
+        <span>Danh mục</span><span class="breadcrumb__sep">/</span>
+        <span>Nhân viên</span><span class="breadcrumb__sep">/</span>
+        <span class="strong">801234 — Trần Minh Quân</span>
+      </div>
+      ${pageHead(
+        'Trần Minh Quân',
+        'Mã NV 801234 · Kỹ sư chính · Trung tâm Chế tạo Điện tử Khí tài',
+        `${btn('Xuất Excel', { icon: 'download', variant: 'secondary' })}${btn('Sửa', { icon: 'pencil', variant: 'secondary' })}${btn('Ngừng hoạt động', { icon: 'ban' })}`,
+        true,
+      )}
+
+      <div class="card">
+        <div class="card__head"><div class="card__title">Thông tin nhân viên</div>${tag('Đang làm việc', 'success')}</div>
+        <div class="desc">
+          <div class="desc__item"><div class="desc__label">Mã nhân viên</div><div class="desc__value">801234 <span class="caption">(khoá đối chiếu khi import BM0)</span></div></div>
+          <div class="desc__item"><div class="desc__label">Họ và tên</div><div class="desc__value">Trần Minh Quân</div></div>
+          <div class="desc__item"><div class="desc__label">Chức danh</div><div class="desc__value">Kỹ sư chính</div></div>
+          <div class="desc__item"><div class="desc__label">Email công tác</div><div class="desc__value">quantm@viettel.com.vn</div></div>
+          <div class="desc__item"><div class="desc__label">Đơn vị (cấp 5)</div><div class="desc__value">Trung tâm Chế tạo Điện tử Khí tài</div></div>
+          <div class="desc__item"><div class="desc__label">Khối (cấp 4)</div><div class="desc__value">Khối 1 - TCT CNC</div></div>
+          <div class="desc__item"><div class="desc__label">Ngày vào đơn vị</div><div class="desc__value">01/03/2019</div></div>
+          <div class="desc__item"><div class="desc__label">Nguồn dữ liệu</div><div class="desc__value">Đồng bộ từ HRM/SAP <span class="caption">— sửa tay chỉ áp cho email</span></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card__head">
+          <div class="card__title">Đang tham gia 3 nhiệm vụ</div>
+          <div class="caption">Bảng này là lý do phải có màn chi tiết: nó trả lời "xoá nhân viên này thì hỏng cái gì".</div>
+        </div>
+        ${table(
+          [
+            { t: 'STT', w: 'w-56', cls: 'tbl__th--center' },
+            { t: 'Mã nhiệm vụ', w: 'w-180' },
+            { t: 'Tên nhiệm vụ' },
+            { t: 'Vai trò', w: 'w-140' },
+            { t: 'Nội dung công việc', w: 'w-220' },
+            { t: 'Từ ngày', w: 'w-110', cls: 'tbl__th--center' },
+            { t: 'Đến ngày', w: 'w-110', cls: 'tbl__th--center' },
+          ],
+          [
+            [{ h: '1', cls: 'tbl__td--center' }, '<span class="code-link">011-24-TĐ-RDP-QS</span>', 'Nghiên cứu chế tạo khối thu phát cao tần', 'Thành viên', 'NDCV-01 Thiết kế khối cao tần', { h: '08/04/2025', cls: 'tbl__td--center' }, { h: '31/12/2026', cls: 'tbl__td--center' }],
+            [{ h: '2', cls: 'tbl__td--center' }, '<span class="code-link">012-24-PAKD-CAM</span>', 'Phương án kinh doanh camera AI thế hệ 2', 'Thành viên', 'NDCV-12 Hiệu chỉnh dây chuyền', { h: '01/02/2025', cls: 'tbl__td--center' }, { h: '31/12/2025', cls: 'tbl__td--center' }],
+            [{ h: '3', cls: 'tbl__td--center' }, '<span class="code-link">015-25-TĐ-RDP-QS</span>', 'Nghiên cứu vật liệu hấp thụ sóng', 'PA — Trợ lý nhiệm vụ', 'NDCV-04 Quản lý tiến độ, báo cáo', { h: '01/06/2025', cls: 'tbl__td--center' }, { h: '31/12/2027', cls: 'tbl__td--center' }],
+          ],
+        )}
+      </div>
+
+      <div class="card">
+        <div class="card__head"><div class="card__title">Lịch sử công và CPNC phân bổ</div>${select('6 tháng gần nhất')}</div>
+        ${table(
+          [
+            { t: 'Kỳ', w: 'w-110' },
+            { t: 'Công chế độ', w: 'w-140', cls: 'tbl__th--num' },
+            { t: 'Công tính lương', w: 'w-160', cls: 'tbl__th--num' },
+            { t: 'Công phân bổ', w: 'w-160', cls: 'tbl__th--num' },
+            { t: 'Tỷ lệ phân bổ', w: 'w-160', cls: 'tbl__th--num' },
+            { t: 'CPNC phân bổ (₫)', cls: 'tbl__th--num' },
+          ],
+          [
+            ['12/2024', { h: '22,0', cls: 'tbl__td--num' }, { h: '22,0', cls: 'tbl__td--num' }, { h: '22,0', cls: 'tbl__td--num' }, { h: '100,0%', cls: 'tbl__td--num' }, { h: money(35410000), cls: 'tbl__td--num' }],
+            ['01/2025', { h: '20,0', cls: 'tbl__td--num' }, { h: '20,0', cls: 'tbl__td--num' }, { h: '18,0', cls: 'tbl__td--num' }, { h: '90,0%', cls: 'tbl__td--num' }, { h: money(31869000), cls: 'tbl__td--num' }],
+            ['02/2025', { h: '18,0', cls: 'tbl__td--num' }, { h: '18,0', cls: 'tbl__td--num' }, { h: '18,0', cls: 'tbl__td--num' }, { h: '100,0%', cls: 'tbl__td--num' }, { h: money(35410000), cls: 'tbl__td--num' }],
+            ['03/2025', { h: '21,0', cls: 'tbl__td--num' }, { h: '21,0', cls: 'tbl__td--num' }, { h: '21,0', cls: 'tbl__td--num' }, { h: '100,0%', cls: 'tbl__td--num' }, { h: money(35410000), cls: 'tbl__td--num' }],
+            ['04/2025', { h: '20,0', cls: 'tbl__td--num' }, { h: '20,0', cls: 'tbl__td--num' }, { h: '20,0', cls: 'tbl__td--num' }, { h: '100,0%', cls: 'tbl__td--num' }, { h: money(35410000), cls: 'tbl__td--num' }],
+            [{ h: '<strong>05/2025</strong>' }, { h: '20,0', cls: 'tbl__td--num' }, { h: '<strong>21,0</strong>', cls: 'tbl__td--num' }, { h: '21,0', cls: 'tbl__td--num' }, { h: '100,0%', cls: 'tbl__td--num' }, { h: money(35410000), cls: 'tbl__td--num' }],
+          ],
+          { rowCls: (i) => (i === 5 ? 'tbl__row--selected' : '') },
+        )}
+        <div class="alert">${ico('info', 18)}
+          <div class="alert__body"><div class="alert__title">Kỳ 05/2025: công tính lương 21,0 &gt; công chế độ 20,0</div>
+          <div>Đây là dữ liệu <strong>đúng</strong>, không phải lỗi nhập: HRM có điều chỉnh tay nên hai số lệch nhau là bình thường. Tỷ lệ phân bổ lấy mẫu số là <strong>công tính lương</strong>, không phải công chế độ.</div></div>
+        </div>
+      </div>
+    </div>`,
+  ) +
+  note('Màn chi tiết danh mục — khuôn dùng chung cho cả tám danh mục', [
+    'Khách yêu cầu <strong>mỗi danh mục đủ 5 chức năng</strong>: <code>Danh sách · Chi tiết · CRUD · Import · Export</code> (Book1, module Danh mục). Dialog thêm/sửa 520px ở artboard 18 phủ được CRUD, <strong>không</strong> phủ được Chi tiết.',
+    'Phần bắt buộc của mọi màn chi tiết là bảng <strong>"đang được dùng ở đâu"</strong>. Không có nó thì người dùng bấm Xoá mà không biết mình phá cái gì — và với danh mục Nhân viên thì xoá nhầm là hỏng cả bảng chấm công của kỳ.',
+    'Bảy danh mục còn lại dùng đúng khuôn này, chỉ đổi khối <code>desc</code> và các bảng con: Đơn vị → đơn vị con + nhân sự; Nguồn kinh phí → nhiệm vụ đang dùng nguồn; Ký hiệu công → số ô đang mang ký hiệu đó. <strong>Không cần vẽ thêm bảy artboard</strong> — trong Figma là một component đổi nội dung.',
+    'Nút phá huỷ ở đây là <strong>Ngừng hoạt động</strong>, không phải Xoá: master data đã đi vào bảng công kỳ trước thì không được xoá cứng, nếu không số báo cáo cũ đổi sau lưng người đã ký.',
+  ]);
 
 /* --------------------------------------------------- 18 · Dialog thêm / sửa */
 const dialogThemSua = () =>
@@ -347,6 +509,7 @@ const importPreview = () =>
 module.exports = [
   { code: '10', group: '1.5 · Danh mục', title: 'Danh mục Đơn vị', desc: 'Cây 5 cấp + chi tiết đơn vị', body: donVi },
   { code: '12', group: '1.5 · Danh mục', title: 'Danh mục Nhân viên', desc: 'Có khối tìm kiếm nâng cao 3 cột', body: nhanVien },
+  { code: '12B', group: '1.5 · Danh mục', title: 'Chi tiết danh mục — khuôn dùng chung', desc: 'Màn chi tiết mà Book1 yêu cầu; ví dụ trên danh mục Nhân viên', body: chiTietNhanVien },
   ...FLAT.map((d) => ({
     code: d.code,
     group: '1.5 · Danh mục',

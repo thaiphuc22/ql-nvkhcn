@@ -1,0 +1,39 @@
+/*
+ * Trang chi tiết dựng NHIỀU card rời (`khongCard` ở `hr-page-card`), không phải một card lớn — đúng
+ * khuôn *Thêm mới hội đồng* mà kế hoạch §6.7 chỉ định làm mẫu cho mọi màn chi tiết của HR Tools.
+ * Bo góc 16px theo bản đã build của khách (D23), không phải 12 của DS Figma.
+ */
+.hr-detail-card {
+  padding: var(--vht-space-24);
+  border: 1px solid var(--vht-border);
+  border-radius: var(--vht-built-card-radius, 16px);
+  background: var(--vht-surface);
+
+  & + & {
+    margin-top: var(--vht-space-16);
+  }
+}
+
+.hr-detail-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vht-space-12);
+  margin-bottom: var(--vht-space-16);
+
+  h2 {
+    margin: 0;
+    font: var(--vht-font-title);
+    color: var(--vht-ink);
+  }
+}
+
+/* Chú thích nghiệp vụ cạnh giá trị — chữ nhỏ, màu nhạt, để không đọc nhầm thành chính giá trị. */
+.hr-detail-note {
+  display: block;
+  margin-top: 2px;
+  font: var(--vht-font-caption);
+  letter-spacing: var(--vht-tracking-caption);
+  font-weight: 400;
+  color: var(--vht-ink-3);
+}

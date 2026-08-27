@@ -1,0 +1,115 @@
+@if (banGhi(); as row) {
+  <hr-page-card
+    [tieuDe]="row.ten"
+    [moTa]="dinhNghia().ten + ' · mã ' + row.ma"
+    [backTo]="backTo()"
+    [khongCard]="true"
+  >
+    <div actions>
+      <cmm-button
+        label="Xuất Excel"
+        icon="pi pi-download"
+        [outlined]="true"
+        severity="secondary"
+        type="button"
+        (onClick)="xuatExcel()"
+      />
+      <cmm-button
+        label="Sửa"
+        icon="pi pi-pencil"
+        [outlined]="true"
+        severity="secondary"
+        type="button"
+        (onClick)="moSua()"
+      />
+      <!-- Nút phá huỷ là *Ngừng hoạt động*, KHÔNG phải Xoá — xem chú thích lớp. -->
+      <cmm-button
+        [label]="row.hoatDong ? 'Ngừng hoạt động' : 'Bật lại'"
+        [icon]="row.hoatDong ? 'pi pi-ban' : 'pi pi-check-circle'"
+        type="button"
+        (onClick)="doiHoatDong()"
+      />
+    </div>
+
+    <section class="hr-detail-card">
+      <header class="hr-detail-card__head">
+        <h2>Thông tin {{ dinhNghia().tenDon }}</h2>
+        <hr-trang-thai-tag
+          [nhan]="row.hoatDong ? 'Đang hoạt động' : 'Ngừng hoạt động'"
+          [loai]="row.hoatDong ? 'success' : 'default'"
+        />
+      </header>
+
+      <dl class="hr-desc">
+        @for (t of thuocTinh(); track t.label) {
+          <div>
+            <dt>{{ t.label }}</dt>
+            <dd>
+              {{ t.value }}
+              @if (t.moTa) {
+                <span class="hr-detail-note">{{ t.moTa }}</span>
+              }
+            </dd>
+          </div>
+        }
+      </dl>
+    </section>
+
+    <section class="hr-detail-card">
+      <header class="hr-detail-card__head">
+        <h2>{{ tieuDeThamChieu() }}</h2>
+        @if (thamChieu(); as dong) {
+          <span class="hr-muted">{{ dong.length }} bản ghi</span>
+        }
+      </header>
+
+      @if (thamChieu(); as dong) {
+        @if (dong.length) {
+          <div class="hr-tablewrap">
+            <table class="hr-simple-table">
+              <thead>
+                <tr>
+                  <th style="width: 56px">STT</th>
+                  <th style="width: 220px">{{ cotThamChieu().ma }}</th>
+                  <th>{{ cotThamChieu().ten }}</th>
+                  <th style="width: 220px">{{ cotThamChieu().vaiTro }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (d of dong; track $index) {
+                  <tr>
+                    <td>{{ $index + 1 }}</td>
+                    <td>{{ d.ma }}</td>
+                    <td>{{ d.ten }}</td>
+                    <td>{{ d.vaiTro }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <p class="hr-detail-note">
+            Đây là lý do màn chi tiết tồn tại: nó trả lời “ngừng bản ghi này thì ảnh hưởng cái gì”.
+          </p>
+        } @else {
+          <p class="hr-muted">
+            Chưa có bản ghi nghiệp vụ nào tham chiếu tới {{ dinhNghia().tenDon }} này.
+          </p>
+        }
+      } @else {
+        <!-- Nói rõ CHƯA NỐI thay vì hiện một bảng rỗng: bảng rỗng đọc thành "không ai dùng, xoá
+             được" — đúng thứ màn này sinh ra để ngăn. -->
+        <p class="hr-muted">
+          Tham chiếu của {{ dinhNghia().tenDon }} nằm ở dữ liệu của các đợt sau (bảng công, bảng
+          lương, biểu mẫu CPNC) — chưa có ở giai đoạn hiện tại, nên chưa đối chiếu được. Vẫn nên
+          dùng <strong>Ngừng hoạt động</strong> thay vì xoá.
+        </p>
+      }
+    </section>
+  </hr-page-card>
+} @else {
+  <hr-page-card tieuDe="Không tìm thấy bản ghi" [backTo]="backTo()">
+    <p class="hr-muted">
+      Danh mục này không có bản ghi nào mang mã đang mở. Có thể nó vừa bị xoá ở một tab khác.
+    </p>
+  </hr-page-card>
+}

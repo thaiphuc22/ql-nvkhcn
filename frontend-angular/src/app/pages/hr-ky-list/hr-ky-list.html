@@ -1,0 +1,264 @@
+<!-- Template ô có cấu trúc khai TRƯỚC bảng — bắt buộc, xem chú thích ở `hr-danh-muc-list.html`. -->
+<ng-template #tplThaoTac let-rowData="rowData">
+  @if (rowData.ky.trangThai === 'DA_KHOA') {
+    <!-- Không có quyền thì KHÔNG render nút, không phải render rồi chặn khi bấm. -->
+    @if (duocMoLai()) {
+      <cmm-button
+        label="Mở lại kỳ"
+        icon="pi pi-lock-open"
+        [outlined]="true"
+        severity="secondary"
+        size="small"
+        type="button"
+        (onClick)="moMoLai(rowData.ky)"
+      />
+    } @else {
+      <span class="hr-muted">—</span>
+    }
+  } @else {
+    <cmm-button
+      label="Khoá kỳ"
+      icon="pi pi-lock"
+      [outlined]="true"
+      severity="secondary"
+      size="small"
+      type="button"
+      (onClick)="khoa(rowData.ky)"
+    />
+  }
+</ng-template>
+
+<ng-template #tplTrangThai let-value>
+  <hr-trang-thai-tag [nhan]="nhanTrangThai(value)" [loai]="mauTrangThai(value)" />
+</ng-template>
+
+<hr-page-card
+  tieuDe="Kỳ chấm công"
+  moTa="Kỳ khoá toàn bộ bảng công, bảng lương và báo cáo. Kỳ lương ≠ kỳ trả — BM3.2 ghi rõ “Kỳ lương 06/2025 - Kỳ trả 07/2025”."
+  [khongCard]="true"
+>
+  <div actions>
+    <cmm-button label="Tạo kỳ mới" icon="pi pi-plus" type="button" (onClick)="moTao()" />
+  </div>
+
+  <section class="hr-ky-card">
+    <div class="hr-filters">
+      <div class="hr-filters__spacer hr-ky-dem">
+        <hr-trang-thai-tag [nhan]="'Đang mở: ' + dem().MO + ' kỳ'" loai="success" />
+        <hr-trang-thai-tag [nhan]="'Đang chốt: ' + dem().DANG_CHOT + ' kỳ'" loai="warning" />
+        <hr-trang-thai-tag [nhan]="'Đã khoá: ' + dem().DA_KHOA + ' kỳ'" loai="default" />
+      </div>
+      <cmm-select
+        styleClass="hr-filters__select"
+        [value]="namFilter()"
+        (valueChange)="namFilter.set($event); pageIndex.set(1)"
+        [props]="{
+          options: namOptions(),
+          optionValue: 'value',
+          optionLabel: 'label',
+          placeholder: 'Tất cả các năm',
+          showClear: true,
+        }"
+      />
+      <span class="hr-search">
+        <i class="pi pi-search hr-search__icon"></i>
+        <input
+          cmmInputText
+          type="text"
+          placeholder="Tìm theo mã kỳ"
+          [value]="tuKhoa()"
+          (input)="tuKhoa.set($any($event.target).value); pageIndex.set(1)"
+        />
+      </span>
+    </div>
+
+    <ubck-table [columns]="columns()" [dataSources]="pagedRows()" [props]="tableProps" />
+    <ubck-paginator [props]="paginatorProps()" (onPageChange)="doiTrang($event)" />
+  </section>
+
+  <!-- Nhật ký nằm NGAY DƯỚI bảng kỳ, cùng màn — không phải một trang riêng. Lý do mở kỳ chỉ có
+       giá trị khi người xem số của kỳ đó nhìn thấy nó mà không phải đi tìm. -->
+  <section class="hr-ky-card">
+    <header class="hr-ky-card__head">
+      <h2>Nhật ký mở / khoá kỳ</h2>
+      <span class="hr-muted">
+        Thao tác mở kỳ đã khoá ghi audit kèm lý do. Không có việc này thì số báo cáo đổi sau lưng
+        người đã ký.
+      </span>
+    </header>
+
+    <div class="hr-tablewrap">
+      <table class="hr-simple-table">
+        <thead>
+          <tr>
+            <th style="width: 170px">Thời điểm</th>
+            <th style="width: 110px">Kỳ</th>
+            <th style="width: 150px">Hành động</th>
+            <th style="width: 230px">Người thực hiện</th>
+            <th>Lý do</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (n of nhatKy(); track n.id) {
+            <tr>
+              <td>{{ n.thoiDiem }}</td>
+              <td>{{ n.maKy }}</td>
+              <td>
+                <hr-trang-thai-tag
+                  [nhan]="nhanHanhDong(n.hanhDong)"
+                  [loai]="mauHanhDong(n.hanhDong)"
+                />
+              </td>
+              <td>{{ n.actor }}</td>
+              <td>{{ n.lyDo || '—' }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="hr-muted">Chưa có thao tác nào.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+</hr-page-card>
+
+<!-- ------------------------------------------------------- mở lại kỳ đã khoá -->
+
+<cmm-dialog
+  [visible]="moLaiMo()"
+  (visibleChange)="!$event && dongMoLai()"
+  [header]="'Mở lại kỳ ' + (moLaiTarget()?.maKy ?? '')"
+  [modal]="true"
+  [style]="{ width: '520px' }"
+>
+  @if (moLaiTarget(); as k) {
+    <div class="hr-form">
+      <!-- Hậu quả nêu bằng CHỮ và bằng SỐ. Ramp brand ≡ danger nên nút đỏ không nói lên rằng đây
+           là thao tác phá huỷ — xem chú thích lớp. -->
+      <div class="hr-canhbao-hop">
+        <strong>Kỳ này đã khoá.</strong>
+        Mở lại sẽ cho phép sửa bảng công, bảng lương và <b>làm thay đổi số liệu của các báo cáo</b>
+        mà lãnh đạo đã xem. Thao tác được ghi vào nhật ký kèm tên bạn.
+      </div>
+
+      <dl class="hr-desc hr-desc--hep">
+        <div>
+          <dt>Kỳ</dt>
+          <dd>{{ k.maKy }} ({{ ngayVN(k.tuNgay) }} – {{ ngayVN(k.denNgay) }})</dd>
+        </div>
+        <div>
+          <dt>Đơn vị đã chốt</dt>
+          <dd>{{ k.donViDaChot }} / {{ k.tongDonVi }}</dd>
+        </div>
+      </dl>
+
+      <label class="hr-field">
+        <span>Lý do mở lại kỳ <b>*</b></span>
+        <textarea
+          cmmTextarea
+          rows="3"
+          placeholder="Ví dụ: bổ sung 3 nhân sự Trung tâm Camera bị sót trong file HRM tháng 4"
+          [value]="moLaiLyDo()"
+          (input)="moLaiLyDo.set($any($event.target).value)"
+        ></textarea>
+        <small class="hr-muted">
+          Bắt buộc — hiện trong nhật ký và trong báo cáo chênh lệch số liệu.
+        </small>
+      </label>
+
+      <label class="hr-choice">
+        <cmm-checkbox [value]="moLaiHieu()" (valueChange)="moLaiHieu.set(!!$event)" [binary]="true" />
+        <span>Tôi hiểu số liệu báo cáo của kỳ này sẽ thay đổi</span>
+      </label>
+    </div>
+  }
+
+  <ng-template #footer>
+    <cmm-button
+      label="Huỷ"
+      [outlined]="true"
+      severity="secondary"
+      type="button"
+      (onClick)="dongMoLai()"
+    />
+    <cmm-button
+      label="Mở lại kỳ"
+      icon="pi pi-lock-open"
+      type="button"
+      [disabled]="!moLaiHopLe()"
+      (onClick)="xacNhanMoLai()"
+    />
+  </ng-template>
+</cmm-dialog>
+
+<!-- ---------------------------------------------------------------- tạo kỳ -->
+
+<cmm-dialog
+  [visible]="taoMo()"
+  (visibleChange)="taoMo.set($event)"
+  header="Tạo kỳ mới"
+  [modal]="true"
+  [style]="{ width: '520px' }"
+>
+  <div class="hr-form">
+    @if (taoLoi().length) {
+      <ul class="hr-form__errors">
+        @for (m of taoLoi(); track m) {
+          <li>{{ m }}</li>
+        }
+      </ul>
+    }
+
+    <label class="hr-field">
+      <span>Mã kỳ lương <b>*</b></span>
+      <input
+        cmmInputText
+        type="text"
+        placeholder="2025-07"
+        [value]="taoForm().maKy"
+        (input)="capNhatTao('maKy', $any($event.target).value)"
+      />
+      <small class="hr-muted">Từ ngày / đến ngày suy ra từ mã kỳ — kỳ tháng luôn là trọn tháng.</small>
+    </label>
+
+    <label class="hr-field">
+      <span>Kỳ trả lương <b>*</b></span>
+      <input
+        cmmInputText
+        type="text"
+        placeholder="2025-08"
+        [value]="taoForm().kyTra"
+        (input)="capNhatTao('kyTra', $any($event.target).value)"
+      />
+      <small class="hr-muted">
+        Khác kỳ lương — BM3.2 của khách ghi “Kỳ lương 06/2025 - Kỳ trả 07/2025”.
+      </small>
+    </label>
+
+    <label class="hr-field">
+      <span>Ngày công chuẩn <b>*</b></span>
+      <input
+        cmmInputText
+        type="number"
+        [value]="taoForm().soNgayCongChuan"
+        (input)="capNhatTao('soNgayCongChuan', $any($event.target).value)"
+      />
+      <small class="hr-muted">
+        Dùng để đối chiếu, <b>không</b> phải mẫu số của công thức CPNC — mẫu số là công tính lương
+        của từng người.
+      </small>
+    </label>
+  </div>
+
+  <ng-template #footer>
+    <cmm-button
+      label="Huỷ"
+      [outlined]="true"
+      severity="secondary"
+      type="button"
+      (onClick)="taoMo.set(false)"
+    />
+    <cmm-button label="Tạo kỳ" icon="pi pi-check" type="button" (onClick)="luuTao()" />
+  </ng-template>
+</cmm-dialog>

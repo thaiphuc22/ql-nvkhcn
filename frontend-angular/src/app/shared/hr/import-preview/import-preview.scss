@@ -1,0 +1,95 @@
+.hr-import {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vht-space-16);
+}
+
+.hr-import__head {
+  display: flex;
+  align-items: center;
+  gap: var(--vht-space-12);
+  flex-wrap: wrap;
+}
+
+.hr-import__file {
+  font: var(--vht-font-body);
+  color: var(--vht-ink-2);
+}
+
+.hr-import__errs {
+  margin: 0;
+  padding-left: var(--vht-space-16);
+  color: var(--vht-brand-40);
+}
+
+.hr-import__note {
+  margin: 0;
+  font: var(--vht-font-caption);
+  letter-spacing: var(--vht-tracking-caption);
+  color: var(--vht-ink-2);
+}
+
+/* Ba thẻ đếm — artboard 19. Cùng bề rộng để mắt so được ba con số mà không phải đọc nhãn. */
+.hr-import__stats {
+  display: flex;
+  gap: var(--vht-space-12);
+}
+
+.hr-imp-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--vht-space-12);
+  border: 1px solid var(--vht-border);
+  border-radius: var(--vht-radius-8);
+  background: var(--vht-surface-2);
+
+  small {
+    font: var(--vht-font-caption);
+    letter-spacing: var(--vht-tracking-caption);
+    color: var(--vht-ink-2);
+  }
+
+  strong {
+    font: var(--vht-font-title);
+    color: var(--vht-ink);
+  }
+}
+
+.hr-imp-stat--ok {
+  border-color: var(--vht-success-80);
+  background: var(--vht-success-95);
+}
+
+/* Lỗi chặn dùng ramp brand vì brand ≡ danger trong design system này — nhãn chữ là thứ phân biệt,
+   không phải màu. */
+.hr-imp-stat--loi {
+  border-color: var(--vht-brand-80);
+  background: var(--vht-brand-95);
+}
+
+.hr-imp-stat--canhbao {
+  border-color: var(--vht-warning-80);
+  background: var(--vht-warning-95);
+}
+
+.hr-import__vande {
+  margin: 0;
+  padding-left: var(--vht-space-16);
+  line-height: 1.4;
+}
+
+.hr-import__chan {
+  flex: 1;
+  text-align: left;
+  font: var(--vht-font-caption);
+  letter-spacing: var(--vht-tracking-caption);
+  color: var(--vht-ink-2);
+}
+
+/* Bảng preview nằm trong hộp thoại — giới hạn chiều cao để nút "Nhập" luôn nhìn thấy được; file
+   200 dòng lỗi mà đẩy nút xuống dưới màn hình là bế tắc. */
+:host ::ng-deep .hr-import ubck-table .p-datatable-table-container {
+  max-height: 320px;
+}

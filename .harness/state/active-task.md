@@ -1,5 +1,39 @@
 # Active Task
 
+## ★ HR Tools — dựng màn HTML tĩnh thành Angular — 2026-08-27 (owner Claude)
+
+**Status: BƯỚC 1.5 (Danh mục) và BƯỚC 2 (Kỳ + bảng công + bảng lương) DONE — build GREEN, test
+đúng baseline, đã chạy thử thật trên trình duyệt (gồm cả nghiệm thu fail-closed trong DOM).
+Bước 3 → 7 CHƯA bắt đầu.**
+
+**Kế hoạch nguồn**: `docs/plan/hr-tools-ke-hoach-thi-cong-2026-08-26.md` §13 *Thứ tự thi công*.
+Bản vẽ: `docs/mockup/hr-tools/` (77 artboard). Chi tiết những gì đã dựng + ba lỗi đã sửa + quyết
+định seed danh mục Nhân viên: xem entry **2026-08-27 đợt 1.5** đầu `DELIVERY_STATE.md`.
+
+### Việc tiếp theo — bước 2 của §13
+
+`Kỳ + import BM0 (công & lương) + adapter VOffice` (§6.1, §6.6, §6.8), artboard **20 · 21 · 21B ·
+21C · 22 · 23 · 24**. Ba thứ phải đọc trước khi mở:
+
+1. **`BangCongService.khoaO(kyHieu)` đã có** — luật khoá ô §6.4 đọc từ đó, đừng khai lại tập ký
+   hiệu trong màn chấm công. Nó trả `true` cho cả ký hiệu **chưa khai trong danh mục** (không biết
+   thì không cho chấm). Ba luật khoá còn lại: T7/CN từ `ngayTrongKy()`, ngoài `tuNgay`/`denNgay`
+   của nhiệm vụ, và **đã chấm ở nhiệm vụ khác cùng kỳ ở trạng thái ≥ đã submit** — chỉ khoá khi
+   nhiệm vụ kia ĐÃ SUBMIT, khoá cả bản nháp thì hai PA chặn nhau vĩnh viễn.
+2. **`KyService.choGhi(maKy)` là cổng ghi** — hỏi trước mọi thao tác ghi `PhanBoCong`.
+3. **Danh mục `trang-thai-nhiem-vu`** giữ cờ `choChamCong`; `DANG_PHAN_BO` là trạng thái duy nhất
+   cho chấm công.
+4. **`phanBoTheoCong()`** trong `models/hr/bang-luong.ts` là công thức §4.1 đã cài sẵn — CPNC tạm
+   tính ở màn chấm công (§6.5) gọi nó, không cài lại. Đợt 4 bọc nó trong `cpnc.service.ts`.
+5. **`shared/hr/import-preview/`** đã dùng ở 4 màn — đừng dựng hộp nhập file thứ năm. Bộ luật
+   `PhanBoCong` **khác hẳn** bộ BM0 (§6.6), viết ở service của miền chấm công.
+
+**Câu hỏi khách còn treo**: **Q2** (ai được mở lại kỳ đã khoá — đã giả định HR + lý do bắt buộc,
+sửa ở `QuyenHrService.moLaiKy`), **Q3** (VOffice có tài liệu API thật chưa — chặn phần còn nợ của
+bước 2), **Q5**, **Q8** — xem §12 của kế hoạch.
+
+---
+
 ## ★ HR Tools — chuyển sang PrimeNG + `@khcn-core` (D23) — 2026-08-26 (owner Claude)
 
 **Status: GIAI ĐOẠN 0 → 6 — DONE (build GREEN, test đúng baseline). CHƯA soi bằng mắt trên

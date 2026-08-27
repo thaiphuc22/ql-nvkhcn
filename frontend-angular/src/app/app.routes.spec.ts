@@ -31,7 +31,10 @@ describe('application route app metadata', () => {
   it('puts every HR Tools screen behind the hrtools entitlement', () => {
     const children = featureRoutes(HR_ROUTES);
 
-    expect(children.length).toBe(6);
+    // Con số là CHỐT CHẶN, không phải dữ kiện: thêm màn mới thì test đỏ, buộc người thêm phải
+    // nhìn lại `data.app` của chính route vừa viết. 6 → 9 (3 màn danh mục, đợt 1.5) → 12 (kỳ,
+    // bảng công, bảng lương — đợt 2).
+    expect(children.length).toBe(12);
     for (const route of children) {
       expect(route.data?.['app']).toBe('hrtools');
     }

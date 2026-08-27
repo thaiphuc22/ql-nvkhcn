@@ -1,0 +1,36 @@
+/* Trang dựng hai card rời (bảng kỳ + nhật ký) — cùng khuôn `hr-danh-muc-detail`. */
+.hr-ky-card {
+  padding: var(--vht-space-24);
+  border: 1px solid var(--vht-border);
+  border-radius: var(--vht-built-card-radius, 16px);
+  background: var(--vht-surface);
+
+  & + & {
+    margin-top: var(--vht-space-16);
+  }
+}
+
+.hr-ky-card__head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: var(--vht-space-16);
+
+  h2 {
+    margin: 0;
+    font: var(--vht-font-title);
+    color: var(--vht-ink);
+  }
+
+  span {
+    font: var(--vht-font-caption);
+    letter-spacing: var(--vht-tracking-caption);
+  }
+}
+
+/* Ba thẻ đếm nằm bên TRÁI hàng lọc (hàng lọc căn phải), nên phải tự đẩy phần còn lại đi. */
+.hr-ky-dem {
+  display: flex;
+  gap: var(--vht-space-8);
+  flex-wrap: wrap;
+}

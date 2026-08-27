@@ -1,0 +1,19 @@
+.hr-bc-card {
+  padding: var(--vht-space-24);
+  border: 1px solid var(--vht-border);
+  border-radius: var(--vht-built-card-radius, 16px);
+  background: var(--vht-surface);
+}
+
+.hr-bc-nguon {
+  display: flex;
+  align-items: center;
+  gap: var(--vht-space-8);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.hr-bc-rong {
+  margin: var(--vht-space-24) 0;
+  text-align: center;
+}

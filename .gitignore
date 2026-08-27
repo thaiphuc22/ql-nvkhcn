@@ -22,6 +22,8 @@ outputs/**/pdf_runtime/
 outputs/**/previews/edge_profile/
 
 # Runtime logs / local database snapshots
+# CSDL/ = dump DB local (vht_sso chứa client_secret SSO + PII nhân sự thật) — KHÔNG commit.
+CSDL/
 *.log
 *.out.log
 *.err.log

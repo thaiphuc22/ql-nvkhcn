@@ -1,0 +1,168 @@
+/* Cây trái cố định 380px (đúng artboard 10), chi tiết chiếm phần còn lại. Cột trái KHÔNG co lại
+   theo nội dung: tên đơn vị cấp 5 dài, để `flex` tự chia thì mỗi lần chọn đơn vị khác bề rộng cột
+   lại nhảy. */
+.hr-dv {
+  display: flex;
+  gap: var(--vht-space-20, 20px);
+  align-items: flex-start;
+}
+
+.hr-dv__cay {
+  flex: 0 0 380px;
+  max-width: 380px;
+}
+
+.hr-dv__chitiet {
+  flex: 1;
+  min-width: 0;
+}
+
+.hr-dv__cay,
+.hr-dv__chitiet {
+  padding: var(--vht-space-24);
+  border: 1px solid var(--vht-border);
+  border-radius: var(--vht-built-card-radius, 16px);
+  background: var(--vht-surface);
+}
+
+.hr-dv__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--vht-space-12);
+  margin-bottom: var(--vht-space-12);
+
+  h2 {
+    margin: 0;
+    font: var(--vht-font-title);
+    color: var(--vht-ink);
+  }
+
+  p {
+    margin: 2px 0 0;
+    font: var(--vht-font-caption);
+    letter-spacing: var(--vht-tracking-caption);
+  }
+}
+
+/* Khối tiêu đề co giãn được, cụm nút thì không — thiếu `min-width: 0` thì tiêu đề bị ép thành cột
+   hẹp và mỗi chữ xuống một dòng. */
+.hr-dv__head > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.hr-dv__path {
+  margin-top: 0;
+}
+
+.hr-dv__lenh {
+  display: flex;
+  gap: var(--vht-space-8);
+  flex-shrink: 0;
+}
+
+.hr-dv__search {
+  width: 100%;
+  margin-bottom: var(--vht-space-12);
+}
+
+.hr-dv__note {
+  margin: var(--vht-space-16) 0 0;
+  padding: var(--vht-space-12);
+  border: 1px solid var(--vht-border);
+  border-radius: var(--vht-radius-8);
+  background: var(--vht-surface-2);
+  font: var(--vht-font-caption);
+  letter-spacing: var(--vht-tracking-caption);
+  color: var(--vht-ink-2);
+}
+
+.hr-dv__help {
+  font: var(--vht-font-caption);
+  letter-spacing: var(--vht-tracking-caption);
+  color: var(--vht-ink-3);
+}
+
+/* ------------------------------------------------------------------- cây */
+
+.hr-tree {
+  max-height: 520px;
+  overflow: auto;
+}
+
+.hr-tree__node {
+  display: flex;
+  align-items: center;
+  gap: var(--vht-space-8);
+  height: 36px;
+  padding-right: var(--vht-space-8);
+  border-radius: var(--vht-radius-8);
+  cursor: pointer;
+  font: var(--vht-font-body);
+  color: var(--vht-ink);
+
+  &:hover {
+    background: var(--vht-surface-2);
+  }
+
+  /* Nút đang chọn dùng nền brand nhạt + chữ brand, KHÔNG dùng viền: viền làm dòng nhích 1px và cả
+     cây rung mỗi lần chọn. */
+  &.is-active {
+    background: var(--vht-brand-95);
+    color: var(--vht-brand-40);
+    font-weight: 500;
+  }
+
+  /* Đơn vị đã ngừng hoạt động vẫn hiện trong cây — ẩn đi thì nhánh con của nó biến mất theo mà
+     không có lời giải thích nào. */
+  &.is-ngung .hr-tree__ten {
+    text-decoration: line-through;
+    color: var(--vht-ink-3);
+  }
+}
+
+.hr-tree__caret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: var(--vht-ink-3);
+  font-size: 11px;
+}
+
+.hr-tree__caret--trong {
+  cursor: default;
+}
+
+.hr-tree__ten {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hr-tree__cap {
+  flex-shrink: 0;
+  font: var(--vht-font-caption);
+  letter-spacing: var(--vht-tracking-caption);
+  color: var(--vht-ink-3);
+}
+
+@media (max-width: 1100px) {
+  .hr-dv {
+    flex-direction: column;
+  }
+
+  .hr-dv__cay {
+    flex: 1 1 auto;
+    max-width: none;
+    width: 100%;
+  }
+}

@@ -1,0 +1,288 @@
+<hr-page-card
+  tieuDe="Danh mục Đơn vị"
+  moTa="Cây đơn vị 5 cấp. Nghiệp vụ chỉ chạy ở cấp 4 (Khối — đơn vị báo cáo) và cấp 5 (Đơn vị — đơn vị chấm công); cấp 1–3 chỉ để hiển thị."
+  [khongCard]="true"
+>
+  <div actions>
+    <cmm-button
+      label="Xuất Excel"
+      icon="pi pi-download"
+      [outlined]="true"
+      severity="secondary"
+      type="button"
+      (onClick)="xuatExcel()"
+    />
+    <cmm-button label="Thêm đơn vị" icon="pi pi-plus" type="button" (onClick)="moThemMoi()" />
+  </div>
+
+  <div class="hr-dv">
+    <!-- ------------------------------------------------------------ cây -->
+    <section class="hr-dv__cay">
+      <header class="hr-dv__head"><h2>Cây đơn vị</h2></header>
+
+      <span class="hr-search hr-dv__search">
+        <i class="pi pi-search hr-search__icon"></i>
+        <input
+          cmmInputText
+          type="text"
+          placeholder="Tìm đơn vị"
+          [value]="tuKhoa()"
+          (input)="tuKhoa.set($any($event.target).value)"
+        />
+      </span>
+
+      <div class="hr-tree">
+        @for (d of dongCay(); track d.node.ma) {
+          <div
+            class="hr-tree__node"
+            [class.is-active]="dangChon()?.ma === d.node.ma"
+            [class.is-ngung]="!d.node.hoatDong"
+            [style.padding-left.px]="8 + d.mucThutLe * 16"
+            (click)="chon(d.node.ma)"
+          >
+            @if (d.coCon) {
+              <button
+                type="button"
+                class="hr-tree__caret"
+                [attr.aria-label]="d.dangMo ? 'Thu gọn' : 'Mở rộng'"
+                (click)="toggle(d.node.ma); $event.stopPropagation()"
+              >
+                <i class="pi" [class.pi-chevron-down]="d.dangMo" [class.pi-chevron-right]="!d.dangMo"></i>
+              </button>
+            } @else {
+              <span class="hr-tree__caret hr-tree__caret--trong" aria-hidden="true"></span>
+            }
+            <i class="pi" [class.pi-users]="d.node.cap === 5" [class.pi-building]="d.node.cap < 5"></i>
+            <span class="hr-tree__ten">{{ d.node.ten }}</span>
+            <span class="hr-tree__cap">C{{ d.node.cap }}</span>
+          </div>
+        } @empty {
+          <p class="hr-muted">Không có đơn vị nào khớp từ khoá.</p>
+        }
+      </div>
+    </section>
+
+    <!-- -------------------------------------------------------- chi tiết -->
+    @if (dangChon(); as dv) {
+      <section class="hr-dv__chitiet">
+        <header class="hr-dv__head">
+          <div>
+            <h2>{{ dv.ten }}</h2>
+            <p class="hr-muted">Mã {{ dv.ma }} · {{ nhanCap(dv.cap) }}</p>
+            @if (duongDanNhan()) {
+              <p class="hr-muted hr-dv__path">{{ duongDanNhan() }}</p>
+            }
+          </div>
+          <div class="hr-dv__lenh">
+            <cmm-button
+              label="Sửa"
+              icon="pi pi-pencil"
+              [outlined]="true"
+              severity="secondary"
+              type="button"
+              (onClick)="moSua()"
+            />
+            <cmm-button
+              [label]="dv.hoatDong ? 'Ngừng hoạt động' : 'Bật lại'"
+              [outlined]="true"
+              severity="secondary"
+              type="button"
+              (onClick)="doiHoatDong()"
+            />
+            <cmm-button label="Xoá" icon="pi pi-trash" type="button" (onClick)="moXoa()" />
+          </div>
+        </header>
+
+        <dl class="hr-desc">
+          <div>
+            <dt>Mã đơn vị</dt>
+            <dd>{{ dv.ma }}</dd>
+          </div>
+          <div>
+            <dt>Cấp</dt>
+            <dd>{{ nhanCap(dv.cap) }}</dd>
+          </div>
+          <div>
+            <dt>Đơn vị cha</dt>
+            <dd>{{ dv.chaMa ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt>Trạng thái</dt>
+            <dd>
+              <hr-trang-thai-tag
+                [nhan]="dv.hoatDong ? 'Đang hoạt động' : 'Ngừng hoạt động'"
+                [loai]="dv.hoatDong ? 'success' : 'default'"
+              />
+            </dd>
+          </div>
+          <div>
+            <dt>Số nhân sự</dt>
+            <dd>{{ dv.soNhanSu ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt>Đơn vị trực thuộc</dt>
+            <dd>{{ donViCon().length }}</dd>
+          </div>
+        </dl>
+
+        @if (donViCon().length) {
+          <h3 class="hr-section-title">Đơn vị trực thuộc</h3>
+          <div class="hr-tablewrap">
+            <table class="hr-simple-table">
+              <thead>
+                <tr>
+                  <th style="width: 56px">STT</th>
+                  <th style="width: 160px">Mã đơn vị</th>
+                  <th>Tên đơn vị</th>
+                  <th style="width: 90px">Cấp</th>
+                  <th style="width: 130px">Số nhân sự</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (c of donViCon(); track c.ma) {
+                  <tr (click)="chon(c.ma)">
+                    <td>{{ $index + 1 }}</td>
+                    <td><a class="hr-code">{{ c.ma }}</a></td>
+                    <td>{{ c.ten }}</td>
+                    <td>{{ c.cap }}</td>
+                    <td>{{ c.soNhanSu ?? '—' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+
+        @if (nhanSuTrongDonVi().length) {
+          <h3 class="hr-section-title">Nhân sự đang tham gia nhiệm vụ ({{ nhanSuTrongDonVi().length }})</h3>
+          <div class="hr-tablewrap">
+            <table class="hr-simple-table">
+              <thead>
+                <tr>
+                  <th style="width: 56px">STT</th>
+                  <th style="width: 120px">Mã NV</th>
+                  <th style="width: 220px">Họ và tên</th>
+                  <th style="width: 200px">Chức danh</th>
+                  <th>Nhiệm vụ</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (ns of nhanSuTrongDonVi(); track ns.id) {
+                  <tr>
+                    <td>{{ $index + 1 }}</td>
+                    <td>{{ ns.maNhanVien }}</td>
+                    <td>{{ ns.hoTen }}</td>
+                    <td>{{ ns.chucDanh }}</td>
+                    <td>{{ ns.nhiemVuId }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+
+        <p class="hr-dv__note">
+          Mã đơn vị trong file import đi kèm chuỗi tên — ví dụ thật
+          <code>"Khối 1 - TCT CNC - 9013948"</code>. Bộ đọc file tách theo dấu <code>-</code>
+          <strong>từ phải sang</strong>, vì tên đơn vị cũng chứa dấu gạch nối.
+        </p>
+      </section>
+    }
+  </div>
+</hr-page-card>
+
+<!-- ---------------------------------------------------------- thêm / sửa -->
+
+<cmm-dialog
+  [visible]="formMo()"
+  (visibleChange)="formMo.set($event)"
+  [header]="dangSua() ? 'Sửa đơn vị' : 'Thêm đơn vị'"
+  [modal]="true"
+  [style]="{ width: '520px' }"
+>
+  <div class="hr-form">
+    @if (loiForm().length) {
+      <ul class="hr-form__errors">
+        @for (m of loiForm(); track m) {
+          <li>{{ m }}</li>
+        }
+      </ul>
+    }
+
+    <label class="hr-field">
+      <span>Mã đơn vị <b>*</b></span>
+      <input
+        cmmInputText
+        type="text"
+        placeholder="Mã đơn vị trên HRM"
+        [value]="form().ma"
+        [disabled]="!!dangSua()"
+        (input)="capNhatForm('ma', $any($event.target).value)"
+      />
+    </label>
+
+    <label class="hr-field">
+      <span>Tên đơn vị <b>*</b></span>
+      <input
+        cmmInputText
+        type="text"
+        [value]="form().ten"
+        (input)="capNhatForm('ten', $any($event.target).value)"
+      />
+    </label>
+
+    <label class="hr-field">
+      <span>Đơn vị cha <b>*</b></span>
+      <cmm-select
+        [value]="form().chaMa"
+        (valueChange)="capNhatForm('chaMa', $event)"
+        [props]="{
+          options: chaOptions(),
+          optionValue: 'value',
+          optionLabel: 'label',
+          placeholder: 'Chọn đơn vị cha',
+          filter: true,
+        }"
+      />
+      <!-- Cấp KHÔNG có ô nhập: nó là hệ quả của vị trí trong cây. Cho gõ tay là mở đường cho một
+           đơn vị "cấp 5" nằm dưới một đơn vị cấp 2. -->
+      <small class="hr-dv__help">Cấp của đơn vị suy ra từ đơn vị cha, không nhập tay.</small>
+    </label>
+  </div>
+
+  <ng-template #footer>
+    <cmm-button
+      label="Huỷ"
+      [outlined]="true"
+      severity="secondary"
+      type="button"
+      (onClick)="formMo.set(false)"
+    />
+    <cmm-button label="Lưu" icon="pi pi-check" type="button" (onClick)="luu()" />
+  </ng-template>
+</cmm-dialog>
+
+<!-- ------------------------------------------------------------------ xoá -->
+
+<cmm-dialog
+  [visible]="xoaMo()"
+  (visibleChange)="xoaMo.set($event)"
+  header="Xoá đơn vị"
+  [modal]="true"
+  [style]="{ width: '400px' }"
+>
+  <p class="hr-confirm">
+    Xoá <strong>{{ dangChon()?.ma }} — {{ dangChon()?.ten }}</strong> khỏi cây đơn vị? Đơn vị còn
+    đơn vị trực thuộc thì thao tác bị từ chối.
+  </p>
+  <ng-template #footer>
+    <cmm-button
+      label="Huỷ"
+      [outlined]="true"
+      severity="secondary"
+      type="button"
+      (onClick)="xoaMo.set(false)"
+    />
+    <cmm-button label="Xoá" icon="pi pi-trash" type="button" (onClick)="xacNhanXoa()" />
+  </ng-template>
+</cmm-dialog>

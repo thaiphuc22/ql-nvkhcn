@@ -1,5 +1,112 @@
 # Delivery State
 
+> **2026-08-27 (tiếp) — HR TOOLS ĐỢT 2 phần 1: KỲ + BẢNG CÔNG BM0 + BẢNG LƯƠNG BM0 — CODE DONE,
+> ĐÃ CHẠY THỬ THẬT (owner Claude).** Nguồn: kế hoạch §6.1, §6.6, §6.7, §7; artboard **20 · 21 ·
+> 21B · 21C · 22 · 23 · 24**. Foundations vẫn **1/6**.
+>
+> | Trang | Route | Phủ artboard |
+> |---|---|---|
+> | `pages/hr-ky-list` | `/hr/ky` | 20 (+ nhật ký) · 21 (mở lại kỳ) |
+> | `pages/hr-bang-cong` | `/hr/bang-cong-thang` | 22 · 21B (đè cả kỳ) · 21C (tiến trình) |
+> | `pages/hr-bang-luong` | `/hr/bang-luong-thang` | 23 (HR) · 24 (fail-closed) |
+>
+> **Kỳ là cổng ghi của cả đợt 2 → 4.** Mọi thao tác ghi hỏi `KyService.choGhi(maKy)` trước — đặt
+> việc kiểm ở một chỗ thay vì mỗi màn tự kiểm. Ba trạng thái `MO / DANG_CHOT / DA_KHOA` (không phải
+> hai: giữa "đang chấm" và "đóng sổ" có quãng HR soát số, BRD bước 6). Mở lại kỳ **bắt buộc lý do +
+> ô tích xác nhận**, ghi nhật ký hiện ngay dưới bảng.
+>
+> **Bảng công và bảng lương là HAI thực thể tách bạch, không gộp** — bảng đối chiếu ở đầu
+> `core/models/hr/bang-cong.ts`. Cả hai **chỉ đọc**; import **đè cả kỳ** sau một hộp xác nhận nêu
+> đúng số dòng sắp mất.
+>
+> **Fail-closed cột tiền — ĐÃ NGHIỆM THU TRONG DOM** (kế hoạch §14 mục 11, không nhìn bằng mắt).
+> Đăng nhập `tp-ns@example.com` (không phải admin) → `/hr/bang-luong-thang`: `0` phần tử
+> `.hr-matrix__tien`, regex tiền không khớp trong `innerHTML`, nút *Xuất BM3.1/BM3.2* **không được
+> render**. Toàn bộ 14 cột tiền nằm trong `@if (xemCotTien())` nên không tồn tại trong DOM.
+>
+> **Một điều sửa so với bản vẽ, cần biết:** artboard 24 ghi thông điệp *"Bạn không có quyền"*. Với
+> identity-service chưa chạy thì `roleCodes` rỗng, và **"không có vai trò" ≠ "chưa biết vai trò"** —
+> `AuthService.rolesLoaded` đã ghi rõ điều này từ trước. Nay màn có **hai** thông điệp cho hai
+> nguyên nhân (fail-closed áp dụng ở cả hai): thiếu quyền thì đi xin cấp quyền, chưa nạp được vai
+> trò thì khởi động identity-service. Nói nhầm là chỉ sai đường cho người dùng.
+>
+> **Ba quyết định dữ liệu đáng nhớ:**
+> 1. `congTinhLuong` của một người **cố ý lệch** tổng ô trong tháng ở dòng đầu (23,0 vs 22,0) — tái
+>    hiện ca "HRM điều chỉnh tay" mà luật import phải **cảnh báo**, không được chặn. Không có dữ
+>    liệu lệch thì luật đó không kiểm chứng được.
+> 2. Khoản `LCP-03` (truy thu/truy lĩnh) **âm** ở một người; `LCP-05`/`LCP-06` **vắng mặt** ở mọi
+>    người và hiện `—`, không phải `0` — hai thứ khác nghĩa, kể cả ở dòng Tổng.
+> 3. Bảng lương seed **dựng từ chính bảng công** ⇒ `congTinhLuong` của hai bảng bằng nhau theo xây
+>    dựng. Khai rời hai nơi là mở đường cho hai mẫu số khác nhau.
+>
+> **`phanBoTheoCong()` đã có sẵn** trong `models/hr/bang-luong.ts` — công thức §4.1, pro-rata **từng
+> khoản**, làm tròn tới đồng, `congTinhLuong = 0` trả vector rỗng chứ không chia cho 0. Đợt 3 gọi từ
+> `cpnc.service.ts` (một nơi tính duy nhất), không cài lại.
+>
+> **Verify**: `npx tsc -b --noEmit` sạch · `npm run build` **GREEN** (initial 2.60 MB) ·
+> `npm run test` **10 fail đúng baseline**. Chạy thử thật trên `ng serve` với Playwright: 3 màn mới
+> render đúng, hộp mở lại kỳ khoá nút cho tới khi đủ lý do + ô tích, bảng ma trận 31 cột cuộn ngang
+> với 4 cột đầu ghim.
+>
+> **NGOÀI PHẠM VI đợt này**: `PhanBoCong` và màn chấm công 3 biến thể, luật khoá ô §6.4, adapter
+> VOffice, CPNC/BM3, báo cáo. Cột *Công đã phân bổ* ở màn bảng lương hiện **0** kèm cảnh báo *"còn N
+> công chưa phân bổ"* — số thật đến ở đợt 3, chữ ký `congDaPhanBo()` giữ nguyên để trang không phải
+> sửa. **Q2 vẫn treo** (ai được mở lại kỳ đã khoá): bản này giả định HR, một chỗ sửa ở
+> `QuyenHrService.moLaiKy`.
+
+> **2026-08-27 — HR TOOLS ĐỢT 1.5: DANH MỤC — CODE DONE, ĐÃ CHẠY THỬ THẬT (owner Claude).**
+> Theo **chỉ đạo trực tiếp của người dùng** ("dựng tiếp các màn HTML tĩnh thành Angular"), nguồn
+> `docs/plan/hr-tools-ke-hoach-thi-cong-2026-08-26.md` §5 + artboard **10 → 19** của
+> `docs/mockup/hr-tools/`. Foundations vẫn **1/6**, RD02.02 v3 chưa đụng tới.
+>
+> **Đã dựng — 12 danh mục, 3 trang:**
+>
+> | Trang | Route | Phủ artboard |
+> |---|---|---|
+> | `pages/hr-danh-muc-list` | `/hr/danh-muc/:loai` | 11 · 12 · 13 · 13B · 14 · 14B · 15 · 15B · 16 · 17 · 17B · 18 · 18B · 19 |
+> | `pages/hr-danh-muc-detail` | `/hr/danh-muc/:loai/:ma` | 12B (khuôn chi tiết dùng chung) |
+> | `pages/hr-don-vi` | `/hr/danh-muc/don-vi` | 10 (cây 5 cấp + chi tiết) |
+>
+> **MỘT trang phục vụ 11 danh mục phẳng**, cấu hình là dữ liệu (`core/models/hr/danh-muc.ts`:
+> `DANH_MUC_DINH_NGHIA` khai cột, trường form, bộ lọc, cột import cho từng danh mục). Đơn vị tách
+> riêng vì là cây. Đủ **năm** chức năng `Book1` yêu cầu cho mỗi danh mục:
+> `Danh sách · Chi tiết · CRUD · Import · Export`.
+>
+> **Tách `shared/hr/import-preview/` — trả xong món nợ §6.6 của kế hoạch.** Hộp thoại nhập file có
+> preview nay là component chung; **`pages/hr-nhan-su-list` đã chuyển sang dùng nó** nên không còn
+> hai bộ vỏ import sống song song. Luật validate vẫn ở lại service của từng miền (bộ danh mục ở
+> `DanhMucService.phanTichFile`, bộ nhân sự ở `NhanSuService`) — component chung cố ý không biết
+> luật nào. Khuôn `ImportDongPreview` phân biệt **lỗi chặn** vs **cảnh báo cho qua**, đúng yêu cầu
+> của khách về ký hiệu công lạ.
+>
+> **Ba lỗi tìm ra khi soi bằng mắt và đã sửa** (ghi lại vì cả ba đều không lộ ra ở build/test):
+> 1. Cột bảng chỉ khai `maxWidth` vẫn bị trình duyệt co, tiêu đề hiện `Ký …` thay cho `Ký hiệu`
+>    ⇒ khai `minWidth` = `maxWidth`.
+> 2. Thông báo import nêu **tên trường** thay vì nhãn (`Thiếu ten`) ⇒ tra `truong.label`.
+> 3. `cmm-fileUpload` chế độ `basic` tự in tên file ⇒ bỏ dòng in tên file thứ hai.
+>
+> **Một quyết định dữ liệu đáng nhớ**: danh mục **Nhân viên seed từ `UNG_VIEN_NHAN_SU`** (phẳng hoá
+> từ `org-users`), KHÔNG chép mã HRM trong bộ mockup. Chép vào là dựng master data người thứ hai:
+> màn chi tiết luôn báo *"0 nhiệm vụ"* và mọi dòng import mang mã `NV004` bị chặn oan. Trường
+> `chucDanh` của `org-users` là **vai trò luồng RD**, không phải chức danh HRM, nên không dùng lại —
+> chi tiết ghi tại chỗ trong `danh-muc.ts`.
+>
+> **Verify**: `npx tsc -b --noEmit` sạch · `npm run build` **GREEN** (initial 2.60 MB) ·
+> `npm run test` **10 fail đúng baseline** (nav-items ×2 + ho-so-detail ×8), không phát sinh fail
+> mới. **Chạy thử thật trên `ng serve`** (Playwright): mở 3 loại màn danh mục, nhập file CSV 5 dòng
+> vào Chức danh — preview chấm đúng 2 hợp lệ / 3 lỗi chặn / 1 cảnh báo cho từng luật (trùng mã →
+> cảnh báo ghi đè, thiếu tên, giá trị ngoài tập chọn, lặp mã trong file) — bấm nhập, danh mục từ 8
+> lên 9 bản ghi, dòng trùng **ghi đè** chứ không nhân đôi. Màn chi tiết `NV004` hiện đúng 2 nhiệm vụ
+> đang tham gia.
+>
+> **`app.routes.spec.ts` đổi 6 → 9** route con của HR (chốt chặn số lượng, cố ý đỏ khi thêm màn);
+> `nav-items.spec.ts` thêm nhóm `hr-danh-muc`.
+>
+> **NGOÀI PHẠM VI, đừng tưởng đã có**: kỳ chấm công, import BM0 công/lương, màn chấm công 3 biến
+> thể, luật khoá ô, CPNC, báo cáo, thông báo, trình ký VOffice, backend. Mã đơn vị **cấp 4 và cấp 5
+> là mã mô phỏng** (`seedCayDonVi`) — tài liệu khách chỉ để lộ mã cấp 1–3; đợt HR import danh mục
+> đơn vị thật sẽ thay.
+
 > **2026-08-27 — HR TOOLS: MOCKUP MỞ RỘNG 40 → 61 ARTBOARD (owner Claude).** Bổ sung theo ba yêu
 > cầu tiếp theo của người dùng, cùng chỉ đạo trực tiếp như bên dưới; foundations vẫn **1/6**,
 > `frontend-angular/` vẫn không sửa một dòng nào.

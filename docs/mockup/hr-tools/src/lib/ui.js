@@ -92,6 +92,8 @@ const NAV = [
     children: [
       { key: 'dm-nhiem-vu', label: 'Danh mục nhiệm vụ' },
       { key: 'khai-bao-nhiem-vu', label: 'Khai báo nhiệm vụ' },
+      { key: 'noi-dung-cv', label: 'Nội dung công việc' },
+      { key: 'ho-so-nhiem-vu', label: 'Hồ sơ đính kèm' },
     ],
   },
   {
@@ -101,6 +103,7 @@ const NAV = [
   {
     key: 'cham-cong', label: 'Chấm công', icon: 'clock',
     children: [
+      { key: 'ds-nhan-su-thang', label: 'Nhân sự theo tháng' },
       { key: 'ky', label: 'Kỳ chấm công' },
       { key: 'bang-cong', label: 'Bảng công tháng' },
       { key: 'cham-cong-pb', label: 'Chấm công phân bổ' },
@@ -111,9 +114,17 @@ const NAV = [
     key: 'cpnc', label: 'Chi phí nhân công', icon: 'wallet',
     children: [
       { key: 'bang-luong', label: 'Bảng lương tháng' },
+      { key: 'luong-muc-tieu', label: 'Bảng lương mục tiêu' },
       { key: 'bm3', label: 'Tổng hợp phân bổ (BM3)' },
       { key: 'bm31', label: 'Bảng lương KHCN (BM3.1)' },
       { key: 'bm32', label: 'Bảng lương SXKD (BM3.2)' },
+    ],
+  },
+  {
+    key: 'trinh-ky', label: 'Trình ký', icon: 'send',
+    children: [
+      { key: 'trinh-ky-thang', label: 'Trình ký theo tháng' },
+      { key: 'dong-nhiem-vu', label: 'Đóng nhiệm vụ' },
     ],
   },
   {
@@ -146,7 +157,15 @@ const NAV = [
       { key: 'dm-thu-vien-cv', label: 'Thư viện công việc' },
       { key: 'dm-ky-hieu-cong', label: 'Ký hiệu công' },
       { key: 'dm-nhom-cv', label: 'Nhóm công việc' },
+      { key: 'dm-loai-cpnc', label: 'Loại chi phí nhân công' },
+      { key: 'dm-doi-tac', label: 'Đối tác' },
+      { key: 'dm-nhiem-vu-mau', label: 'Nhiệm vụ mẫu' },
+      { key: 'dm-trang-thai-nv', label: 'Trạng thái nhiệm vụ' },
     ],
+  },
+  {
+    key: 'cau-hinh', label: 'Cấu hình', icon: 'shield',
+    children: [{ key: 'phan-quyen-dv', label: 'Phân quyền đơn vị' }],
   },
 ];
 
@@ -358,7 +377,54 @@ const toast = (kind, title, msg, { icon } = {}) =>
 const note = (title, lines) =>
   `<div class="note"><strong>${title}</strong><ul>${lines.map((l) => `<li>${l}</li>`).join('')}</ul></div>`;
 
+/* ============================================================== BIỂU MẪU GIẤY
+ * Biểu mẫu trình ký theo QĐ 3021/QĐ-CNVTQĐ-CNCNC. Quốc hiệu, tiêu ngữ, dòng "Hà Nội, ngày…" và
+ * vùng ký là NỘI DUNG BẮT BUỘC của văn bản, không phải trang trí — thiếu là không ký được.
+ *
+ * `soHieu` và `ma` nhận `null` cho biểu mẫu quản trị nội bộ (BM5, BM3, BM3.2) — những cái KHÔNG
+ * mang mã BM.xx và KHÔNG thuộc QĐ 3021. Đóng dấu mã pháp lý lên chúng là làm sai văn bản; đó
+ * đúng là lỗi đã phải sửa ở artboard 37 ngày 2026-08-27. */
+const dauVanBan = (soHieu) => `
+  <div class="paper__head">
+    <div class="paper__block" style="flex:0 0 340px">
+      <div style="font-size:12px">TẬP ĐOÀN CÔNG NGHIỆP – VIỄN THÔNG QUÂN ĐỘI</div>
+      <div style="font-size:13px;font-weight:700">TỔNG CÔNG TY CN CÔNG NGHỆ CAO VIETTEL</div>
+      <div style="width:150px;border-top:1px solid #000;margin-top:4px"></div>
+      <div style="font-size:12px;margin-top:4px">Số: ${soHieu ? '......./' + soHieu : '.................'}</div>
+    </div>
+    <div class="paper__block" style="flex:1 1 auto">
+      <div style="font-size:13px;font-weight:700">CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+      <div style="font-size:14px;font-weight:700">Độc lập – Tự do – Hạnh phúc</div>
+      <div style="width:220px;border-top:1px solid #000;margin-top:4px"></div>
+      <div style="font-size:13px;font-style:italic;margin-top:8px">Hà Nội, ngày ..... tháng ..... năm 20.....</div>
+    </div>
+  </div>`;
+
+const tieuDe = (ten, ma, phu = []) => `
+  <div class="col" style="gap:4px">
+    <div class="paper__title">${ten}</div>
+    <div class="paper__sub">${ma
+      ? `(Ban hành kèm theo Quyết định số 3021/QĐ-CNVTQĐ-CNCNC — mã biểu mẫu ${ma})`
+      : '(Biểu mẫu quản trị nội bộ — KHÔNG thuộc bộ biểu mẫu ban hành kèm Quyết định 3021/QĐ-CNVTQĐ-CNCNC)'}</div>
+    ${phu.map((p) => `<div class="paper__sub">${p}</div>`).join('')}
+  </div>`;
+
+const vungKy = (cot) => `
+  <div class="paper__signs">
+    ${cot.map((c) => `<div class="paper__sign"><strong>${c[0]}</strong><div>${c[1]}</div></div>`).join('')}
+  </div>`;
+
+/* Tờ giấy đặt giữa nền xám. `w` là bề rộng giấy — phải >= tổng bề rộng cột + 96px padding của
+ * `.paper`, nếu không `check-layout.js` báo bảng tràn khung. */
+const giayIn = (body, w = 1240, wide = false) =>
+  bare(
+    `<div class="paper" style="width:${w}px;margin:0 auto;box-shadow:var(--vht-shadow-lg)">${body}</div>`,
+    `background:var(--vht-gray-90);padding:32px ${wide ? '48px' : '0'}`,
+    { wide },
+  );
+
 module.exports = {
   ico, money, NAV, topbar, sider, frame, bare, DIM, pageHead, btn, iconBtn, input, select, search,
   field, tag, rowActions, tableFoot, table, days31, dayHeaders, cell, note, DOW, dlg, toast,
+  dauVanBan, tieuDe, vungKy, giayIn,
 };

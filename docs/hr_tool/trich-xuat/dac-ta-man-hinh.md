@@ -1,13 +1,49 @@
 # Đặc tả màn hình — bản khách gửi 2025-08-01
 
 > Trích xuất từ `2025.08.01_HR_tool_Khach hang gui.xlsx`, các sheet `0.QuyTrinh`, `1.DS Nhân sự`,
-> `2.Chấm công`, `3.Báo cáo`, `4. Trình ký`, `List`.
+> `2.Chấm công`, `3.Báo cáo`, `4. Trình ký`, `List`, cộng **ảnh sơ đồ quy trình nhúng trong
+> `0.QuyTrinh`** (`xl/media/image1.png`).
 > Đây là **bản đặc tả có hiệu lực cao nhất** về màn hình, trạng thái, quyền và ngưỡng cảnh báo —
 > cao hơn cả BRD (BRD tóm tắt, sheet này cụ thể) và cao hơn Figma ở mọi điểm nghiệp vụ.
 >
 > Biểu mẫu BM0–BM5 tách sang [`bieu-mau-bm0-bm5.md`](bieu-mau-bm0-bm5.md).
 
-## 0. Bố cục chung
+> **Phạm vi đã đọc.** File có **18 sheet**: 16 sheet hiện + 2 sheet **ẩn** (`Estimate HR KH`,
+> `Sheet1`). Khách đã ẩn hai sheet đó ⇒ **ngoài phạm vi, không đọc, không dựng theo**. Nếu về sau
+> có ai mở ra thấy nội dung lệch tài liệu này thì đó là lý do — đừng coi là mâu thuẫn cần xử lý.
+
+## 0. Quy trình tháng và bố cục chung
+
+### 0.1 Quy trình tháng — sơ đồ khách vẽ trong sheet `0.QuyTrinh`
+
+Sơ đồ là **ảnh nhúng**, không phải ô — `trich-xuat.py` chỉ đọc ô nên bản trích xuất trước bỏ sót.
+Chép lại nguyên văn nhãn từng khối:
+
+| # | Khối | Ai làm | Màn tương ứng |
+|---|---|---|---|
+| — | Bắt đầu | | |
+| 1 | HR **Import** bảng công, bảng lương | HR | Tab 4 nhóm `IMPORT` (§4) |
+| 2 | PA **nhập danh sách nhân sự và chấm công** | PA | Tab 1 (§1.1) + Tab 2 (§2) |
+| 3 | **Phần mềm tự động tính lương**, hiển thị tạm tính | hệ thống | `CPNC tạm tính` trên thanh công cụ tab 2 (§2.5) |
+| 4 | **PA/PM chủ trì xác nhận** | PA/PM đơn vị chủ trì | §2.7 — hai nhánh TH1 / TH2 |
+| 5 | **HR Thẩm định, feedback** | HR | *chưa có màn nào trong đặc tả 4 tab* |
+| 6 | HR **xuất Bảng tổng hợp công, lương theo BM** | HR | Tab 4 nhóm `XUẤT EXCEL` (§4) |
+| 7 | HR **Trình ký VO** Bảng lương, công, DS nhân sự **từng nhiệm vụ** | HR | Tab 4 nhóm `TRÌNH KÝ VO THEO NHIỆM VỤ` (§4) |
+| — | Kết thúc | | |
+
+Ba điều sơ đồ này quyết định mà nơi khác không nói rõ:
+
+1. **Đây là luồng THÁNG, không phải vòng đời nhiệm vụ.** Nó bắt đầu thẳng từ bước import và bỏ hẳn
+   hai bước đầu của [BRD §3](brd-phan-bo-nhan-cong.md) (*khởi tạo nhiệm vụ*, *thiết lập ngân sách và
+   phân rã nội dung công việc*). Hai luồng chạy ở hai nhịp khác nhau — **đừng gộp thành một quy
+   trình duy nhất**, và đừng dựng workflow engine cho luồng tháng.
+2. **Xuất biểu mẫu là một bước riêng, đứng trước trình ký.** HR xuất ra đối soát rồi mới đẩy sang
+   VOffice; không phải trình ký kéo theo xuất file.
+3. **Bước 5 có chữ "feedback"** ⇒ hàm ý đường quay lui về PA. Nhưng máy trạng thái ở §1.2 chỉ có 4
+   trạng thái tiến một chiều, không có "HR trả lại", và §2.7 nói thẩm định diễn ra *"qua trao đổi
+   tương tác ngoài"*. **Mâu thuẫn chưa có lời giải trong tài liệu** — xem câu hỏi mở cuối file.
+
+### 0.2 Bố cục chung
 
 Ứng dụng có **4 tab ở cột trái**:
 
@@ -128,7 +164,13 @@ Bảng chấm công như biến thể A.
 - **CPNC tạm tính**: VNĐ — *"phần mềm tính theo bảng lương import"*, hiện ngay trên màn.
 - Ba nút xuất: `Xuất DS Nhân sự excel` (BM1) · `XUẤT BẢNG CÔNG excel` (BM2.1) ·
   `XUẤT BẢNG LƯƠNG excel` (BM3.1 với KHCN, BM3.2 với các loại còn lại).
+  **Cả ba nút có mặt ở cả ba biến thể** — và theo ma trận quyền §2.6, nút thứ ba **chỉ HR** bấm được.
 - Cuối bảng: `SUBMIT` và `PA/PM chủ trì xác nhận`.
+
+> **⚠ Bẫy BM2.1 / BM2.2.** Ô của khách ghi `BM 2.1` cho **cả ba** biến thể (dòng 30, 65, 103) — kể
+> cả biến thể PAKD. Nhưng tên sheet biểu mẫu là `BM2.1.Bang cham cong_KHCN` và
+> `BM2.2.Bang cham cong_SXKD`, tức PAKD/SXKD phải ra **BM2.2**. Nhiều khả năng khách copy dòng.
+> Bộ mockup đang dựng theo BM2.2 cho biến thể B — **cần khách xác nhận**, xem câu hỏi mở cuối file.
 
 ### 2.6 Ghi chú và ma trận quyền (dòng 124–138) — bản có hiệu lực
 
@@ -255,3 +297,13 @@ Hai khối còn lại (`Trung tâm Kinh doanh`, `Trung tâm QLCL`) không có đ
 
 Cây đầy đủ 5 cấp đọc từ cột `Đơn vị cấp 1..5 (F)` của BM0 — xem
 [`bieu-mau-bm0-bm5.md §1`](bieu-mau-bm0-bm5.md).
+
+---
+
+## 6. Câu hỏi mở phát sinh khi đọc sơ đồ quy trình (2026-08-27)
+
+| # | Câu hỏi | Vì sao chặn |
+|---|---|---|
+| **QT1** | Bước 5 **"HR Thẩm định, feedback"** có nút trên hệ thống không, hay HR chỉ xem rồi đi thẳng sang xuất/trình ký? | [BRD §3](brd-phan-bo-nhan-cong.md) bước 6 ghi HR *"xác nhận trên hệ thống"*, nhưng §1.2 của chính khách chỉ liệt kê 4 trạng thái và **không có** trạng thái "HR đã thẩm định". Không chốt thì không biết có cần cột trạng thái thứ 5 hay không. |
+| **QT2** | Chữ **"feedback"** ở bước 5 có nghĩa là HR **trả lại** bản chấm về PA sửa không? Nếu có thì bản đang ở trạng thái *"PA/PM chủ trì đã xác nhận"* được mở lại kiểu gì, ai được mở? | §2.7 nói thẩm định *"qua trao đổi tương tác ngoài"* ⇒ đọc theo nghĩa đen thì không có nút trả lại, PA tự sửa. Nhưng nếu kỳ đã khoá thì không sửa được. Đây là **lỗ hổng luồng**, không phải chi tiết giao diện. |
+| **QT3** | Biến thể PAKD xuất bảng công là **BM2.1 hay BM2.2**? | Xem ô cảnh báo ở §2.5. |

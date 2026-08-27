@@ -14,6 +14,12 @@ từ output của script; chạy lại script khi khách gửi bản cập nhậ
 
     PYTHONUTF8=1 python trich-xuat.py
 
+⚠ Script chỉ đọc Ô. Ảnh/sơ đồ nhúng trong sheet KHÔNG ra. Sơ đồ quy trình tháng của khách nằm ở
+  `0.QuyTrinh` dưới dạng `xl/media/image1.png` và đã bị bỏ sót đúng vì lý do này. Sau khi chạy
+  script, soi thêm ảnh nhúng rồi mới kết luận là đã đọc hết file:
+
+    python -c "import zipfile;print([n for n in zipfile.ZipFile(F).namelist() if 'media' in n])"
+
 Phụ thuộc: openpyxl, python-docx (đã có sẵn trong Python của máy dev, không thêm vào repo).
 """
 

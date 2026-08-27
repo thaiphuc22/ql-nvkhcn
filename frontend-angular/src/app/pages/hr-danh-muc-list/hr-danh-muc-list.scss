@@ -1,0 +1,13 @@
+/* Chú thích nghiệp vụ dưới ô nhập — chỗ đặt luật ("mã này là khoá đối chiếu khi import BM0"),
+   không phải chỗ nhắc lại nhãn. Cỡ chữ nhỏ hơn nhãn để không cạnh tranh với chính ô nhập. */
+.hr-field__help {
+  font: var(--vht-font-caption);
+  letter-spacing: var(--vht-tracking-caption);
+  color: var(--vht-ink-3);
+}
+
+/* Hàng lọc gọn của 10 danh mục còn lại: mỗi ô select giữ bề rộng tối thiểu để nhãn dài
+   ("Nhóm chức danh") không bị cắt thành "Nhóm c…". */
+:host ::ng-deep .hr-filters__select {
+  min-width: 200px;
+}

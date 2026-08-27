@@ -1,0 +1,231 @@
+<hr-page-card
+  [tieuDe]="'Bảng công tháng — ' + nhanKyHienTai()"
+  moTa="Dữ liệu HRM/SAP do HR nhập từ file BM0. CHỈ ĐỌC — muốn sửa phải import đè cả kỳ, không sửa từng ô."
+  [khongCard]="true"
+>
+  <div actions>
+    <cmm-button
+      label="Xuất Excel"
+      icon="pi pi-download"
+      [outlined]="true"
+      severity="secondary"
+      type="button"
+      (onClick)="xuatExcel()"
+    />
+    <!-- Kỳ đã khoá: nút vẫn hiện nhưng CHẶN (toast nêu lý do), không ẩn. Ẩn đi thì người dùng
+         tưởng mình không có quyền, trong khi vấn đề là trạng thái kỳ — hai nguyên nhân khác nhau,
+         hai cách xử lý khác nhau. Còn KHÔNG CÓ QUYỀN thì mới ẩn hẳn (fail-closed). -->
+    @if (duocNhap()) {
+      <cmm-button
+        label="Nhập BM0 bảng công"
+        icon="pi pi-upload"
+        type="button"
+        (onClick)="moImport()"
+      />
+    }
+  </div>
+
+  <section class="hr-bc-card">
+    <div class="hr-filters">
+      <div class="hr-filters__spacer hr-bc-nguon">
+        <hr-trang-thai-tag [nhan]="nhanTrangThaiKy()" [loai]="mauTrangThaiKy()" />
+        @if (lanNhap(); as ln) {
+          <span class="hr-muted">
+            Nguồn: {{ ln.tenFile }} · {{ ln.soDong }} dòng · nhập {{ ln.nhapLuc }} bởi
+            {{ ln.nhapBoi }}
+          </span>
+        } @else {
+          <span class="hr-muted">Kỳ này chưa có dữ liệu bảng công.</span>
+        }
+      </div>
+
+      <cmm-select
+        styleClass="hr-filters__select"
+        [value]="maKy()"
+        (valueChange)="maKy.set($event); donViFilter.set(null)"
+        [props]="{ options: kyOptions(), optionValue: 'value', optionLabel: 'label' }"
+      />
+      <cmm-select
+        styleClass="hr-filters__select"
+        [value]="khoiFilter()"
+        (valueChange)="khoiFilter.set($event)"
+        [props]="{
+          options: khoiOptions,
+          optionValue: 'value',
+          optionLabel: 'label',
+          placeholder: 'Tất cả khối',
+          showClear: true,
+        }"
+      />
+      <cmm-select
+        styleClass="hr-filters__select"
+        [value]="donViFilter()"
+        (valueChange)="donViFilter.set($event)"
+        [props]="{
+          options: donViOptions(),
+          optionValue: 'value',
+          optionLabel: 'label',
+          placeholder: 'Tất cả đơn vị',
+          showClear: true,
+        }"
+      />
+      <span class="hr-search">
+        <i class="pi pi-search hr-search__icon"></i>
+        <input
+          cmmInputText
+          type="text"
+          placeholder="Tìm mã NV / họ tên"
+          [value]="tuKhoa()"
+          (input)="tuKhoa.set($any($event.target).value)"
+        />
+      </span>
+    </div>
+
+    @if (rows().length) {
+      <!-- Bảng ma trận tự dựng — xem chú thích lớp về việc vì sao không dùng `UbckTable`. -->
+      <div class="hr-matrix-wrap">
+        <table class="hr-matrix">
+          <thead>
+            <tr>
+              <th class="hr-matrix__stick hr-matrix__stt">TT</th>
+              <th class="hr-matrix__stick hr-matrix__ma">Mã NV</th>
+              <th class="hr-matrix__stick hr-matrix__ten">Họ và tên</th>
+              <th class="hr-matrix__cd">Chức danh</th>
+              @for (d of ngay(); track d.ngay) {
+                <th class="hr-matrix__day" [class.is-cuoituan]="d.cuoiTuan">
+                  <span class="hr-matrix__daynum">{{ d.ngay }}</span>
+                  <span class="hr-matrix__dow">{{ d.thu }}</span>
+                </th>
+              }
+              <th class="hr-matrix__tong">Công tính lương</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of rows(); track r.id) {
+              <tr>
+                <td class="hr-matrix__stick hr-matrix__stt">{{ $index + 1 }}</td>
+                <td class="hr-matrix__stick hr-matrix__ma">{{ r.maNhanVien }}</td>
+                <td class="hr-matrix__stick hr-matrix__ten">{{ r.hoTen }}</td>
+                <td class="hr-matrix__cd">{{ r.chucDanh }}</td>
+                @for (d of ngay(); track d.ngay) {
+                  <td class="hr-matrix__day">
+                    <span
+                      [class]="lopO(r, d.ngay, d.cuoiTuan)"
+                      [attr.title]="chuThichO(r, d.ngay)"
+                      >{{ chuO(r, d.ngay, d.cuoiTuan) }}</span
+                    >
+                  </td>
+                }
+                <td class="hr-matrix__tong">
+                  <strong>{{ soCong(r.congTinhLuong) }}</strong>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="hr-legend">
+        <span class="hr-legend__item"><span class="hr-o">X</span> đi làm</span>
+        <span class="hr-legend__item"><span class="hr-o hr-o--cuoituan"></span> T7 / CN</span>
+        <span class="hr-legend__item"><span class="hr-o hr-o--khoa">P</span> nghỉ phép · nghỉ lễ</span>
+        <span class="hr-muted">
+          Ô trong file gốc có dạng <code>X:8</code> — ký hiệu và số giờ. Bảng hiện ký hiệu, số giờ
+          nằm ở tooltip. Cột <b>Công tính lương</b> là mẫu số của công thức CPNC — công của chính
+          người đó, không phải ngày công chuẩn của kỳ.
+        </span>
+      </div>
+    } @else {
+      <p class="hr-muted hr-bc-rong">
+        Kỳ {{ maKy() }} chưa có dữ liệu bảng công. Dùng nút <b>Nhập BM0 bảng công</b> để nhập từ
+        file HRM/SAP.
+      </p>
+    }
+  </section>
+</hr-page-card>
+
+<!-- ------------------------------------------------------------- import BM0 -->
+
+<hr-import-preview
+  [mo]="importMo()"
+  (moChange)="importMo.set($event)"
+  [tieuDe]="'Nhập BM0 bảng công — ' + nhanKyHienTai()"
+  nhanCotKhoa="Mã NV"
+  nhanCotNhan="Họ và tên"
+  [tenFile]="importTenFile()"
+  [loiDocFile]="importLoiDoc()"
+  [dong]="importPreview()"
+  [canhBaoChan]="canhBaoChan()"
+  (chonFile)="chonFile($event)"
+  (taiFileMau)="taiFileMau()"
+  (xacNhan)="xacNhanNhap()"
+/>
+
+<!-- --------------------------------------------------- xác nhận ĐÈ CẢ KỲ -->
+
+<cmm-dialog
+  [visible]="deMo()"
+  (visibleChange)="!$event && huyDe()"
+  [header]="'Kỳ ' + maKy() + ' đã có dữ liệu'"
+  [modal]="true"
+  [style]="{ width: '440px' }"
+>
+  <div class="hr-form">
+    <div class="hr-canhbao-hop">
+      <strong>Nhập lại sẽ ĐÈ CẢ KỲ.</strong>
+      Toàn bộ <b>{{ tatCa().length }} dòng</b> bảng công {{ nhanKyHienTai() }} đang có sẽ bị xoá và
+      thay bằng dữ liệu trong file mới. Hệ thống <b>không</b> ghép từng dòng.
+    </div>
+
+    <dl class="hr-desc hr-desc--hep">
+      <div>
+        <dt>Đang có</dt>
+        <dd>{{ tatCa().length }} dòng</dd>
+      </div>
+      <div>
+        <dt>File mới</dt>
+        <dd>{{ soHopLe() }} dòng hợp lệ · {{ importTenFile() }}</dd>
+      </div>
+    </dl>
+
+    <label class="hr-choice">
+      <cmm-checkbox [value]="deHieu()" (valueChange)="deHieu.set(!!$event)" [binary]="true" />
+      <span>Tôi hiểu dữ liệu bảng công cũ của kỳ này sẽ bị xoá</span>
+    </label>
+  </div>
+
+  <ng-template #footer>
+    <cmm-button
+      label="Huỷ"
+      [outlined]="true"
+      severity="secondary"
+      type="button"
+      (onClick)="huyDe()"
+    />
+    <!-- Chữ trên nút nói ĐÚNG việc sắp xảy ra, không phải "OK": màu không phân biệt được hành động
+         phá huỷ vì ramp brand ≡ danger. -->
+    <cmm-button
+      label="Xoá và nhập đè cả kỳ"
+      icon="pi pi-upload"
+      type="button"
+      [disabled]="!deHieu()"
+      (onClick)="xacNhanDe()"
+    />
+  </ng-template>
+</cmm-dialog>
+
+<!-- ------------------------------------------------------ lớp phủ tiến trình -->
+
+@if (dangNhap()) {
+  <div class="hr-busy" role="status" aria-live="polite">
+    <div class="hr-busy__box">
+      <i class="pi pi-upload"></i>
+      <strong>Đang nhập bảng công {{ nhanKyHienTai() }}</strong>
+      <span class="hr-muted">Đã xử lý {{ tienDo() }}%</span>
+      <div class="hr-progress"><div class="hr-progress__bar" [style.width.%]="tienDo()"></div></div>
+      <span class="hr-muted">
+        Đừng đóng trình duyệt. Hệ thống ghi đè theo kỳ nên dừng nửa chừng là kỳ ở trạng thái dở dang.
+      </span>
+    </div>
+  </div>
+}

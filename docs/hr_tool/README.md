@@ -32,7 +32,7 @@ chỉ khi cần số liệu thô hoặc định dạng biểu mẫu.
 
 | File | Nội dung | Ghi chú |
 |---|---|---|
-| `2025.08.01_HR_tool_Khach hang gui.xlsx` | 16 sheet: đặc tả 4 tab + BM0→BM5 **kèm số liệu thật tháng 4–6/2025** | **Quan trọng nhất.** Giữ nguyên file — là bộ dữ liệu kiểm chứng công thức |
+| `2025.08.01_HR_tool_Khach hang gui.xlsx` | 16 sheet hiện: đặc tả 4 tab + **sơ đồ quy trình tháng** (ảnh nhúng trong `0.QuyTrinh`) + BM0→BM5 **kèm số liệu thật tháng 4–6/2025**. Còn 2 sheet **ẩn** — khách ẩn nghĩa là ngoài phạm vi, không đọc | **Quan trọng nhất.** Giữ nguyên file — là bộ dữ liệu kiểm chứng công thức |
 | `VHT_Phan tich bai toan Phan Bo Nhan Cong.docx` | BRD, mã dự án `GPDN.VHT.HRM` | |
 | `Phan Bo Nhan Cong Brd.docx` | **Trùng byte-for-byte** với file trên | Không đọc — không có gì mới |
 | `Book1.xlsx` | Phân rã chức năng 5 module + map Step→Master data | Sheet `Sheet1` là bảng định mức nội bộ, không liên quan |
@@ -70,9 +70,20 @@ của máy dev, không thêm vào repo.
 Script chỉ in ra text; các file `.md` là kết quả biên tập tay từ output đó (có thêm ghi chú của đội
 phát triển, luôn gắn nhãn **[ghi chú]** để phân biệt với lời của khách).
 
+⚠ **Script không đọc ảnh nhúng.** Sơ đồ quy trình tháng của khách nằm trong `0.QuyTrinh` dưới dạng
+PNG (`xl/media/image1.png`) — chạy script bao nhiêu lần cũng không ra. Đã chép tay vào
+[`dac-ta-man-hinh.md §0.1`](trich-xuat/dac-ta-man-hinh.md). Khi khách gửi bản mới, **mở file bằng
+Excel xem có ảnh/sơ đồ nào không**, đừng tin mỗi output của script:
+
+```bash
+python -c "import zipfile;print([n for n in zipfile.ZipFile('<file>.xlsx').namelist() if 'media' in n])"
+```
+
 ## Còn thiếu — nên xin khách
 
 - **QĐ 9915/QĐ-CNVTQĐ** (22/08/2024) và **QĐ 3021/QĐ-CNVTQĐ-CNCNC** (28/03/2024) — hai văn bản gốc
   quy định biểu mẫu và cách lập dự toán CPNC.
 - Danh mục **ký hiệu công** đầy đủ (file mẫu chỉ lộ `X`, `P`, `DL`).
+- **Ba câu hỏi QT1–QT3** ở [`dac-ta-man-hinh.md §6`](trich-xuat/dac-ta-man-hinh.md) — bước "HR thẩm
+  định" có nút không, "feedback" có phải đường trả lại không, PAKD xuất BM2.1 hay BM2.2.
 - Tài liệu API **VOffice**.

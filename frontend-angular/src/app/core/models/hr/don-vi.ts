@@ -101,3 +101,86 @@ export function tachTenVaMaDonVi(chuoi: string): { ten: string; ma: string | nul
   if (!/^\d+$/.test(ma)) return { ten: chuoi.trim(), ma: null };
   return { ten: chuoi.slice(0, viTri).trim(), ma };
 }
+
+// ---------------------------------------------------------------------- cây đơn vị (đợt 1.5)
+
+/**
+ * Một nút của cây đơn vị — dạng phẳng, nối bằng `chaMa`.
+ *
+ * Phẳng chứ không lồng `children[]`: mọi thao tác thật đều là *tra theo mã* (dòng import BM0 mang
+ * `"Khối 1 - TCT CNC - 9013948"`, màn chấm công chọn một đơn vị cấp 5), và cây lồng thì mỗi lần tra
+ * phải duyệt đệ quy. Dựng cây để hiển thị là việc của một hàm, làm một lần ở nơi cần.
+ */
+export interface DonViNode {
+  ma: string;
+  ten: string;
+  /** 1..5 — xem sơ đồ đầu file. Nghiệp vụ chỉ chạy ở cấp 4 và 5. */
+  cap: number;
+  chaMa: string | null;
+  hoatDong: boolean;
+  /** Số nhân sự thuộc đơn vị (chỉ có nghĩa ở cấp 5). Dữ liệu mô phỏng cho tới khi nối HRM. */
+  soNhanSu?: number;
+}
+
+/**
+ * Mã đơn vị cấp 4 và cấp 5.
+ *
+ * ⚠ **Đây là mã mô phỏng, không phải mã thật của khách.** File khách chỉ để lộ mã của cấp 1–3
+ * (`148842`, `9001803`, `9013878`) và một ví dụ cấp 4 (`9013948`) trong chuỗi tên của BM0. Mã cấp 5
+ * chưa từng xuất hiện ở bất kỳ tài liệu nào, nên sinh theo dãy để cây có khoá chạy được; **đợt đầu
+ * tiên HR import danh mục đơn vị thật là lúc bộ mã này bị thay**. Đừng dùng chúng làm hằng số ở
+ * chỗ khác.
+ */
+function maSinh(prefix: number, i: number): string {
+  return String(prefix + i);
+}
+
+/** Cây đơn vị seed — dựng từ đúng ba hằng số phía trên, không khai lại tên đơn vị lần thứ hai. */
+export function seedCayDonVi(): DonViNode[] {
+  const nodes: DonViNode[] = DON_VI_CAP_TREN.map((d, i) => ({
+    ma: d.ma,
+    ten: d.ten,
+    cap: d.cap,
+    chaMa: i === 0 ? null : DON_VI_CAP_TREN[i - 1].ma,
+    hoatDong: true,
+  }));
+
+  const goc = DON_VI_CAP_TREN[DON_VI_CAP_TREN.length - 1].ma;
+  let stt = 0;
+
+  KHOI_OPTIONS.forEach((khoi, i) => {
+    const maKhoi = maSinh(9013948, i);
+    nodes.push({ ma: maKhoi, ten: khoi, cap: 4, chaMa: goc, hoatDong: true });
+
+    for (const donVi of donViCap5Cua(khoi)) {
+      nodes.push({
+        ma: maSinh(9014021, stt++),
+        ten: donVi,
+        cap: 5,
+        chaMa: maKhoi,
+        hoatDong: true,
+        // Số nhân sự mô phỏng, dải 20–180 — đủ để màn báo cáo đợt 4 có hình dạng, không phải số thật.
+        soNhanSu: 20 + ((stt * 37) % 160),
+      });
+    }
+  });
+
+  return nodes;
+}
+
+/** Con trực tiếp của một nút. `null` = các nút gốc (cấp 1). */
+export function conCua(nodes: readonly DonViNode[], chaMa: string | null): DonViNode[] {
+  return nodes.filter((n) => n.chaMa === chaMa);
+}
+
+/** Đường dẫn từ gốc tới `ma`, gồm cả chính nó — dùng cho dòng “thuộc …” ở khối chi tiết. */
+export function duongDan(nodes: readonly DonViNode[], ma: string): DonViNode[] {
+  const theoMa = new Map(nodes.map((n) => [n.ma, n]));
+  const path: DonViNode[] = [];
+  let hienTai = theoMa.get(ma);
+  while (hienTai) {
+    path.unshift(hienTai);
+    hienTai = hienTai.chaMa ? theoMa.get(hienTai.chaMa) : undefined;
+  }
+  return path;
+}

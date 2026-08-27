@@ -35,6 +35,8 @@ import {
 } from '../../core/services/hr/nhan-su.service';
 import { exportCsv, exportTableToXls } from '../../core/utils/export-bieu-mau';
 import { HrBieuMauPrint, inTrang } from '../../shared/hr/bieu-mau-print/bieu-mau-print';
+import { HrImportPreview } from '../../shared/hr/import-preview/import-preview';
+import { ImportDongPreview } from '../../shared/hr/import-preview/import-preview.model';
 import { HrPageCard } from '../../shared/hr/page-card/page-card';
 import { hrColumns } from '../../shared/hr/table-columns';
 import { HR_PAGE_SIZE_MAC_DINH, hrPaginatorProps } from '../../shared/hr/paginator-props';
@@ -75,13 +77,13 @@ type DongHienThi = Record<string, unknown> & { nhanSu: NhanSuNhiemVu; id: string
     UBCKPaginatorModule,
     CmmButtonComponent,
     CmmDialogComponent,
-    CmmFileUploadComponent,
     CmmInputText,
     CmmSelectComponent,
     CmmTextareaDirective,
     DeleteIconComponent,
     EditIconComponent,
     HrBieuMauPrint,
+    HrImportPreview,
     HrPageCard,
     HrTrangThaiTag,
   ],
@@ -254,34 +256,26 @@ export class HrNhanSuListPage {
 
   // ---------------------------------------------------------- bảng preview import
 
-  private readonly tplPreviewKetQua = viewChild.required<TemplateRef<unknown>>('tplPreviewKetQua');
-
-  readonly previewColumns = computed<ColumnDefinition[][]>(() =>
-    hrColumns([
-      {
-        field: 'ketQua',
-        header: 'Kết quả',
-        customTemplate: this.tplPreviewKetQua(),
-        maxWidth: '260px',
-      },
-      { field: '_maNhanVien', header: 'Mã NV', maxWidth: '110px' },
-      { field: '_hoTen', header: 'Họ và tên', maxWidth: '200px' },
-      { field: '_nhiemVuId', header: 'Mã nhiệm vụ', maxWidth: '140px' },
-      { field: '_vaiTro', header: 'Vai trò', maxWidth: '160px' },
-    ]),
-  );
-
-  readonly previewProps = { isShowOrder: true, colOrderName: 'Dòng', scrollable: true };
-
-  /** Dòng preview đưa vào bảng — `raw` là dữ liệu thô đọc từ file, có thể thiếu trường. */
-  readonly previewRows = computed<Record<string, unknown>[]>(() =>
+  /**
+   * Chuyển `ImportPreviewRow` của service sang khuôn chung `ImportDongPreview`.
+   *
+   * Bảng preview KHÔNG còn tự dựng ở trang này nữa — nó là `shared/hr/import-preview/`, dùng chung
+   * với 11 màn danh mục (kế hoạch §6.6: chép luồng preview sang màn thứ hai là có hai bộ luật sống
+   * song song, sửa một bên quên bên kia). Luật validate thì **vẫn ở lại** `NhanSuService`: bộ luật
+   * của nhân sự nhiệm vụ khác hẳn bộ luật danh mục, và component chung cố ý không biết luật nào.
+   *
+   * `ImportPreviewRow` chỉ có `loi: string[]` — không phân biệt lỗi chặn và cảnh báo — nên mọi mục
+   * ánh xạ thành `LOI`. Đó là mô tả đúng hành vi hiện tại (dòng có lỗi bị bỏ qua hoàn toàn), không
+   * phải mất mát: khi bộ luật nhân sự có cảnh báo cho qua thật thì nâng cấp ở service, khuôn chung
+   * đã sẵn chỗ.
+   */
+  readonly importDong = computed<ImportDongPreview[]>(() =>
     this.importPreview().map((p) => ({
-      preview: p,
-      rowcCustomClasses: p.hopLe ? '' : 'hr-row-canhbao',
-      _maNhanVien: p.raw.maNhanVien ?? '',
-      _hoTen: p.raw.hoTen ?? '',
-      _nhiemVuId: p.raw.nhiemVuId ?? '',
-      _vaiTro: p.raw.vaiTroThamGia ?? '',
+      soDong: p.soDong,
+      khoa: p.raw.maNhanVien || '—',
+      nhan: p.raw.hoTen || '—',
+      vanDe: p.loi.map((moTa) => ({ mucDo: 'LOI' as const, moTa })),
+      hopLe: p.hopLe,
     })),
   );
 
@@ -447,16 +441,11 @@ export class HrNhanSuListPage {
   /**
    * Người dùng chọn file → đọc bằng `FileReader` và soát lỗi NGAY TẠI CLIENT, không gửi đi đâu.
    *
-   * `cmm-fileUpload` chạy ở chế độ `customUpload` + `auto = false` và ta chỉ nghe `onSelect`; không
-   * có `url` nên component không tự đẩy file lên đâu cả. Đây là cùng cách
-   * `pages/process-catalog/process-catalog.ts` xử lý file BPMN.
+   * `hr-import-preview` bắn ra đúng một `File` đã chọn; việc ĐỌC nội dung ở lại trang vì mỗi miền
+   * đọc một kiểu, và trang mới là chỗ biết gọi service nào để chấm điểm. Không có `url` ở đâu cả —
+   * file không rời khỏi trình duyệt.
    */
-  chonFile(files: readonly File[]): void {
-    const file = files[0];
-    if (!file) {
-      this.importLoiDoc.set('Trình duyệt không cung cấp nội dung file. Vui lòng chọn lại.');
-      return;
-    }
+  chonFile(file: File): void {
     this.importTenFile.set(file.name);
     this.importLoiDoc.set(null);
 

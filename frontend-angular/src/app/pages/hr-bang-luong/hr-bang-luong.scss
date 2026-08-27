@@ -1,0 +1,40 @@
+/* Bảng ma trận, lớp phủ và hộp cảnh báo dùng lớp DÙNG CHUNG ở `styles/hr-pages.scss` — cùng bộ với
+   `hr-bang-cong`. Ở đây chỉ những gì riêng của màn lương. */
+
+.hr-bl-card {
+  padding: var(--vht-space-24);
+  border: 1px solid var(--vht-border);
+  border-radius: var(--vht-built-card-radius, 16px);
+  background: var(--vht-surface);
+}
+
+.hr-bl-nguon {
+  display: flex;
+  align-items: center;
+  gap: var(--vht-space-8);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+/* Khối "không có quyền" đặt TRÊN hàng lọc, không phải thay cho bảng: người dùng vẫn xem được danh
+   sách người và trạng thái chấm công của họ — chỉ cột tiền là không render. */
+.hr-bl-chan {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--vht-space-12);
+  margin-bottom: var(--vht-space-16);
+
+  i {
+    font-size: 18px;
+    line-height: 1.5;
+  }
+}
+
+.hr-bl-note {
+  margin: var(--vht-space-12) 0 0;
+}
+
+.hr-bl-rong {
+  margin: var(--vht-space-24) 0;
+  text-align: center;
+}

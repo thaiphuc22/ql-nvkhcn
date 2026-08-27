@@ -284,7 +284,7 @@ const bangLuongHR = () =>
         </div>
 
         <div class="alert">${ico('info', 18)}
-          <div class="alert__body"><div class="alert__title">13 khoản mục, chia pro-rata từng khoản</div>
+          <div class="alert__body"><div class="alert__title">14 khoản mục, chia pro-rata từng khoản</div>
           <div>CPNC không phải một con số mà là <strong>vector khoản mục</strong>. Công thức áp cho <em>từng</em> khoản: <code>CPNC_phânBổ[khoản] = CPNC_tháng[khoản] × (côngPhânBổ / côngTínhLương)</code> — không nhân vào tổng rồi chia ngược.</div></div>
         </div>
         ${tableFoot(148, { pages: [1, 2, 3, 4, '…', 6] })}
@@ -343,6 +343,6 @@ module.exports = [
   { code: '21B', group: '2 · Kỳ & Bảng công', title: 'Xác nhận đè cả kỳ khi import lại', desc: 'Hộp xác nhận 400px nổi trên màn', body: dialogDeCaKy },
   { code: '21C', group: '2 · Kỳ & Bảng công', title: 'Đang nhập dữ liệu và toast thất bại', desc: 'Lớp phủ tiến trình + toast lỗi', body: dangImport },
   { code: '22', group: '2 · Kỳ & Bảng công', title: 'Bảng công tháng BM0', desc: 'Ma trận người × 31 ngày, chỉ đọc — khổ rộng', body: bangCong },
-  { code: '23', group: '2 · Kỳ & Bảng công', title: 'Bảng lương tháng — vai trò HR', desc: '13 khoản mục, đầy đủ cột tiền — khổ rộng', body: bangLuongHR },
+  { code: '23', group: '2 · Kỳ & Bảng công', title: 'Bảng lương tháng — vai trò HR', desc: '14 khoản mục, đầy đủ cột tiền — khổ rộng', body: bangLuongHR },
   { code: '24', group: '2 · Kỳ & Bảng công', title: 'Bảng lương tháng — vai trò PA', desc: 'Fail-closed: cột tiền không render', body: bangLuongPA },
 ];

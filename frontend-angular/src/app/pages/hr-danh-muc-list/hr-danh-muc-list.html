@@ -1,0 +1,271 @@
+<!--
+  Template cho các ô có cấu trúc — khai TRƯỚC `<ubck-table>` một cách CỐ Ý.
+
+  `columns()` đọc chúng qua `viewChild.required`, mà truy vấn kiểu signal chỉ trả về kết quả khi
+  node đã được tạo. Đặt xuống dưới bảng thì lần dựng view đầu tiên bảng đọc phải truy vấn chưa có
+  giá trị và Angular ném NG0951 — trang trắng, thông báo lỗi chẳng liên quan gì tới bảng.
+
+  Ngữ cảnh do `UbckTable` truyền vào là `{ $implicit: rowData[col.field], rowData, col }`.
+-->
+<ng-template #tplThaoTac let-rowData="rowData">
+  <div class="hr-actions">
+    <cmm-icon-eye (eventClick)="moChiTiet(rowData.banGhi)" />
+    <cmm-icon-edit (eventClick)="moSua(rowData.banGhi)" />
+    @if (!dinhNghia().heThong) {
+      <cmm-icon-delete (eventClick)="moXoa(rowData.banGhi)" />
+    }
+  </div>
+</ng-template>
+
+<!-- Công tắc bật/tắt ngay trên bảng — đây là hành động MẶC ĐỊNH thay cho xoá (xem chú thích lớp). -->
+<ng-template #tplHoatDong let-value let-rowData="rowData">
+  <cmm-toggleswitch
+    [value]="value"
+    (valueChange)="doiHoatDong(rowData.banGhi, $event)"
+    [props]="{ ariaLabel: 'Trạng thái hoạt động' }"
+  />
+</ng-template>
+
+<ng-template #tplCoKhong let-value>
+  <hr-trang-thai-tag [nhan]="nhanCoKhong(value)" [loai]="loaiCoKhong(value)" />
+</ng-template>
+
+<ng-template #tplKhoaO let-value>
+  <hr-trang-thai-tag [nhan]="nhanKhoaO(value)" [loai]="loaiKhoaO(value)" />
+</ng-template>
+
+<ng-template #tplMa let-value let-rowData="rowData">
+  <a class="hr-code" (click)="moChiTiet(rowData.banGhi)">{{ value }}</a>
+</ng-template>
+
+<hr-page-card [tieuDe]="dinhNghia().ten" [moTa]="dinhNghia().moTa">
+  <div actions>
+    <cmm-button
+      label="Nhập từ Excel"
+      icon="pi pi-upload"
+      [outlined]="true"
+      severity="secondary"
+      type="button"
+      (onClick)="moImport()"
+    />
+    <cmm-button
+      label="Xuất Excel"
+      icon="pi pi-download"
+      [outlined]="true"
+      severity="secondary"
+      type="button"
+      (onClick)="xuatExcel()"
+    />
+    <!-- Danh mục hệ thống (trạng thái nhiệm vụ) không cho thêm: mã trạng thái được code đọc thẳng,
+         một mã mới khai ở đây không sinh ra hành vi nào. -->
+    @if (!dinhNghia().heThong) {
+      <cmm-button label="Thêm mới" icon="pi pi-plus" type="button" (onClick)="moThemMoi()" />
+    }
+  </div>
+
+  @if (dinhNghia().timKiemNangCao) {
+    <!-- Khối tìm kiếm nâng cao nằm TRONG cùng card với bảng, ngăn bằng một đường kẻ — xem chú thích
+         `shared/hr/advanced-search`. -->
+    <hr-advanced-search (lamMoi)="lamMoiLoc()" (timKiem)="timKiem(tuKhoa())">
+      <label class="hr-field">
+        <span>Từ khoá</span>
+        <input
+          cmmInputText
+          type="text"
+          [placeholder]="dinhNghia().timKiemGoiY"
+          [value]="tuKhoa()"
+          (input)="timKiem($any($event.target).value)"
+        />
+      </label>
+      @for (loc of dinhNghia().boLoc; track loc.field) {
+        <label class="hr-field">
+          <span>{{ loc.label }}</span>
+          <cmm-select
+            [value]="boLocValue()[loc.field] ?? null"
+            (valueChange)="locTheo(loc.field, $event)"
+            [props]="{
+              options: boLocOptions()[loc.field],
+              optionValue: 'value',
+              optionLabel: 'label',
+              placeholder: 'Tất cả',
+              showClear: true,
+            }"
+          />
+        </label>
+      }
+    </hr-advanced-search>
+  } @else {
+    <div class="hr-filters">
+      @for (loc of dinhNghia().boLoc; track loc.field) {
+        <cmm-select
+          styleClass="hr-filters__select"
+          [value]="boLocValue()[loc.field] ?? null"
+          (valueChange)="locTheo(loc.field, $event)"
+          [props]="{
+            options: boLocOptions()[loc.field],
+            optionValue: 'value',
+            optionLabel: 'label',
+            placeholder: loc.label,
+            showClear: true,
+          }"
+        />
+      }
+      <span class="hr-search">
+        <i class="pi pi-search hr-search__icon"></i>
+        <input
+          cmmInputText
+          type="text"
+          [placeholder]="dinhNghia().timKiemGoiY"
+          [value]="tuKhoa()"
+          (input)="timKiem($any($event.target).value)"
+        />
+      </span>
+    </div>
+  }
+
+  <ubck-table [columns]="columns()" [dataSources]="pagedRows()" [props]="tableProps" />
+
+  <ubck-paginator [props]="paginatorProps()" (onPageChange)="doiTrang($event)" />
+</hr-page-card>
+
+<!-- --------------------------------------------------------- thêm / sửa -->
+
+<cmm-dialog
+  [visible]="formMo()"
+  (visibleChange)="formMo.set($event)"
+  [header]="(dangSua() ? 'Sửa ' : 'Thêm mới ') + dinhNghia().tenDon"
+  [modal]="true"
+  [style]="{ width: '520px' }"
+>
+  <div class="hr-form">
+    @if (loiForm().length) {
+      <ul class="hr-form__errors">
+        @for (m of loiForm(); track m) {
+          <li>{{ m }}</li>
+        }
+      </ul>
+    }
+
+    @for (t of dinhNghia().truong; track t.field) {
+      <label class="hr-field">
+        <span>
+          {{ t.label }}
+          @if (t.batBuoc) {
+            <b>*</b>
+          }
+        </span>
+
+        @switch (t.kieu) {
+          @case ('chon') {
+            <cmm-select
+              [value]="$any(form()[t.field]) ?? null"
+              (valueChange)="capNhatForm(t.field, $event)"
+              [props]="{
+                options: optionsCua(t),
+                optionValue: 'value',
+                optionLabel: 'label',
+                placeholder: 'Chọn ' + t.label.toLowerCase(),
+                filter: true,
+              }"
+            />
+          }
+          @case ('chu-dai') {
+            <textarea
+              cmmTextarea
+              rows="2"
+              [placeholder]="t.goiY ?? ''"
+              [value]="$any(form()[t.field]) ?? ''"
+              (input)="capNhatForm(t.field, $any($event.target).value)"
+            ></textarea>
+          }
+          @case ('bat-tat') {
+            <cmm-toggleswitch
+              [value]="!!form()[t.field]"
+              (valueChange)="capNhatForm(t.field, $event)"
+              [props]="{ ariaLabel: t.label }"
+            />
+          }
+          @case ('so') {
+            <input
+              cmmInputText
+              type="number"
+              [value]="$any(form()[t.field]) ?? ''"
+              (input)="capNhatForm(t.field, $any($event.target).value)"
+            />
+          }
+          @default {
+            <input
+              cmmInputText
+              type="text"
+              [placeholder]="t.goiY ?? ''"
+              [value]="$any(form()[t.field]) ?? ''"
+              [disabled]="bikhoa(t)"
+              (input)="capNhatForm(t.field, $any($event.target).value)"
+            />
+          }
+        }
+
+        @if (t.moTa) {
+          <small class="hr-field__help">{{ t.moTa }}</small>
+        }
+      </label>
+    }
+  </div>
+
+  <ng-template #footer>
+    <cmm-button
+      label="Huỷ"
+      [outlined]="true"
+      severity="secondary"
+      type="button"
+      (onClick)="formMo.set(false)"
+    />
+    <cmm-button label="Lưu" icon="pi pi-check" type="button" (onClick)="luu()" />
+  </ng-template>
+</cmm-dialog>
+
+<!-- ---------------------------------------------------------------- xoá -->
+
+<cmm-dialog
+  [visible]="xoaMo()"
+  (visibleChange)="xoaMo.set($event)"
+  [header]="'Xoá ' + dinhNghia().tenDon"
+  [modal]="true"
+  [style]="{ width: '400px' }"
+>
+  <p class="hr-confirm">
+    Xoá <strong>{{ xoaTarget()?.ma }} — {{ xoaTarget()?.ten }}</strong> khỏi
+    {{ dinhNghia().ten.toLowerCase() }}? Thao tác này không hoàn tác được.
+  </p>
+  <p class="hr-confirm hr-muted">
+    Nếu bản ghi đã đi vào bảng công hoặc bảng lương kỳ trước, hãy dùng
+    <strong>Ngừng hoạt động</strong> thay vì xoá — xoá cứng làm số báo cáo cũ đổi sau lưng người đã
+    ký.
+  </p>
+  <ng-template #footer>
+    <cmm-button
+      label="Huỷ"
+      [outlined]="true"
+      severity="secondary"
+      type="button"
+      (onClick)="xoaMo.set(false)"
+    />
+    <cmm-button label="Xoá" icon="pi pi-trash" type="button" (onClick)="xacNhanXoa()" />
+  </ng-template>
+</cmm-dialog>
+
+<!-- ------------------------------------------------------------- import -->
+
+<hr-import-preview
+  [mo]="importMo()"
+  (moChange)="importMo.set($event)"
+  [tieuDe]="'Nhập ' + dinhNghia().ten.toLowerCase() + ' từ Excel'"
+  nhanCotKhoa="Mã"
+  nhanCotNhan="Tên"
+  [tenFile]="importTenFile()"
+  [loiDocFile]="importLoiDoc()"
+  [dong]="importPreview()"
+  (chonFile)="chonFile($event)"
+  (taiFileMau)="taiFileMau()"
+  (xacNhan)="nhapDuLieu()"
+/>

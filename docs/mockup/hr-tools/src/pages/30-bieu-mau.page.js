@@ -19,7 +19,7 @@ const NGUOI = [
   ['809442', 'Vũ Thị Thu Hà', 'Chuyên viên Công nghệ', 21.0, 21.0],
 ];
 
-/* 13 khoản mục của BM3 (cột 17–31) + CỘNG. Đây là thứ quyết định độ rộng biểu mẫu. */
+/* 14 khoản mục của BM3 (cột 17–31) + CỘNG. Đây là thứ quyết định độ rộng biểu mẫu. */
 const KHOAN = [
   'Lương tháng', 'Lương tháng (trừ BH cá nhân)', 'Truy thu/truy lĩnh', 'Lương SXKD',
   'Lương thử việc, tập nghề', 'Lương KD thử việc', 'BHXH cá nhân', 'BHXH đơn vị',
@@ -267,7 +267,7 @@ const khuonIn = () =>
       ]);
 
 module.exports = [
-  { code: '30', group: '3 · Biểu mẫu CPNC', title: 'BM3 Bảng tổng hợp phân bổ', desc: '13 khoản mục + dòng công thừa tự sinh — khổ rộng', body: bm3 },
+  { code: '30', group: '3 · Biểu mẫu CPNC', title: 'BM3 Bảng tổng hợp phân bổ', desc: '14 khoản mục + dòng công thừa tự sinh — khổ rộng', body: bm3 },
   { code: '31', group: '3 · Biểu mẫu CPNC', title: 'BM3.1 Bảng lương KHCN', desc: 'Gom theo nội dung công việc — khổ rộng', body: bm31 },
   { code: '32', group: '3 · Biểu mẫu CPNC', title: 'BM3.2 Bảng lương SXKD', desc: 'Theo sản phẩm và phân nguồn, kỳ lương ≠ kỳ trả — khổ rộng', body: bm32 },
   { code: '33', group: '3 · Biểu mẫu CPNC', title: 'Khuôn in biểu mẫu', desc: 'Quốc hiệu, tiêu ngữ, vùng ký — bản giấy', body: khuonIn },
