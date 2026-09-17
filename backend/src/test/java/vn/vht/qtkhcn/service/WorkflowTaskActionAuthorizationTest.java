@@ -118,7 +118,7 @@ class WorkflowTaskActionAuthorizationTest {
         councilTask();
         when(identities.resolve("no-app@example.com")).thenReturn(new WorkflowDemoIdentity(
                 "no-app@example.com", Set.of("HDXD"), Set.of(), Set.of(),
-                Map.of("DOSSIER", Set.of("VIEW_DETAIL")), false));
+                Map.of("WORKLIST", Set.of("TASK03")), false));
         when(identities.resolve("no-view@example.com")).thenReturn(new WorkflowDemoIdentity(
                 "no-view@example.com", Set.of("HDXD"), Set.of(), Set.of("qlnvkhcn"), Map.of(), false));
 
@@ -159,6 +159,6 @@ class WorkflowTaskActionAuthorizationTest {
     private void identity(String userId, String... roleCodes) {
         when(identities.resolve(userId))
                 .thenReturn(new WorkflowDemoIdentity(userId, Set.of(roleCodes), Set.of(), Set.of("qlnvkhcn"),
-                        Map.of("DOSSIER", Set.of("VIEW_DETAIL")), false));
+                        Map.of("WORKLIST", Set.of("TASK03")), false));
     }
 }

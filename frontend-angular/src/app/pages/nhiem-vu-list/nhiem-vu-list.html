@@ -6,7 +6,9 @@
     </div>
     <div class="nvl-actions">
       <button nz-button (click)="openDossiers()"><span nz-icon nzType="folder-open"></span> Danh sách hồ sơ</button>
-      <button nz-button nzType="primary" (click)="create()"><span nz-icon nzType="plus"></span> Tạo nhiệm vụ mới</button>
+      @if (auth.hasPermission('NV02')) {
+        <button nz-button nzType="primary" (click)="create()"><span nz-icon nzType="plus"></span> Tạo nhiệm vụ mới</button>
+      }
       <button nz-button (click)="reload()" [nzLoading]="loading()"><span nz-icon nzType="reload"></span></button>
     </div>
   </div>
@@ -40,17 +42,19 @@
     <thead><tr><th nzWidth="140px">Mã NV KHCN</th><th>Tên nhiệm vụ</th><th nzWidth="100px">Cấp</th><th nzWidth="155px">Dự toán</th><th nzWidth="135px">Giai đoạn</th><th nzWidth="90px">Số hồ sơ</th><th nzWidth="70px"></th></tr></thead>
     <tbody>
       @for (row of table.data; track row.ma) {
-        <tr class="nvl-row" (click)="open(row)">
+        <tr class="nvl-row" (click)="auth.hasPermission('NV03') && open(row)">
           <td><code>{{ row.ma }}</code></td>
           <td><div class="nvl-title">{{ row.ten }}</div><div class="nvl-meta">{{ row.chuNhiem }} · {{ row.donViChuTri }}</div></td>
           <td>{{ capLabel[row.cap] }}</td>
           <td class="nvl-money">{{ row.duToan || '—' }}</td>
           <td><nz-tag [nzColor]="stageColor[row.giaiDoan]">{{ stageLabel[row.giaiDoan] }}</nz-tag></td>
           <td class="nvl-center">{{ dossierCount().get(row.ma) ?? 0 }}</td>
-          <td><button nz-button nzType="text" nzDanger nz-popconfirm
+          <td>@if (auth.hasPermission('NV06')) {
+            <button nz-button nzType="text" nzDanger nz-popconfirm
             [nzPopconfirmTitle]="(dossierCount().get(row.ma) ?? 0) > 0 ? 'Xóa nhiệm vụ và toàn bộ hồ sơ trực thuộc?' : 'Xóa nhiệm vụ này?'"
             (click)="$event.stopPropagation()" (nzOnConfirm)="delete(row)" [nzLoading]="deletingId() === row.ma"
-            aria-label="Xóa nhiệm vụ"><span nz-icon nzType="delete"></span></button></td>
+            aria-label="Xóa nhiệm vụ"><span nz-icon nzType="delete"></span></button>
+          }</td>
         </tr>
       } @empty { <tr><td colspan="7"><nz-empty nzNotFoundContent="Không có nhiệm vụ khớp bộ lọc."></nz-empty></td></tr> }
     </tbody>

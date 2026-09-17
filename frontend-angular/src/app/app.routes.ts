@@ -9,6 +9,8 @@ import { BusinessRuleListPage } from './pages/business-rule-list/business-rule-l
 import { BusinessRuleDetailPage } from './pages/business-rule-detail/business-rule-detail';
 import { authGuard, loginPageGuard } from './core/auth/auth.guard';
 import { appChildGuard } from './core/auth/app.guard';
+import { permissionChildGuard } from './core/auth/permission.guard';
+import { Perm } from './core/auth/permission-codes';
 import { AppListPage } from './pages/app-list/app-list';
 
 export const routes: Routes = [
@@ -18,61 +20,61 @@ export const routes: Routes = [
     path: '',
     component: Shell,
     canActivate: [authGuard],
-    canActivateChild: [appChildGuard],
+    canActivateChild: [appChildGuard, permissionChildGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: '/chon-ung-dung' },
       {
         path: 'tong-quan',
         loadComponent: () => import('./pages/tong-quan/tong-quan').then((module) => module.TongQuanPage),
-        data: { title: 'Tổng quan', app: 'quytrinh' },
+        data: { title: 'Tổng quan', app: 'quytrinh', permission: Perm.DB01 },
       },
       {
         path: 'viec-cua-toi',
         loadComponent: () => import('./pages/worklist/worklist').then((module) => module.WorklistPage),
-        data: { title: 'Việc của tôi', app: 'qlnvkhcn' },
+        data: { title: 'Việc của tôi', app: 'qlnvkhcn', permission: Perm.TASK01 },
       },
       {
         path: 'nhiem-vu',
         loadComponent: () => import('./pages/nhiem-vu-list/nhiem-vu-list').then((module) => module.NhiemVuListPage),
-        data: { title: 'Danh sách NV KHCN', app: 'qlnvkhcn' },
+        data: { title: 'Danh sách NV KHCN', app: 'qlnvkhcn', permission: Perm.NV01 },
       },
       {
         path: 'nhiem-vu/moi',
         loadComponent: () => import('./pages/nhiem-vu-create/nhiem-vu-create').then((module) => module.NhiemVuCreatePage),
-        data: { title: 'Tạo Nhiệm vụ KHCN', app: 'qlnvkhcn' },
+        data: { title: 'Tạo Nhiệm vụ KHCN', app: 'qlnvkhcn', permission: Perm.NV02 },
       },
       {
         path: 'nhiem-vu/:ma',
         loadComponent: () => import('./pages/nhiem-vu-detail/nhiem-vu-detail').then((module) => module.NhiemVuDetailPage),
-        data: { title: 'Chi tiết Nhiệm vụ KHCN', app: 'qlnvkhcn' },
+        data: { title: 'Chi tiết Nhiệm vụ KHCN', app: 'qlnvkhcn', permission: Perm.NV03 },
       },
-      { path: 'ho-so', component: HoSoListPage, data: { title: 'Danh sách Hồ sơ KHCN', app: 'qlnvkhcn' } },
+      { path: 'ho-so', component: HoSoListPage, data: { title: 'Danh sách Hồ sơ KHCN', app: 'qlnvkhcn', permission: Perm.HS01 } },
       {
         path: 'hoi-dong',
         loadComponent: () => import('./pages/hoi-dong-list/hoi-dong-list').then((module) => module.HoiDongListPage),
-        data: { title: 'Quản lý Hội đồng', app: 'qlnvkhcn' },
+        data: { title: 'Quản lý Hội đồng', app: 'qlnvkhcn', permission: Perm.HD01 },
       },
       {
         path: 'hoi-dong/moi',
         loadComponent: () => import('./pages/hoi-dong-form/hoi-dong-form').then((module) => module.HoiDongFormPage),
-        data: { title: 'Tạo mới Hội đồng', app: 'qlnvkhcn' },
+        data: { title: 'Tạo mới Hội đồng', app: 'qlnvkhcn', permission: Perm.HD03 },
       },
       {
         path: 'hoi-dong/:id/sua',
         loadComponent: () => import('./pages/hoi-dong-form/hoi-dong-form').then((module) => module.HoiDongFormPage),
-        data: { title: 'Sửa Hội đồng', app: 'qlnvkhcn' },
+        data: { title: 'Sửa Hội đồng', app: 'qlnvkhcn', permission: Perm.HD02 },
       },
       {
         path: 'ho-so/tao-moi',
         loadComponent: () => import('./pages/ho-so-create/ho-so-create').then((module) => module.HoSoCreatePage),
-        data: { title: 'Tạo mới Hồ sơ', app: 'qlnvkhcn' },
+        data: { title: 'Tạo mới Hồ sơ', app: 'qlnvkhcn', permission: Perm.HS02 },
       },
       {
         path: 'ho-so/:id',
         loadComponent: () => import('./pages/ho-so-detail/ho-so-detail').then((module) => module.HoSoDetailPage),
-        data: { title: 'Chi tiết Hồ sơ', app: 'qlnvkhcn' },
+        data: { title: 'Chi tiết Hồ sơ', app: 'qlnvkhcn', permission: Perm.HS03 },
       },
-      { path: 'quy-trinh', component: ProcessCatalogPage, data: { title: 'Quản lý quy trình', app: 'quytrinh' } },
+      { path: 'quy-trinh', component: ProcessCatalogPage, data: { title: 'Quản lý quy trình', app: 'quytrinh', permission: Perm.QT01 } },
       {
         path: 'quy-trinh/ve',
         loadComponent: () => import('./pages/bpmn-editor/bpmn-editor').then((module) => module.BpmnEditorPage),
@@ -86,7 +88,7 @@ export const routes: Routes = [
       {
         path: 'quy-trinh/:id',
         component: ProcessDetailPage,
-        data: { title: 'Chi tiết quy trình', app: 'quytrinh' },
+        data: { title: 'Chi tiết quy trình', app: 'quytrinh', permission: Perm.QT02 },
       },
       {
         path: 'quy-trinh/nhap/:draftId/chay-thu',
@@ -113,7 +115,7 @@ export const routes: Routes = [
         path: 'cau-hinh-hanh-dong',
         loadComponent: () =>
           import('./pages/action-studio/action-studio').then((module) => module.ActionStudioPage),
-        data: { title: 'Ma trận Hành động', app: 'quytrinh' },
+        data: { title: 'Ma trận Hành động', app: 'quytrinh', permission: Perm.HTN01 },
       },
       {
         path: 'cau-hinh-service-task',
@@ -125,13 +127,13 @@ export const routes: Routes = [
         path: 'giam-sat',
         loadComponent: () =>
           import('./pages/process-monitor/process-monitor').then((module) => module.ProcessMonitorPage),
-        data: { title: 'Giám sát tiến trình', app: 'quytrinh' },
+        data: { title: 'Giám sát tiến trình', app: 'quytrinh', permission: Perm.GS01 },
       },
       {
         path: 'tich-hop',
         loadComponent: () =>
           import('./pages/integration-status/integration-status').then((module) => module.IntegrationStatusPage),
-        data: { title: 'Tích hợp', app: 'quytrinh' },
+        data: { title: 'Tích hợp', app: 'quytrinh', permission: Perm.INT01 },
       },
       {
         path: 'nhat-ky',

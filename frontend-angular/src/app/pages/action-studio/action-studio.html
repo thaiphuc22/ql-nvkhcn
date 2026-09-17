@@ -60,7 +60,7 @@
             <span nz-icon nzType="delete"></span> Xóa đã chọn
           </button>
         }
-        <button nz-button nzType="primary" (click)="openNewPolicy()"><span nz-icon nzType="plus"></span> Thêm luật</button>
+        <button nz-button nzType="primary" [disabled]="!auth.hasPermission('HTN02')" (click)="openNewPolicy()"><span nz-icon nzType="plus"></span> Thêm luật</button>
       </div>
       <nz-table #policyTable [nzData]="filteredPolicies()" nzSize="small" [nzPageSize]="10" nzTableLayout="fixed">
         <thead><tr><th nzWidth="48px"><label nz-checkbox [nzChecked]="allFilteredPoliciesSelected()"
@@ -77,7 +77,14 @@
               <td><div>{{ item.allowedRoleCodes.length ? item.allowedRoleCodes.join(', ') : 'Mọi vai trò' }}</div><nz-tag [nzColor]="policyStatusColor[item.lifecycleStatus]">{{ policyStatusLabel[item.lifecycleStatus] }}</nz-tag></td>
               <td>{{ item.formKey || '—' }}</td>
               <td><nz-switch nzSize="small" [ngModel]="item.lifecycleStatus === 'ACTIVE'" (ngModelChange)="togglePolicy(item, $event)"></nz-switch></td>
-              <td><button nz-button nzType="link" nzSize="small" (click)="editPolicy(item)"><span nz-icon nzType="edit"></span></button><button nz-button nzType="link" nzDanger nzSize="small" nz-popconfirm nzPopconfirmTitle="Xóa luật này?" (nzOnConfirm)="removePolicy(item)"><span nz-icon nzType="delete"></span></button></td>
+              <td>
+                @if (auth.hasPermission('HTN03')) {
+                  <button nz-button nzType="link" nzSize="small" (click)="editPolicy(item)"><span nz-icon nzType="edit"></span></button>
+                }
+                @if (auth.hasPermission('HTN05')) {
+                  <button nz-button nzType="link" nzDanger nzSize="small" nz-popconfirm nzPopconfirmTitle="Xóa luật này?" (nzOnConfirm)="removePolicy(item)"><span nz-icon nzType="delete"></span></button>
+                }
+              </td>
             </tr>
           }
         </tbody>
@@ -89,7 +96,7 @@
         <nz-select [ngModel]="reconcileProcess()" (ngModelChange)="setReconcileProcess($event)">
           @for (process of store.processes(); track process.code) { <nz-option [nzValue]="process.code" [nzLabel]="process.code + ' · ' + process.name"></nz-option> }
         </nz-select>
-        <button nz-button nzType="primary" [disabled]="!reconcileProcess().trim()" (click)="scaffold()"><span nz-icon nzType="sync"></span> Tạo luật còn thiếu từ BPMN</button>
+        <button nz-button nzType="primary" [disabled]="!reconcileProcess().trim() || !auth.hasPermission('DTO02')" (click)="scaffold()"><span nz-icon nzType="sync"></span> Tạo luật còn thiếu từ BPMN</button>
       </div>
       <div class="as-reconcile-summary">
         <nz-card><nz-progress nzType="circle" [nzPercent]="reconcileStats().percent" [nzWidth]="82"></nz-progress><span><strong>Sức khỏe đối soát</strong><small>{{ reconcileStats().ok }}/{{ reconcileRows().length }} nhánh đã ghim đầy đủ</small></span></nz-card>

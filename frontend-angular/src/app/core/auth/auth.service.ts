@@ -48,6 +48,19 @@ export class AuthService {
     return current.isAdmin ? [...ALL_APP_CODES] : [...current.apps];
   }
 
+  /**
+   * Quyền màn hình / nút. Admin bypass. Khi identity-service lỗi, fail-open phía client để
+   * không khoá app — API backend vẫn tự enforce.
+   */
+  hasPermission(code: string | null | undefined): boolean {
+    if (!code) return true;
+    const current = this.userSignal();
+    if (!current) return false;
+    if (current.isAdmin) return true;
+    if (this.identityUnavailableSignal()) return true;
+    return (current.permissions ?? []).includes(code);
+  }
+
   selectApp(app: AppCode): boolean {
     if (!this.entitledApps().includes(app)) return false;
     this.activeAppSignal.set(app);
@@ -101,6 +114,7 @@ export class AuthService {
         this.userSignal.set({
           ...current,
           roleCodes: [...effective.roleCodes],
+          permissions: [...(effective.permissions ?? [])],
           // Nguồn thật thắng, KHÔNG OR với giá trị tĩnh: hạ cờ admin của một tài khoản trên
           // `/nguoi-dung` phải có tác dụng, chứ không bị `demo-users.ts` giữ mãi ở true.
           isAdmin: effective.administrator,

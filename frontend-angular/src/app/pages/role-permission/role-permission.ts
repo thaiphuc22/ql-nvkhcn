@@ -46,8 +46,8 @@ const DEFAULT_MATRIX_APP = 'qlnvkhcn';
  *
  * Tab "Ma trận phân quyền" ghim 1 Vai trò, liệt kê chức năng dạng lưới card (thay bảng cũ
  * ghim-Chức-năng/liệt-kê-Vai-trò) — xem `docs/plan/refactor-ma-tran-phan-quyen.md`. Catalog quyền
- * dùng chung (`permissions()`) tạm cố định 4 mục (Xem danh sách/Xem chi tiết/Thêm mới/Sửa, xem
- * migration V6 identity-service); BA sẽ định nghĩa quyền riêng theo từng chức năng sau.
+ * Catalog quyền: mã theo màn hình (NV01, HS01, …) gắn đúng Feature; Feature chưa có catalog
+ * riêng vẫn hiện 4 mã generic (VIEW_LIST/VIEW_DETAIL/CREATE/EDIT). Tick con tự cấp cha.
  */
 @Component({
   selector: 'app-role-permission',
@@ -126,7 +126,12 @@ export class RolePermissionPage implements OnInit {
   readonly matrixApp = computed(() => this.apps().find((app) => app.code === this.matrixAppCode()) ?? null);
   readonly matrixRole = computed(() => this.roles().find((r) => r.code === this.matrixRoleCode()) ?? null);
   readonly matrixRoleOptions = computed(() => this.roles().filter((r) => r.appCode === this.matrixAppCode()));
-  readonly matrixFeatures = computed(() => this.features().filter((feature) => feature.appCode === this.matrixAppCode()));
+  readonly matrixFeatures = computed(() =>
+    this.features()
+      .filter((feature) => feature.appCode === this.matrixAppCode())
+      .slice()
+      .sort((a, b) => (a.sortOrder ?? 100) - (b.sortOrder ?? 100) || a.code.localeCompare(b.code)),
+  );
   readonly filteredMatrixFeatures = computed(() => {
     const query = this.matrixFeatureQuery().trim().toLowerCase();
     const list = this.matrixFeatures();
@@ -139,9 +144,14 @@ export class RolePermissionPage implements OnInit {
     const featureCode = this.matrixDetailFeatureCode();
     if (!featureCode) return [];
     const codes = this.matrixDraft()[featureCode] ?? new Set<string>();
-    return this.permissions().filter((p) => codes.has(p.code));
+    return this.permissionsForFeature(featureCode).filter((p) => codes.has(p.code));
   });
-  readonly roleFormFeatures = computed(() => this.features().filter((feature) => feature.appCode === this.roleFormAppCode()));
+  readonly roleFormFeatures = computed(() =>
+    this.features()
+      .filter((feature) => feature.appCode === this.roleFormAppCode())
+      .slice()
+      .sort((a, b) => (a.sortOrder ?? 100) - (b.sortOrder ?? 100) || a.code.localeCompare(b.code)),
+  );
   readonly matrixDirtyCount = computed(() => this.matrixDirtyFeatures().size);
 
   // --- Nhật ký ---
@@ -247,12 +257,14 @@ export class RolePermissionPage implements OnInit {
   }
 
   toggleMatrixCell(featureCode: string, permissionCode: string): void {
-    const matrix = { ...this.roleFormMatrix() };
-    const current = new Set(matrix[featureCode] ?? []);
-    if (current.has(permissionCode)) current.delete(permissionCode);
-    else current.add(permissionCode);
-    matrix[featureCode] = current;
-    this.roleFormMatrix.set(matrix);
+    this.roleFormMatrix.set({
+      ...this.roleFormMatrix(),
+      [featureCode]: this.togglePermissionSet(
+        this.roleFormMatrix()[featureCode] ?? new Set<string>(),
+        permissionCode,
+        this.permissionsForFeature(featureCode),
+      ),
+    });
   }
 
   onRoleFormAppChange(appCode: string): void {
@@ -389,11 +401,15 @@ export class RolePermissionPage implements OnInit {
   /** Tên khác `toggleMatrixCell` (ma trận trong modal vai trò) — hai lưới, hai bản nháp riêng. */
   toggleMatrixGridCell(featureCode: string, permissionCode: string): void {
     const draft = { ...this.matrixDraft() };
-    const codes = new Set(draft[featureCode] ?? []);
-    if (codes.has(permissionCode)) codes.delete(permissionCode);
-    else codes.add(permissionCode);
-    draft[featureCode] = codes;
+    draft[featureCode] = this.togglePermissionSet(
+      draft[featureCode] ?? new Set<string>(),
+      permissionCode,
+      this.permissionsForFeature(featureCode),
+    );
     this.matrixDraft.set(draft);
+    if (!this.isFeatureEnabled(featureCode) && (draft[featureCode]?.size ?? 0) > 0) {
+      this.matrixEnabledDraft.set({ ...this.matrixEnabledDraft(), [featureCode]: true });
+    }
     this.markDirty([featureCode]);
   }
 
@@ -452,6 +468,50 @@ export class RolePermissionPage implements OnInit {
         this.message.error(this.apiErrorMessage(error, 'Lưu ma trận thất bại'));
       },
     });
+  }
+
+  permissionsForFeature(featureCode: string): PermissionResponse[] {
+    const specific = this.permissions()
+      .filter((p) => p.featureCode === featureCode)
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.code.localeCompare(b.code));
+    if (specific.length) return specific;
+    return this.permissions()
+      .filter((p) => !p.featureCode)
+      .sort((a, b) => a.code.localeCompare(b.code));
+  }
+
+  private togglePermissionSet(
+    current: Set<string>,
+    permissionCode: string,
+    catalog: PermissionResponse[],
+  ): Set<string> {
+    const next = new Set(current);
+    if (next.has(permissionCode)) {
+      next.delete(permissionCode);
+      for (const child of this.descendantCodes(permissionCode, catalog)) next.delete(child);
+    } else {
+      next.add(permissionCode);
+      for (const parent of this.ancestorCodes(permissionCode, catalog)) next.add(parent);
+    }
+    return next;
+  }
+
+  private ancestorCodes(code: string, catalog: PermissionResponse[]): string[] {
+    const byCode = new Map(catalog.map((p) => [p.code, p]));
+    const out: string[] = [];
+    const queue = [...(byCode.get(code)?.requires ?? [])];
+    const seen = new Set<string>();
+    while (queue.length) {
+      const current = queue.shift()!;
+      if (!seen.add(current)) continue;
+      out.push(current);
+      queue.push(...(byCode.get(current)?.requires ?? []));
+    }
+    return out;
+  }
+
+  private descendantCodes(code: string, catalog: PermissionResponse[]): string[] {
+    return catalog.filter((p) => this.ancestorCodes(p.code, catalog).includes(code)).map((p) => p.code);
   }
 
   // ---------- Quyền (chỉ đọc, dùng cho lưới card + modal Sửa vai trò) ----------

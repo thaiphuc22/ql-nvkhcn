@@ -188,11 +188,11 @@
               <div class="rp-feature-card-body">
                 <span class="rp-feature-card-label">Phân quyền</span>
                 <div class="rp-feature-card-perms">
-                  @for (p of permissions(); track p.code) {
-                    <label nz-checkbox nz-tooltip [nzTooltipTitle]="p.name"
+                  @for (p of permissionsForFeature(f.code); track p.code) {
+                    <label nz-checkbox nz-tooltip [nzTooltipTitle]="p.code + (p.requires?.length ? ' ← ' + p.requires.join(', ') : '')"
                       [ngModel]="isMatrixCellChecked(f.code, p.code)"
                       (ngModelChange)="toggleMatrixGridCell(f.code, p.code)"
-                    >{{ p.name }}</label>
+                    ><code>{{ p.code }}</code> {{ p.name }}</label>
                   }
                 </div>
               </div>
@@ -262,36 +262,19 @@
           }
         </nz-select>
         <label>Ma trận quyền theo tính năng</label>
-        <div class="rp-matrix-wrap">
-          <table class="rp-matrix">
-            <thead>
-              <tr>
-                <th class="rp-matrix-feature">Tính năng</th>
-                @for (p of permissions(); track p.code) {
-                  <th class="rp-matrix-perm" [nz-tooltip]="p.name">{{ p.code }}</th>
+        <div class="rp-role-feature-perms">
+          @for (f of roleFormFeatures(); track f.code) {
+            <div class="rp-role-feature-block">
+              <div class="rp-role-feature-name">{{ f.name }} <code>{{ f.code }}</code></div>
+              <div class="rp-feature-card-perms">
+                @for (p of permissionsForFeature(f.code); track p.code) {
+                  <label nz-checkbox [ngModel]="isMatrixChecked(f.code, p.code)" (ngModelChange)="toggleMatrixCell(f.code, p.code)">
+                    <code>{{ p.code }}</code> {{ p.name }}
+                  </label>
                 }
-              </tr>
-            </thead>
-            <tbody>
-              @for (f of roleFormFeatures(); track f.code) {
-                <tr>
-                  <td class="rp-matrix-feature">
-                    <span class="rp-matrix-feature-name">{{ f.name }}</span>
-                    <span class="rp-matrix-feature-group">{{ f.group }}</span>
-                  </td>
-                  @for (p of permissions(); track p.code) {
-                    <td class="rp-matrix-perm" nzAlign="center">
-                      <label
-                        nz-checkbox
-                        [ngModel]="isMatrixChecked(f.code, p.code)"
-                        (ngModelChange)="toggleMatrixCell(f.code, p.code)"
-                      ></label>
-                    </td>
-                  }
-                </tr>
-              }
-            </tbody>
-          </table>
+              </div>
+            </div>
+          }
         </div>
         <label class="rp-switch-row">
           <span>Hoạt động</span>

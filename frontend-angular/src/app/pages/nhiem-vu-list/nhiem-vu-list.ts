@@ -53,7 +53,7 @@ export class NhiemVuListPage {
   private readonly service = inject(NhiemVuService);
   private readonly hoSoService = inject(HoSoService);
   private readonly router = inject(Router);
-  private readonly auth = inject(AuthService);
+  readonly auth = inject(AuthService);
   private readonly message = inject(NzMessageService);
 
   readonly capLabel = NHIEM_VU_CAP_LABEL;

@@ -47,7 +47,7 @@ import { AuthService } from '../../core/auth/auth.service';
 export class ActionStudioPage implements OnInit {
   readonly store = inject(ActionStudioService);
   private readonly message = inject(NzMessageService);
-  private readonly auth = inject(AuthService);
+  readonly auth = inject(AuthService);
   private simulationRequestId = 0;
 
   readonly typeLabel = ACTION_TYPE_LABEL;

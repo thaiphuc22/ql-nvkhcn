@@ -1,7 +1,31 @@
 # Active Task
 
-**Last updated**: 2026-07-31
-**Agent role**: Frontend implementer (branch `tranngdt`)
+**Last updated**: 2026-09-17
+**Agent role**: BA catalog (branch `tranngdt`)
+
+---
+
+## ★ CURRENT — Catalog quyền vòng đời hồ sơ KHCN — 2026-09-17
+
+**Yêu cầu user:** mở 1 file và điền đủ yêu cầu (CRUD + tab eForm) cho HS chủ trương, xét duyệt, hội đồng, phiếu/phiên họp, RD03, 10 loại RD04 CS/TĐ, NT, QT, SP, SHTT, CBKH, CNL.
+
+**Đã làm:** file `docs/ba/Catalog-Quyen-Man-Hinh-Vong-Doi-KHCN.md` — đủ 8 cột ma trận, mã `CT*`/`XD*`/`NT*`/`HSQT*`/`CNCS*`…, ràng buộc + screen_children, ánh xạ màn `/ho-so` `/hoi-dong`. OQ-019…024.
+
+**Chưa làm (cố ý):** không seed identity V9, không tách route/menu theo loại hồ sơ. Runtime vẫn `HS01–HS08`.
+
+---
+
+## ★ PREVIOUS — Catalog quyền theo màn hình (NV01/HS01/…) — 2026-09-12
+
+**Yêu cầu user:** triển khai ma trận permission BA (DB/TASK/NV/HS/HD/QT/HTN/DTO/DMHD/GS/INT/SP/SHTT/CBKH/CNL/MTB/TB) đối chiếu danh sách màn hình đang có.
+
+**Đã làm:**
+- identity-service **V8**: mỗi mã quyền gắn 1 Feature; `requires` (cha) + `screen_children` (DB01→NV03,QT02); Feature mới (COUNCIL, PROCESS_MONITOR, INTEGRATION, catalog SHTT/SP/… chưa có UI); map grant cũ → mã màn hình; đóng bao cha; gán OPERATOR cho `cqnv@example.com` để App quytrinh có grant.
+- Ma trận UI chỉ hiện quyền của đúng chức năng; tick con tự cấp cha / bỏ cha thu con.
+- Angular: `hasPermission`, ẩn menu, `permissionGuard` trên route màn đã có, ẩn nút Tạo/Xóa/Gửi duyệt/Đồng bộ/Action.
+- Backend: task action **TASK03**, gửi duyệt hồ sơ **HS06**. Admin bypass.
+
+**Chưa làm / cố ý bỏ:** không dựng màn SP/SHTT/CBKH/CNL/Thông báo (chỉ seed catalog); không seed jobworker (không phải màn); HD06 = mã thiếu trên file BA cho “Tạo file QĐ Hội đồng”; DTO03 ràng buộc **DTO01** (sửa typo DSO01).
 
 ---
 

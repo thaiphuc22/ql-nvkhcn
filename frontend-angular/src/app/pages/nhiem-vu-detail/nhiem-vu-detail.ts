@@ -14,6 +14,7 @@ import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { NzStepsModule } from 'ng-zorro-antd/steps';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
+import { AuthService } from '../../core/auth/auth.service';
 import { DOSSIER_STATUS_LABEL, HoSoResponse } from '../../core/models/ho-so';
 import { NHIEM_VU_CAP_LABEL, NHIEM_VU_GIAI_DOAN_COLOR, NHIEM_VU_GIAI_DOAN_LABEL, NHIEM_VU_GIAI_DOAN_ORDER, NhiemVuResponse } from '../../core/models/nhiem-vu';
 import { HoSoService } from '../../core/services/ho-so.service';
@@ -25,6 +26,7 @@ import { NhiemVuService } from '../../core/services/nhiem-vu.service';
   templateUrl: './nhiem-vu-detail.html', styleUrl: './nhiem-vu-detail.scss',
 })
 export class NhiemVuDetailPage {
+  readonly auth = inject(AuthService);
   private readonly service = inject(NhiemVuService); private readonly hoSoService = inject(HoSoService);
   private readonly route = inject(ActivatedRoute); private readonly router = inject(Router);
   readonly capLabel = NHIEM_VU_CAP_LABEL; readonly stageLabel = NHIEM_VU_GIAI_DOAN_LABEL; readonly stageColor = NHIEM_VU_GIAI_DOAN_COLOR; readonly statusLabel = DOSSIER_STATUS_LABEL;

@@ -69,7 +69,7 @@ const STATUS_COLOR: Record<DossierStatus, NzStatusColor> = {
 export class HoiDongListPage {
   private readonly service = inject(HoiDongService);
   private readonly hoSoService = inject(HoSoService);
-  private readonly auth = inject(AuthService);
+  readonly auth = inject(AuthService);
   private readonly message = inject(NzMessageService);
   private readonly router = inject(Router);
 

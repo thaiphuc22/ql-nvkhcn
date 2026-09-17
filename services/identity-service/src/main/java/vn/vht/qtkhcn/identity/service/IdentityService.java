@@ -28,11 +28,19 @@ public class IdentityService {
  public OrganizationResponse updateOrganization(UUID id,OrganizationRequest x){Organization e=org(id);e.code=norm(x.code());e.name=x.name().trim();e.parent=x.parentId()==null?null:org(x.parentId());if(x.active()!=null)e.active=x.active();e.updatedAt=Instant.now();return org(e);}
  public void deleteOrganization(UUID id){Organization e=org(id);orgs.delete(e);audit("ORGANIZATION_DELETED","ORGANIZATION",id,e.code);}
 
- @Transactional(readOnly=true) public List<PermissionResponse> permissions(){return permissions.findAll().stream().filter(p->p.active).map(this::permission).toList();}
+ @Transactional(readOnly=true) public List<PermissionResponse> permissions(){
+  return permissions.findAll().stream().filter(p->p.active)
+    .sorted(Comparator.comparing((Permission p)->p.feature==null?"":p.feature.code).thenComparingInt(p->p.sortOrder).thenComparing(p->p.code))
+    .map(this::permission).toList();
+ }
  public PermissionResponse createPermission(PermissionRequest x){if(permissions.existsByCodeIgnoreCase(x.code()))throw new IllegalArgumentException("Permission code already exists.");return permission(permissions.save(new Permission(norm(x.code()),x.name().trim(),x.description())));}
  public PermissionResponse updatePermission(UUID id,PermissionRequest x){Permission e=permission(id);e.code=norm(x.code());e.name=x.name().trim();e.description=x.description();if(x.active()!=null)e.active=x.active();return permission(e);}
  public void deletePermission(UUID id){permissions.delete(permission(id));}
- @Transactional(readOnly=true) public List<FeatureResponse> features(){return features.findAll().stream().sorted(Comparator.comparing(f->f.code)).map(this::feature).toList();}
+ @Transactional(readOnly=true) public List<FeatureResponse> features(){
+  return features.findAll().stream()
+    .sorted(Comparator.comparingInt((Feature f)->f.sortOrder).thenComparing(f->f.code))
+    .map(this::feature).toList();
+ }
 
  /**
   * Thứ tự ỔN ĐỊNH: vai trò hệ thống trước, rồi theo mã. `findAll()` không có ORDER BY nên trả
@@ -107,7 +115,7 @@ public class IdentityService {
    matrix.deleteByRoleIdAndFeatureId(r.getId(),f.getId());
    matrix.flush();
    boolean enabled=!Boolean.FALSE.equals(cell.enabled());
-   Set<String> codes=nullable(cell.permissionCodes()).stream().map(IdentityService::norm).collect(Collectors.toCollection(TreeSet::new));
+   Set<String> codes=normalizeCodesForFeature(f,nullable(cell.permissionCodes()));
    for(String code:codes)matrix.save(new RoleFeaturePermission(r,f,permission(code),enabled));
    r.updatedAt=Instant.now();
    audit("ROLE_MATRIX_UPDATED","ROLE",r.getId(),"role="+r.getCode()+",feature="+f.code+",permissions="+codes);
@@ -123,16 +131,59 @@ public class IdentityService {
  @Transactional(readOnly=true) public List<AuditLogResponse> auditLog(){return audits.findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC,"occurredAt")).stream().map(a->new AuditLogResponse(a.id,a.eventType,a.actorId,a.entityType,a.entityId,a.details,a.occurredAt)).toList();}
  @Transactional(readOnly=true) public EffectivePermissionsResponse effective(String identity){User u=parseUser(identity);List<UserRoleAssignment> active=assignments.findEffective(u.id,LocalDate.now());Set<String> rc=active.stream().map(a->a.role.code).collect(Collectors.toCollection(TreeSet::new));List<RoleFeaturePermission> grants=active.stream().flatMap(a->matrix.findDetailedByRoleId(a.role.id).stream()).filter(g->g.enabled&&g.feature.active&&g.permission.active).toList();Set<String> pc=grants.stream().map(g->g.permission.code).collect(Collectors.toCollection(TreeSet::new));List<MatrixEntryResponse> fp=toMatrix(grants);List<EffectiveAssignmentResponse> ea=active.stream().map(a->new EffectiveAssignmentResponse(a.role.code,a.dataScope,a.organization==null?null:a.organization.id,a.effectiveFrom,a.effectiveTo)).toList();return new EffectivePermissionsResponse(u.id,u.email,u.email,u.fullName,u.organization==null?null:u.organization.id,rc,pc,fp,ea,appCodes(u.id),u.administrator);}
 
- private void setMatrix(Role role,RoleRequest request){if(request.matrix()==null&&request.permissionCodes()==null)return;matrix.deleteByRoleId(role.id);matrix.flush();if(request.matrix()!=null){for(MatrixEntryRequest entry:request.matrix()){Feature f=feature(entry.featureCode());if(!role.appCode.equals(f.appCode))throw new IllegalArgumentException("Feature "+f.code+" does not belong to role app "+role.appCode+".");boolean enabled=!Boolean.FALSE.equals(entry.enabled());for(String code:nullable(entry.permissionCodes()))matrix.save(new RoleFeaturePermission(role,f,permission(code),enabled));}}else{Feature general=feature("GENERAL");if(!role.appCode.equals(general.appCode))throw new IllegalArgumentException("Legacy flat permissions are only supported for app "+general.appCode+".");for(String code:nullable(request.permissionCodes()))matrix.save(new RoleFeaturePermission(role,general,permission(code),true));}}
+ private void setMatrix(Role role,RoleRequest request){if(request.matrix()==null&&request.permissionCodes()==null)return;matrix.deleteByRoleId(role.id);matrix.flush();if(request.matrix()!=null){for(MatrixEntryRequest entry:request.matrix()){Feature f=feature(entry.featureCode());if(!role.appCode.equals(f.appCode))throw new IllegalArgumentException("Feature "+f.code+" does not belong to role app "+role.appCode+".");boolean enabled=!Boolean.FALSE.equals(entry.enabled());for(String code:normalizeCodesForFeature(f,nullable(entry.permissionCodes())))matrix.save(new RoleFeaturePermission(role,f,permission(code),enabled));}}else{Feature general=feature("GENERAL");if(!role.appCode.equals(general.appCode))throw new IllegalArgumentException("Legacy flat permissions are only supported for app "+general.appCode+".");for(String code:normalizeCodesForFeature(general,nullable(request.permissionCodes())))matrix.save(new RoleFeaturePermission(role,general,permission(code),true));}}
  private RoleResponse role(Role e){List<RoleFeaturePermission> grants=matrix.findDetailedByRoleId(e.id).stream().filter(g->g.permission.active).toList();Set<String> flat=grants.stream().filter(g->g.enabled).map(g->g.permission.code).collect(Collectors.toCollection(TreeSet::new));return new RoleResponse(e.id,e.code,e.name,e.kind,e.appCode,e.active,flat,toMatrix(grants));}
  private List<MatrixEntryResponse> toMatrix(Collection<RoleFeaturePermission> grants){Map<String,List<RoleFeaturePermission>> grouped=grants.stream().collect(Collectors.groupingBy(g->g.feature.code,TreeMap::new,Collectors.toList()));List<MatrixEntryResponse> out=new ArrayList<>();grouped.forEach((feature,items)->{Map<Boolean,Set<String>> byEnabled=items.stream().collect(Collectors.groupingBy(g->g.enabled,Collectors.mapping(g->g.permission.code,Collectors.toCollection(TreeSet::new))));byEnabled.forEach((enabled,codes)->out.add(new MatrixEntryResponse(feature,codes,enabled)));});return out;}
  private Set<String> appCodes(UUID userId){return userApps.findByUserId(userId).stream().filter(x->x.app.active).map(x->x.app.code).collect(Collectors.toCollection(TreeSet::new));}
  private String activeAppCode(String code){String normalized=appCode(code);return apps.findById(normalized).filter(a->a.active).map(a->a.code).orElseThrow(()->new IllegalArgumentException("Unsupported app code: "+code));}
  private User parseUser(String identity){try{return users.findById(UUID.fromString(identity)).orElseThrow();}catch(IllegalArgumentException|NoSuchElementException ignored){return users.findByEmailIgnoreCase(identity).orElseThrow(()->new EntityNotFoundException("Active user not found."));}}
  private Organization org(UUID id){return orgs.findById(id).orElseThrow(()->new EntityNotFoundException("Organization not found."));} private Role role(UUID id){return roles.findById(id).orElseThrow(()->new EntityNotFoundException("Role not found."));} private Permission permission(UUID id){return permissions.findById(id).orElseThrow(()->new EntityNotFoundException("Permission not found."));} private Permission permission(String code){return permissions.findByCodeIgnoreCase(code).orElseThrow(()->new EntityNotFoundException("Permission not found: "+code));} private Feature feature(String code){return features.findByCodeIgnoreCase(code).filter(f->f.active).orElseThrow(()->new EntityNotFoundException("Feature not found: "+code));} private User user(UUID id){return users.findById(id).orElseThrow(()->new EntityNotFoundException("User not found."));}
- private OrganizationResponse org(Organization e){return new OrganizationResponse(e.id,e.code,e.name,e.parent==null?null:e.parent.id,e.active);} private PermissionResponse permission(Permission e){return new PermissionResponse(e.id,e.code,e.name,e.description,e.active);} private FeatureResponse feature(Feature e){return new FeatureResponse(e.id,e.code,e.name,e.group,e.appCode,e.description,e.active,e.legacy);} private UserResponse user(User e){return new UserResponse(e.id,e.email,e.employeeCode,e.fullName,e.jobTitle,e.organization==null?null:e.organization.id,e.status,e.administrator);} // getCode()/getId() chứ KHÔNG phải `.code`/`.id`: getter khởi tạo proxy lazy, field access thì
+ private OrganizationResponse org(Organization e){return new OrganizationResponse(e.id,e.code,e.name,e.parent==null?null:e.parent.id,e.active);}
+ private PermissionResponse permission(Permission e){
+  return new PermissionResponse(e.id,e.code,e.name,e.description,e.active,e.feature==null?null:e.feature.code,e.sortOrder,csv(e.requires),csv(e.screenChildren));
+ }
+ private FeatureResponse feature(Feature e){return new FeatureResponse(e.id,e.code,e.name,e.group,e.appCode,e.description,e.active,e.legacy,e.sortOrder);}
+ private UserResponse user(User e){return new UserResponse(e.id,e.email,e.employeeCode,e.fullName,e.jobTitle,e.organization==null?null:e.organization.id,e.status,e.administrator);} // getCode()/getId() chứ KHÔNG phải `.code`/`.id`: getter khởi tạo proxy lazy, field access thì
  // không và trả null. Lớp phòng thủ thứ hai cạnh join fetch ở UserRoleAssignmentRepository.
  private AssignmentResponse assignment(UserRoleAssignment a){return new AssignmentResponse(a.id,a.user.getId(),a.role.getCode(),a.dataScope,a.organization==null?null:a.organization.getId(),a.effectiveFrom,a.effectiveTo);}
+ /**
+  * Mở rộng ràng buộc cha rồi chỉ giữ mã thuộc đúng Feature đang lưu. Feature có catalog riêng
+  * (NV01/HS01/…) từ chối mã generic; Feature chưa có catalog riêng vẫn nhận VIEW_LIST/CREATE/…
+  */
+ private Set<String> normalizeCodesForFeature(Feature f,Set<String> raw){
+  Set<String> expanded=expandRequires(raw.stream().map(IdentityService::norm).collect(Collectors.toCollection(TreeSet::new)));
+  boolean dedicated=permissions.findAll().stream().anyMatch(p->p.active&&p.feature!=null&&p.feature.getId().equals(f.getId()));
+  Set<String> out=new TreeSet<>();
+  for(String code:expanded){
+   Permission p=permission(code);
+   if(!p.active)throw new IllegalArgumentException("Permission "+code+" is inactive.");
+   if(dedicated){
+    if(p.feature==null||!p.feature.getId().equals(f.getId()))
+     throw new IllegalArgumentException("Permission "+code+" does not belong to feature "+f.code+".");
+   }else if(p.feature!=null){
+    throw new IllegalArgumentException("Permission "+code+" belongs to feature "+p.feature.code+".");
+   }
+   out.add(p.code);
+  }
+  return out;
+ }
+ private Set<String> expandRequires(Set<String> codes){
+  Map<String,Permission> byCode=permissions.findAll().stream().collect(Collectors.toMap(p->p.code,p->p,(a,b)->a));
+  Set<String> out=new TreeSet<>(codes);
+  ArrayDeque<String> queue=new ArrayDeque<>(codes);
+  while(!queue.isEmpty()){
+   Permission p=byCode.get(queue.poll());
+   if(p==null)continue;
+   for(String req:csv(p.requires)){
+    if(out.add(req))queue.add(req);
+   }
+  }
+  return out;
+ }
+ private static Set<String> csv(String value){
+  if(value==null||value.isBlank())return Set.of();
+  return Arrays.stream(value.split(",")).map(String::trim).filter(s->!s.isEmpty()).collect(Collectors.toCollection(TreeSet::new));
+ }
  private static <T> Set<T> nullable(Set<T> value){return value==null?Set.of():value;} private static String norm(String x){return x.trim().toUpperCase(Locale.ROOT);} private static String appCode(String x){return x.trim().toLowerCase(Locale.ROOT);} private static String status(String x){return x==null||x.isBlank()?"ACTIVE":norm(x);}
  private void audit(String event,String type,UUID id,String details){audits.save(new AuditLog(event,type,id.toString(),details));}
 }

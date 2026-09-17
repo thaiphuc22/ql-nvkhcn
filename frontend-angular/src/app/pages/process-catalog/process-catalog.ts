@@ -63,7 +63,7 @@ import {
 export class ProcessCatalogPage {
   private readonly processDefinitionService = inject(ProcessDefinitionService);
   private readonly processDefinitionDraftService = inject(ProcessDefinitionDraftService);
-  private readonly auth = inject(AuthService);
+  readonly auth = inject(AuthService);
   private readonly message = inject(NzMessageService);
   private readonly modal = inject(NzModalService);
   private readonly router = inject(Router);

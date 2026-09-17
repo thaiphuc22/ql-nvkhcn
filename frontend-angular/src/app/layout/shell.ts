@@ -13,7 +13,7 @@ import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 
 import { AuthService } from '../core/auth/auth.service';
 import { findApp } from '../core/auth/app-registry';
-import { isNavGroup, NAV_ITEMS, navItemsForApp, NavGroup, SECTION_TITLE_BY_ROUTE } from './nav-items';
+import { isNavGroup, NAV_ITEMS, visibleNavItems, NavGroup, SECTION_TITLE_BY_ROUTE } from './nav-items';
 
 const SIDER_WIDTH = 230;
 const SIDER_COLLAPSED_WIDTH = 80;
@@ -38,7 +38,12 @@ export class Shell {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
 
-  readonly navItems = computed(() => navItemsForApp(this.auth.activeApp()));
+  readonly navItems = computed(() => {
+    this.auth.user();
+    this.auth.rolesLoaded();
+    this.auth.identityUnavailable();
+    return visibleNavItems(this.auth.activeApp(), (code) => this.auth.hasPermission(code));
+  });
   readonly siderWidth = SIDER_WIDTH;
   readonly siderCollapsedWidth = SIDER_COLLAPSED_WIDTH;
 

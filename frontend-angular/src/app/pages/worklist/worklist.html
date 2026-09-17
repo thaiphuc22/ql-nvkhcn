@@ -74,13 +74,17 @@
           </td>
           <td>
             <span nz-tooltip [nzTooltipTitle]="t.formKey ? ('Biểu mẫu: ' + t.formKey) : null">
+            @if (auth.hasPermission('TASK03')) {
               <button nz-button nzType="primary" nzSize="small" (click)="openDetail(t)">
                 <span nz-icon nzType="form"></span> Xử lý
               </button>
+            }
             </span>
+            @if (auth.hasPermission('TASK02')) {
             <button nz-button nzSize="small" (click)="openDetail(t)">
               <span nz-icon nzType="folder-open"></span>
             </button>
+            }
           </td>
         </tr>
       } @empty {

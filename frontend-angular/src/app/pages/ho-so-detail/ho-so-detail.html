@@ -27,12 +27,14 @@
           <nz-spin nzSimple></nz-spin>
         }
         @for (action of dossierActions(); track action.actionCode) {
+          @if ((action.actionCode === 'SUBMIT' && auth.hasPermission('HS06')) || (action.actionCode !== 'SUBMIT' && auth.hasPermission('TASK03'))) {
           <button nz-button [nzType]="actionButtonType(action)" [nzDanger]="action.tone === 'danger'"
             [title]="(action.helpText || action.label) + (action.policyId ? ' · Luật ' + action.policyId : '')"
             (click)="runDossierAction(action)">
             {{ action.label }}
             @if (action.policyId) { <code class="hsd-policy-code">{{ action.policyId }}</code> }
           </button>
+          }
         }
         @if (dossier.trangThai === 'PROCESSING') {
           @if (saving()) {
@@ -142,6 +144,7 @@
           <div class="hsd-document-toolbar">
             <input #documentInput type="file" hidden (change)="uploadDocument($event)" />
             <button nz-button nzType="primary" [nzLoading]="documentUploading()"
+              [disabled]="!auth.hasPermission('HS05')"
               (click)="chooseDocument(documentInput)">
               <span nz-icon nzType="file-add"></span>Upload tài liệu
             </button>
@@ -153,11 +156,11 @@
               <div><strong>{{ document.ten }}</strong><small>{{ document.loai }} · {{ formatFileSize(document.sizeBytes) }}</small></div>
               <button nz-button nzType="link" [disabled]="!document.hasContent"
                 [nzLoading]="documentLoadingId() === document.id" (click)="viewDocument(document)">Xem</button>
-              <button nz-button nzType="link" [disabled]="!document.hasContent"
+              <button nz-button nzType="link" [disabled]="!document.hasContent || !auth.hasPermission('HS05')"
                 [nzLoading]="documentLoadingId() === document.id" (click)="downloadDocument(document)">Tải</button>
               <button nz-button nzType="link" nzDanger nz-popconfirm
                 nzPopconfirmTitle="Xóa tài liệu này?" nzPopconfirmOkText="Xóa" nzPopconfirmCancelText="Hủy"
-                [disabled]="documentDeletingId() !== null"
+                [disabled]="documentDeletingId() !== null || !auth.hasPermission('HS05')"
                 [nzLoading]="documentDeletingId() === document.id"
                 (nzOnConfirm)="deleteDocument(document)">Xóa</button>
             </div>

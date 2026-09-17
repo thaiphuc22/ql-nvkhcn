@@ -14,6 +14,14 @@ public record WorkflowDemoIdentity(String userId, Set<String> roleCodes, Set<Str
     }
 
     public boolean hasFeaturePermission(String featureCode, String permissionCode) {
+        if (administrator) return true;
+        if (permissions.contains(permissionCode)) return true;
         return featurePermissions.getOrDefault(featureCode, Set.of()).contains(permissionCode);
+    }
+
+    public boolean hasPermission(String permissionCode) {
+        if (administrator) return true;
+        if (permissions.contains(permissionCode)) return true;
+        return featurePermissions.values().stream().anyMatch(codes -> codes.contains(permissionCode));
     }
 }

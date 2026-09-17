@@ -22,6 +22,8 @@ export interface DemoUser {
   roleCodes: string[];
   /** Entitlement App demo phía client; không thay thế authorization ở backend. */
   apps: AppCode[];
+  /** Mã quyền hiệu lực — nạp từ identity-service, không hardcode. */
+  permissions?: string[];
 }
 
 /**

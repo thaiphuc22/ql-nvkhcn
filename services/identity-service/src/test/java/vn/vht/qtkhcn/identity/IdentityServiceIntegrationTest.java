@@ -2,42 +2,45 @@ package vn.vht.qtkhcn.identity;
 import static org.junit.jupiter.api.Assertions.*; import static vn.vht.qtkhcn.identity.web.dto.IdentityDtos.*; import jakarta.persistence.EntityNotFoundException; import java.time.LocalDate; import java.util.*; import org.junit.jupiter.api.*; import org.springframework.beans.factory.annotation.Autowired; import org.springframework.boot.test.context.SpringBootTest; import org.springframework.boot.testcontainers.service.connection.ServiceConnection; import org.testcontainers.junit.jupiter.Container; import org.testcontainers.junit.jupiter.Testcontainers; import org.testcontainers.postgresql.PostgreSQLContainer; import vn.vht.qtkhcn.identity.service.IdentityService;
 @Testcontainers @SpringBootTest(properties="qtkhcn.internal.service-token=test-token")
 class IdentityServiceIntegrationTest { @Container @ServiceConnection static PostgreSQLContainer db=new PostgreSQLContainer("postgres:16-alpine"); @Autowired IdentityService service;
- // Từ V6, catalog quyền hoạt động chỉ còn 4 mục (VIEW_LIST/VIEW_DETAIL/CREATE/EDIT) cho lưới
- // card "Ma trận phân quyền" — PROCESS_STEP (và mọi mã khác) vẫn còn trong DB (audit/FK) nhưng
- // bị ẩn khỏi permissions()/featurePermissions() vì đã deactivate, nên assert đổi sang CREATE.
- @Test void migrationSeedsCatalogAndPreservesLegacyPermissions(){assertEquals(4,service.permissions().size());assertEquals(13,service.features().size());assertEquals(Set.of("qlnvkhcn","quytrinh","he-thong"),service.features().stream().map(FeatureResponse::appCode).collect(java.util.stream.Collectors.toSet()));assertEquals(4,service.dataScopes().size());assertTrue(service.roles().size()>=30);EffectivePermissionsResponse e=service.effective("pm@example.com");assertEquals(Set.of("NNC","PA","PM"),e.roleCodes());assertTrue(e.permissions().contains("CREATE"));assertTrue(e.featurePermissions().stream().anyMatch(x->x.featureCode().equals("DOSSIER")&&x.permissionCodes().contains("CREATE")));assertEquals(3,e.assignments().size());assertTrue(e.apps().contains("qlnvkhcn"));}
+ @Test void migrationSeedsCatalogAndPreservesLegacyPermissions(){
+  assertTrue(service.permissions().stream().anyMatch(p->"NV01".equals(p.code())));
+  assertEquals(4,service.permissions().stream().filter(p->p.featureCode()==null).count(),
+      "4 mã generic còn active cho Feature chưa có catalog riêng");
+  assertEquals(23,service.features().size());
+  assertEquals(Set.of("qlnvkhcn","quytrinh","he-thong"),service.features().stream().map(FeatureResponse::appCode).collect(java.util.stream.Collectors.toSet()));
+  assertEquals(4,service.dataScopes().size());assertTrue(service.roles().size()>=30);
+  EffectivePermissionsResponse e=service.effective("pm@example.com");
+  assertEquals(Set.of("NNC","PA","PM"),e.roleCodes());
+  assertTrue(e.permissions().contains("NV01"));
+  assertTrue(e.featurePermissions().stream().anyMatch(x->x.featureCode().equals("DOSSIER")&&x.permissionCodes().contains("HS01")));
+  assertEquals(3,e.assignments().size());assertTrue(e.apps().contains("qlnvkhcn"));
+ }
  @Test void createsUserAssignmentAndRejectsFreeTextScope(){var u=service.createUser(new UserRequest("new.user@example.com","NV001","Người dùng mới","Kỹ sư",null,"ACTIVE",false));var a=service.assign(u.id(),new AssignmentRequest("PM","OWN_MISSION",null,null,null));assertEquals("PM",a.roleCode());assertEquals(Set.of("PM"),service.effective(u.id().toString()).roleCodes());assertThrows(IllegalArgumentException.class,()->service.assign(u.id(),new AssignmentRequest("PM","ARBITRARY",null,null,null)));service.revoke(u.id(),a.id());service.deleteUser(u.id());assertTrue(service.auditLog().stream().anyMatch(x->x.eventType().equals("ROLE_REVOKED")));}
  @Test void replacesUserAppsAndAuditsDelta(){var user=service.users().stream().filter(x->x.email().equals("pm@example.com")).findFirst().orElseThrow();var result=service.replaceUserApps(user.id(),Set.of("qlnvkhcn","quytrinh"));assertEquals(Set.of("qlnvkhcn","quytrinh"),result.appCodes());assertEquals(result.appCodes(),service.effective(user.id().toString()).apps());assertTrue(service.auditLog().stream().anyMatch(x->x.eventType().equals("APP_GRANTED")));}
- @Test void createsRoleWithFeatureMatrix(){var created=service.createRole(new RoleRequest("TEST_MATRIX","Test matrix","BUSINESS","qlnvkhcn",true,null,List.of(new MatrixEntryRequest("DOSSIER",Set.of("CREATE","EDIT"),true))));assertEquals("qlnvkhcn",created.appCode());assertEquals(Set.of("CREATE","EDIT"),created.permissionCodes());assertEquals("DOSSIER",created.matrix().getFirst().featureCode());}
+ @Test void createsRoleWithFeatureMatrix(){var created=service.createRole(new RoleRequest("TEST_MATRIX","Test matrix","BUSINESS","qlnvkhcn",true,null,List.of(new MatrixEntryRequest("DOSSIER",Set.of("HS02","HS04"),true))));assertEquals("qlnvkhcn",created.appCode());assertEquals(Set.of("HS01","HS02","HS03","HS04"),created.permissionCodes());assertEquals("DOSSIER",created.matrix().getFirst().featureCode());}
+ @Test void dedicatedCatalogRejectsGenericCodesAndExpandsParentRequires(){
+  var created=service.createRole(new RoleRequest("TEST_REQ","Test requires","BUSINESS","qlnvkhcn",true,null,List.of(new MatrixEntryRequest("MISSION",Set.of("NV04"),true))));
+  assertEquals(Set.of("NV01","NV03","NV04"),created.permissionCodes());
+  assertThrows(IllegalArgumentException.class,()->service.replaceFeatureMatrix("DOSSIER",List.of(new RoleMatrixCellRequest("TEST_REQ",Set.of("CREATE"),true))));
+ }
  @Test void rejectsCrossAppRolePermissions(){assertThrows(IllegalArgumentException.class,()->service.replaceFeatureMatrix("PROCESS",List.of(new RoleMatrixCellRequest("PM",Set.of("VIEW"),true))));assertThrows(IllegalArgumentException.class,()->service.createRole(new RoleRequest("BAD_APP_MATRIX","Bad","BUSINESS","he-thong",true,null,List.of(new MatrixEntryRequest("DOSSIER",Set.of("VIEW"),true)))));}
 
  /**
   * V3 phải seed baseline theo chức năng thật NHƯNG không được làm mất dòng GENERAL của V2.
-  *
-  * Từ V6, catalog hoạt động chỉ còn CREATE/EDIT/VIEW_LIST/VIEW_DETAIL — các mã seed V3 gốc
-  * (VIEW/APPROVE/REJECT/RETURN/COMMENT/EXPORT/SIGN/CONFIGURE/AUDIT/...) đều bị deactivate nên
-  * biến mất khỏi `matrix`/`permsOf`. Số liệu dưới đây đã đối chiếu lại theo catalog mới; grant
-  * gốc vẫn còn nguyên trong DB (không xoá), chỉ ẩn khỏi API.
-  *
-  * V7 cấp thêm VIEW_DETAIL cho mọi (role, feature) đã có SẴN ít nhất 1 dòng grant (kể cả dòng
-  * trỏ tới mã cũ đã bị V6 deactivate) — sửa regression 2 gate backend thật
-  * (WorkflowTaskActionService/DossierActionService) chặn cứng theo VIEW_DETAIL nhưng chưa role
-  * nào được cấp mã này. Vì vậy HDKHCN/DOSSIER KHÔNG còn rỗng nữa (dù 5 mã seed V3 gốc vẫn
-  * inactive) — có đúng 1 mã `VIEW_DETAIL` do V7 cấp lại.
+  * V8 map grant generic sang mã màn hình (NV/HS/TASK/…) và đóng bao ràng buộc cha.
   */
  @Test void migrationV3SeedsBaselineMatrixAndKeepsLegacyGeneralGrants(){
   var pm=role("PM");
-  assertEquals(Set.of("CREATE","EDIT","VIEW_DETAIL"),permsOf(pm,"DOSSIER"));
-  assertEquals(Set.of("CREATE","EDIT","VIEW_DETAIL"),permsOf(pm,"MISSION"));
+  assertEquals(Set.of("HS01","HS02","HS03","HS04","HS05","HS06"),permsOf(pm,"DOSSIER"));
+  assertEquals(Set.of("NV01","NV02","NV03","NV04"),permsOf(pm,"MISSION"));
+  assertEquals(Set.of("TASK01","TASK02","TASK03"),permsOf(pm,"WORKLIST"));
   assertTrue(permsOf(pm,"GENERAL").isEmpty(),"Role qlnvkhcn không được giữ Feature của App hệ thống");
-  assertEquals(Set.of("VIEW_DETAIL"),permsOf(role("HDKHCN"),"DOSSIER"),
-      "V7 cấp lại VIEW_DETAIL vì HDKHCN vẫn còn dòng grant cũ (dù mã cũ đã bị V6 deactivate)");
-  // V5 scope ADMIN vào App hệ thống và loại các grant xuyên App.
+  assertEquals(Set.of("HS01","HS03"),permsOf(role("HDKHCN"),"DOSSIER"));
+  assertEquals(Set.of("TASK01","TASK02","TASK03"),permsOf(role("HDKHCN"),"WORKLIST"));
   assertEquals(0,permsOf(role("ADMIN"),"REPORT").size());
   assertEquals(Set.of("CREATE","EDIT","VIEW_DETAIL"),permsOf(role("ADMIN"),"RBAC_ADMIN"));
   assertEquals(Set.of("CREATE","EDIT"),permsOf(role("ADMIN"),"GENERAL"),
       "V7 loại trừ GENERAL (legacy) khỏi quy tắc cấp VIEW_DETAIL");
-  // Vai trò không nằm trong 8 role baseline thì không bị chạm.
   assertTrue(permsOf(role("HDNT_TD"),"DOSSIER").isEmpty());
  }
 
@@ -107,7 +110,7 @@ class IdentityServiceIntegrationTest { @Container @ServiceConnection static Post
   var before=service.roles().stream().map(RoleResponse::code).toList();
   assertEquals(List.of("ADMIN","OPERATOR","VIEWER"),before.subList(0,3),"vai trò hệ thống đứng trước, theo mã");
   assertEquals(before.stream().sorted(Comparator.comparing((String c)->List.of("ADMIN","OPERATOR","VIEWER").contains(c)?0:1).thenComparing(c->c)).toList(),before);
-  service.replaceFeatureMatrix("REPORT",List.of(new RoleMatrixCellRequest("VIEWER",Set.of("VIEW"),true)));
+  service.replaceFeatureMatrix("REPORT",List.of(new RoleMatrixCellRequest("VIEWER",Set.of("VIEW_LIST"),true)));
   assertEquals(before,service.roles().stream().map(RoleResponse::code).toList(),"lưu ma trận không được xáo trộn thứ tự");
  }
 

@@ -21,6 +21,10 @@ export interface PermissionResponse {
   name: string;
   description: string | null;
   active: boolean;
+  featureCode: string | null;
+  sortOrder: number;
+  requires: string[];
+  screenChildren: string[];
 }
 
 export interface PermissionRequest {
@@ -39,6 +43,7 @@ export interface FeatureResponse {
   description: string | null;
   active: boolean;
   legacy: boolean;
+  sortOrder: number;
 }
 
 export interface MatrixEntryRequest {

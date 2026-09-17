@@ -71,7 +71,7 @@ export class HoSoListPage {
   private readonly hoSoService = inject(HoSoService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly auth = inject(AuthService);
+  readonly auth = inject(AuthService);
   private readonly message = inject(NzMessageService);
 
   readonly statusLabel = DOSSIER_STATUS_LABEL;

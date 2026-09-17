@@ -14,7 +14,7 @@
       <span>{{ rows().length }}/{{ allRows().length }} instance</span></div>
     <nz-spin [nzSpinning]="loading()"><nz-table #table [nzData]="rows()" nzSize="small" [nzPageSize]="15" [nzScroll]="{ x: '980px' }">
       <thead><tr><th>Instance key</th><th>Mã hồ sơ</th><th>Quy trình</th><th>Bước hiện tại</th><th>Bắt đầu</th><th>Trạng thái</th></tr></thead>
-      <tbody>@for (row of table.data; track row.processInstanceKey) { <tr (click)="detail.set(row)">
+      <tbody>@for (row of table.data; track row.processInstanceKey) { <tr (click)="auth.hasPermission('GS02') && detail.set(row)">
         <td><code>{{ row.processInstanceKey }}</code></td><td><strong>{{ row.businessId || '—' }}</strong></td>
         <td><code>{{ row.bpmnProcessId }}</code> <small>v{{ row.version }}<br />{{ row.processName }}</small></td>
         <td>@for (step of row.currentSteps; track step.elementId) { <div>{{ step.name || step.elementId }} @if(step.hasIncident){<nz-tag nzColor="error">Sự cố</nz-tag>}</div> } @empty { — }</td>

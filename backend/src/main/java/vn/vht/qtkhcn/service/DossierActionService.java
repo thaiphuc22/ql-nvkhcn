@@ -67,8 +67,8 @@ public class DossierActionService {
     }
 
     private static void authorize(vn.vht.qtkhcn.security.WorkflowDemoIdentity user) {
-        if (!user.apps().contains("qlnvkhcn") || !user.hasFeaturePermission("DOSSIER", "VIEW_DETAIL"))
-            throw new TaskActionException("FEATURE_FORBIDDEN", HttpStatus.FORBIDDEN, "Missing DOSSIER/VIEW_DETAIL.");
+        if (!user.apps().contains("qlnvkhcn") || !user.hasPermission("HS06"))
+            throw new TaskActionException("FEATURE_FORBIDDEN", HttpStatus.FORBIDDEN, "Missing HS06.");
     }
     private record DossierView(String id, String quyTrinh, String trangThai, List<Object> taiLieu) {}
 }

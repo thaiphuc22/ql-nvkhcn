@@ -62,7 +62,7 @@ export class HoiDongFormPage {
   private readonly service = inject(HoiDongService);
   private readonly hoSoService = inject(HoSoService);
   private readonly candidateService = inject(HoiDongCandidateService);
-  private readonly auth = inject(AuthService);
+  readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly message = inject(NzMessageService);
@@ -97,7 +97,8 @@ export class HoiDongFormPage {
   readonly canSubmit = computed(() =>
     !!this.maHoiDong().trim() &&
     !!this.hoSoId() &&
-    this.members().every((m) => !!m.vaiTroTrongHoiDong?.trim() && !!m.userId));
+    this.members().every((m) => !!m.vaiTroTrongHoiDong?.trim() && !!m.userId) &&
+    this.auth.hasPermission(this.editingId() ? 'HD04' : 'HD03'));
 
   constructor() {
     this.hoSoService.list().subscribe({ next: (list) => this.hoSoList.set(list) });

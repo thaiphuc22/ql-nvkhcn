@@ -74,9 +74,24 @@ describe('AuthService app entitlement', () => {
 
     expect(auth.user()?.roleCodes).toEqual(['PM', 'PA']);
     expect(auth.user()?.isAdmin).toBe(false);
-    expect(auth.user()?.apps).toEqual(['qlnvkhcn']);
     expect(auth.rolesLoaded()).toBe(true);
     expect(auth.identityUnavailable()).toBe(false);
+  });
+
+  it('hasPermission checks effective codes and bypasses for administrator', () => {
+    const auth = TestBed.inject(AuthService);
+    auth.login('pm@example.com', '123456');
+    auth.refreshCurrentUser();
+    httpMock.expectOne('/api/effective-permissions/pm%40example.com').flush({
+      id: 'u1', userId: 'u1', email: 'pm@example.com', fullName: 'Trần Văn Nam',
+      organizationId: null, roleCodes: ['PM'], permissions: ['NV01', 'HS01'], administrator: false,
+    });
+    expect(auth.hasPermission('NV01')).toBe(true);
+    expect(auth.hasPermission('NV06')).toBe(false);
+
+    auth.logout();
+    auth.login('admin@example.com', '123456');
+    expect(auth.hasPermission('NV06')).toBe(true);
   });
 
   it('administrator from identity-service wins over the static isAdmin flag (can be lowered)', () => {

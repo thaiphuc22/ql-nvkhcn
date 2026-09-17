@@ -1,5 +1,15 @@
 # Delivery State
 
+> **2026-09-17 — CATALOG QUYỀN VÒNG ĐỜI HỒ SƠ (CT/XD/RD04/NT/HSQT/…) — BA FILE ONLY (owner Cursor).**
+> File `docs/ba/Catalog-Quyen-Man-Hinh-Vong-Doi-KHCN.md` điền đủ ma trận theo loại hồ sơ + tab eForm.
+> Chưa seed identity, chưa tách màn. Runtime vẫn HS01–HS08. OQ-019…024.
+
+> **2026-09-12 — CATALOG QUYỀN THEO MÀN HÌNH (NV01/HS01/TASK01/…) — IMPLEMENTED (owner Cursor).**
+> BA gửi ma trận permission theo menu/tab. identity-service V8 seed mã gắn Feature + ràng buộc
+> cha (`requires`) và quyền con theo màn (`screen_children`). Angular ẩn menu/nút + route guard
+> theo mã; backend task action TASK03, gửi duyệt HS06. Module chưa có UI (SP/SHTT/CBKH/CNL/TB)
+> chỉ có catalog trên ma trận, chưa có route.
+
 > **2026-07-30 — MA TRẬN PHÂN QUYỀN: REFACTOR SANG LƯỚI CARD THEO ẢNH MẪU — DONE + TEST VERIFIED
 > (owner Claude).** Chuyển hướng có chủ ý (user chỉ đạo trực tiếp "triển khai coding theo plan",
 > tạm rời RD02.02 v3 — xem entry ngay dưới, vẫn TO DO). Trang thật

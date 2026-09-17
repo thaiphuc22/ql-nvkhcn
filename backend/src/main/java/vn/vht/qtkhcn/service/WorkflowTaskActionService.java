@@ -285,9 +285,9 @@ public class WorkflowTaskActionService {
             throw new TaskActionException("APP_ACCESS_FORBIDDEN", HttpStatus.FORBIDDEN,
                     "User không được truy cập ứng dụng Quản lý NV KHCN.");
         }
-        if (!identity.hasFeaturePermission("DOSSIER", "VIEW_DETAIL")) {
+        if (!identity.hasPermission("TASK03")) {
             throw new TaskActionException("FEATURE_ACCESS_FORBIDDEN", HttpStatus.FORBIDDEN,
-                    "User không có quyền DOSSIER/VIEW_DETAIL.");
+                    "User không có quyền TASK03.");
         }
     }
 

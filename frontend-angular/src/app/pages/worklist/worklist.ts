@@ -59,7 +59,7 @@ function formatDateTime(value?: string | null): string {
 })
 export class WorklistPage implements OnInit {
   private readonly myTaskService = inject(MyTaskService);
-  private readonly auth = inject(AuthService);
+  readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
   readonly loading = signal(true);

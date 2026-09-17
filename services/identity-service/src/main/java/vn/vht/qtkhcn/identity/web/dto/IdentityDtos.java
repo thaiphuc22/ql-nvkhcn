@@ -4,8 +4,8 @@ public final class IdentityDtos { private IdentityDtos(){}
  public record OrganizationRequest(@NotBlank @Size(max=64) String code,@NotBlank String name,UUID parentId,Boolean active){}
  public record OrganizationResponse(UUID id,String code,String name,UUID parentId,boolean active){}
  public record PermissionRequest(@NotBlank @Size(max=64) String code,@NotBlank String name,String description,Boolean active){}
- public record PermissionResponse(UUID id,String code,String name,String description,boolean active){}
- public record FeatureResponse(UUID id,String code,String name,String group,String appCode,String description,boolean active,boolean legacy){}
+ public record PermissionResponse(UUID id,String code,String name,String description,boolean active,String featureCode,int sortOrder,Set<String> requires,Set<String> screenChildren){}
+ public record FeatureResponse(UUID id,String code,String name,String group,String appCode,String description,boolean active,boolean legacy,int sortOrder){}
  public record MatrixEntryRequest(@NotBlank String featureCode,Set<String> permissionCodes,Boolean enabled){}
  public record MatrixEntryResponse(String featureCode,Set<String> permissionCodes,boolean enabled){}
  public record RoleRequest(@NotBlank @Size(max=64) String code,@NotBlank String name,@NotBlank String kind,@NotBlank String appCode,Boolean active,Set<String> permissionCodes,List<MatrixEntryRequest> matrix){}

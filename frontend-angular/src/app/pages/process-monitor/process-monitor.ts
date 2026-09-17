@@ -8,6 +8,7 @@ import { NzDrawerModule } from 'ng-zorro-antd/drawer'; import { NzGridModule } f
 import { NzInputModule } from 'ng-zorro-antd/input'; import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzSpinModule } from 'ng-zorro-antd/spin'; import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTabsModule } from 'ng-zorro-antd/tabs'; import { NzTagModule } from 'ng-zorro-antd/tag';
+import { AuthService } from '../../core/auth/auth.service';
 import { ProcessMonitorInstance, ProcessMonitorStats } from '../../core/models/process-monitor';
 import { ProcessMonitorService } from '../../core/services/process-monitor.service';
 import { SimpleBarChartComponent, type BarChartItem } from '../../shared/simple-bar-chart/simple-bar-chart';
@@ -34,6 +35,7 @@ const APPROVE_GREEN = '#17935a';
   SimpleBarChartComponent],
   templateUrl: './process-monitor.html', styleUrl: './process-monitor.scss' })
 export class ProcessMonitorPage {
+  readonly auth = inject(AuthService);
   private readonly service = inject(ProcessMonitorService);
   readonly insightKindLabel = INSIGHT_KIND_LABEL;
   readonly insightConfidenceLabel = INSIGHT_CONFIDENCE_LABEL;

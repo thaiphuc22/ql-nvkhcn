@@ -259,3 +259,25 @@ thead .rp-matrix-feature {
   color: var(--vht-text-secondary, #8c8c8c);
   font-size: 12px;
 }
+
+.rp-role-feature-perms {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 360px;
+  overflow: auto;
+  border: 1px solid var(--vht-border);
+  border-radius: var(--vht-radius);
+  padding: 10px;
+}
+
+.rp-role-feature-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rp-role-feature-name {
+  font-weight: 600;
+  code { margin-left: 6px; font-weight: 400; }
+}
