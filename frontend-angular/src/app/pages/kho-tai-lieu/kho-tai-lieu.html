@@ -1,0 +1,263 @@
+<div class="ktl-page">
+  <div class="ktl-header">
+    <div>
+      <h2>Quản lý hồ sơ tài liệu dự án</h2>
+      <p class="ktl-lead">
+        Theo QĐ 1752/QĐ-VHT-KHCN (cây thư mục + đặt tên) và BM-PYC (phiếu khai báo cấu hình / phân quyền).
+      </p>
+    </div>
+  </div>
+
+  <nz-tabs [nzSelectedIndex]="tab()" (nzSelectedIndexChange)="chonTab($event)">
+    <nz-tab nzTitle="1. Cấu hình cây thư mục">
+      <section class="ktl-section">
+        <div class="ktl-toolbar">
+          <div class="ktl-chips">
+            @for (gd of giaiDoanOptions; track gd) {
+              <button
+                nz-button
+                [nzType]="giaiDoanXem() === gd ? 'primary' : 'default'"
+                nzSize="small"
+                (click)="chonGiaiDoanMau(gd)">
+                {{ gd }} · {{ giaiDoanLabel[gd] }}
+              </button>
+            }
+          </div>
+          <button nz-button (click)="resetMau()">Khôi phục mẫu chuẩn</button>
+        </div>
+        <p class="ktl-note">
+          Level 1–4 cố định: <code>VHT / Khối / Trung tâm / Mã sản phẩm</code>.
+          Level 5 = giai đoạn · Level 6 = mã nhiệm vụ · Level 7+ theo mẫu bên dưới.
+        </p>
+        @if (mauDangXem(); as mau) {
+          <nz-card [nzTitle]="'Mẫu ' + mau.giaiDoan + ' — ' + mau.ten">
+            <nz-tree [nzData]="cayMauTree()" nzShowLine [nzExpandAll]="true"></nz-tree>
+          </nz-card>
+        }
+      </section>
+    </nz-tab>
+
+    <nz-tab nzTitle="2. Phiếu PYC khai báo">
+      <section class="ktl-section">
+        <div class="ktl-toolbar">
+          <p class="ktl-note">
+            PM lập phiếu → BGĐ TT thẩm định → BGĐ Khối duyệt → P.CNTT khai báo phân vùng (Điều 5 QĐ 1752).
+          </p>
+          <button nz-button nzType="primary" (click)="moTaoPyc()">
+            <span nz-icon nzType="file-add"></span> Tạo phiếu PYC
+          </button>
+        </div>
+
+        @if (pycList().length === 0) {
+          <nz-empty nzNotFoundContent="Chưa có phiếu yêu cầu khai báo."></nz-empty>
+        } @else {
+          <div class="ktl-pyc-list">
+            @for (p of pycList(); track p.id) {
+              <nz-card class="ktl-pyc-card">
+                <div class="ktl-pyc-head">
+                  <div>
+                    <strong>{{ p.maPyc }}</strong>
+                    <nz-tag [nzColor]="trangThaiColor[p.trangThai]">{{ trangThaiLabel[p.trangThai] }}</nz-tag>
+                    <div class="ktl-meta">{{ p.maNhiemVu }} · {{ p.tenNhiemVu }}</div>
+                  </div>
+                  <small>{{ p.ngayTao | date:'dd/MM/yyyy HH:mm' }}</small>
+                </div>
+                <div class="ktl-pyc-grid">
+                  <div><span>Đơn vị</span><strong>{{ p.donViDeXuat }}</strong></div>
+                  <div><span>Sản phẩm</span><strong>{{ p.maSanPham }}</strong></div>
+                  <div><span>Khối / TT</span><strong>{{ p.khoi }} / {{ p.trungTam }}</strong></div>
+                  <div><span>Giai đoạn</span><strong>{{ p.giaiDoan.join(', ') }}</strong></div>
+                  <div><span>QĐ</span><strong>{{ p.soQuyetDinh || '—' }} {{ p.ngayQuyetDinh }}</strong></div>
+                  <div><span>Chủ nhiệm</span><strong>{{ p.chuNhiem }}</strong></div>
+                  <div class="ktl-span2"><span>Đường dẫn gợi ý</span><code>{{ pathGoiY(p) }}</code></div>
+                </div>
+                <div class="ktl-users">
+                  <span class="ktl-label">User phân quyền đề xuất</span>
+                  @for (u of p.users; track u.maNv + u.viTri) {
+                    <nz-tag>{{ u.viTri }}: {{ u.hoTen || '—' }} ({{ u.quyenMacDinh }})</nz-tag>
+                  }
+                </div>
+                <div class="ktl-actions">
+                  @if (p.trangThai === 'nhap') {
+                    <button nz-button nzSize="small" (click)="chuyen(p, 'cho_bgd_trung_tam')">Gửi TT thẩm định</button>
+                  }
+                  @if (p.trangThai === 'cho_bgd_trung_tam') {
+                    <button nz-button nzSize="small" nzType="primary" (click)="chuyen(p, 'cho_bgd_khoi')">TT đạt → gửi Khối</button>
+                    <button nz-button nzSize="small" nzDanger (click)="chuyen(p, 'tu_choi')">Từ chối</button>
+                  }
+                  @if (p.trangThai === 'cho_bgd_khoi') {
+                    <button nz-button nzSize="small" nzType="primary" (click)="chuyen(p, 'cho_cntt')">Khối duyệt → CNTT</button>
+                    <button nz-button nzSize="small" nzDanger (click)="chuyen(p, 'tu_choi')">Từ chối</button>
+                  }
+                  @if (p.trangThai === 'cho_cntt') {
+                    <button nz-button nzSize="small" nzType="primary" (click)="chuyen(p, 'da_khai_bao')">CNTT đã khai báo</button>
+                  }
+                </div>
+              </nz-card>
+            }
+          </div>
+        }
+      </section>
+    </nz-tab>
+
+    <nz-tab nzTitle="3. Kho theo nhiệm vụ">
+      <section class="ktl-section">
+        @if (khoList().length === 0) {
+          <nz-empty nzNotFoundContent="Chưa có kho nào. Hoàn tất PYC (trạng thái Đã khai báo) để tạo cây thư mục."></nz-empty>
+        } @else {
+          <div class="ktl-toolbar">
+            <nz-select
+              class="ktl-select"
+              [ngModel]="khoDangXem()?.maNhiemVu"
+              (ngModelChange)="chonKho($event)"
+              nzPlaceHolder="Chọn nhiệm vụ">
+              @for (k of khoList(); track k.maNhiemVu) {
+                <nz-option [nzValue]="k.maNhiemVu" [nzLabel]="k.maNhiemVu + ' · ' + k.rootPath"></nz-option>
+              }
+            </nz-select>
+            <button nz-button nzType="primary" (click)="moUpload()">
+              <span nz-icon nzType="upload"></span> Thêm tài liệu vào thư mục
+            </button>
+          </div>
+          @if (khoDangXem(); as kho) {
+            <p class="ktl-note">Gốc: <code>{{ kho.rootPath }}</code> · Cập nhật {{ kho.capNhat | date:'dd/MM/yyyy HH:mm' }}</p>
+            <div class="ktl-kho-layout">
+              <nz-card nzTitle="Cây thư mục" class="ktl-tree-card">
+                <nz-tree
+                  [nzData]="cayKhoTree()"
+                  nzShowLine
+                  [nzExpandAll]="true"
+                  (nzClick)="onKhoTreeClick($event)">
+                </nz-tree>
+              </nz-card>
+              <nz-card nzTitle="Chi tiết thư mục / tài liệu" class="ktl-detail-card">
+                @if (selectedFolder(); as f) {
+                  <p><strong>{{ f.ma }}</strong> — {{ f.moTa }}</p>
+                  <p class="ktl-meta"><code>{{ f.path }}</code></p>
+                  @if (f.files.length === 0) {
+                    <nz-empty nzNotFoundContent="Thư mục chưa có tệp."></nz-empty>
+                  } @else {
+                    <table class="ktl-table">
+                      <thead>
+                        <tr><th>Tên gốc</th><th>Tên chuẩn (QĐ)</th><th>Trạng thái</th><th>Người</th></tr>
+                      </thead>
+                      <tbody>
+                        @for (file of f.files; track file.id) {
+                          <tr>
+                            <td>{{ file.ten }}</td>
+                            <td><code>{{ file.tenChuan }}</code></td>
+                            <td>
+                              <nz-tag [nzColor]="file.hopLeTen ? 'green' : 'red'">
+                                {{ file.hopLeTen ? 'Đạt quy tắc đặt tên' : 'Chưa đạt' }}
+                              </nz-tag>
+                            </td>
+                            <td>{{ file.nguoi }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  }
+                } @else {
+                  <nz-empty nzNotFoundContent="Chọn một thư mục trên cây."></nz-empty>
+                }
+              </nz-card>
+            </div>
+          }
+        }
+      </section>
+    </nz-tab>
+  </nz-tabs>
+</div>
+
+<nz-modal
+  [nzVisible]="pycModal()"
+  nzTitle="Phiếu yêu cầu khai báo cấu hình (BM-PYC)"
+  nzOkText="Lưu nháp"
+  nzCancelText="Đóng"
+  [nzWidth]="640"
+  (nzOnCancel)="pycModal.set(false)"
+  (nzOnOk)="luuPyc()">
+  <ng-container *nzModalContent>
+    <label class="ktl-label">Đơn vị đề xuất</label>
+    <input nz-input [ngModel]="donViDeXuat()" (ngModelChange)="donViDeXuat.set($event)" />
+    <label class="ktl-label">Mã nhiệm vụ *</label>
+    <input nz-input [ngModel]="maNhiemVu()" (ngModelChange)="maNhiemVu.set($event)" placeholder="VD: 011-26-TĐ-RDP-QD" />
+    <label class="ktl-label">Tên nhiệm vụ *</label>
+    <input nz-input [ngModel]="tenNhiemVu()" (ngModelChange)="tenNhiemVu.set($event)" />
+    <label class="ktl-label">Mã sản phẩm * (≤ 8 ký tự)</label>
+    <input nz-input [ngModel]="maSanPham()" (ngModelChange)="maSanPham.set($event)" placeholder="VD: VRS-LRS" />
+    <div class="ktl-row2">
+      <div>
+        <label class="ktl-label">Khối</label>
+        <nz-select [ngModel]="khoi()" (ngModelChange)="khoi.set($event)" style="width:100%">
+          <nz-option nzValue="K1" nzLabel="K1"></nz-option>
+          <nz-option nzValue="K2" nzLabel="K2"></nz-option>
+          <nz-option nzValue="K3" nzLabel="K3"></nz-option>
+        </nz-select>
+      </div>
+      <div>
+        <label class="ktl-label">Trung tâm (ký hiệu)</label>
+        <nz-select [ngModel]="trungTam()" (ngModelChange)="trungTam.set($event)" style="width:100%">
+          @for (tt of trungTamOptions; track tt.kyHieu) {
+            <nz-option [nzValue]="tt.kyHieu" [nzLabel]="tt.kyHieu + ' — ' + tt.ten"></nz-option>
+          }
+        </nz-select>
+      </div>
+    </div>
+    <label class="ktl-label">Giai đoạn cần khai báo *</label>
+    <nz-select
+      nzMode="multiple"
+      [ngModel]="giaiDoanPyc()"
+      (ngModelChange)="giaiDoanPyc.set($event)"
+      style="width:100%">
+      @for (gd of giaiDoanOptions; track gd) {
+        <nz-option [nzValue]="gd" [nzLabel]="gd + ' — ' + giaiDoanLabel[gd]"></nz-option>
+      }
+    </nz-select>
+    <div class="ktl-row2">
+      <div>
+        <label class="ktl-label">Số QĐ phê duyệt / giao NV</label>
+        <input nz-input [ngModel]="soQd()" (ngModelChange)="soQd.set($event)" />
+      </div>
+      <div>
+        <label class="ktl-label">Ngày QĐ</label>
+        <input nz-input type="date" [ngModel]="ngayQd()" (ngModelChange)="ngayQd.set($event)" />
+      </div>
+    </div>
+    <label class="ktl-label">Chủ nhiệm (đầu mối nhận kết quả)</label>
+    <input nz-input [ngModel]="chuNhiem()" (ngModelChange)="chuNhiem.set($event)" />
+  </ng-container>
+</nz-modal>
+
+<nz-modal
+  [nzVisible]="uploadModal()"
+  nzTitle="Thêm tài liệu — kiểm tra quy tắc đặt tên"
+  nzOkText="Lưu"
+  nzCancelText="Đóng"
+  [nzWidth]="560"
+  (nzOnCancel)="uploadModal.set(false)"
+  (nzOnOk)="luuUpload()">
+  <ng-container *nzModalContent>
+    <label class="ktl-label">Tên tệp gốc</label>
+    <input nz-input [ngModel]="uploadTen()" (ngModelChange)="uploadTen.set($event)" placeholder="VD: YeuCauThietKe.pdf" />
+    <div class="ktl-row2">
+      <div>
+        <label class="ktl-label">Giai đoạn</label>
+        <nz-select [ngModel]="uploadGiaiDoan()" (ngModelChange)="uploadGiaiDoan.set($event)" style="width:100%">
+          @for (gd of giaiDoanOptions; track gd) {
+            <nz-option [nzValue]="gd" [nzLabel]="gd"></nz-option>
+          }
+        </nz-select>
+      </div>
+      <div>
+        <label class="ktl-label">Module (tuỳ chọn, ≤ 5)</label>
+        <input nz-input [ngModel]="uploadModule()" (ngModelChange)="uploadModule.set($event)" placeholder="VD: TRM" />
+      </div>
+    </div>
+    <label class="ktl-label">Phiên bản Vx.y</label>
+    <input nz-input [ngModel]="uploadVersion()" (ngModelChange)="uploadVersion.set($event)" placeholder="V1.0" />
+    <p class="ktl-label">Tên chuẩn hệ thống</p>
+    <code class="ktl-preview">{{ tenChuanPreview() }}</code>
+    <p [class.ktl-ok]="tenChuanCheck().ok" [class.ktl-bad]="!tenChuanCheck().ok">{{ tenChuanCheck().message }}</p>
+  </ng-container>
+</nz-modal>

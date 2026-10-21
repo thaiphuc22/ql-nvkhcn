@@ -1,7 +1,66 @@
 # Active Task
 
-**Last updated**: 2026-09-17
-**Agent role**: BA catalog (branch `tranngdt`)
+**Last updated**: 2026-10-16
+**Agent role**: BA / Frontend mock (branch hiện tại)
+
+---
+
+## ★ DONE — SRS AI Agent E-form: ảnh UI đánh số + cập nhật DOCX — 2026-10-16
+
+**Yêu cầu user:** cập nhật `SRS_BM04_Tich_hop_AI_Agent_Eform_VHT_v1.0.0.docx` theo ảnh UI; đánh số lên ảnh và cập nhật bảng mô tả.
+
+**Đã làm:**
+- Ảnh đánh số: `docs/ba/Tài liệu SRS/AI-Agent-Eform/img/numbered/` (HÌNH 2–5).
+- Mục 3.2.2: chèn 4 màn (nhập+Trợ lý A; xác nhận AI soạn thay; đang xử lý; kết quả lưu nháp) + bảng STT khớp số đỏ.
+- Đồng bộ nhãn UI «AI soạn thay» (thay «AI nhập thay»).
+- DOCX v1.0.1: `docs/ba/Tài liệu SRS/AI-Agent-Eform/…v1.0.1.docx` và `Downloads/…v1.0.0.docx` / `…v1.0.1.docx`.
+
+---
+
+## ★ DONE — Ba hạng mục trì hoãn (BPMN stub + CRUD SPDV/SHTT + khảo sát RD06/RD08) — 2026-09-29
+
+**Yêu cầu user:** BPMN/Camunda từng luồng; form CRUD SPDV/SHTT; khảo sát tác nhân RD06/RD08 còn trống trong tài liệu gốc.
+
+**Đã làm:**
+- Khảo sát: `docs/ba/BA-Khao-sat-tac-nhan-RD06-RD08-v0.1.md`; OQ-043/044 trong `docs/ba/OQ-TRACKER.md`; actors tạm trên `/vong-doi-rd`.
+- CRUD mock Angular: `/danh-muc-spdv` (RD07), `/ho-so-shtt` (RD08) — localStorage; menu Quản trị KHCN.
+- Stub BPMN Zeebe: `docs/bpmn/stubs/` (7 file + `generate-stubs.mjs` + `manifest.json`) — **không deploy**.
+
+**Chưa làm (cố ý):** chưa deploy Camunda; chưa seed identity SP/SHTT; OQ-043/044 chờ VTS xác nhận.
+
+---
+
+## ★ DONE — Bản đồ luồng RD03–RD10 trên UI — 2026-09-29
+
+**Yêu cầu user:** dựa PDF *Quy trình Phần mềm KHCN chi tiết* tạo các phần liên quan luồng RD03…RD10 trên giao diện hiện tại.
+
+**Đã làm:**
+- Model `frontend-angular/src/app/core/models/rd-lifecycle.ts` — đủ luồng RD03.01–06, RD04.01–10, RD05–10 (bước, ràng buộc, tích hợp, tác nhân).
+- Trang `/vong-doi-rd` (app Quản lý NV KHCN): swimlane theo nhóm, lọc pha, drawer chi tiết, deep-link RD06.02 / RD09 `/tong-quan` / RD10 `/kho-tai-lieu`.
+- Menu **Bản đồ luồng RD03–RD10**; seed `process-registry` bổ sung RD03.04/05, RD04.02/04/06–10, RD07/09/10; sửa nhãn NHOM_RD09/10 đúng PDF.
+- Nguồn nội dung: `docs/req/1. Quy trinh Phan mem KHCN chi tiet (clean).md` (tương ứng PDF user cung cấp).
+
+**Follow-up (đã đóng 2026-09-29):** BPMN stub + CRUD SPDV/SHTT + khảo sát RD06/RD08 — xem entry ★ DONE ngay trên.
+
+---
+
+## ★ DONE — SRS RD10 Kho tài liệu dự án (BM04) — 2026-09-28
+
+**Yêu cầu user:** sinh SRS theo form `BM04_ThietKeChiTiet_TrinhKy.docx` từ QĐ 1752 + BM-PYC + UI `/kho-tai-lieu`.
+
+**Đã làm:** `docs/ba/Tài liệu SRS/RD10/SRS-RD10-01-quan-ly-cau-hinh-luu-tru-tai-lieu-du-an-v0.1.md` (v0.1.1). 3 chức năng 3.1–3.3. OQ-038…042. **Ảnh runtime HÌNH 001–006** trong `img/SRS-RD10-01/` chụp từ `localhost:4200/kho-tai-lieu`.
+
+**Chưa làm (cố ý):** chưa `.drawio`, chưa xuất `.docx`, chưa review ký. Cần human review trước khi ký chính thức.
+
+---
+
+## ★ DONE — SRS trình ký V-Office — 2026-09-23
+
+**Yêu cầu user:** tạo SRS từ US-VOFFICE-01, US-VOFFICE-02, URD trình ký V-Office, theo Skill #3 (ISO/IEC/IEEE 29148).
+
+**Đã làm:** `docs/ba/Tài liệu SRS/INT/SRS-INT-01-Trinh-ky-van-ban-VOffice-v0.1.md` (v0.1.0, nháp chờ xác nhận). OQ-QTKHCN-025…037 trong `docs/ba/OQ-TRACKER.md`. Hai OQ Cao: whitelist IP (`031`), trường file ban hành (`037`).
+
+**Chưa làm (cố ý):** chưa vẽ `.drawio`, chưa xuất bản, chưa chạy review ký. Figma không có trong gói nguồn.
 
 ---
 

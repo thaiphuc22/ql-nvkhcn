@@ -69,6 +69,8 @@ Define your own foundations in `state/DELIVERY_STATE.md` and document each in
 | [E2E Test Design](workflows/e2e-test-design.md) | Designing or extending E2E coverage |
 | [Release Readiness](workflows/release-readiness.md) | Pre-release checklist before deploying |
 | [Human Role](workflows/human-feature-workflow.md) | What the human does vs what agents handle |
+| [**Blueprint Review**](workflows/blueprint-review.md) | **BA/SRS** — rà blueprint trước khi viết SRS |
+| [**SRS Authoring**](workflows/srs-authoring.md) | **BA/SRS** — viết một SRS từ blueprint tới bản được duyệt |
 
 ---
 
@@ -81,6 +83,9 @@ Define your own foundations in `state/DELIVERY_STATE.md` and document each in
 | [E2E Test Plan](templates/e2e-test-plan.md) | Designing E2E scenarios for a feature |
 | [Code Review](templates/code-review.md) | Structured code review checklist |
 | [Test Review](templates/test-review.md) | Reviewing test coverage quality |
+| [SRS Screen Template](rules/srs-screen-template.md) | **BA/SRS** — khung mẫu màn hình (field-level 7 cột) |
+| [Module Dependency Matrix (SRS example)](templates/module-dependency-matrix-srs.example.md) | **BA/SRS** — mẫu phụ thuộc liên module |
+| [Pilot Report SRS (example)](templates/pilot-report-srs.example.md) | **BA/SRS** — mẫu báo cáo pilot |
 
 ---
 
@@ -89,13 +94,21 @@ Define your own foundations in `state/DELIVERY_STATE.md` and document each in
 | Rule Set | What it governs |
 |---|---|
 | [Coding Standards](rules/coding-standards.md) | Language, framework, naming, isolation rules |
-| [Review Policy](rules/review-policy.md) | Who reviews what, review depth requirements |
+| [Review Policy](rules/review-policy.md) | Who reviews what, review depth requirements (**code/PR**) |
+| [Review Policy — SRS](rules/review-policy-srs.md) | **BA/SRS** — 4 bước review tài liệu SRS (không thay thế review code) |
 | [E2E Testing Policy](rules/e2e-testing-policy.md) | E2E structure, selectors, data, CI integration |
-| [Approval Policy](rules/approval-policy.md) | When human approval is required |
+| [Approval Policy](rules/approval-policy.md) | When human approval is required (**code/delivery**) |
+| [Approval Policy — SRS](rules/approval-policy-srs.md) | **BA/SRS** — cổng duyệt xuất bản `.md` → Docs |
+| [SRS — Definition of Done](rules/srs-definition-of-done.md) | **BA/SRS** — checklist DoD trước review |
 | [Session Continuity](rules/session-continuity.md) | How agents write state and resume after context limit |
 | [Harness/Skill Boundary](rules/harness-skill-boundary.md) | When to use the harness vs invoking a skill |
+| [Harness/Skill Boundary — SRS notes](rules/harness-skill-boundary-srs.md) | Bản SRS-oriented bổ sung (không thay file chính) |
 | [AI Collaboration Hygiene](rules/ai-collaboration-hygiene.md) | Prompt quality, session discipline, tool use, context management |
 | [Demo Environment Safety](rules/demo-environment-safety.md) | Live demo runs from a separate release worktree (not this dev workspace) — read before running `New-DemoRelease.ps1`/`Switch-DemoRelease.ps1` or touching `infra/demo-tunnel/` |
+
+### BA / SRS authoring (installed 2026-08-05)
+
+Artifacts & working tree: [`docs/ba/`](../docs/ba/README.md). Skills: `ba-doc-write`, `ba-doc-review`, `babok-assistant`, `srs-to-drawio-flows`, plus atomic `skill-*`. Tools: `tools/blueprint-extract/`, `tools/document-reader/`, `tools/docs-to-drive/` (publish cần human gate). Agent bổ sung: [`agents/delivery-manager-srs.md`](agents/delivery-manager-srs.md) (không thay delivery-manager phần mềm).
 
 ---
 
@@ -122,6 +135,8 @@ A feature is **not complete** unless all of the following are true:
 - [ ] Tech Lead Reviewer has approved code and test coverage
 - [ ] No open critical/high findings from code review
 
+An **SRS** is not review-ready unless [`rules/srs-definition-of-done.md`](rules/srs-definition-of-done.md) passes and open High OQs are labeled per D24.
+
 ---
 
 ## Non-Negotiable Rules
@@ -134,3 +149,5 @@ A feature is **not complete** unless all of the following are true:
 1. <invariant 1>
 2. <invariant 2>
 3. **E2E failures block completion.** A failing E2E test is a failing feature.
+4. **SRS AI output is `.md` only** until a human explicitly approves publication (D23).
+5. **Never invent OQ labels** — every `[CẦN XÁC NHẬN]`/`[GIẢ ĐỊNH]` needs a real OQ id in `docs/ba/OQ-TRACKER.md` (D24).

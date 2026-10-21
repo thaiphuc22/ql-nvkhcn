@@ -10,21 +10,73 @@
     </button>
   </div>
 
+  @if (showingSeedBanner()) {
+    <div class="fl-seed-banner" role="status">
+      <span nz-icon nzType="info-circle" class="fl-seed-banner-icon"></span>
+      <div class="fl-seed-banner-text">
+        <strong>Đang hiển thị biểu mẫu mẫu RD07</strong>
+        — backend <code>/api/eform</code> trả rỗng, danh sách tạm thời lấy từ
+        seed client-side. Dữ liệu này <em>chưa phải</em> biểu mẫu đã được duyệt.
+      </div>
+    </div>
+  }
+
   <div nz-row [nzGutter]="12" class="fl-stats">
     <div nz-col [nzXs]="24" [nzSm]="8">
       <div class="fl-stat-card">
-        <div class="fl-stat-value">{{ list().length }}</div>
+        <div class="fl-stat-value">
+          {{ filteredList().length }}
+          @if (searchQuery() || typeFilter() || nhomRDFilter()) {
+            <span style="font-size: 14px; font-weight: normal; color: var(--vht-ink-3)">/ {{ list().length }}</span>
+          }
+        </div>
         <div class="fl-stat-label">Tổng biểu mẫu</div>
       </div>
     </div>
   </div>
 
   <div class="fl-card">
-    <nz-table #table [nzData]="list()" [nzLoading]="loading()" nzSize="middle" [nzShowPagination]="list().length > 10">
+    <div class="fl-filter-bar">
+      <nz-input-group nzPrefixIcon="search" class="fl-search">
+        <input
+          nz-input
+          placeholder="Tìm tên, mã hoặc mô tả biểu mẫu..."
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
+        />
+      </nz-input-group>
+
+      <nz-select
+        nzAllowClear
+        nzPlaceHolder="Lọc theo nhóm RD..."
+        class="fl-nhom-filter"
+        [ngModel]="nhomRDFilter()"
+        (ngModelChange)="nhomRDFilter.set($event)"
+      >
+        @for (code of nhomRDOptions; track code) {
+          <nz-option [nzValue]="code" [nzLabel]="nhomRDLabel(code) + ' (' + nhomRDCount(code) + ')'"></nz-option>
+        }
+      </nz-select>
+
+      <nz-select
+        nzAllowClear
+        nzPlaceHolder="Lọc theo loại..."
+        class="fl-type-filter"
+        [ngModel]="typeFilter()"
+        (ngModelChange)="typeFilter.set($event)"
+      >
+        @for (opt of loaiOptions; track opt) {
+          <nz-option [nzValue]="opt" [nzLabel]="opt"></nz-option>
+        }
+      </nz-select>
+    </div>
+
+    <nz-table #table [nzData]="filteredList()" [nzLoading]="loading()" nzSize="middle" [nzShowPagination]="filteredList().length > 10">
       <thead>
         <tr>
           <th>Biểu mẫu</th>
           <th nzWidth="170px">Mã (formKey)</th>
+          <th nzWidth="90px">Nhóm RD</th>
           <th nzWidth="120px">Loại</th>
           <th nzWidth="100px" nzAlign="center">Số trường</th>
           <th nzWidth="220px">Thao tác</th>
@@ -38,6 +90,17 @@
               <div class="fl-form-desc">{{ r.moTa }}</div>
             </td>
             <td><code>{{ r.key }}</code></td>
+            <td>
+              @if (r.nhomRD) {
+                <span
+                  class="fl-nhom-badge"
+                  [style.backgroundColor]="nhomRDColorMap[r.nhomRD]"
+                  [title]="nhomRDLabel(r.nhomRD)"
+                >{{ r.nhomRD }}</span>
+              } @else {
+                <span class="fl-nhom-badge fl-nhom-badge-none">—</span>
+              }
+            </td>
             <td>{{ r.loai ?? '—' }}</td>
             <td nzAlign="center">{{ countFields(r.schema) }}</td>
             <td>
@@ -100,6 +163,17 @@
             }
           </div>
         }
+        <label>Nhóm RD</label>
+        <nz-select
+          nzAllowClear
+          placeholder="Chọn nhóm RD (không bắt buộc)"
+          [ngModel]="formNhomRD()"
+          (ngModelChange)="formNhomRD.set($event)"
+        >
+          @for (code of nhomRDOptions; track code) {
+            <nz-option [nzValue]="code" [nzLabel]="nhomRDLabel(code)"></nz-option>
+          }
+        </nz-select>
         <label>Loại</label>
         <nz-select nzAllowClear placeholder="Chọn loại" [ngModel]="formLoai()" (ngModelChange)="formLoai.set($event)">
           @for (l of loaiOptions; track l) {

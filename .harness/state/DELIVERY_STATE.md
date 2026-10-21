@@ -1,5 +1,25 @@
 # Delivery State
 
+> **2026-10-16 — SRS AI Agent E-form v1.0.1 (owner Cursor).**
+> Ảnh UI đánh số HÌNH 2–5 + mục 3.2.2; DOCX trong `docs/ba/Tài liệu SRS/AI-Agent-Eform/` và Downloads.
+
+> **2026-09-29 — BA + MOCK: BPMN stub + CRUD SPDV/SHTT + khảo sát RD06/RD08 (owner Cursor).**
+> `docs/ba/BA-Khao-sat-tac-nhan-RD06-RD08-v0.1.md` + OQ-043/044. Angular `/danh-muc-spdv`, `/ho-so-shtt`
+> (localStorage). Stub Zeebe `docs/bpmn/stubs/*.bpmn` (7 luồng) — chưa deploy Camunda.
+
+> **2026-09-29 — BẢN ĐỒ LUỒNG RD03–RD10 UI MOCK (owner Cursor).**
+> Trang `/vong-doi-rd` + seed catalog đủ subprocess theo QT PM KHCN chi tiết.
+> Deep-link: RD06.02, RD07 SPDV, RD08 SHTT, RD09 tong-quan, RD10 kho-tai-lieu.
+> Stub BPMN trong `docs/bpmn/stubs/` (không deploy).
+
+> **2026-09-28 — SRS-RD10-01 KHO TÀI LIỆU DỰ ÁN — NHÁP (owner BA-AI).**
+> `docs/ba/Tài liệu SRS/RD10/SRS-RD10-01-quan-ly-cau-hinh-luu-tru-tai-lieu-du-an-v0.1.md` theo form BM04 + D16 từ QĐ 1752 + BM-PYC + UI `/kho-tai-lieu`.
+> 3 chức năng (mẫu cây, PYC, kho NV). OQ-QTKHCN-038…042 Mở. Chưa ký: OQ Cao `038`/`039`/`040`. Cần human review trước khi ký chính thức.
+
+> **2026-09-23 — SRS-INT-01 TRÌNH KÝ V-OFFICE — NHÁP (owner BA-AI).**
+> `docs/ba/Tài liệu SRS/INT/SRS-INT-01-Trinh-ky-van-ban-VOffice-v0.1.md` theo ISO/IEC/IEEE 29148 từ URD-VOFFICE-SIGN-01 và US-VOFFICE-01/02.
+> 48 FR + 11 NFR. OQ-QTKHCN-025…037 Mở. Chưa ký duyệt: TBD khoảng 19%, OQ Cao `031` và `037`.
+
 > **2026-09-17 — CATALOG QUYỀN VÒNG ĐỜI HỒ SƠ (CT/XD/RD04/NT/HSQT/…) — BA FILE ONLY (owner Cursor).**
 > File `docs/ba/Catalog-Quyen-Man-Hinh-Vong-Doi-KHCN.md` điền đủ ma trận theo loại hồ sơ + tab eForm.
 > Chưa seed identity, chưa tách màn. Runtime vẫn HS01–HS08. OQ-019…024.

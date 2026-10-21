@@ -1,0 +1,146 @@
+<div class="rdl-page">
+  <div class="rdl-header">
+    <div>
+      <h2>Bản đồ luồng RD03 → RD10</h2>
+      <p class="rdl-lead">
+        Theo <em>Quy trình Phần mềm KHCN chi tiết</em> — nhóm thực hiện, điều chỉnh, nghiệm thu,
+        quyết toán, danh mục SPDV, SHTT, dashboard, lưu trữ hồ sơ/biểu mẫu.
+      </p>
+    </div>
+    <a routerLink="/quy-trinh" nz-button>
+      <span nz-icon nzType="partition"></span>
+      Danh mục quy trình
+    </a>
+  </div>
+
+  <div class="rdl-stats">
+    <div class="rdl-stat"><strong>{{ stats().tong }}</strong><span>Luồng đang lọc</span></div>
+    <div class="rdl-stat"><strong>{{ stats().pha1 }}</strong><span>Pha 1 (2026)</span></div>
+    <div class="rdl-stat"><strong>{{ stats().pha2 }}</strong><span>Pha 2</span></div>
+    <div class="rdl-stat"><strong>{{ stats().coUi }}</strong><span>Đã gắn màn UI</span></div>
+  </div>
+
+  <div class="rdl-filters">
+    <div class="rdl-chips">
+      <button nz-button [nzType]="filterNhom() === 'ALL' ? 'primary' : 'default'" nzSize="small" (click)="setNhom('ALL')">
+        Tất cả nhóm
+      </button>
+      @for (n of nhoms; track n.ma) {
+        <button
+          nz-button
+          [nzType]="filterNhom() === n.ma ? 'primary' : 'default'"
+          nzSize="small"
+          (click)="setNhom(n.ma)"
+          [style.borderColor]="n.mau">
+          {{ n.ma }}
+        </button>
+      }
+    </div>
+    <div class="rdl-chips">
+      <button nz-button [nzType]="filterPha() === 0 ? 'primary' : 'default'" nzSize="small" (click)="setPha(0)">Mọi pha</button>
+      <button nz-button [nzType]="filterPha() === 1 ? 'primary' : 'default'" nzSize="small" (click)="setPha(1)">Pha 1</button>
+      <button nz-button [nzType]="filterPha() === 2 ? 'primary' : 'default'" nzSize="small" (click)="setPha(2)">Pha 2</button>
+    </div>
+  </div>
+
+  <div class="rdl-swim">
+    @for (g of grouped(); track g.meta.ma) {
+      <section class="rdl-lane" [style.--lane-color]="g.meta.mau">
+        <header class="rdl-lane-head">
+          <div>
+            <h3>{{ g.meta.ma }} — {{ g.meta.ten }}</h3>
+            <p>{{ g.meta.moTa }}</p>
+          </div>
+          <nz-tag [nzColor]="g.meta.pha === 1 ? 'green' : 'orange'">Pha {{ g.meta.pha }}</nz-tag>
+        </header>
+        <div class="rdl-cards">
+          @for (l of g.items; track l.ma) {
+            <nz-card class="rdl-card" (click)="openDetail(l)">
+              <div class="rdl-card-top">
+                <strong>{{ l.ma }}</strong>
+                <nz-tag nzColor="default">{{ capLabel(l.cap) }}</nz-tag>
+              </div>
+              <div class="rdl-card-title">{{ l.ten }}</div>
+              <div class="rdl-card-meta">
+                <span>{{ l.buocTomTat.length }} bước tóm tắt</span>
+                @if (l.tichHop.length) {
+                  <span>· {{ l.tichHop.join(', ') }}</span>
+                }
+              </div>
+              @if (l.uiRoute) {
+                <a class="rdl-ui-link" [routerLink]="l.uiRoute" (click)="$event.stopPropagation()">
+                  <span nz-icon nzType="link"></span> {{ l.uiLabel || 'Mở UI' }}
+                </a>
+              }
+            </nz-card>
+          }
+        </div>
+      </section>
+    } @empty {
+      <nz-empty nzNotFoundContent="Không có luồng khớp bộ lọc."></nz-empty>
+    }
+  </div>
+</div>
+
+<nz-drawer
+  [nzVisible]="drawerOpen()"
+  nzPlacement="right"
+  [nzWidth]="520"
+  [nzTitle]="selected()?.ma + ' — ' + (selected()?.ten || '')"
+  (nzOnClose)="closeDrawer()">
+  @if (selected(); as l) {
+    <div class="rdl-drawer">
+      <div class="rdl-drawer-tags">
+        <nz-tag [nzColor]="l.pha === 1 ? 'green' : 'orange'">Pha {{ l.pha }}</nz-tag>
+        <nz-tag>{{ capLabel(l.cap) }}</nz-tag>
+        <nz-tag nzColor="blue">{{ l.nhom }}</nz-tag>
+      </div>
+
+      <h4>Sự kiện</h4>
+      <p><strong>Bắt đầu:</strong> {{ l.batDau }}</p>
+      <p><strong>Kết thúc:</strong> {{ l.ketThuc }}</p>
+      <p><strong>Ràng buộc:</strong> {{ l.rangBuoc }}</p>
+
+      @if (l.tichHop.length) {
+        <h4>Hệ thống tích hợp</h4>
+        <div class="rdl-chips">
+          @for (sys of l.tichHop; track sys) {
+            <nz-tag nzColor="geekblue">{{ sys }}</nz-tag>
+          }
+        </div>
+      }
+
+      <h4>Các bước tóm tắt</h4>
+      <ol>
+        @for (b of l.buocTomTat; track b) {
+          <li>{{ b }}</li>
+        }
+      </ol>
+
+      <h4>Tác nhân</h4>
+      <table class="rdl-table">
+        <thead>
+          <tr><th>Nhóm</th><th>Vai trò</th></tr>
+        </thead>
+        <tbody>
+          @for (a of l.tacNhan; track a.nhom + a.vaiTro) {
+            <tr>
+              <td>{{ a.nhom }}</td>
+              <td>{{ a.vaiTro }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      @if (l.ghiChu) {
+        <p class="rdl-note">{{ l.ghiChu }}</p>
+      }
+
+      @if (l.uiRoute) {
+        <a nz-button nzType="primary" [routerLink]="l.uiRoute" (click)="closeDrawer()">
+          {{ l.uiLabel || 'Mở màn hình liên quan' }}
+        </a>
+      }
+    </div>
+  }
+</nz-drawer>

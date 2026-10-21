@@ -62,9 +62,14 @@ import {
   type StepStatus,
 } from "../data/dossiers";
 import {
+  NGUONG_DIEM_HD,
+  VAI_TRO_HD,
+  kiemTraQuorum,
   seedHoiDong,
   taoHoiDongMacDinh,
+  tinhDiemTrungBinh,
   type HoiDong,
+  type VaiTroHoiDong,
 } from "../data/hoiDong";
 import {
   resolveApprovers,
@@ -1239,10 +1244,18 @@ export default function DossierDetail() {
             >
               <List
                 dataSource={hoidongs}
-                renderItem={(hd) => (
+                renderItem={(hd) => {
+                  const q = kiemTraQuorum(hd);
+                  const diem = tinhDiemTrungBinh(hd);
+                  return (
                   <List.Item
                     actions={[
-                      <Button key="view" type="link" size="small">
+                      <Button
+                        key="view"
+                        type="link"
+                        size="small"
+                        onClick={() => navigate(`/hoi-dong/${hd.id}`)}
+                      >
                         Chi tiết
                       </Button>,
                     ]}
@@ -1251,7 +1264,7 @@ export default function DossierDetail() {
                       avatar={
                         <Avatar
                           icon={<TeamOutlined />}
-                          style={{ backgroundColor: "#1890ff" }}
+                          style={{ backgroundColor: hd.phiEn === 2 ? "#722ed1" : "#1890ff" }}
                         />
                       }
                       title={`${hd.id} — Phiên ${hd.phiEn}`}
@@ -1260,32 +1273,48 @@ export default function DossierDetail() {
                           <Text type="secondary">
                             Ngày thành lập: {hd.ngayThanhLap}
                           </Text>
-                          <Space>
+                          <Space wrap>
                             <Tag color={
                               hd.trangThai === "daKetThuc" ? "green" :
                               hd.trangThai === "dangHop" ? "blue" :
                               hd.trangThai === "sapLap" ? "orange" : "red"
                             }>
-                              {hd.trangThai === "daKetThuc" ? "Đã kết thúc" :
+                              {hd.phiEn === 1 && hd.trangThai === "daKetThuc"
+                                ? "Đã họp"
+                                : hd.trangThai === "daKetThuc" ? "Đã kết thúc" :
                                hd.trangThai === "dangHop" ? "Đang họp" :
                                hd.trangThai === "sapLap" ? "Sắp họp" : "Hủy bỏ"}
                             </Tag>
+                            <Tag color={q.ok ? "green" : "orange"}>
+                              Quorum {q.soCoMat}/{q.canThiet}
+                            </Tag>
+                            {diem !== undefined && (
+                              <Tag color={diem >= NGUONG_DIEM_HD ? "green" : "red"}>
+                                Điểm TB {diem.toFixed(2)}/100
+                              </Tag>
+                            )}
+                            {hd.ketQuaDanhGia && (
+                              <Tag color={hd.ketQuaDanhGia === "DAT" ? "green" : "red"}>
+                                {hd.ketQuaDanhGia === "DAT" ? "Đạt" : "Không đạt"}
+                              </Tag>
+                            )}
                             <Text type="secondary">• {hd.thanhVien.length} thành viên</Text>
                           </Space>
                         </Space>
                       }
                     />
                   </List.Item>
-                )}
+                  );
+                }}
               />
               {/* Bảng thành viên của HĐ đầu tiên */}
               {hoidongs[0] && (
                 <Table
                   title={() => (
-                    <Text strong>Danh sách thành viên</Text>
+                    <Text strong>Danh sách thành viên (phiên {hoidongs[0].phiEn})</Text>
                   )}
                   dataSource={hoidongs[0].thanhVien}
-                  rowKey="maTV"
+                  rowKey="id"
                   size="small"
                   pagination={false}
                   columns={[
@@ -1299,24 +1328,12 @@ export default function DossierDetail() {
                       title: "Vai trò",
                       dataIndex: "vaiTro",
                       key: "vaiTro",
-                      render: (v: string) => {
-                        const colorMap: Record<string, string> = {
-                          CHU_TICH: "red",
-                          PHAN_BIEN_1: "orange",
-                          PHAN_BIEN_2: "gold",
-                          UY_VIEN: "blue",
-                          THU_KY_KH: "green",
-                        };
-                        const labelMap: Record<string, string> = {
-                          CHU_TICH: "Chủ tịch",
-                          PHAN_BIEN_1: "Phản biện 1",
-                          PHAN_BIEN_2: "Phản biện 2",
-                          UY_VIEN: "Ủy viên",
-                          THU_KY_KH: "Thư ký KH",
-                        };
+                      render: (v: VaiTroHoiDong) => {
+                        const meta = VAI_TRO_HD[v];
                         return (
-                          <Tag color={colorMap[v] ?? "default"}>
-                            {labelMap[v] ?? v}
+                          <Tag color={meta?.mau ?? "default"}>
+                            {meta?.ten ?? v}
+                            {meta?.batBuoc ? " *" : ""}
                           </Tag>
                         );
                       },
@@ -1325,6 +1342,25 @@ export default function DossierDetail() {
                       title: "Đơn vị",
                       dataIndex: "donVi",
                       key: "donVi",
+                    },
+                    {
+                      title: "Có mặt",
+                      dataIndex: "coMatHop",
+                      key: "coMatHop",
+                      width: 90,
+                      render: (v?: boolean) =>
+                        v ? <Tag color="green">Có</Tag> : <Tag>Vắng</Tag>,
+                    },
+                    {
+                      title: "Điểm",
+                      key: "diem",
+                      width: 80,
+                      render: (_: unknown, row: { diemTrungBinh?: number; phieuDanhGia?: { diemQuyDoi: number; trangThai: string } }) => {
+                        const d = row.phieuDanhGia?.trangThai === "da_gui"
+                          ? row.phieuDanhGia.diemQuyDoi
+                          : row.diemTrungBinh;
+                        return d !== undefined ? d.toFixed(2) : "—";
+                      },
                     },
                   ]}
                 />

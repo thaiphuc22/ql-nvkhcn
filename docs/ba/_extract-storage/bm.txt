@@ -1,0 +1,243 @@
+1
+TCTCÔNGNGHIỆPCÔNGNGHỆCAOVIETTEL CỘNGHOÀXÃHỘICHỦNGHĨAVIỆTNAM
+[ĐƠNVỊ…] Độclập-Tự do-Hạnhphúc
+Hà Nội, ngày tháng năm 20…
+PHIẾU YÊU CẦU KHAI BÁO CẤU HÌNH
+Kính gửi: Phòng Công nghệ thông tin – TCT VHT.
+[ĐƠN VỊ …] kính đề nghị Phòng Công nghệ thông tin khai báo phân vùng
+lưu trữ hồ sơ, tài liệu cho [NHIỆM VỤ …] với thông tin như sau:
+1. Căn cứ:
+Căn cứ Quyết định phê duyệt/Quyết định Giao nhiệm vụ số … ngày … tháng
+… năm … của … về việc phê duyệt [NHIỆM VỤ …];
+2. Nội dung đề xuất khai báo:
+[ĐƠN VỊ …] đề nghị Phòng Công nghệ thông tin khai báo phân vùng lưu trữ
+hồ sơ, tài liệu cho [NHIỆM VỤ …] theo cấu trúc trong Mục 1 và phân quyền user
+theo Mục 2 trong Phụ lục đính kèm phiếu đề nghị.
+Thông tin phân vùng lưu trữ cho [NHIỆM VỤ …] đề nghị gửi về đầu mối:
+chủ nhiệm nhiệm vụ đ/c [NGUYỄN VĂN A] – Trung tâm …
+[ĐƠN VỊ …] trân trọng cảm ơn./.
+Nơi nhận:
+- Như trên;
+- Lưu: ….
+ĐƠN VỊ ĐỀ XUẤT
+Số và ký hiệu: QT.VHT.CLKHCN..20
+Ngày ban hành: 31/08/2023
+091597_Vu Viet Hoang_09:13 17/07/2024
+ 
+091597_Vu Viet Hoang_09:13 17/07/2024
+ 
+091597_Vu Viet Ho
+Tong Giam doc Nguyen Vu Ha da ky, 31/08/2023 11:05:28
+ 
+Tong Giam doc Nguyen Vu Ha da ky, 31/08/2023 11:05:28
+ 
+Tong Giam doc Nguyen
+Tài liệu này thuộc sở hữu của Viettel. Việc phát tán, sử dụng trái phép bị nghiêm cấm
+
+-- 1 of 7 --
+
+2
+Phụ lục
+CẤU TRÚC THƯ MỤC VÀ CẤU TRÚC PHÂN QUYỀN ĐỀ XUẤT CHO [NHIỆM VỤ …]
+1. Cây thư mục theo giai đoạn nghiên cứu [NCTD/EVT/DVT…]
+Cấp Tên thư mục Mô tả
+5 NCTD – nghiên cứu thăm dò
+6 [Mã nhiệm vụ nghiên
+cứu thăm dò] Mã đề tài/dự án theo quyết định phê duyệt hoặc ký hiệu viết tắt tên nhiệm vụ
+7 ├ HSQL Hồ sơ thuyết minh, dự toán, QĐ phê duyệt, giao nhiệm vụ, TTr chủ chương, báo cáo gia hạn
+8 │ ├ PD Hồ sơ thuyết minh, dự toán, QĐ phê duyệt, giao nhiệm vụ, TTr chủ chương
+8 │ ├ KH Các tài liệu kế hoạch chi tiết
+8 │ ├ BC Báo cáo quản lý định kỳ/đột xuất khác …
+8 │ ├ DC TTr điều chỉnh, báo cáo gia hạn ….
+8 │ ├ NT Các hồ sơ, tài liệu nghiệm thu
+7 ├ NC Các hồ sơ, tài liệu nghiên cứu
+7 ├ Khac Các hồ sơ, tài liệu không thuộc phạm vi 03 thư mục cấp 7 bên trên
+5 EVT – nghiên cứu phát triển sản phẩm
+6 [Mã đề tài] Mã đề tài theo quyết định phê duyệt hoặc ký hiệu viết tắt tên nhiệm vụ
+7 ├ HSQL Hồ sơ quản lý
+8 │ ├ PD Hồ sơ đề tài (thuyết minh, dự toán), QĐ phê duyệt, giao nhiệm vụ, TTr chủ chương
+8 │ ├ KH Các tài liệu kick-off, kế hoạch chi tiết nghiên cứu, thiết kế
+8 │ ├ BC Báo cáo giai đoạn; Báo cáo quản lý định kỳ/đột xuất khác …
+8 │ ├ DC TTr điều chỉnh, báo cáo gia hạn ….
+8 │ ├ NT Các hồ sơ, tài liệu nghiệm thu đề tài
+7 ├ NCTK Các hồ sơ, tài liệu nghiên cứu thiết kế sản phẩm
+8 │ ├ SP Các tài liệu/bộ tài liệu thiết kế/tích hợp/log QLDA/đo kiểm/thử nghiệm/kiểm soát chất lượng SP (mức
+System)
+9 │ │ ├ TKHT Các tài liệu/bộ tài liệu thiết kế hệ thống, chỉ tiêu nội sản phẩm, chỉ tiêu ngoại sản phẩm …
+9 │ │ ├ DKSP Bài đo, phương pháp đo kiểm (nội & ngoại) sản phẩm; Kết quả đo kiểm sản phẩm
+9 │ │ ├ TNSP Hồ sơ thử nghiệm sản phẩm (kế hoạch, biên bản thử nghiệm, báo cáo kết quả thử nghiệm …)
+Số và ký hiệu: QT.VHT.CLKHCN..20
+Ngày ban hành: 31/08/2023
+091597_Vu Viet Hoang_09:13 17/07/2024
+ 
+091597_Vu Viet Hoang_09:13 17/
+Tong Giam doc Nguyen Vu Ha da ky, 31/08/2023 11:05:28
+ 
+Tong Giam doc Nguyen Vu Ha da ky, 31/08/2023 11
+Tài liệu này thuộc sở hữu của Viettel. Việc phát tán, sử dụng trái phép bị nghiêm cấm
+
+-- 2 of 7 --
+
+3
+Cấp Tên thư mục Mô tả
+9 │ │ ├ KSCL Tài liệu đánh giá chất lượng sản phẩm/log QLCL
+8 │ ├ [SubSystem A,
+B...Z] Các tài liệu/bộ tài liệu thiết kế/tích hợp/đo kiểm Sub system
+9 │ │ ├ [Module 1,
+2…n] Tài liệu Sơ đồ khối thiết kế module và giao diện kết nối các khối trong module
+10 │ │ │ ├ HW Tài liệu thiết kế chi tiết HW
+11 │ │ │ │ ├ YC Tài liệu yêu cầu thiết kế HW
+11 │ │ │ │ ├ TK Tài liệu thiết kế (TK kiến trúc, phân tích thiết kế, SCH, PCB …)
+11 │ │ │ │ ├ HSCN Hồ sơ công nghệ
+11 │ │ │ │ ├ GCDK Tài liệu gia công, kết quả đo kiểm, báo cáo bring-up
+10 │ │ │ ├ ME Tài liệu thiết kế chi tiết ME
+11 │ │ │ │ ├ YC Tài liệu yêu cầu thiết kế ME
+11 │ │ │ │ ├ TK Tài liệu thiết kế (TK tổng thể, ID, 3D chi tiết, tính toán mô phỏng …)
+11 │ │ │ │ ├ HSCN Hồ sơ công nghệ (2D, BOM, hướng dẫn gia công, lắp rắp, đo kiểm ..)
+11 │ │ │ │ ├ GCDK Tài liệu gia công, kết quả đo kiểm, báo cáo đo kiểm
+10 │ │ │ ├ SW Tài liệu thiết kế chi tiết SW
+11 │ │ │ │ ├ YC BRD, SRS, RTM, Use case
+11 │ │ │ │ ├ TK HLD, DD, PI plan, DbD, SyID, UiD
+11 │ │ │ │ ├ Code Source code, Thông báo phát hành
+11 │ │ │ │ ├ Test Test case, defect log, báo cáo kết quả kiểm thử
+10 │ │ │ ├ DK Bài đo, phương pháp đo kiểm module; Kết quả đo kiểm module
+7 ├ HSCG Các hồ sơ chuyển giao sang giai đoạn sản xuất thử nghiệm (DVT)
+7 ├ Khac Các hồ sơ, tài liệu không thuộc phạm vi 03 thư mục lv 7 trên
+5 DVT – Sản xuất thử nghiệm
+6 [Mã dự án] Mã dự án theo quyết định phê duyệt hoặc ký hiệu viết tắt tên dự án
+7 ├ HSQL Hồ sơ quản lý dự án
+8 │ ├ PD Hồ sơ dự án (thuyết minh, dự toán), QĐ phê duyệt, giao nhiệm vụ, TTr chủ chương …
+8 │ ├ KH Các tài liệu kick-off, kế hoạch chi tiết SXTN
+8 │ ├ BC Báo cáo quản lý định kỳ/đột xuất
+8 │ ├ DC TTr điều chỉnh, báo cáo gia hạn ….
+Số và ký hiệu: QT.VHT.CLKHCN..20
+Ngày ban hành: 31/08/2023
+091597_Vu Viet Hoang_09:13 17/07/2024
+ 
+091597_Vu Viet Hoang_09:13 17/
+Tong Giam doc Nguyen Vu Ha da ky, 31/08/2023 11:05:28
+ 
+Tong Giam doc Nguyen Vu Ha da ky, 31/08/2023 11
+Tài liệu này thuộc sở hữu của Viettel. Việc phát tán, sử dụng trái phép bị nghiêm cấm
+
+-- 3 of 7 --
+
+4
+Cấp Tên thư mục Mô tả
+8 │ ├ NT Các hồ sơ, tài liệu nghiệm thu đề tài
+7 ├ CBSX Các hồ sơ, tài liệu giai đoạn chuẩn bị sản xuất (Checklist VTLK, Checklist tài liệu sản xuất, …)
+7 ├ SX Các hồ sơ, tài liệu giai đoạn sản xuất
+8 │ ├ QLCL Tài liệu QLCL (nhật ký quản lý SX, biên bản kiểm tra, tài liệu QLCL khác trong quá trình SX)
+8 │ ├ HSCN Quy trình công nghệ, lắp ráp gia công tích hợp đồng điều chỉnh
+8 │ ├ DCSX Hồ sơ quản lý, điều chỉnh tài liệu SXTN (điều chỉnh HSCN, quản lý điều chỉnh thiết kế …)
+7 ├ HSCG Các hồ sơ chuyển giao sang giai đoạn sản xuất loạt (MP)
+7 ├ Khac Các hồ sơ, tài liệu không thuộc phạm vi 04 thư mục lv 7 trên
+5 MP – Sản xuất loạt (**)
+5 AS – Sau bán hàng (**)
+(*) Đề xuất cấu trúc cây thư mục tương ứng với giai đoạn thực hiện theo nhiệm vụ được phê duyệt.
+Số và ký hiệu: QT.VHT.CLKHCN..20
+Ngày ban hành: 31/08/2023
+091597_Vu Viet Hoang_09:13 17/07/2024
+ 
+091597_Vu Viet Hoang_09:13 17/
+Tong Giam doc Nguyen Vu Ha da ky, 31/08/2023 11:05:28
+ 
+Tong Giam doc Nguyen Vu Ha da ky, 31/08/2023 11
+Tài liệu này thuộc sở hữu của Viettel. Việc phát tán, sử dụng trái phép bị nghiêm cấm
+
+-- 4 of 7 --
+
+5
+2. Danh sách user đề xuất phân quyền: (Tham khảo bảng phân quyền dưới đây, đơn vị đề xuất giữ lại cây thư mục và nhóm user
+tương ứng với nhiệm vụ thực hiện)
+2.1. Bảng phân quyền
+Số và ký hiệu: QT.VHT.CLKHCN..20
+Ngày ban hành: 31/08/2023
+091597_Vu Viet Hoang_09:13 17/07/2024
+ 
+091597_Vu Viet Hoang_09:13 17/
+Tong Giam doc Nguyen Vu Ha da ky, 31/08/2023 11:05:28
+ 
+Tong Giam doc Nguyen Vu Ha da ky, 31/08/2023 11
+Tài liệu này thuộc sở hữu của Viettel. Việc phát tán, sử dụng trái phép bị nghiêm cấm
+
+-- 5 of 7 --
+
+6
+2.2. Danh sách đề nghị phân quyền
+Vị trí Họ và tên Mã NV
+BAN TGĐ TCT
+Chỉ huy phòng ban/trung tâm
+Chỉ huy phòng ban/trung
+tâm
+P.KHCN
+P.Tài chính
+P.TCLĐ
+P.KD
+TT.Mua sắm
+TT
+QLCL
+Tổng hợp
+(Khối)
+TTSX/
+P.SX
+(Khối)
+BGĐ đơn vị chủ trì đề tài
+BGĐ Khối, BGĐ Trung
+tâm chủ trì
+PGĐ Khối
+GĐ Trung tâm
+PGĐ Trung
+tâm
+PM
+PM Tên PM
+PA
+PA Tên PA
+Kỹ sư hệ thống
+Số và ký hiệu: QT.VHT.CLKHCN..20
+Ngày ban hành: 31/08/2023
+091597_Vu Viet Hoang_09:13 17/07/2024
+ 
+091597_Vu Viet Hoang_09:13 17/
+Tong Giam doc Nguyen Vu Ha da ky, 31/08/2023 11:05:28
+ 
+Tong Giam doc Nguyen Vu Ha da ky, 31/08/2023 11
+Tài liệu này thuộc sở hữu của Viettel. Việc phát tán, sử dụng trái phép bị nghiêm cấm
+
+-- 6 of 7 --
+
+7
+Vị trí Họ và tên Mã NV
+KSHT Tên KSHT
+QA/QC đề tài/Dự án
+QA/QC đề tài/dự án Nhân sự 1
+Nhân sự 2
+Chuyên viên nghiệp vụ
+Chuyên viên nghiệp vụ P.KHCN
+HW
+HW KS1
+HW KS2
+HW KS3
+ME
+ME KS4
+ME KS5
+ME KS6
+SW
+SW KS7
+SW KS8
+SW KS9
+....
+....
+Sản xuất
+Số và ký hiệu: QT.VHT.CLKHCN..20
+Ngày ban hành: 31/08/2023
+091597_Vu Viet Hoang_09:13 17/07/2024
+ 
+091597_Vu Viet Hoang_09:13 17/
+Tong Giam doc Nguyen Vu Ha da ky, 31/08/2023 11:05:28
+ 
+Tong Giam doc Nguyen Vu Ha da ky, 31/08/2023 11
+Tài liệu này thuộc sở hữu của Viettel. Việc phát tán, sử dụng trái phép bị nghiêm cấm
+
+-- 7 of 7 --
+

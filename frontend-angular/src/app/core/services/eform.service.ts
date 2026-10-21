@@ -3,11 +3,19 @@ import { Injectable, inject, signal } from '@angular/core';
 import { Observable, map, tap } from 'rxjs';
 
 import { API_BASE_URL, encodeAuditActor } from '../api-config';
+import { RD07_FORM_SEEDS } from '../data/eform-rd07-seed';
 import { emptySchema, type FormMeta } from '../models/eform';
+import type { NhomRD } from '../models/eform-nhom-rd';
 
 // HTTP-backed store cho `/api/eform` — thay `store/FormContext.tsx` (React) /
 // signal store in-memory trước đó. Signal chỉ là cache dùng chung giữa danh sách
 // và trang thiết kế; server (Spring Boot + PostgreSQL) là nguồn dữ liệu thật.
+//
+// Fallback seed (RD07_FORM_SEEDS): khi backend trả rỗng, Angular tự nạp seed
+// client-side vào cache để user xem được UI ngay — đây là **dữ liệu tạm thời**,
+// không qua POST API, không có Flyway migration. Khi backend đã có dữ liệu thật
+// thì backend thắng (xem `load()` dưới). Xem
+// `.harness/state/DELIVERY_STATE.md` 2026-08-05 để biết lý do và phạm vi.
 
 const BASE_URL = `${API_BASE_URL}/api/eform`;
 
@@ -28,6 +36,7 @@ export interface AddFormInput {
   ten: string;
   moTa?: string;
   loai?: FormMeta['loai'];
+  nhomRD?: NhomRD;
 }
 
 function actorOptions(actor?: string): { headers: Record<string, string> } | undefined {
@@ -45,10 +54,37 @@ export class EformService {
   private readonly listSignal = signal<FormMeta[]>([]);
   readonly list = this.listSignal.asReadonly();
 
+  /** Bật/tắt fallback seed client-side — mặc định BẬT theo quyết định
+   * "seed tạm thời" ghi ở `active-task.md` 2026-08-05. Có thể tắt qua
+   * `disableSeedFallback()` nếu user muốn danh sách rỗng thật khi backend rỗng
+   * (ví dụ test). */
+  private seedEnabled = true;
+
+  disableSeedFallback(): void {
+    this.seedEnabled = false;
+  }
+
+  enableSeedFallback(): void {
+    this.seedEnabled = true;
+  }
+
+  isSeedFallbackEnabled(): boolean {
+    return this.seedEnabled;
+  }
+
   load(): Observable<FormMeta[]> {
     return this.http.get<EformResponse[]>(BASE_URL).pipe(
       map((responses) => responses.map(toMeta)),
-      tap((forms) => this.listSignal.set(forms)),
+      tap((forms) => {
+        // Backend trả rỗng → nạp seed client-side để UI không trống trơn khi
+        // dev backend chưa có dữ liệu. Backend có dữ liệu thì backend thắng —
+        // TUYỆT ĐỐI không trộn lẫn (tránh "lệch pha" thật/giả).
+        if (forms.length === 0 && this.seedEnabled) {
+          this.listSignal.set([...RD07_FORM_SEEDS]);
+        } else {
+          this.listSignal.set(forms);
+        }
+      }),
     );
   }
 
@@ -74,7 +110,16 @@ export class EformService {
     const ten = input.ten.trim();
     return this.http.post<EformResponse>(BASE_URL, {
       key, ten, moTa: input.moTa?.trim() || '', loai: input.loai, schema: emptySchema(key, ten),
-    }, actorOptions(actor)).pipe(map(toMeta), tap((meta) => this.upsertCache(meta)));
+    }, actorOptions(actor)).pipe(
+      map((response) => {
+        const meta = toMeta(response);
+        // Backend chưa biết `nhomRD` (chưa có cột) — gắn client-side từ input
+        // để filter dropdown hoạt động đúng ngay sau khi tạo.
+        if (input.nhomRD) meta.nhomRD = input.nhomRD;
+        return meta;
+      }),
+      tap((meta) => this.upsertCache(meta)),
+    );
   }
 
   updateMeta(meta: FormMeta, patch: Partial<Pick<FormMeta, 'ten' | 'moTa' | 'loai'>>, actor?: string): Observable<FormMeta> {

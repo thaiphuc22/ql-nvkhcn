@@ -60,7 +60,7 @@
           "type": "textfield",
           "id": "reporting-unit",
           "key": "donViBaoCao",
-          "label": "T?n ??n v? b?o c?o",
+          "label": "Đơn vị báo cáo/chủ trì",
           "validate": {
             "required": true
           },
@@ -187,6 +187,19 @@
           "appearance": {
             "prefix": "“",
             "suffix": "”"
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "implementing-unit",
+          "key": "donViChuTri",
+          "label": "Đơn vị chủ trì thực hiện",
+          "validate": {
+            "required": true
+          },
+          "layout": {
+            "row": "Row_implementing_unit",
+            "columns": null
           }
         },
         {
@@ -385,6 +398,19 @@
           }
         },
         {
+          "type": "textfield",
+          "id": "implementation-form",
+          "key": "hinhThucThucHien",
+          "label": "Hình thức thực hiện",
+          "validate": {
+            "required": true
+          },
+          "layout": {
+            "row": "Row_implementation_form",
+            "columns": null
+          }
+        },
+        {
           "type": "textarea",
           "id": "objectives",
           "key": "mucTieu",
@@ -501,6 +527,35 @@
           },
           "layout": {
             "row": "Row_funding",
+            "columns": 10
+          }
+        },
+        {
+          "type": "number",
+          "id": "total-estimated-budget",
+          "key": "tongKhaiToanKinhPhi",
+          "label": "Tổng khái toán kinh phí (VNĐ)",
+          "description": "Tổng khái toán kinh phí theo quy định",
+          "validate": {
+            "required": true,
+            "min": 0
+          },
+          "layout": {
+            "row": "Row_total_budget",
+            "columns": 6
+          }
+        },
+        {
+          "type": "textfield",
+          "id": "budget-in-words",
+          "key": "kinhPhiBangChu",
+          "label": "Kinh phí (Bằng chữ)",
+          "description": "Số tiền viết bằng chữ, ví dụ: Một tỷ đồng chẵn",
+          "validate": {
+            "required": true
+          },
+          "layout": {
+            "row": "Row_total_budget",
             "columns": 10
           }
         },
@@ -634,6 +689,17 @@
           },
           "layout": {
             "row": "Row_implementation_proposal",
+            "columns": null
+          }
+        },
+        {
+          "type": "textarea",
+          "id": "implementation-org",
+          "key": "toChucThucHien",
+          "label": "Tổ chức thực hiện",
+          "description": "Mô tả cách thức tổ chức thực hiện nhiệm vụ, phân công trách nhiệm các đơn vị liên quan.",
+          "layout": {
+            "row": "Row_implementation_org",
             "columns": null
           }
         },

@@ -1,0 +1,96 @@
+{
+  "metadata": {
+    "source": "VTIT_GIAOBAN_BTTM_SRS_Ver 1.0_21.07.2026.docx",
+    "template_page": "Template",
+    "language": "vi"
+  },
+  "functions": [
+    {
+      "id": "F03",
+      "title": "Xem dashboard thống kê số lượng sự cố theo trạng thái",
+      "actor": "Người dùng được phân quyền",
+      "screen": "Dashboard thống kê sự cố",
+      "data": [
+        "GET /api/incidents/statistics",
+        "incident",
+        "incident_status"
+      ],
+      "flow": {
+        "simple": {
+          "steps": [
+            "Truy cập Dashboard thống kê sự cố"
+          ],
+          "process": "HT kiểm tra quyền và tổng hợp sự cố theo trạng thái",
+          "success": "Hiển thị biểu đồ số lượng sự cố theo trạng thái",
+          "case_ids": [
+            "C1"
+          ]
+        },
+        "medium": {
+          "steps": [
+            "Truy cập Dashboard thống kê sự cố",
+            "Chọn bộ lọc và yêu cầu xem"
+          ],
+          "process": "HT kiểm tra quyền, phạm vi; truy vấn và tổng hợp số liệu",
+          "success": "Hiển thị biểu đồ và cho phép drill-down danh sách sự cố",
+          "case_ids": [
+            "C1",
+            "C2",
+            "C3"
+          ]
+        },
+        "detailed": {
+          "steps": [
+            "Truy cập Dashboard thống kê sự cố",
+            "Chọn trạng thái và phạm vi dữ liệu",
+            "HT validate bộ lọc và gửi yêu cầu thống kê"
+          ],
+          "process": "HT kiểm tra quyền, phạm vi; truy vấn, tổng hợp và chuẩn bị drill-down",
+          "success": "Hiển thị biểu đồ; drill-down giữ đúng bộ lọc và phạm vi dữ liệu",
+          "case_ids": [
+            "C1",
+            "C2",
+            "C3"
+          ]
+        }
+      },
+      "cases": [
+        {
+          "id": "C1",
+          "title": "Không có quyền xem thống kê sự cố",
+          "condition": "Người dùng thiếu quyền XEM_BAO_CAO_THONG_KE_SU_CO",
+          "handling": "Không hiển thị số liệu; thông báo không có quyền",
+          "source": "Function 3 - bước kiểm tra quyền"
+        },
+        {
+          "id": "C2",
+          "title": "Không có sự cố theo trạng thái hoặc bộ lọc",
+          "condition": "API trả về tập dữ liệu rỗng",
+          "handling": "Hiển thị biểu đồ sự cố ở trạng thái rỗng",
+          "source": "Function 3 - ngoại lệ không có dữ liệu"
+        },
+        {
+          "id": "C3",
+          "title": "Lỗi tải biểu đồ hoặc danh sách sự cố",
+          "condition": "API timeout hoặc lỗi tải dữ liệu drill-down",
+          "handling": "Hiển thị Thử lại; không mở drill-down với dữ liệu sai",
+          "source": "Function 3 - ngoại lệ API"
+        }
+      ],
+      "business_rules": [
+        "Chỉ thống kê sự cố thuộc phạm vi phân quyền",
+        "Drill-down phải giữ nguyên bộ lọc của biểu đồ"
+      ],
+      "audit": "",
+      "ui_evidence": [
+        "Bộ lọc trạng thái",
+        "Biểu đồ tròn",
+        "Thao tác drill-down"
+      ],
+      "source_refs": [
+        "SRS Function 3",
+        "Ảnh Dashboard thống kê sự cố"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node 'd:\\ql-nvkhcn\\.codex\\hooks\\harness-guard.js'"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node 'd:\\ql-nvkhcn\\.codex\\hooks\\session-start.js'"
+          }
+        ]
+      }
+    ]
+  }
+}

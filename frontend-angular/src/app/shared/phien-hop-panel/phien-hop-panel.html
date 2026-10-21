@@ -1,0 +1,162 @@
+<section class="php">
+  <div class="php-head">
+    <h3>Lịch phiên họp{{ maHoiDong() ? ' · ' + maHoiDong() : '' }}</h3>
+    <div class="php-actions">
+      <button nz-button nzType="primary" (click)="moLenLich()">
+        <span nz-icon nzType="calendar"></span> Lên lịch họp
+      </button>
+      <button nz-button (click)="moThemPhien()">
+        <span nz-icon nzType="plus"></span> Thêm phiên họp
+      </button>
+    </div>
+  </div>
+
+  <p class="php-note">
+    Trạng thái phiên: Chưa diễn ra, Đã diễn ra, Đã hủy. Mỗi lần lên lịch, sửa hoặc hủy được ghi vào lịch sử.
+  </p>
+
+  @if (phien().length === 0) {
+    <nz-empty nzNotFoundContent="Chưa có lịch họp."></nz-empty>
+  } @else {
+    <div class="php-table-wrap">
+      <table class="php-table">
+        <thead>
+          <tr>
+            <th>Phiên</th>
+            <th>Ngày</th>
+            <th>Giờ</th>
+            <th>Địa điểm</th>
+            <th>Trạng thái</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of phien(); track row.id) {
+            <tr>
+              <td>
+                <strong>{{ row.ten }}</strong>
+                <small>Phiên {{ row.loaiPhien }}</small>
+              </td>
+              <td>{{ hienNgay(row.thoiGian) }}</td>
+              <td>{{ hienGio(row.thoiGian) }}</td>
+              <td>{{ row.diaDiem }}</td>
+              <td>
+                <nz-tag [nzColor]="trangThaiColor[row.trangThai]">
+                  {{ trangThaiLabel[row.trangThai] }}
+                </nz-tag>
+              </td>
+              <td class="php-row-actions">
+                <button nz-button nzType="link" nzSize="small" (click)="moChiTiet(row)">Xem chi tiết</button>
+                <button
+                  nz-button nzType="link" nzSize="small"
+                  [disabled]="row.trangThai !== 'chua_dien_ra'"
+                  (click)="moSua(row)">Sửa</button>
+                <button
+                  nz-button nzType="link" nzSize="small" nzDanger
+                  [disabled]="row.trangThai !== 'chua_dien_ra'"
+                  nz-popconfirm nzPopconfirmTitle="Hủy lịch phiên họp này?" nzPopconfirmOkText="Hủy lịch" nzPopconfirmCancelText="Đóng"
+                  (nzOnConfirm)="huy(row)">Hủy</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <h4>Lịch sử thay đổi phiên họp</h4>
+  @if (laViDu()) {
+    <p class="php-note">Ví dụ trên bản xem trước. Lên lịch hoặc thêm phiên sẽ ghi lịch sử của hội đồng này.</p>
+  }
+  @if (lichSu().length === 0) {
+    <p class="php-note">Chưa có thay đổi.</p>
+  } @else {
+    <div class="php-table-wrap">
+      <table class="php-table">
+        <thead>
+          <tr>
+            <th>Thời điểm</th>
+            <th>Người</th>
+            <th>Phiên</th>
+            <th>Hành động</th>
+            <th>Nội dung</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of lichSu(); track row.id) {
+            <tr>
+              <td>{{ row.thoiDiem | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td>{{ row.nguoi }}</td>
+              <td>Phiên {{ row.loaiPhien }}</td>
+              <td>{{ hanhDongLabel[row.hanhDong] }}</td>
+              <td>{{ row.moTa }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
+
+<nz-modal
+  [nzVisible]="modalOpen()"
+  [nzTitle]="editingId() ? 'Sửa lịch họp' : (themPhien() ? 'Thêm phiên họp' : 'Lên lịch họp')"
+  nzOkText="Lưu"
+  nzCancelText="Đóng"
+  [nzWidth]="560"
+  (nzOnCancel)="dongModal()"
+  (nzOnOk)="luu()">
+  <ng-container *nzModalContent>
+    <label class="php-label">Tên phiên</label>
+    <input nz-input [ngModel]="ten()" (ngModelChange)="ten.set($event)" [disabled]="!!editingId()" />
+    <div class="php-when">
+      <div>
+        <label class="php-label">Ngày diễn ra</label>
+        <nz-date-picker
+          nzFormat="dd/MM/yyyy"
+          nzPlaceHolder="Chọn ngày"
+          [ngModel]="ngay()"
+          (ngModelChange)="ngay.set($event)">
+        </nz-date-picker>
+      </div>
+      <div>
+        <label class="php-label">Giờ diễn ra</label>
+        <nz-time-picker
+          nzFormat="HH:mm"
+          nzPlaceHolder="Chọn giờ"
+          [ngModel]="gio()"
+          (ngModelChange)="gio.set($event)">
+        </nz-time-picker>
+      </div>
+    </div>
+    <label class="php-label">Địa điểm</label>
+    <input nz-input [ngModel]="diaDiem()" (ngModelChange)="diaDiem.set($event)" placeholder="Phòng họp, địa chỉ" />
+    <label class="php-label">Ghi chú</label>
+    <textarea nz-input rows="2" [ngModel]="ghiChu()" (ngModelChange)="ghiChu.set($event)"></textarea>
+  </ng-container>
+</nz-modal>
+
+<nz-modal
+  [nzVisible]="chiTietOpen()"
+  nzTitle="Chi tiết phiên họp"
+  nzOkText="Đóng"
+  [nzCancelText]="null"
+  [nzWidth]="520"
+  (nzOnCancel)="dongChiTiet()"
+  (nzOnOk)="dongChiTiet()">
+  <ng-container *nzModalContent>
+    @if (chiTiet(); as p) {
+      <div class="php-detail">
+        <div><span>Tên phiên</span><strong>{{ p.ten }}</strong></div>
+        <div><span>Phiên</span><strong>{{ p.loaiPhien }}</strong></div>
+        <div><span>Ngày</span><strong>{{ hienNgay(p.thoiGian) }}</strong></div>
+        <div><span>Giờ</span><strong>{{ hienGio(p.thoiGian) }}</strong></div>
+        <div><span>Địa điểm</span><strong>{{ p.diaDiem }}</strong></div>
+        <div><span>Trạng thái</span>
+          <nz-tag [nzColor]="trangThaiColor[p.trangThai]">{{ trangThaiLabel[p.trangThai] }}</nz-tag>
+        </div>
+        <div><span>Ghi chú</span><strong>{{ p.ghiChu || '—' }}</strong></div>
+      </div>
+    }
+  </ng-container>
+</nz-modal>

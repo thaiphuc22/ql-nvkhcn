@@ -1,7 +1,11 @@
 import { Injectable, inject, signal } from '@angular/core';
+import { timeout } from 'rxjs/operators';
 import { DEMO_PASSWORD, DemoUser, findDemoUser } from './demo-users';
 import { ALL_APP_CODES, AppCode } from './app-registry';
 import { UserService } from '../services/user.service';
+
+/** Identity-service không chạy thì không được treo điều hướng mãi. */
+const EFFECTIVE_PERMISSIONS_TIMEOUT_MS = 5000;
 
 const STORAGE_KEY = 'qtkhcn.auth.email';
 const ACTIVE_APP_STORAGE_KEY = 'qtkhcn.auth.active-app';
@@ -107,7 +111,9 @@ export class AuthService {
   }
 
   private refreshEffectivePermissions(email: string): void {
-    this.userService.effectivePermissionsByEmail(email).subscribe({
+    this.userService.effectivePermissionsByEmail(email).pipe(
+      timeout({ first: EFFECTIVE_PERMISSIONS_TIMEOUT_MS }),
+    ).subscribe({
       next: (effective) => {
         const current = this.userSignal();
         if (!current || current.email !== email) return;

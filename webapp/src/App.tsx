@@ -41,6 +41,7 @@ import {
   RocketOutlined,
   AppstoreOutlined,
   UnorderedListOutlined,
+  BellOutlined,
 } from "@ant-design/icons";
 import {
   Routes,
@@ -78,11 +79,18 @@ const RuleDetail = lazy(() => import("./pages/RuleDetail"));
 const ApprovalMatrix = lazy(() => import("./pages/ApprovalMatrix"));
 const ActionStudio = lazy(() => import("./pages/ActionStudio"));
 const ServiceTaskConfig = lazy(() => import("./pages/ServiceTaskConfig"));
+const MauThongBaoList = lazy(() => import("./pages/thong-bao/MauThongBaoList"));
+const MauThongBaoDetail = lazy(() => import("./pages/thong-bao/MauThongBaoDetail"));
+const MauThongBaoForm = lazy(() => import("./pages/thong-bao/MauThongBaoForm"));
+const KenhThongBaoPage = lazy(() => import("./pages/thong-bao/KenhThongBao"));
+const TriggerThongBaoPage = lazy(() => import("./pages/thong-bao/TriggerThongBao"));
+const TheoDoiThongBaoPage = lazy(() => import("./pages/thong-bao/TheoDoiThongBao"));
 const TroGiup = lazy(() => import("./pages/TroGiup"));
 const SubsystemList = lazy(() => import("./pages/SubsystemList"));
 const PhanHePage = lazy(() => import("./pages/PhanHePage"));
 const CouncilCommittee = lazy(() => import("./pages/CouncilCommittee"));
 const SanPhamNghienCuuList = lazy(() => import("./pages/san-pham-khcn/SanPhamNghienCuuList"));
+const SpdvCreate = lazy(() => import("./pages/san-pham-khcn/SpdvCreate"));
 const HoSoSHTTList = lazy(() => import("./pages/san-pham-khcn/HoSoSHTTList"));
 const CongBoKhoaHocList = lazy(() => import("./pages/san-pham-khcn/CongBoKhoaHocList"));
 const CongNgheLoiList = lazy(() => import("./pages/san-pham-khcn/CongNgheLoiList"));
@@ -146,6 +154,11 @@ const ROUTE_BY_KEY: Record<string, string> = {
   matran: "/ma-tran-phe-duyet",
   hanhdong: "/cau-hinh-hanh-dong",
   servicetask: "/cau-hinh-service-task",
+  "thongbao-mau": "/thong-bao/mau",
+  "thongbao-kenh": "/thong-bao/kenh",
+  "thongbao-trigger": "/thong-bao/trigger",
+  "thongbao-theo-doi": "/thong-bao/theo-doi",
+  thongbao: "/thong-bao/mau",
   trogiup: "/tro-giup",
   "danh-sach-phan-he": "/danh-sach-phan-he",
   "ph2-tongquan": "/phan-he/PH2/tong-quan",
@@ -160,6 +173,7 @@ const ROUTE_BY_KEY: Record<string, string> = {
 
 export default function App() {
   const [collapsed, setCollapsed] = useState(false);
+  const [menuOpenKeys, setMenuOpenKeys] = useState<string[]>([]);
   const [backendDemoLink, setBackendDemoLink] =
     useState<BackendDemoLink | null>(null);
   const screens = Grid.useBreakpoint();
@@ -279,6 +293,14 @@ export default function App() {
                                         "/cau-hinh-service-task",
                                       )
                                     ? "servicetask"
+                                    : location.pathname.startsWith("/thong-bao/mau")
+                                      ? "thongbao-mau"
+                                      : location.pathname.startsWith("/thong-bao/kenh")
+                                        ? "thongbao-kenh"
+                                        : location.pathname.startsWith("/thong-bao/trigger")
+                                          ? "thongbao-trigger"
+                                          : location.pathname.startsWith("/thong-bao/theo-doi")
+                                            ? "thongbao-theo-doi"
                                     : location.pathname.startsWith("/ho-so")
                                       ? "ho-so"
                                       : location.pathname.startsWith("/san-pham-nghien-cuu")
@@ -321,9 +343,9 @@ export default function App() {
     nvkhcn: "Quản trị KHCN",
     "nhiem-vu": "Quản trị KHCN",
     "ho-so": "Quản trị KHCN",
-    "san-pham-nc": "Sản phẩm nghiên cứu",
+    "san-pham-nc": "Sản phẩm (SPDV)",
     "ho-so-shtt": "Sở hữu trí tuệ",
-    "cong-bo-kh": "Công bố khoa học",
+    "cong-bo-kh": "Bài báo khoa học",
     "cong-nghe-loi": "Công nghệ lõi",
     "ph2-tongquan": "Tổng quan",
     "ph2-donvi": "Quản trị đơn vị",
@@ -343,11 +365,51 @@ export default function App() {
     matran: "Ma trận phê duyệt",
     hanhdong: "Ma trận Hành động",
     servicetask: "Tác vụ hệ thống",
+    "thongbao-mau": "Mẫu thông báo",
+    "thongbao-kenh": "Kênh thông báo",
+    "thongbao-trigger": "Trigger thông báo",
+    "thongbao-theo-doi": "Theo dõi gửi thông báo",
+    thongbao: "Thông báo",
     trogiup: "Hướng dẫn sử dụng",
     quytrinh: "Quản trị quy trình",
     "danh-sach-phan-he": "Danh sách Phân hệ",
   };
   const sectionTitle = SECTION_TITLE[selectedKey] ?? "Quản trị quy trình";
+
+  useEffect(() => {
+    const parents: string[] = [];
+    if (selectedKey === "dashboard" || selectedKey.startsWith("dash-")) {
+      parents.push("dashboard");
+    }
+    if (
+      ["nvkhcn", "nhiem-vu", "ho-so", "san-pham-nc", "ho-so-shtt", "cong-bo-kh", "cong-nghe-loi"].includes(
+        selectedKey,
+      )
+    ) {
+      parents.push("nvkhcn");
+    }
+    if (
+      [
+        "quytrinh-config",
+        "quytrinh",
+        "luat",
+        "matran",
+        "hanhdong",
+        "servicetask",
+        "giamsat",
+        "hoidong",
+        "tichhop",
+        "nhatky",
+      ].includes(selectedKey)
+    ) {
+      parents.push("quytrinh-config");
+    }
+    if (selectedKey === "thongbao" || selectedKey.startsWith("thongbao-")) {
+      parents.push("thongbao");
+    }
+    if (!parents.length) return;
+    setMenuOpenKeys((prev) => Array.from(new Set([...prev, ...parents])));
+  }, [selectedKey]);
 
   const crumbSource =
     crumbs && crumbs.length
@@ -395,9 +457,9 @@ export default function App() {
       children: [
         { key: "nhiem-vu", icon: null, label: "Danh sách NV KHCN" },
         { key: "ho-so", icon: null, label: "Danh sách Hồ sơ KHCN" },
-        { key: "san-pham-nc", icon: <ExperimentOutlined />, label: "Sản phẩm nghiên cứu" },
+        { key: "san-pham-nc", icon: <ExperimentOutlined />, label: "Sản phẩm (SPDV)" },
         { key: "ho-so-shtt", icon: <FileProtectOutlined />, label: "Sở hữu trí tuệ" },
-        { key: "cong-bo-kh", icon: <ReadOutlined />, label: "Công bố khoa học" },
+        { key: "cong-bo-kh", icon: <ReadOutlined />, label: "Bài báo khoa học" },
         { key: "cong-nghe-loi", icon: <RocketOutlined />, label: "Công nghệ lõi" },
       ],
     },
@@ -441,6 +503,21 @@ export default function App() {
                     },
                   ]
                 : []),
+            ],
+          },
+        ]
+      : []),
+    ...(canManageSystem
+      ? [
+          {
+            key: "thongbao",
+            icon: <BellOutlined />,
+            label: "Thông báo",
+            children: [
+              { key: "thongbao-mau", icon: null, label: "Mẫu thông báo" },
+              { key: "thongbao-kenh", icon: null, label: "Kênh" },
+              { key: "thongbao-trigger", icon: null, label: "Trigger" },
+              { key: "thongbao-theo-doi", icon: null, label: "Theo dõi" },
             ],
           },
         ]
@@ -637,6 +714,8 @@ export default function App() {
                 theme="dark"
                 mode="inline"
                 selectedKeys={[selectedKey]}
+                openKeys={menuOpenKeys}
+                onOpenChange={setMenuOpenKeys}
                 items={
                   (phanHeContextId && PH_MENU_MAP[phanHeContextId]) ||
                   menuItemsMain
@@ -918,6 +997,7 @@ export default function App() {
               <Route path="/ho-so/tao-moi" element={<DossierCreate />} />
               <Route path="/ho-so/:id" element={<DossierDetail />} />
               <Route path="/san-pham-nghien-cuu" element={<SanPhamNghienCuuList />} />
+              <Route path="/san-pham-nghien-cuu/moi" element={<SpdvCreate />} />
               <Route path="/so-huu-tri-tue" element={<HoSoSHTTList />} />
               <Route path="/cong-bo-khoa-hoc" element={<CongBoKhoaHocList />} />
               <Route path="/cong-nghe-loi" element={<CongNgheLoiList />} />
@@ -1036,6 +1116,80 @@ export default function App() {
                 element={
                   canManageSystem ? (
                     <ServiceTaskConfig />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
+              />
+              <Route
+                path="/thong-bao"
+                element={<Navigate to="/thong-bao/mau" replace />}
+              />
+              <Route
+                path="/thong-bao/mau"
+                element={
+                  canManageSystem ? (
+                    <MauThongBaoList />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
+              />
+              <Route
+                path="/thong-bao/mau/moi"
+                element={
+                  canManageSystem ? (
+                    <MauThongBaoForm />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
+              />
+              <Route
+                path="/thong-bao/mau/:id/sua"
+                element={
+                  canManageSystem ? (
+                    <MauThongBaoForm />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
+              />
+              <Route
+                path="/thong-bao/mau/:id"
+                element={
+                  canManageSystem ? (
+                    <MauThongBaoDetail />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
+              />
+              <Route
+                path="/thong-bao/kenh"
+                element={
+                  canManageSystem ? (
+                    <KenhThongBaoPage />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
+              />
+              <Route
+                path="/thong-bao/trigger"
+                element={
+                  canManageSystem ? (
+                    <TriggerThongBaoPage />
+                  ) : (
+                    <Navigate to="/tong-quan" replace />
+                  )
+                }
+              />
+              <Route
+                path="/thong-bao/theo-doi"
+                element={
+                  canManageSystem ? (
+                    <TheoDoiThongBaoPage />
                   ) : (
                     <Navigate to="/tong-quan" replace />
                   )

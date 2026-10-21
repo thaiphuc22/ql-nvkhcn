@@ -1,0 +1,41 @@
+id: SKILL-BR-EXTRACTOR
+
+name: Business Rule Extractor
+
+category: business_rule_intelligence
+
+purpose: >
+  Extract and normalize business rules
+  from policies, SOPs and stakeholder statements.
+
+supported_tasks:
+  - TASK-RADD-001
+
+supported_techniques:
+  - TECH-DECISION-TABLE
+
+supported_artifacts:
+  - ART-BUSINESS-RULE
+  - ART-DECISION-TABLE
+
+reasoning_pipeline:
+  - identify_conditions
+  - identify_actions
+  - normalize_logic
+  - detect_conflicts
+  - identify_missing_conditions
+  - generate_decision_table
+
+validators:
+  - VALIDATOR-RULE-CONSISTENCY
+  - VALIDATOR-NO-CONFLICT
+  - VALIDATOR-RULE-COVERAGE
+
+failure_patterns:
+  - hidden_conditions
+  - overlapping_rules
+  - missing_exceptions
+
+recommended_followup_skills:
+  - SKILL-DECISION-TABLE-GENERATOR
+  - SKILL-RULE-CONFLICT-DETECTOR

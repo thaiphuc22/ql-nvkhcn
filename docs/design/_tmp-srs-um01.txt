@@ -1,0 +1,238 @@
+﻿3.10 PHÂN HỆ QUẢN LÝ NGƯỜI DÙNG VÀ PHÂN QUYỀN (UM01 – UM09)
+3.10.1 UM01 – QUẢN LÝ TÀI KHOẢN NGƯỜI DÙNG (DANH SÁCH TÀI KHOẢN)
+Thông tin chung chức năng
+Đối tượng sử dụng: Quản trị người dùng, Quản trị người dùng và phân quyền.
+Mục đích: Cho phép người quản trị xem, tìm kiếm, lọc, thêm mới (đồng bộ LDAP hoặc tự khai báo), cập nhật trạng thái hoạt động và xuất Excel danh sách tài khoản người dùng trong hệ thống QTKHCN.
+Phạm vi xử lý: bảng danh sách tài khoản, khu vực công cụ (tìm kiếm/lọc/thêm mới/xuất Excel), form thêm mới - chỉnh sửa tài khoản theo phương thức tự khai báo.
+Màn hình
+(Chèn ảnh chụp màn hình/wireframe thực tế của chức năng "Danh sách tài khoản" tại đây — hiện chưa có ảnh đính kèm trong tài liệu nguồn, cần bổ sung trước khi phát hành chính thức.)
+Mô tả chi tiết các thành phần
+a) Khu vực công cụ (Toolbar phía trên bảng danh sách)
+STT
+Tên thành phần
+Kiểu dữ liệu
+[Độ dài]
+I/O
+Mô tả
+Quy tắc xử lý dữ liệu
+Nguyên tắc hiển thị
+Mapping CSDL/API
+1
+Ô tìm kiếm
+Textbox
+Input
+Cho phép người dùng tìm kiếm nhanh tài khoản theo Tên tài khoản, Mã người dùng hoặc Email.
+Tìm kiếm gần đúng (LIKE %keyword%), không phân biệt hoa/thường, không phân biệt dấu tiếng Việt. Áp dụng debounce 300–500ms trước khi gọi API tìm kiếm để tránh gọi API liên tục khi người dùng đang gõ.
+Đặt ở góc trái phía trên bảng danh sách, có icon kính lúp; hiển thị placeholder gợi ý (VD: "Tìm theo tên tài khoản, mã người dùng, email...").
+NguoiDung.ten_tai_khoan, NguoiDung.ma_nguoi_dung, NguoiDung.email (điều kiện LIKE)
+2
+Bộ lọc
+Multi-select Dropdown
+Input
+Lọc danh sách theo Loại tổ chức, Nhóm người dùng, Chức vụ, Trạng thái hoạt động.
+Cho phép chọn nhiều giá trị trên cùng một tiêu chí (multi-select); các điều kiện lọc kết hợp với nhau theo quan hệ AND; kết hợp với điều kiện tìm kiếm ở ô tìm kiếm (nếu có).
+Hiển thị dạng dropdown/panel lọc, có badge số lượng điều kiện đang được áp dụng; có nút "Xóa bộ lọc".
+NguoiDung.loai_to_chuc_id, NguoiDung.nhom_nd_id, NguoiDung.chuc_vu_id, NguoiDung.trang_thai
+3
+Nút "Thêm mới"
+Button + Dropdown menu
+Input
+Nhấn vào nút thêm mới, hiển thị menu chức năng: Đồng bộ LDAP / Tự khai báo.
+Chỉ hiển thị (hoặc chỉ cho thao tác) nếu người dùng đăng nhập có quyền tạo tài khoản (permission CREATE_ACCOUNT). Chọn "Đồng bộ LDAP" → mở luồng đồng bộ tài khoản từ LDAP (mục 4.1). Chọn "Tự khai báo" → mở form nhập tay thông tin tài khoản (mục 4.2).
+Nút màu chủ đạo (primary), icon dấu "+", đặt tại góc phải phía trên bảng danh sách; menu xổ xuống khi nhấn.
+N/A (điều hướng chức năng)
+4
+Nút "Xuất Excel"
+Button
+Input
+Xuất danh sách tài khoản (theo điều kiện tìm kiếm/lọc đang áp dụng) ra file Excel.
+Nếu số bản ghi thỏa điều kiện ≤ 5.000: hệ thống thực hiện xuất Excel bình thường. Nếu số bản ghi > 5.000: hệ thống KHÔNG thực hiện xuất, hiển thị thông báo đề nghị người dùng thu hẹp phạm vi lọc để giảm số lượng bản ghi rồi xuất lại (chi tiết mục 4.4). Tên file xuất theo quy tắc: "DanhSachTaiKhoan_" + yyyyMMdd_HHmmss + ".xlsx".
+Trong lúc xử lý, hiển thị loading trên nút và disable nút để tránh người dùng bấm nhiều lần gây trùng yêu cầu xuất.
+N/A (export action)
+b) Bảng danh sách tài khoản (Grid)
+STT
+Tên thành phần
+Kiểu dữ liệu
+[Độ dài]
+I/O
+Mô tả
+Quy tắc xử lý dữ liệu
+Nguyên tắc hiển thị
+Mapping CSDL/API
+1
+STT
+Label
+Output
+Số thứ tự của dòng dữ liệu trong bảng.
+Tính theo công thức: (số trang hiện tại − 1) × số bản ghi/trang + vị trí dòng trong trang.
+Căn giữa, độ rộng cột cố định, nhỏ.
+N/A
+2
+Mã người dùng
+Label
+Output
+Hiển thị mã người dùng của tài khoản.
+Hệ thống tự sinh khi tạo mới (định dạng số); người dùng có thể sửa khi tạo/chỉnh sửa (xem mục 3.3).
+Nếu dữ liệu trống, hiển thị dấu "-" (đề xuất — cần xác nhận thêm, xem mục 5).
+NguoiDung.ma_nguoi_dung
+3
+Tên tài khoản
+Label
+Output
+Hiển thị tên đăng nhập của tài khoản.
+Được hệ thống sinh tự động theo quy tắc tại mục 3.3.
+Nếu chuỗi dài vượt quá độ rộng cột: cắt bớt và hiển thị dấu "...", kèm tooltip hiển thị đầy đủ giá trị khi rê chuột (đề xuất — cần xác nhận).
+NguoiDung.ten_tai_khoan
+4
+Email
+Label
+Output
+Hiển thị email của tài khoản.
+N/A
+Áp dụng nguyên tắc cắt bớt + tooltip tương tự cột "Tên tài khoản" khi dữ liệu dài (đề xuất — cần xác nhận).
+NguoiDung.email
+5
+Loại tổ chức
+Label
+Output
+Hiển thị tên loại tổ chức của tài khoản.
+Lấy theo danh mục "Loại tổ chức" từ Phân hệ Danh mục điện tử dùng chung (join theo id).
+Nếu dữ liệu trống, hiển thị dấu "-" (đề xuất — cần xác nhận).
+NguoiDung.loai_to_chuc_id → DanhMuc_LoaiToChuc.ten_loai_to_chuc
+6
+Nhóm người dùng
+Label
+Output
+Hiển thị tên nhóm người dùng của tài khoản.
+Lấy theo danh mục "Nhóm người dùng" từ Phân hệ SSO (join theo id).
+Nếu 1 tài khoản thuộc nhiều nhóm (xem mục 5), hiển thị dạng tag/chip, mỗi nhóm 1 tag.
+NguoiDung.nhom_nd_id → SSO_NhomNguoiDung.ten_nhom
+7
+Chức vụ
+Label
+Output
+Hiển thị chức vụ gắn với tài khoản.
+Lấy theo danh mục "Chức vụ" từ Phân hệ Danh mục điện tử dùng chung.
+Nếu dữ liệu trống, hiển thị dấu "-" (đề xuất — cần xác nhận).
+NguoiDung.chuc_vu_id → DanhMuc_ChucVu.ten_chuc_vu
+8
+Hoạt động (Toggle Switch)
+Toggle Switch
+Input/Output
+Hiển thị và cho phép thay đổi trạng thái hoạt động của tài khoản ngay trên bảng danh sách.
+Toggle luôn hiển thị ở mọi dòng dữ liệu, không phụ thuộc quyền của người dùng đang đăng nhập. Trạng thái ON tương ứng "Đang hoạt động", trạng thái OFF tương ứng "Ngừng hoạt động" (phản ánh đúng trạng thái hiện tại của bản ghi). Khi người dùng click: nếu KHÔNG có quyền cập nhật trạng thái (permission UPDATE_ACCOUNT_STATUS) → hệ thống không đổi trạng thái, hiển thị Toast màu đỏ "Bạn không có quyền thực hiện chức năng này"; nếu CÓ quyền → thực hiện luồng cập nhật trạng thái (chi tiết mục 4.3).
+Toggle màu xanh (bật) khi "Đang hoạt động", màu xám (tắt) khi "Ngừng hoạt động"; hiển thị loading nhỏ trên Toggle trong lúc chờ kết quả API.
+NguoiDung.trang_thai (1 = Đang hoạt động / 0 = Ngừng hoạt động)
+9
+Thao tác
+Icon Button
+Output
+Nhóm icon thao tác nhanh trên từng dòng (xem chi tiết, chỉnh sửa).
+Icon "Xem chi tiết" luôn hiển thị. Icon "Sửa" chỉ hiển thị nếu người dùng có quyền UPDATE_ACCOUNT.
+Đặt cuối dòng, dạng icon nhỏ có tooltip tên chức năng.
+N/A
+c) Form Thêm mới / Chỉnh sửa tài khoản (phương thức Tự khai báo)
+STT
+Tên thành phần
+Kiểu dữ liệu
+[Độ dài]
+I/O
+Mô tả
+Quy tắc xử lý dữ liệu
+Nguyên tắc hiển thị
+Mapping CSDL/API
+1
+Tên tài khoản
+Textbox
+[không giới hạn — tự sinh]
+Output (readonly)
+Tên đăng nhập của tài khoản, hiển thị sau khi hệ thống tự sinh.
+Tự sinh theo công thức: [tên người dùng] + [chữ cái đầu của họ] + [chữ cái đầu của (các) chữ trong tên đệm] + [số thứ tự tăng dần nếu trùng với tài khoản đã tồn tại]; chuỗi không dấu, không khoảng trắng, viết thường. Ví dụ: "Nguyễn Văn An" → "annv" (nếu "annv" đã tồn tại thì sinh tiếp "annv1", "annv2"...). Trường readonly, người dùng không chỉnh sửa trực tiếp.
+Textbox disabled (màu xám), tự động hiển thị giá trị sau khi người dùng nhập đủ Họ và tên.
+NguoiDung.ten_tai_khoan
+2
+Mật khẩu
+Textbox (password)
+[≥ 8 ký tự]
+Input
+Mật khẩu đăng nhập ban đầu của tài khoản.
+Tối thiểu 8 ký tự, bắt buộc gồm chữ hoa, chữ thường, số và ký tự đặc biệt (!@#$%^&*); không được chứa Tên tài khoản hoặc Họ và tên người dùng. Sau khi lưu tài khoản thành công, hệ thống tự động gửi email thông báo tài khoản/mật khẩu tới email đã nhập (mẫu email sẽ cập nhật sau).
+Input kiểu password, có icon ẩn/hiện mật khẩu; gợi ý hiển thị thanh đánh giá độ mạnh mật khẩu (đề xuất — cần xác nhận).
+NguoiDung.mat_khau (lưu dạng mã hoá/hash, không lưu plaintext)
+3
+Mã người dùng
+Textbox
+[Numeric]
+Input/Output
+Mã định danh người dùng trong hệ thống.
+Mặc định do hệ thống tự sinh (định dạng số); cho phép người dùng sửa lại. Không được trùng với Mã người dùng đã tồn tại — validate khi rời trường (onBlur) hoặc khi submit.
+Textbox cho phép nhập; hiển thị icon/thông báo cảnh báo ngay tại trường nếu phát hiện trùng mã.
+NguoiDung.ma_nguoi_dung
+4
+Mã số thuế
+Textbox
+[10 hoặc 14 ký tự]
+Input
+Mã số thuế của tổ chức.
+Chấp nhận 1 trong 2 định dạng: (i) 10 ký tự số; (ii) 14 ký tự gồm 10 ký tự số + dấu gạch ngang "-" + 3 ký tự số. Không được trùng với Mã số thuế của tài khoản khác.
+Input chỉ cho nhập số và dấu "-"; hiển thị lỗi ngay tại trường nếu không khớp 1 trong 2 định dạng trên.
+NguoiDung.ma_so_thue
+5
+Mã chứng khoán
+Textbox
+[≤ 10 ký tự]
+Input
+Mã chứng khoán của tổ chức (nếu có).
+Tối đa 10 ký tự, cho phép chữ và số (alphanumeric). Không được trùng với Mã chứng khoán của tài khoản khác.
+Input giới hạn tối đa 10 ký tự, hiển thị bộ đếm số ký tự còn lại.
+NguoiDung.ma_chung_khoan
+6
+Email
+Textbox
+[≤ 100 ký tự — đề xuất]
+Input
+Email liên hệ/nhận thông báo của tài khoản.
+Phải đúng định dạng email; không được trùng với Email của tài khoản khác trong hệ thống.
+Validate định dạng khi rời trường (onBlur); hiển thị lỗi ngay tại trường nếu sai định dạng hoặc trùng.
+NguoiDung.email
+7
+Loại tổ chức
+Combobox
+Input
+Loại hình tổ chức của tài khoản.
+Dữ liệu lấy theo danh mục "Loại tổ chức" từ Phân hệ Danh mục điện tử dùng chung. Trường bắt buộc chọn.
+Dropdown single-select, hỗ trợ gõ tìm kiếm (search trong combobox).
+NguoiDung.loai_to_chuc_id (FK DanhMuc_LoaiToChuc.id); API: GET /danh-muc/loai-to-chuc
+8
+Nhóm người dùng
+Combobox
+Input
+Nhóm người dùng phục vụ phân quyền cho tài khoản.
+Dữ liệu lấy theo danh mục "Nhóm người dùng" từ Phân hệ SSO. Trường bắt buộc chọn. (Một tài khoản có thể chọn 1 hay nhiều nhóm — cần xác nhận thêm, xem mục 5.)
+Dropdown, hỗ trợ gõ tìm kiếm.
+NguoiDung.nhom_nd_id (FK SSO_NhomNguoiDung.id); API SSO: GET /sso/nhom-nguoi-dung
+9
+Chức vụ
+Combobox
+Input
+Chức vụ của người đại diện tài khoản.
+Dữ liệu lấy theo danh mục "Chức vụ" từ Phân hệ Danh mục điện tử dùng chung.
+Dropdown single-select, hỗ trợ gõ tìm kiếm.
+NguoiDung.chuc_vu_id (FK DanhMuc_ChucVu.id)
+10
+Trạng thái hoạt động
+Radio / Switch
+Input
+Trạng thái hoạt động của tài khoản khi tạo mới/chỉnh sửa.
+Gồm 2 giá trị cố định (fix cứng): "Đang hoạt động" và "Ngừng hoạt động". Mặc định chọn "Đang hoạt động" khi tạo mới.
+Radio button 2 lựa chọn hoặc Switch 2 trạng thái.
+NguoiDung.trang_thai
+11
+Mã định danh cá nhân
+(Người đại diện)
+Textbox
+[12 số]
+Input
+Số CCCD của người đại diện tổ chức.
+Đ
+...[truncated]

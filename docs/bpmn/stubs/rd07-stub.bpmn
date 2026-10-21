@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  STUB BPMN — RD07 Quản lý Danh mục SPDV
+  Sinh tự động 2026-09-29.
+  Linear user-task skeleton + candidateGroups tạm (khảo sát BA).
+  KHÔNG phải bản baseline ký duyệt / production. Import thủ công vào Zeebe khi sẵn sàng.
+-->
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+  id="Definitions_RD07" targetNamespace="http://vht.vn/qtkhcn/bpmn/stubs">
+  <bpmn:process id="RD07" name="Quản lý Danh mục SPDV" isExecutable="true">
+    <bpmn:startEvent id="Start_RD07" name="Bắt đầu">
+      <bpmn:outgoing>Flow_0</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:userTask id="Task_1" name="1. Cập nhật DM đầu năm">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="QLDM_SPDV" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0</bpmn:incoming>
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:userTask id="Task_2" name="2. Gửi yêu cầu cập nhật quý">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="TT_KD_VHT" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:userTask id="Task_3" name="3. TT KD / TTNCSP / TCKT cập nhật song song">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="TTNCSP" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:userTask id="Task_4" name="4. Tổng hợp &amp; xác thực căn cứ">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="TCKT" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:userTask id="Task_5" name="5. Cập nhật DM Quý N">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="TCKT" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="End_RD07" name="Kết thúc">
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0" sourceRef="Start_RD07" targetRef="Task_1" />
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Task_1" targetRef="Task_2" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_2" targetRef="Task_3" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_3" targetRef="Task_4" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Task_4" targetRef="Task_5" />
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="Task_5" targetRef="End_RD07" />
+  </bpmn:process>
+</bpmn:definitions>

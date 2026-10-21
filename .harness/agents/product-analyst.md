@@ -43,6 +43,8 @@ delegates step 3 (production):
 | Requirements from notes | `skill-requirement-extractor` | Decide what enters Phase 1 |
 | Traceability (RTM) | `skill-traceability-builder` | Serialize RTM into `docs/requirements/RTM.md` |
 | Doc review (BRD/SRS) | `ba-doc-review` | Decide accept / send back |
+| SRS screen/flow diagrams | `srs-to-drawio-flows` | Place `.drawio` under `docs/ba/.../drawio/`; gate DoD |
+| Full SRS authoring loop | harness `workflows/srs-authoring.md` + DoD | State/OQ/approval — never skip human gates |
 
 Routing among these may go through `babok-assistant` (Bucket 2 router) **within
 Phase 1 only** — it never moves work across phases.

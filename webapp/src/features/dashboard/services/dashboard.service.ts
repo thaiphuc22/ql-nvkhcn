@@ -2,6 +2,14 @@ import type { DashboardFilter } from '../models/dashboard.models'
 import type { MissionDashboardData } from '../models/mission-dashboard.models'
 import type { ProcessPerformanceData } from '../models/process-dashboard.models'
 import type { IntegrationHealthData } from '../models/integration-dashboard.models'
+import type {
+  getAdoptionAnalytics,
+  getCouncilAnalytics,
+  getFinanceAnalytics,
+  getResourceAnalytics,
+  getRiskAnalytics,
+  getTaskWorkload,
+} from '../mocks/dashboard.mock-data'
 
 export interface ExecutiveSummaryData {
   kpis: import('../models/dashboard.models').KpiMetric[]
@@ -32,13 +40,13 @@ export interface DashboardService {
   getPortfolioAnalytics(filter: DashboardFilter): Promise<PortfolioAnalyticsData>
   getMissionDashboard(missionId: string): Promise<MissionDashboardData | null>
   getProcessPerformance(filter: DashboardFilter): Promise<ProcessPerformanceData>
-  getTaskWorkload(filter: DashboardFilter): Promise<ReturnType<typeof import('../mocks/dashboard.mock-data').getTaskWorkload>>
-  getCouncilAnalytics(filter: DashboardFilter): Promise<ReturnType<typeof import('../mocks/dashboard.mock-data').getCouncilAnalytics>>
-  getFinanceAnalytics(filter: DashboardFilter): Promise<ReturnType<typeof import('../mocks/dashboard.mock-data').getFinanceAnalytics>>
-  getResourceAnalytics(filter: DashboardFilter): Promise<ReturnType<typeof import('../mocks/dashboard.mock-data').getResourceAnalytics>>
-  getRiskAlerts(filter: DashboardFilter): Promise<ReturnType<typeof import('../mocks/dashboard.mock-data').getRiskAnalytics>>
+  getTaskWorkload(filter: DashboardFilter): Promise<ReturnType<typeof getTaskWorkload>>
+  getCouncilAnalytics(filter: DashboardFilter): Promise<ReturnType<typeof getCouncilAnalytics>>
+  getFinanceAnalytics(filter: DashboardFilter): Promise<ReturnType<typeof getFinanceAnalytics>>
+  getResourceAnalytics(filter: DashboardFilter): Promise<ReturnType<typeof getResourceAnalytics>>
+  getRiskAlerts(filter: DashboardFilter): Promise<ReturnType<typeof getRiskAnalytics>>
   getIntegrationHealth(filter: DashboardFilter): Promise<IntegrationHealthData>
-  getAdoptionAnalytics(filter: DashboardFilter): Promise<ReturnType<typeof import('../mocks/dashboard.mock-data').getAdoptionAnalytics>>
+  getAdoptionAnalytics(filter: DashboardFilter): Promise<ReturnType<typeof getAdoptionAnalytics>>
 }
 
 import { createDashboardService } from './dashboard-mock.service'

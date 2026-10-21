@@ -280,6 +280,38 @@ user/role/permission; đăng nhập SSO thật và JWT resource-server vẫn ch�
 
 ---
 
+## D23 — SRS AI output is Markdown-first
+**Date**: 2026-08-05
+**Decision**: SRS do AI soạn **chỉ tồn tại dạng `.md`** dưới `docs/ba/Tài liệu SRS/`. Không tự sinh `.docx`/Google Docs. Bản xuất bản chỉ chạy sau khi người dùng duyệt tường minh (`tools/docs-to-drive/`, xem `approval-policy-srs.md`).
+**Rationale**: Diff/review theo dòng; tránh vòng dựng `.docx` khi nội dung còn sửa nhiều. Port từ thực hành DMS-THTM (D13 nguồn) vào QTKHCN mà không ghi đè quyết định phần mềm hiện có.
+**Status**: LOCKED
+
+## D24 — Mọi giả định/xác nhận SRS phải có mã OQ thật
+**Date**: 2026-08-05
+**Decision**: Không được gắn `[CẦN XÁC NHẬN]` / `[GIẢ ĐỊNH]` trong SRS nếu chưa tạo mã OQ trong `docs/ba/OQ-TRACKER.md`. OQ mức Cao đang Mở không chặn cứng chuyển tiếp, nhưng SRS phải nhãn **"Nháp chờ xác nhận"** + liệt kê mã OQ ở đầu tài liệu.
+**Rationale**: Tránh giả định "ma" làm lệch triển khai; giữ tiến độ nhưng vẫn truy vết được.
+**Status**: LOCKED
+
+## D25 — Blueprint review trước SRS authoring
+**Date**: 2026-08-05
+**Decision**: Trước khi viết SRS, chạy `.harness/workflows/blueprint-review.md` (hoặc tái sử dụng BRN đã có trong `docs/ba/Blueprint Review/`). SRS authoring theo `.harness/workflows/srs-authoring.md` + DoD `.harness/rules/srs-definition-of-done.md` + khung `.harness/rules/srs-screen-template.md`.
+**Rationale**: Blueprint là đầu vào duy nhất; sai đầu vào thì sai toàn bộ hạ nguồn.
+**Status**: LOCKED
+
+## D26 — SRS review policy tách khỏi code review policy
+**Date**: 2026-08-05
+**Decision**: Review code/PR tiếp tục dùng `rules/review-policy.md` + `approval-policy.md`. Review tài liệu SRS dùng `rules/review-policy-srs.md` + `approval-policy-srs.md`. Không ghi đè file policy phần mềm.
+**Rationale**: QTKHCN vừa ship phần mềm vừa viết SRS; hai loại review khác nhau về vai trò và cổng duyệt.
+**Status**: LOCKED
+
+## D27 — Sơ đồ luồng nghiệp vụ SRS dùng draw.io (skill `srs-to-drawio-flows`)
+**Date**: 2026-08-05
+**Decision**: Sơ đồ luồng nghiệp vụ / máy trạng thái trong SRS sinh bằng skill `.claude/skills/srs-to-drawio-flows/` (Bucket 1), file `.drawio` đặt cạnh SRS. Sơ đồ giao tiếp module (§2.2) ưu tiên mermaid nhúng trong `.md` khi đủ rõ.
+**Rationale**: Thống nhất template màu/shape; có validate script; tách khỏi mermaid generic cho flow phức tạp.
+**Status**: LOCKED
+
+---
+
 ## Open decisions blocking Foundation 1 (Project Scaffold)
 
 **RESOLVED 2026-07-15** — backend language/framework (D14), domain database engine (D15), and the Camunda 8 *dev-environment* deployment model (D16) are now locked above. Foundation 1 is unblocked for scaffold work; see `DELIVERY_STATE.md`.

@@ -1,0 +1,64 @@
+<div class="rdf-page">
+  <div class="rdf-header">
+    <div>
+      <a routerLink="/quy-trinh" class="rdf-back">
+        <span nz-icon nzType="arrow-left"></span> Danh mục quy trình
+      </a>
+      <h2>RD06.02 — Luồng quyết toán theo nhóm dữ liệu</h2>
+      <p class="rdf-lead">
+        Quyết toán NV KHCN cấp Tập đoàn: từ đối soát mã NV–SAP đến khóa số liệu báo cáo theo kỳ.
+      </p>
+    </div>
+    <nz-tag nzColor="cyan">RD06.02 · v0.1</nz-tag>
+  </div>
+
+  <section class="rdf-section">
+    <h3>Các pha luồng nghiệp vụ</h3>
+    <div class="rdf-phases">
+      @for (p of phas; track p.ma) {
+        <article class="rdf-phase">
+          <div class="rdf-phase-code">{{ p.ma }}</div>
+          <div>
+            <strong>{{ p.ten }}</strong>
+            <span class="rdf-meta">{{ p.buoc }}</span>
+            <p>{{ p.moTa }}</p>
+          </div>
+        </article>
+      }
+    </div>
+  </section>
+
+  <section class="rdf-section">
+    <h3>Bảy nhóm dữ liệu cần có trong hồ sơ quyết toán</h3>
+    <div class="rdf-grid">
+      @for (n of nhoms; track n.stt) {
+        <nz-card class="rdf-card" [nzTitle]="n.stt + '. ' + n.ten">
+          <p class="rdf-label">Trường / thông tin</p>
+          <ul>
+            @for (t of n.truong; track t) {
+              <li>{{ t }}</li>
+            }
+          </ul>
+          <p class="rdf-label">Trong luồng</p>
+          <p>{{ n.buoc }}</p>
+          <p class="rdf-label">Chốt</p>
+          <p>{{ n.chot }}</p>
+        </nz-card>
+      }
+    </div>
+  </section>
+
+  <section class="rdf-section rdf-note">
+    <h3>Quy tắc chốt số</h3>
+    <ul>
+      <li>Mọi dòng chi phí, thanh toán, HĐ phải gắn đúng cặp <strong>Mã NV ↔ Mã SAP</strong>.</li>
+      <li>Chỉ dùng <strong>phiên bản dự toán đang hiệu lực</strong> tại thời điểm quyết toán.</li>
+      <li>Điều chỉnh / hoàn nhập bút toán phải truy vết về <strong>số chứng từ gốc</strong>.</li>
+      <li>Sau B43: trạng thái nhiệm vụ = đã quyết toán cấp Tập đoàn; số liệu báo cáo bị khóa.</li>
+    </ul>
+    <p class="rdf-doc">
+      Tài liệu đầy đủ:
+      <code>docs/ba/Tài liệu SRS/RD06/Luong-du-lieu-quyet-toan-RD06.02-v0.1.md</code>
+    </p>
+  </section>
+</div>

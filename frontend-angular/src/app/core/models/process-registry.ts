@@ -10,7 +10,10 @@ export const NHOM: Record<string, string> = {
   RD04: 'Điều chỉnh NV KHCN',
   RD05: 'Nghiệm thu',
   RD06: 'Quyết toán',
+  RD07: 'Danh mục SPDV nghiên cứu',
   RD08: 'Sở hữu trí tuệ',
+  RD09: 'Dashboard / tổng hợp thông tin',
+  RD10: 'Lưu trữ hồ sơ / biểu mẫu',
 };
 
 export type ProcessStatus = 'active' | 'draft' | 'stopped' | 'planned';
@@ -90,9 +93,21 @@ export const seedProcesses: ProcessDef[] = [
     versions: [{ v: '0.1', date: '2026-06-15', note: 'Nháp' }],
   },
   {
+    ma: 'RD03.04', ten: 'Tương tác PM QLKHCN ↔ QLTS (tài sản)', nhom: 'RD03',
+    trangThai: 'draft', instances: 0, capNhat: '2026-09-29',
+    moTa: 'Đồng bộ VTLK / CCDC / TS theo cấu trúc SP với phần mềm QLTS / NXK.',
+    versions: [{ v: '0.1', date: '2026-09-29', note: 'Bổ sung từ QT PM KHCN chi tiết §3.4' }],
+  },
+  {
+    ma: 'RD03.05', ten: 'Tương tác PM QLKHCN ↔ PLM (tiến độ / SP)', nhom: 'RD03',
+    trangThai: 'draft', instances: 0, capNhat: '2026-09-29',
+    moTa: 'Milestone, danh sách sản phẩm, tiến độ thực hiện — đồng bộ PLM + Storage.',
+    versions: [{ v: '0.1', date: '2026-09-29', note: 'Bổ sung từ QT PM KHCN chi tiết §3.5' }],
+  },
+  {
     ma: 'RD03.06', ten: 'Báo cáo tiến độ thực hiện đề tài', nhom: 'RD03',
     trangThai: 'draft', instances: 0, capNhat: '2026-06-18',
-    moTa: 'Khởi tạo/cập nhật/trình ký/xuất báo cáo tiến độ theo form mẫu.',
+    moTa: 'Khởi tạo/cập nhật/trình ký/xuất báo cáo tiến độ theo form mẫu (Pha 1).',
     versions: [{ v: '0.2', date: '2026-06-18', note: 'Nháp — chờ AC' }],
   },
   {
@@ -102,16 +117,58 @@ export const seedProcesses: ProcessDef[] = [
     versions: [{ v: '0.1', date: '2026-06-12', note: 'Nháp — chờ decision table định tuyến (OQ-008)' }],
   },
   {
+    ma: 'RD04.02', ten: 'Điều chỉnh nội dung/dự toán qua HĐ KHCN (CS)', nhom: 'RD04',
+    trangThai: 'draft', instances: 0, capNhat: '2026-09-29',
+    moTa: 'Điều chỉnh nội dung, thời gian, dự toán nhưng không tăng tổng dự toán.',
+    versions: [{ v: '0.1', date: '2026-09-29', note: 'Bổ sung từ QT §4.2' }],
+  },
+  {
     ma: 'RD04.03', ten: 'Điều chỉnh qua HĐXD ĐC (CS)', nhom: 'RD04',
     trangThai: 'draft', instances: 0, capNhat: '2026-06-12',
     moTa: 'Điều chỉnh mục tiêu/tăng dự toán không vượt chủ trương.',
     versions: [{ v: '0.1', date: '2026-06-12', note: 'Nháp' }],
   },
   {
+    ma: 'RD04.04', ten: 'Tạm dừng NV KHCN (CS)', nhom: 'RD04',
+    trangThai: 'draft', instances: 0, capNhat: '2026-09-29',
+    moTa: 'Xét tạm dừng nhiệm vụ KHCN cấp Cơ sở.',
+    versions: [{ v: '0.1', date: '2026-09-29', note: 'Bổ sung từ QT §4.4' }],
+  },
+  {
     ma: 'RD04.05', ten: 'Dừng thực hiện NV KHCN (CS)', nhom: 'RD04',
     trangThai: 'draft', instances: 0, capNhat: '2026-06-12',
     moTa: 'Qua HĐ Đánh giá hoàn thành (ĐGHT).',
     versions: [{ v: '0.1', date: '2026-06-12', note: 'Nháp' }],
+  },
+  {
+    ma: 'RD04.06', ten: 'Điều chỉnh Chủ nhiệm qua CQ KHCN (TĐ)', nhom: 'RD04',
+    trangThai: 'draft', instances: 0, capNhat: '2026-09-29',
+    moTa: 'ĐC CNĐT cấp Tập đoàn; BTGĐ TĐ phê duyệt.',
+    versions: [{ v: '0.1', date: '2026-09-29', note: 'Bổ sung từ QT §4.6' }],
+  },
+  {
+    ma: 'RD04.07', ten: 'Điều chỉnh nội dung/dự toán qua HĐ KHCN (TĐ)', nhom: 'RD04',
+    trangThai: 'draft', instances: 0, capNhat: '2026-09-29',
+    moTa: 'Không tăng tổng dự toán — cấp Tập đoàn.',
+    versions: [{ v: '0.1', date: '2026-09-29', note: 'Bổ sung từ QT §4.7' }],
+  },
+  {
+    ma: 'RD04.08', ten: 'Điều chỉnh qua HĐXD ĐC (TĐ)', nhom: 'RD04',
+    trangThai: 'draft', instances: 0, capNhat: '2026-09-29',
+    moTa: 'Mục tiêu / tăng dự toán không vượt chủ trương — cấp TĐ.',
+    versions: [{ v: '0.1', date: '2026-09-29', note: 'Bổ sung từ QT §4.8' }],
+  },
+  {
+    ma: 'RD04.09', ten: 'Tạm dừng NV KHCN (TĐ)', nhom: 'RD04',
+    trangThai: 'draft', instances: 0, capNhat: '2026-09-29',
+    moTa: 'Xét tạm dừng nhiệm vụ KHCN cấp Tập đoàn.',
+    versions: [{ v: '0.1', date: '2026-09-29', note: 'Bổ sung từ QT §4.9' }],
+  },
+  {
+    ma: 'RD04.10', ten: 'Dừng NV KHCN (TĐ)', nhom: 'RD04',
+    trangThai: 'draft', instances: 0, capNhat: '2026-09-29',
+    moTa: 'Dừng NV qua HĐ ĐGHT cấp Tập đoàn.',
+    versions: [{ v: '0.1', date: '2026-09-29', note: 'Bổ sung từ QT §4.10' }],
   },
   {
     ma: 'RD05.01', ten: 'Nghiệm thu NV KHCN cấp Cơ sở', nhom: 'RD05',
@@ -136,14 +193,32 @@ export const seedProcesses: ProcessDef[] = [
   },
   {
     ma: 'RD06.02', ten: 'Quyết toán NV KHCN cấp Tập đoàn', nhom: 'RD06',
-    trangThai: 'planned', instances: 0, capNhat: '—',
-    moTa: '⚠ Chưa đủ thông tin để mô hình hoá (OQ-010).',
-    versions: [],
+    trangThai: 'draft', instances: 0, capNhat: '2026-09-28',
+    moTa: 'Luồng QT cấp TĐ theo 7 nhóm dữ liệu. Xem /quy-trinh/rd06-02-du-lieu',
+    versions: [{ v: '0.1', date: '2026-09-28', note: 'Mô tả luồng dữ liệu quyết toán' }],
+  },
+  {
+    ma: 'RD07', ten: 'Quản lý Danh mục SPDV nghiên cứu', nhom: 'RD07',
+    trangThai: 'planned', instances: 0, capNhat: '2026-09-29',
+    moTa: 'Vòng đời SPDV: NC → NT → KD → cải tiến; đồng bộ CRM (Pha 2).',
+    versions: [{ v: '0.1', date: '2026-09-29', note: 'Seed từ QT §7' }],
   },
   {
     ma: 'RD08', ten: 'Quản lý sở hữu trí tuệ', nhom: 'RD08',
     trangThai: 'draft', instances: 0, capNhat: '2026-06-14',
     moTa: 'Đăng ký SHTT (bài báo, sáng chế), công nghệ lõi — thiếu luồng phê duyệt (OQ-014).',
     versions: [{ v: '0.1', date: '2026-06-14', note: 'Nháp — thiếu tác nhân/luồng' }],
+  },
+  {
+    ma: 'RD09', ten: 'Dashboard tổng hợp thông tin', nhom: 'RD09',
+    trangThai: 'planned', instances: 0, capNhat: '2026-09-29',
+    moTa: 'Bức tranh tổng thể thời gian thực: đề tài, chi phí, nhân sự, SHTT. Xem /tong-quan',
+    versions: [{ v: '0.1', date: '2026-09-29', note: 'Seed từ QT §9' }],
+  },
+  {
+    ma: 'RD10', ten: 'Lưu trữ hồ sơ / biểu mẫu / quy định', nhom: 'RD10',
+    trangThai: 'draft', instances: 0, capNhat: '2026-09-29',
+    moTa: 'Form mẫu + danh mục QT/QĐ; kho tài liệu dự án. Xem /kho-tai-lieu',
+    versions: [{ v: '0.1', date: '2026-09-29', note: 'Seed từ QT §10 + QĐ 1752 UI' }],
   },
 ];

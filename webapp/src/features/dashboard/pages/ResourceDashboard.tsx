@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback } from 'react'
 import { Col, Row } from 'antd'
 import { Bar, BarChart, CartesianGrid, Tooltip as RTooltip, XAxis, YAxis, Pie, PieChart, Cell } from 'recharts'
 import { createDashboardService } from '../services/dashboard-mock.service'

@@ -1,0 +1,53 @@
+id: SKILL-USER-STORY-GENERATOR
+
+name: User Story Generator
+
+category: requirement_modeling
+
+purpose: >
+  Transform structured requirements
+  into INVEST-compliant user stories.
+
+supported_tasks:
+  - TASK-RADD-001
+
+supported_techniques:
+  - TECH-USER-STORY
+
+supported_artifacts:
+  - ART-USER-STORY
+
+inputs:
+  - business_requirements
+  - stakeholder_requirements
+  - business_rules
+
+outputs:
+  - user_stories
+
+reasoning_pipeline:
+  - identify_actor
+  - identify_goal
+  - identify_business_value
+  - split_large_requirements
+  - derive_acceptance_criteria
+  - validate_INVEST
+
+validators:
+  - VALIDATOR-INVEST
+  - VALIDATOR-ACTOR-DEFINITION
+  - VALIDATOR-TESTABILITY
+
+confidence_scoring:
+  low_confidence:
+    - oversized_story
+    - unclear_business_goal
+
+failure_patterns:
+  - technical_task_instead_of_story
+  - missing_business_value
+  - oversized_scope
+
+recommended_followup_skills:
+  - SKILL-AC-GENERATOR
+  - SKILL-TRACEABILITY-BUILDER

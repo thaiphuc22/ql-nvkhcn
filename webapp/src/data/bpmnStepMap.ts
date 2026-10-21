@@ -19,6 +19,21 @@ export const BPMN_STEP_MAP: Record<string, Record<string, string[]>> = {
     t5: ['Task_6', 'Task_11_HD'], // HĐ KHCN: thẩm định + ký thông qua BC
     t6: ['Task_11_TGD'], // TGĐ: phê duyệt QĐ chủ trương
   },
+  // RD06: taskStep.key trùng id node BPMN (1-1), dùng để tô sáng bước hiện tại.
+  'RD06.01': Object.fromEntries(
+    Array.from({ length: 16 }, (_, i) => {
+      const k = `rd0601_t${i + 1}`
+      return [k, [k]]
+    }),
+  ),
+  'RD06.02': Object.fromEntries(
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 26].map(
+      (n) => {
+        const k = `rd0602_t${n}`
+        return [k, [k]]
+      },
+    ),
+  ),
 }
 
 /** Các node BPMN của một bước nghiệp vụ (rỗng nếu quy trình chưa khai map). */

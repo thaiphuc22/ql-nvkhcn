@@ -15,6 +15,7 @@ import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 
 import { AuthService } from '../../core/auth/auth.service';
 import { countFields, slugifyFormKey, type FormMeta } from '../../core/models/eform';
+import { NHOM_RD, NHOM_RD_PILL_COLOR, nhomRDSorted, nhomRDLabel, type NhomRD } from '../../core/models/eform-nhom-rd';
 import { EformService } from '../../core/services/eform.service';
 import { FormRendererComponent } from '../../shared/form-renderer/form-renderer';
 
@@ -25,6 +26,9 @@ import { FormRendererComponent } from '../../shared/form-renderer/form-renderer'
 // KHÔNG port cột/stat "Đang dùng": bản gốc tính từ mock `store/ProcessContext`
 // (taskSteps + formKey), đã bị thay bằng backend BPMN thật ở Angular (không có
 // nguồn dữ liệu tương đương để tính lại đúng — xem `core/services/eform.service.ts`).
+//
+// Bổ sung 2026-08-05: bộ lọc "Nhóm RD" (RD01..RD10) + banner cảnh báo khi danh
+// sách đến từ seed client-side (xem `.harness/state/...` 2026-08-05).
 
 const ROUTE_BASE = '/phan-he/PH3/bieu-mau';
 
@@ -57,15 +61,78 @@ export class FormLibraryPage implements OnInit {
 
   readonly list = this.forms.list;
   readonly loaiOptions = LOAI_OPTIONS;
+  readonly nhomRDOptions = nhomRDSorted();
+  readonly nhomRDLabelMap = NHOM_RD;
+  readonly nhomRDColorMap = NHOM_RD_PILL_COLOR;
+  readonly nhomRDLabel = nhomRDLabel;
   readonly countFields = countFields;
   readonly loading = signal(false);
   readonly creating = signal(false);
+
+  readonly searchQuery = signal('');
+  readonly typeFilter = signal<string | null>(null);
+  readonly nhomRDFilter = signal<NhomRD | null>(null);
+
+  readonly filteredList = computed(() => {
+    const q = this.searchQuery().trim().toLowerCase();
+    const type = this.typeFilter();
+    const nhom = this.nhomRDFilter();
+    let result = this.list();
+
+    if (q) {
+      result = result.filter(
+        (f) =>
+          f.ten.toLowerCase().includes(q) ||
+          f.key.toLowerCase().includes(q) ||
+          (f.moTa && f.moTa.toLowerCase().includes(q))
+      );
+    }
+
+    if (type) {
+      result = result.filter((f) => f.loai === type);
+    }
+
+    if (nhom) {
+      result = result.filter((f) => f.nhomRD === nhom);
+    }
+
+    return result;
+  });
+
+  /** Đếm biểu mẫu theo từng Nhóm RD — dùng hiển thị badge "(N)" trên option
+   * dropdown để user thấy ngay nhóm nào có dữ liệu, nhóm nào rỗng. */
+  readonly nhomRDCounts = computed<Record<NhomRD, number>>(() => {
+    const counts = {} as Record<NhomRD, number>;
+    for (const code of this.nhomRDOptions) counts[code] = 0;
+    for (const f of this.list()) {
+      if (!f.nhomRD) continue; // không gắn nhóm → bỏ qua, không đếm
+      counts[f.nhomRD] = (counts[f.nhomRD] ?? 0) + 1;
+    }
+    return counts;
+  });
+
+  /** Truy vấn count cho một mã — dùng từ template (tránh NG8102 vì computed
+   * trả về `Record<NhomRD, number>` đầy đủ nên không cần fallback `?? 0`). */
+  nhomRDCount(code: NhomRD): number {
+    return this.nhomRDCounts()[code];
+  }
+
+  /** Backend trả rỗng + fallback seed bật → danh sách đến từ seed client-side.
+   * Hiển thị banner cảnh báo để user không nhầm dữ liệu mẫu là dữ liệu thật. */
+  readonly showingSeedBanner = computed(() => {
+    if (!this.forms.isSeedFallbackEnabled()) return false;
+    if (this.loading()) return false;
+    return this.list().length > 0 && this.list().every((f) =>
+      f.key.startsWith('bm-07-')
+    );
+  });
 
   readonly preview = signal<FormMeta | null>(null);
   readonly createOpen = signal(false);
   readonly formTen = signal('');
   readonly formKey = signal('');
   readonly formLoai = signal<FormMeta['loai'] | undefined>(undefined);
+  readonly formNhomRD = signal<NhomRD | null>(null);
   readonly formMoTa = signal('');
 
   /** Mã sẽ thực sự được gửi lên backend — tự sinh từ Tên khi ô Mã bỏ trống, hiển thị làm gợi ý
@@ -96,6 +163,7 @@ export class FormLibraryPage implements OnInit {
     this.formTen.set('');
     this.formKey.set('');
     this.formLoai.set(undefined);
+    this.formNhomRD.set(null);
     this.formMoTa.set('');
     this.createOpen.set(true);
   }
@@ -116,7 +184,13 @@ export class FormLibraryPage implements OnInit {
       return;
     }
     this.creating.set(true);
-    this.forms.addForm({ key, ten, moTa: this.formMoTa(), loai: this.formLoai() }, this.actor()).subscribe({
+    this.forms.addForm({
+      key,
+      ten,
+      moTa: this.formMoTa(),
+      loai: this.formLoai(),
+      nhomRD: this.formNhomRD() ?? undefined,
+    }, this.actor()).subscribe({
       next: (created) => {
         this.creating.set(false);
         this.message.success(`Đã tạo biểu mẫu "${ten}".`);

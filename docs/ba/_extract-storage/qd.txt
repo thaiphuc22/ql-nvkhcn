@@ -1,0 +1,568 @@
+Quy định về quản lý cấu hình trong quá trình nghiên cứu phát triển sản phẩm
+Đơn vị trình ký: Bộ phận đề tài/dự án KHCN - Phòng Khoa học công nghệ -
+Khối cơ quan - TCT CNC - Tổng công ty Công nghiệp Công nghệ cao Viettel
+Danh sách ký duyệt
+STT Người ký Đơn vị Thời gian
+ký
+Ý kiến
+1 NGUYỄN
+CƯƠNG
+HOÀNG
+Phó Tổng Giám
+đốc - Tổng công
+ty Công nghiệp
+Công nghệ cao
+Viettel
+20/06/2019
+17:17:35
+2 NGUYỄN
+GIA VINH
+Trưởng phòng
+Khoa học công
+nghệ - Phòng
+Khoa học công
+nghệ - Khối cơ
+quan - TCT CNC
+- Tổng công ty
+Công nghiệp
+Công nghệ cao
+Viettel
+20/06/2019
+09:03:44
+Số và ký hiệu: 1752/QĐ-VHT-KHCN
+Ngày ban hành: 20/06/2019
+091597_Vu Viet Hoang_17:47 25/04/2025
+ 
+091597_Vu Viet Hoang_17:47 25/04/2025
+ 
+091597_Vu Viet Hoang_17:47
+Pho Tong Giam doc Nguyen Cuong Hoang da ky, 20/06/2019 17:17:35
+ 
+Pho Tong Giam doc Nguyen Cuong Hoang da ky, 20/06/2019 17:17:35
+ 
+Pho Tong Giam
+Tài liệu này thuộc sở hữu của Viettel. Việc phát tán, sử dụng trái phép bị nghiêm cấm
+
+-- 1 of 11 --
+
+TẬPĐOÀNCÔNGNGHIỆP-VIỄNTHÔNGQUÂNĐỘI
+TCTCÔNGNGHIỆPCÔNGNGHỆCAOVIETTEL
+CỘNGHOÀXÃHỘICHỦNGHĨAVIỆTNAM
+Độc lập - Tự do – Hạnh phúc
+Số : …./QĐ-VHT-KHCN Hà Nội, ngày tháng năm 2019
+QUYẾT ĐỊNH
+Ban hành “Quy định về quản lý cấu hình trong quá trình nghiên cứu phát
+triển sản phẩm tại Tổng Công ty Công nghiệp Công nghệ cao Viettel”
+TỔNG GIÁM ĐỐC TỔNG CÔNG TY
+CÔNG NGHIỆP CÔNG NGHỆ CAO VIETTEL
+Căn cứ vào quyền hạn của Tổng Giám đốc Tổng Công ty Công nghiệp
+Công nghệ cao Viettel;
+Theo đề nghị của đồng chí Trưởng phòng Phòng Khoa học Công nghệ,
+QUYẾT ĐỊNH:
+Điều 1. Ban hành kèm theo quyết định này “Quy định về quản lý cấu hình
+trong quá trình nghiên cứu phát triển sản phẩm tại Tổng Công ty Công nghiệp
+Công nghệ cao Viettel”.
+Điều 2. Quyết định này có hiệu lực từ ngày ký đến khi có phê duyệt điều
+chỉnh và thay thế.
+Điều 3. Lãnh đạo, chỉ huy các đơn vị, cán bộ công nhân viên thuộc Tổng
+Công ty Công nghiệp Công nghệ cao Viettel chịu trách nhiệm thực hiện và thi
+hành theo quyết định này.
+Nơi nhận:
+- Như Điều 3;
+- TGĐ TCT (báo cáo)
+- Lưu: VT, KHCN; Vũ (3b).
+KT. TỔNG GIÁM ĐỐC
+PHÓ TỔNG GIÁM ĐỐC
+Số và ký hiệu: 1752/QĐ-VHT-KHCN
+Ngày ban hành: 20/06/2019
+091597_Vu Viet Hoang_17:47 25/04/2025
+ 
+091597_Vu Viet Hoang_17:47 25/04/2025
+ 
+091597_Vu Viet Hoang_17:47
+Pho Tong Giam doc Nguyen Cuong Hoang da ky, 20/06/2019 17:17:35
+ 
+Pho Tong Giam doc Nguyen Cuong Hoang da ky, 20/06/2019 17:17:35
+ 
+Pho Tong Giam
+Tài liệu này thuộc sở hữu của Viettel. Việc phát tán, sử dụng trái phép bị nghiêm cấm
+
+-- 2 of 11 --
+
+TẬPĐOÀNCÔNGNGHIỆP-VIỄNTHÔNGQUÂNĐỘI
+TCTCÔNGNGHIỆPCÔNGNGHỆCAOVIETTEL
+CỘNGHOÀXÃHỘICHỦNGHĨAVIỆTNAM
+Độc lập - Tự do – Hạnh phúc
+QUY ĐỊNH
+Về quản lý cấu hình trong quá trình nghiên cứu phát triển sản phẩm tại
+Tổng Công ty Công nghiệp Công nghệ cao Viettel
+(Kèm theo Quyết định số …./QĐ-VHT-KHCN ngày …. tháng …. năm 2019)
+Điều 1. Mục đích
+- Quy ước các đặt tên cho các tài liệu/biên bản trong quá trình thực hiện đề tài/dự
+án tại Tổng Công ty;
+- Quy định cấu trúc cây thư mục trên hệ thống lưu trữ chung cho đề tài/dự án
+- Quy định các thức truy cập, sử dụng và phân quyền truy cập hệ thống lưu trữ
+chung của đề tài/dự án
+- Đồng bộ hệ thống hồ sơ/tài liệu lưu trữ với hệ thống quy trình nghiên cứu, phát
+triển sản phẩm
+Điều 2. Đối tượng áp dụng, phạm vi áp dụng
+- Áp dụng cho toàn bộ sản phẩm được triển khai nghiên cứu chế thử, sản xuất tại
+Tổng Công ty.
+- Áp dụng trong toàn Tổng Công ty công nghiệp công nghệ cao Viettel.
+Điều 3. Đặt tên cho tài liệu, biên bản
+Cấu trúc đánh mã
+STT Trường thông tin Diễn giải Số lượng ký tự
+1 MASANPHAM Mã sản phẩm theo QĐ phê duyệt - kèm
+theo mã version (nếu có)
+VD: OCSv3.0, MSC, gNodeB ...
+Tối đa 08 ký tự
+2 GiaiDoan Giai đoạn phát triển sản phẩm, cụ thể:
+o TKT: Tiền khả thi
+o EVT: Nghiên cứu thiết kế
+o DVT: Sản xuất thử nghiệm
+o MP: Sản xuất loạt
+o AS: Sau bán hàng
+Tối đa 03 ký tự
+3 Module Tên module, nếu tài liệu không tách ra
+nhiều module có thể bỏ qua trường này
+Tối đa 05 ký tự
+4 TenHoSo/TenBien
+Ban
+Tên hồ sơ/biên bản cụ thể
+o Viết liền
+o Không sử dụng khoảng trắng
+Tối đa 60 ký tự
+MASANPHAM_GiaiDoan_ Module_TenHoSo/TenBienBan _Vx.y
+Số và ký hiệu: 1752/QĐ-VHT-KHCN
+Ngày ban hành: 20/06/2019
+091597_Vu Viet Hoang_17:47 25/04/2025
+ 
+091597_Vu Viet Hoang_17:47 25/04/2025
+ 
+091597_Vu Viet Hoang_17:47
+Pho Tong Giam doc Nguyen Cuong Hoang da ky, 20/06/2019 17:17:35
+ 
+Pho Tong Giam doc Nguyen Cuong Hoang da ky, 20/06/2019 17:17:35
+ 
+Pho Tong Giam
+Tài liệu này thuộc sở hữu của Viettel. Việc phát tán, sử dụng trái phép bị nghiêm cấm
+
+-- 3 of 11 --
+
+STT Trường thông tin Diễn giải Số lượng ký tự
+o Phân cách bằng ký tự “-“ (nếu cần)
+VD: HW-YeuCauThietKe, TKHT,
+MRD ....
+5 Vx.y Phiên bản của tài liệu
+o x: Các phiên bản tài liệu được phê duyệt,
+lần phê duyệt đầu tiên x = 1, mỗi lần phê
+duyệt tài liệu, giá trị của x tăng lên 1 đơn
+vị
+o y: Phiên bản của các bản chỉnh sửa nhưng
+chưa phê duyệt (sử dụng cho việc quản lý
+nội bộ của dự án)
+04 ký tự
+(*) Các trường thông tin cách nhau bởi ký tự “_”
+(**) Tổng ký tự tối đa cho 1 tài liệu/biên bản là 80 ký tự
+VD:
+- VRS-LRS_EVT_TRM_HW-YeuCauThietKe_V1.0
+- VRP-712S_EVT_TKHT_V2.0
+Điều 4. Cấu trúc cây thư mục trên hệ thống lưu trữ chung
+Cấu trúc thư mục lưu trữ được tạo cho toàn Tổng Công ty, tương ứng 03 Khối
+và 13 trung tâm/đơn vị nghiêm cứu. Cây thư mục trong cấp đơn vị nghiên cứu được
+phân chia thành các sản phẩm, mỗi sản phẩm được phân chia thành các mảng nội dung
+lớn (Tiền khả thi, nghiên cứu thiết kế, sản xuất thử nghiệm, sản xuất loạt, sau bán hàng)
+Lưu ý: Cấu trúc cây thư mục có thể được điều chỉnh, bổ sung trong quá trình thực hiện
+để phù hợp với nhu cầu thực tế
+Cấp thư mục Tên thư mục Diễn giải Số lượng ký tự
+Level 1 VHT Thư mục gốc của Tổng Công
+ty
+3 ký tự
+Level 2 K1/K2/K3 Ký hiệu viết tắt của Khối
+1/Khối 2/Khối 3
+2 ký tự
+Level 3 [Ký hiệu tên trung
+tâm]
+Ký hiệu tên trung tâm trực
+thuộc khối phụ trách quản lý
+đề tài/dự án
+(Chi tiết theo phụ lục 1 đính
+kèm)
+Tối đa 6 ký tự
+Level 4 [Mã sản phẩm] Mã sản phẩm theo QĐ phê
+duyệt - kèm theo mã
+version (nếu có)
+Tối đa 8 ký tự
+Level 5 [Giai đoạn phát triển
+sản phẩm]
+TKT: Tiền khả thi
+EVT: Nghiên cứu thiết kế
+DVT: Sản xuất thử nghiệm
+MP: Sản xuất loạt
+AS: Sau bán hàng
+Tối đa 3 ký tự
+Số và ký hiệu: 1752/QĐ-VHT-KHCN
+Ngày ban hành: 20/06/2019
+091597_Vu Viet Hoang_17:47 25/04/2025
+ 
+091597_Vu Viet Hoang_17:47 25/04/2025
+ 
+091597_Vu Viet Hoang_17:47
+Pho Tong Giam doc Nguyen Cuong Hoang da ky, 20/06/2019 17:17:35
+ 
+Pho Tong Giam doc Nguyen Cuong Hoang da ky, 20/06/2019 17:17:35
+ 
+Pho Tong Giam
+Tài liệu này thuộc sở hữu của Viettel. Việc phát tán, sử dụng trái phép bị nghiêm cấm
+
+-- 4 of 11 --
+
+Cấp thư mục Tên thư mục Diễn giải Số lượng ký tự
+Level 6 [Mã đề tài/dự án] Mã đề tài/dự án theo quyết
+định phê duyệt hoặc ký hiệu
+viết tắt tên đề tài (trong
+trường đề tài/dự án không áp
+theo mã đề tài KHCN)
+VD: 011-17-TĐ-RDP-QD
+Tối đa 16 ký tự
+Level 7-11 [Cấu thúc cây tự mục
+theo giai đoạn phát
+triển sản phẩm]
+Cấu trúc cây thư mục theo
+từng giai đoạn phát triển sản
+phẩm
+(Chi tiết theo phụ lục 2 đính
+kèm)
+Tối đa 04 ký tự/1
+thư mục
+(*) Tổng ký tự đến thư mục level 11 tối đa là 58 ký tự
+VHT
+K1 	K2 	K3
+Radar
+[Mã sản phẩm]
+VD: VRS-LRS
+TKT 	EVT 	DVT 	MP
+(Sản xuất loạt)
+[Mã đề tài, dự án]
+VD: 011-17-TĐ-RDP-QD
+HSQL
+(Hồ sơ quản lý) 	NCTK
+NT
+(Nghiệm
+thu)
+HSCG
+(Hồ sơ chuyển
+giao)
+KO
+(Kick off)
+TKHT
+(TK hệ thống)
+[Tên Module X]
+VD: TRM
+BC
+(Báo cáo
+giai đoạn)
+HW 	SW	ME
+DK
+(Bài đo/pp đo/kết
+quả đo module)
+DKSP
+(Bài đo/pp đo/kết
+quả đo sản phẩm)
+TNSP
+(Kết quả thử
+nghiệm sản phẩm)
+KSCL
+(Kiểm soát chất
+lượng sản phẩm)
+YC
+(Yêu cầu thiết kế
+)
+TK
+(Thiết kế
+)
+HSCN
+(Hồ sơ công nghệ
+)
+GCDK
+(Gia công đo kiểm
+)
+YC
+(Xác định và phân	
+tích yêu cầu
+)
+TK
+(Phân tích thiết
+kế)
+Code
+(Lập trình
+)
+Test
+(Kiểm thử
+)
+[Trung tâm X]
+Level 1
+Level 2
+Level 3
+Level 4
+Level 5
+Level 6
+Level 7
+Level 8
+Level 9
+Level 10
+Level 11
+YC
+(Yêu cầu thiết kế
+)
+TK
+(Thiết kế
+)
+HSCN
+(Hồ sơ công nghệ
+)
+GCDK
+(Gia công đo kiểm
+)
+AS
+(Sau bán hàng)
+Khac
+PD
+(Hồ sơ phê
+duyệt)
+DC
+(Hồ sơ điều
+chỉnh)
+SP
+(System) 	[Sub System A] 	[Sub System B]
+[Tên Module Y]
+VD: XLTH
+Số và ký hiệu: 1752/QĐ-VHT-KHCN
+Ngày ban hành: 20/06/2019
+091597_Vu Viet Hoang_17:47 25/04/2025
+ 
+091597_Vu Viet Hoang_17:47 25/04/2025
+ 
+091597_Vu Viet Hoang_17:47
+Pho Tong Giam doc Nguyen Cuong Hoang da ky, 20/06/2019 17:17:35
+ 
+Pho Tong Giam doc Nguyen Cuong Hoang da ky, 20/06/2019 17:17:35
+ 
+Pho Tong Giam
+Tài liệu này thuộc sở hữu của Viettel. Việc phát tán, sử dụng trái phép bị nghiêm cấm
+
+-- 5 of 11 --
+
+Điều 5. Quyền truy cập
+Nguyên tắc thực hiện phân quyền:
+- Các cấp quản lý có quyền xem (view) thư mục của các cá nhân/nhóm thuộc
+quyền.
+- Các cá nhân nằm trong nhóm làm việc sẽ CHỈ CÓ QUYỀN cập nhật, xem, sửa
+trong phạm vi công việc được phân công và KHÔNG CÓ QUYỀN xem hay tác
+động tới các nội dung không thuộc phạm vi được phân công
+(Chi tiết theo phụ lục 3 đính kèm)
+Thực hiện phân quyền (Khởi tạo)
+- Bước 1: Khi phát sinh đề tài/dự án mới, Chủ nhiệm đề tài/dự án (PM) chịu trách
+nhiệm lập bảng yêu cầu phân quyền chi tiết (theo mẫu phụ lục 3) cho các cá
+nhân tham gia dự án (Ban GĐ, chỉ huy phòng ban TCT, nhóm kỹ sư, QC, chuyên
+viên nghiệp vụ ...) trình BGĐ trung tâm thẩm định, BGĐ Khối phê duyệt
+- Bước 2: PM tạo yêu cầu trên hệ thống hỗ trợ văn phòng và đính kèm file đề
+xuất phân quyền chi tiết (http://hotroit.vht.vn)
+- Bước 3: P.CNTT thực hiện phân quyền cho đề tài/dự án theo yêu cầu tiếp nhận
+từ PM
+Điều chỉnh trong quá trình thực hiện
+- Trong quá trình làm việc, khi phát sinh thay đổi về đề tài hoặc nhân sự của đề
+tài/dự án (VD: Khởi tạo mới thư mục, điều động nhân sự, phân quyền cho nhân
+sự tham gia ...): Chủ nhiệm đề tài chủ động tạo yêu cầu và đính kèm biểu mẫu
+phân quyền tương tự khi khởi tạo đề tài/dự án.
+- Trong trường hợp thay đổi ở phạm vi ngoài thư mục của đề tài/dự án, đơn vị
+gửi văn bản phối hợp có ký xác nhận của chỉ huy đơn vị tới P.CNTT
+Giám sát triển khai
+- P.ĐBCL khối audit quản lý cấu hình 1 tháng/lần theo đúng nguyên tắc nói trên.
+Điều 6. Tổ chức thực hiện
+Lãnh đạo, chỉ huy các đơn vị, CBCNV thuộc Tổng Công ty chịu trách nhiệm thực
+hiện nghiêm túc nội dung quy định này.
+Trong quá trình thực hiện nếu có vướng mắc, bất cập, các đơn vị phản ánh về
+Phòng KHCN để tổng hợp, báo cáo Ban Tổng giám đốc phê duyệt điều chỉnh cho phù
+hợp./.
+KT. TỔNG GIÁM ĐỐC
+PHÓ TỔNG GIÁM ĐỐC
+Số và ký hiệu: 1752/QĐ-VHT-KHCN
+Ngày ban hành: 20/06/2019
+091597_Vu Viet Hoang_17:47 25/04/2025
+ 
+091597_Vu Viet Hoang_17:47 25/04/2025
+ 
+091597_Vu Viet Hoang_17:47
+Pho Tong Giam doc Nguyen Cuong Hoang da ky, 20/06/2019 17:17:35
+ 
+Pho Tong Giam doc Nguyen Cuong Hoang da ky, 20/06/2019 17:17:35
+ 
+Pho Tong Giam
+Tài liệu này thuộc sở hữu của Viettel. Việc phát tán, sử dụng trái phép bị nghiêm cấm
+
+-- 6 of 11 --
+
+Phụ lục 1
+DANH MỤC KÝ HIỆU VIẾT TẮT TRUNG TÂM/ĐƠN VỊ NGHIÊN CỨU
+(Kèm theo Quyết định số: /QĐ-VHT-KHCN ngày / /2019)
+STT Trung tâm/đơn vị nghiên cứu Khối Ký hiệu
+1 Trung tâm Ra-đa 1 Rada
+2 Trung tâm Thông tin và tác chiến điện tử 1 TTTCDT
+3 Trung tâm Quang điện tử 1 QDT
+4 Trung tâm Mô hình mô phỏng 1 MHMP
+5 Trung tâm Chỉ huy điều khiển 1 CHDK
+6 Trung tâm Nghiên cứu thiết bị vô tuyến băng
+rộng
+2 VTBR
+7 Trung tâm Nghiên cứu Công nghệ truyền dẫn 2 CNTD
+8 Trung tâm Nghiên cứu Công nghệ chuyển mạch 2 CNCM
+9 Trung tâm Nghiên cứu OCS 2 OCS
+10 Trung tâm Smart connect 2 SMC
+11 Trung tâm Nghiên cứu thiết bị y tế 2 TBYT
+12 Trung tâm Chip 5G 3 CHIP
+13 Phòng core 3 CORE
+Số và ký hiệu: 1752/QĐ-VHT-KHCN
+Ngày ban hành: 20/06/2019
+091597_Vu Viet Hoang_17:47 25/04/2025
+ 
+091597_Vu Viet Hoang_17:47 25/04/2025
+ 
+091597_Vu Viet Hoang_17:47
+Pho Tong Giam doc Nguyen Cuong Hoang da ky, 20/06/2019 17:17:35
+ 
+Pho Tong Giam doc Nguyen Cuong Hoang da ky, 20/06/2019 17:17:35
+ 
+Pho Tong Giam
+Tài liệu này thuộc sở hữu của Viettel. Việc phát tán, sử dụng trái phép bị nghiêm cấm
+
+-- 7 of 11 --
+
+Phụ lục 2
+DANH MỤC CÂY THƯ MỤC
+THEO GIAI ĐOẠN PHÁT TRIỂN SẢN PHẨM (TỪ LEVEL 7 ĐẾN LEVEL 11)
+(Kèm theo Quyết định số: /QĐ-VHT-KHCN ngày / /2019)
+Cấp Tên thư mục Mô tả
+5 TKT – tiền khả thi
+6 [Mã nhiệm vụ tiền khả thi] Mã đề tài/dự án theo quyết định phê duyệt hoặc ký hiệu viết tắt tên nhiệm vụ
+7 ├ HSQL Hồ sơ thuyết minh, dự toán, QĐ phê duyệt, giao nhiệm vụ, TTr chủ chương, báo cáo gia hạn
+8 │ ├ PD Hồ sơ thuyết minh, dự toán, QĐ phê duyệt, giao nhiệm vụ, TTr chủ chương
+8 │ ├ KH Các tài liệu kế hoạch chi tiết
+8 │ ├ BC Báo cáo quản lý định kỳ/đột xuất khác …
+8 │ ├ DC TTr điều chỉnh, báo cáo gia hạn ….
+8 │ ├ NT Các hồ sơ, tài liệu nghiệm thu
+7 ├ NC Các hồ sơ, tài liệu nghiên cứu
+7 ├ Khac Các hồ sơ, tài liệu không thuộc phạm vi 03 thư mục lv 7 trên
+5 EVT – nghiên cứu phát triển sản phẩm
+6 [Mã đề tài] Mã đề tài theo quyết định phê duyệt hoặc ký hiệu viết tắt tên nhiệm vụ
+7 ├ HSQL Hồ sơ quản lý
+8 │ ├ PD Hồ sơ đề tài (thuyết minh, dự toán), QĐ phê duyệt, giao nhiệm vụ, TTr chủ chương
+8 │ ├ KH Các tài liệu kick-off, kế hoạch chi tiết nghiên cứu, thiết kế
+8 │ ├ BC Báo cáo giai đoạn; Báo cáo quản lý định kỳ/đột xuất khác …
+8 │ ├ DC TTr điều chỉnh, báo cáo gia hạn ….
+8 │ ├ NT Các hồ sơ, tài liệu nghiệm thu đề tài
+7 ├ NCTK Các hồ sơ, tài liệu nghiên cứu thiết kế sản phẩm
+8 │ ├ SP Các tài liệu/bộ tài liệu thiết kế/tích hợp/log QLDA/đo kiểm/thử nghiệm/kiểm soát chất lượng SP (mức
+System)
+9 │ │ ├ TKHT Các tài liệu/bộ tài liệu thiết kế hệ thống, chỉ tiêu nội sản phẩm, chỉ tiêu ngoại sản phẩm …
+9 │ │ ├ DKSP Bài đo, phương pháp đo kiểm (nội & ngoại) sản phẩm; Kết quả đo kiểm sản phẩm
+9 │ │ ├ TNSP Hồ sơ thử nghiệm sản phẩm (kế hoạch, biên bản thử nghiệm, báo cáo kết quả thử nghiệm …)
+9 │ │ ├ KSCL Tài liệu đánh giá chất lượng sản phẩm/log QLCL
+8 │ ├ [SubSystem A, B...Z] Các tài liệu/bộ tài liệu thiết kế/tích hợp/đo kiểm Sub system (*)
+9 │ │ ├ [Module 1, 2…n] Tài liệu Sơ đồ khối thiết kế module và giao diện kết nối các khối trong module
+10 │ │ │ ├ HW Tài liệu thiết kế chi tiết HW
+Số và ký hiệu: 1752/QĐ-VHT-KHCN
+Ngày ban hành: 20/06/2019
+091597_Vu Viet Hoang_17:47 25/04/2025
+ 
+091597_Vu Viet Hoang_17:47 25/04/202
+Pho Tong Giam doc Nguyen Cuong Hoang da ky, 20/06/2019 17:17:35
+ 
+Pho Tong Giam doc Nguyen Cuong Hoang da ky, 20
+Tài liệu này thuộc sở hữu của Viettel. Việc phát tán, sử dụng trái phép bị nghiêm cấm
+
+-- 8 of 11 --
+
+Cấp Tên thư mục Mô tả
+11 │ │ │ │ ├ YC Tài liệu yêu cầu thiết kế HW
+11 │ │ │ │ ├ TK Tài liệu thiết kế (TK kiến trúc, phân tích thiết kế, SCH, PCB …)
+11 │ │ │ │ ├ HSCN Hồ sơ công nghệ
+11 │ │ │ │ ├ GCDK Tài liệu gia công, kết quả đo kiểm, báo cáo bring-up
+10 │ │ │ ├ ME Tài liệu thiết kế chi tiết ME
+11 │ │ │ │ ├ YC Tài liệu yêu cầu thiết kế ME
+11 │ │ │ │ ├ TK Tài liệu thiết kế (TK tổng thể, ID, 3D chi tiết, tính toán mô phỏng …)
+11 │ │ │ │ ├ HSCN Hồ sơ công nghệ (2D, BOM, hướng dẫn gia công, lắp rắp, đo kiểm ..)
+11 │ │ │ │ ├ GCDK Tài liệu gia công, kết quả đo kiểm, báo cáo đo kiểm
+10 │ │ │ ├ SW Tài liệu thiết kế chi tiết SW
+11 │ │ │ │ ├ YC BRD, SRS, RTM, Use case
+11 │ │ │ │ ├ TK HLD, DD, PI plan, DbD, SyID, UiD
+11 │ │ │ │ ├ Code Source code, Thông báo phát hành
+11 │ │ │ │ ├ Test Test case, defect log, báo cáo kết quả kiểm thử
+10 │ │ │ ├ DK Bài đo, phương pháp đo kiểm module; Kết quả đo kiểm module
+7 ├ HSCG Các hồ sơ chuyển giao sang giai đoạn sản xuất thử nghiệm (DVT)
+7 ├ Khac Các hồ sơ, tài liệu không thuộc phạm vi 03 thư mục lv 7 trên
+5 DVT – Sản xuất thử nghiệm
+6 [Mã dự án] Mã dự án theo quyết định phê duyệt hoặc ký hiệu viết tắt tên dự án
+7 ├ HSQL Hồ sơ quản lý dự án
+8 │ ├ PD Hồ sơ dự án (thuyết minh, dự toán), QĐ phê duyệt, giao nhiệm vụ, TTr chủ chương …
+8 │ ├ KH Các tài liệu kick-off, kế hoạch chi tiết SXTN
+8 │ ├ BC Báo cáo quản lý định kỳ/đột xuất
+8 │ ├ DC TTr điều chỉnh, báo cáo gia hạn ….
+8 │ ├ NT Các hồ sơ, tài liệu nghiệm thu đề tài
+7 ├ CBSX Các hồ sơ, tài liệu giai đoạn chuẩn bị sản xuất (Checklist VTLK, Checklist tài liệu sản xuất, Checklist
+công cụ sản xuất, Checklist bài đo/phương pháp đo, biên bản họp phương án sản xuất …)
+7 ├ SX Các hồ sơ, tài liệu giai đoạn sản xuất
+8 │ ├ QLCL Tài liệu QLCL (nhật ký quản lý SX, biên bản kiểm tra, tài liệu QLCL khác trong quá trình SX)
+8 │ ├ HSCN Quy trình công nghệ, lắp ráp gia công tích hợp đồng điều chỉnh
+8 │ ├ DCSX Hồ sơ quản lý, điều chỉnh tài liệu SXTN (điều chỉnh HSCN, quản lý điều chỉnh thiết kế …)
+7 ├ HSCG Các hồ sơ chuyển giao sang giai đoạn sản xuất loạt (MP)
+7 ├ Khac Các hồ sơ, tài liệu không thuộc phạm vi 04 thư mục lv 7 trên
+Số và ký hiệu: 1752/QĐ-VHT-KHCN
+Ngày ban hành: 20/06/2019
+091597_Vu Viet Hoang_17:47 25/04/2025
+ 
+091597_Vu Viet Hoang_17:47 25/04/202
+Pho Tong Giam doc Nguyen Cuong Hoang da ky, 20/06/2019 17:17:35
+ 
+Pho Tong Giam doc Nguyen Cuong Hoang da ky, 20
+Tài liệu này thuộc sở hữu của Viettel. Việc phát tán, sử dụng trái phép bị nghiêm cấm
+
+-- 9 of 11 --
+
+Cấp Tên thư mục Mô tả
+5 MP – Sản xuất loạt (**)
+5 AS – Sau bán hàng (**)
+(*) Trường hợp các sản phẩm dạng device, không chia thành các Subsystem, PM chủ động lược bỏ folder cấp Subsystem, các folder cấp
+module sẽ chuyển thành level 8 (ngang cấp với folder sản phẩm – system)
+(**) Cấu trúc thư mục MP và AS chi tiết do PM và đơn vị chủ trì sản xuất đề xuất trong phiếu đề nghị phân quyền theo đặc thù của dự án và quy định
+về quá trình sản xuất loạt và sau bán hàng
+Số và ký hiệu: 1752/QĐ-VHT-KHCN
+Ngày ban hành: 20/06/2019
+091597_Vu Viet Hoang_17:47 25/04/2025
+ 
+091597_Vu Viet Hoang_17:47 25/04/202
+Pho Tong Giam doc Nguyen Cuong Hoang da ky, 20/06/2019 17:17:35
+ 
+Pho Tong Giam doc Nguyen Cuong Hoang da ky, 20
+Tài liệu này thuộc sở hữu của Viettel. Việc phát tán, sử dụng trái phép bị nghiêm cấm
+
+-- 10 of 11 --
+
+Phụ lục 3
+ĐỊNH NGHĨA PHÂN QUYỀN THEO TỪNG VAI TRÒ CHỨC NĂNG
+(Kèm theo Quyết định số: /QĐ-VHT-KHCN ngày / /2019)
+Lưu ý: mỗi cá nhân lựa chọn 1 trong 02 quyền truy cập: R - Xem (View); W - Ghi, sửa, xóa (Write, modify, delete)
+(*) Các cá nhân được phân quyền ở cấp thư mục cha (Parent folder) sẽ có quyền tương tự với các thư mục con (Sub folder) bên trong
+(**) Chi tiết theo file biểu mẫu DeXuatPhanQuyen.xlsx đính kèm
+Số và ký hiệu: 1752/QĐ-VHT-KHCN
+Ngày ban hành: 20/06/2019
+091597_Vu Viet Hoang_17:47 25/04/2025
+ 
+091597_Vu Viet Hoang_17:47 25/04/202
+Pho Tong Giam doc Nguyen Cuong Hoang da ky, 20/06/2019 17:17:35
+ 
+Pho Tong Giam doc Nguyen Cuong Hoang da ky, 20
+Tài liệu này thuộc sở hữu của Viettel. Việc phát tán, sử dụng trái phép bị nghiêm cấm
+
+-- 11 of 11 --
+

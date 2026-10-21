@@ -1,0 +1,29 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.venv/
+venv/
+
+# Generated review outputs
+review_*.md
+*.annotated.md
+*.annotated.txt
+findings.json
+parsed.json
+
+# Temp
+*.tmp
+*.bak

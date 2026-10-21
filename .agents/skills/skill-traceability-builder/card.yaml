@@ -1,0 +1,30 @@
+id: SKILL-TRACEABILITY-BUILDER
+
+name: Traceability Builder
+
+category: governance_intelligence
+
+purpose: >
+  Maintain linkage across business goals,
+  requirements, stories and test cases.
+
+supported_tasks:
+  - TASK-LIFECYCLE-001
+
+supported_artifacts:
+  - ART-RTM
+
+reasoning_pipeline:
+  - identify_requirement_relations
+  - map_dependencies
+  - detect_orphans
+  - generate_traceability_links
+
+validators:
+  - VALIDATOR-END-TO-END-COVERAGE
+  - VALIDATOR-NO-ORPHANS
+
+failure_patterns:
+  - missing_links
+  - stale_traceability
+  - hidden_dependencies

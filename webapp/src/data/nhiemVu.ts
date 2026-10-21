@@ -145,6 +145,36 @@ export const seedNhiemVu: NhiemVu[] = [
     duToan: '9.200.000.000 đ',
     giaiDoan: 'nghiem_thu',
   },
+  {
+    ma: 'RD.2026.033',
+    ten: 'Nghiên cứu thuật toán chống nhiễu cho hệ thông tin chiến thuật',
+    cap: 'Cơ sở',
+    chuNhiem: { hoTen: 'Nguyễn Thị Lan', hocHamHocVi: 'ThS.', maNhanVien: 'VHT0121', email: 'lannt@viettel.com.vn', donViCongTac: 'TT Nghiên cứu Điều khiển' },
+    donViChuTri: 'TT Nghiên cứu Điều khiển',
+    thoiGianThucHien: '01/2026 – 12/2027',
+    duToan: '3.450.000.000 đ',
+    giaiDoan: 'thuc_hien',
+  },
+  {
+    ma: 'RD.2026.034',
+    ten: 'Nâng cấp module thu phát VHF thế hệ 2',
+    cap: 'Cơ sở',
+    chuNhiem: { hoTen: 'Trần Văn Nam', hocHamHocVi: 'TS.', maNhanVien: 'VHT0182', email: 'namtv@viettel.com.vn', donViCongTac: 'TT Nghiên cứu Vô tuyến' },
+    donViChuTri: 'TT Nghiên cứu Vô tuyến',
+    thoiGianThucHien: '03/2026 – 03/2028',
+    duToan: '5.200.000.000 đ',
+    giaiDoan: 'dieu_chinh',
+  },
+  {
+    ma: 'RD.2026.035',
+    ten: 'Hoàn thiện nền tảng lab thử nghiệm tín hiệu số',
+    cap: 'Cơ sở',
+    chuNhiem: { hoTen: 'Đỗ Quốc Bảo', hocHamHocVi: 'KS.', maNhanVien: 'VHT0093', email: 'baodq@viettel.com.vn', donViCongTac: 'TT Nghiên cứu Vô tuyến' },
+    donViChuTri: 'TT Nghiên cứu Vô tuyến',
+    thoiGianThucHien: '01/2025 – 08/2026',
+    duToan: '2.800.000.000 đ',
+    giaiDoan: 'quyet_toan',
+  },
 ]
 
 const byMa = new Map(seedNhiemVu.map((n) => [n.ma, n]))

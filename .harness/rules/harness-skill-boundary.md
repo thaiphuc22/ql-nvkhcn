@@ -29,7 +29,7 @@ Every skill falls into exactly one of three buckets. Classify by what the skill 
 
 ### Bucket 1 — Capability (pure producer)
 
-**Examples:** `skill-ac-generator`, `skill-user-story-generator`, `skill-br-extractor`, `skill-requirement-extractor`, `skill-traceability-builder`, `ba-doc-write`, `ba-doc-review`, and all analytical PM skills (`prioritize`, `prd-development`, `tam-sam-som-calculator`, …).
+**Examples:** `skill-ac-generator`, `skill-user-story-generator`, `skill-br-extractor`, `skill-requirement-extractor`, `skill-traceability-builder`, `ba-doc-write`, `ba-doc-review`, `srs-to-drawio-flows`, and all analytical PM skills (`prioritize`, `prd-development`, `tam-sam-som-calculator`, …).
 
 **Rule:** No overlap. The matching harness role **delegates** the production step to the skill, then performs the harness-only parts (gate, escalate, write state). The skill never reads `.harness/state/` and never decides phase or approval.
 
@@ -125,7 +125,10 @@ Skills emit structured JSON; harness state is markdown. To compose them, the cal
 |---|---|
 | `skill-ac-generator` → AC JSON | acceptance criteria block in `templates/feature-plan.md` instance |
 | `skill-user-story-generator` → stories | user-story section of the feature plan |
-| `skill-traceability-builder` → RTM | the project RTM file (`docs/requirements/RTM.md`) |
+| `skill-traceability-builder` → RTM | the project RTM file (`docs/req/RTM.md` or `docs/requirements/RTM.md`) |
+| `ba-doc-write` / SRS authoring → SRS `.md` | `docs/ba/Tài liệu SRS/<nhóm>/` (DoD: `rules/srs-definition-of-done.md`) |
+| `srs-to-drawio-flows` → `.drawio` | `docs/ba/Tài liệu SRS/<nhóm>/drawio/` next to the SRS |
+| `ba-doc-review` → findings | fix in the SRS `.md`, then OQ tracker (`docs/ba/OQ-TRACKER.md`) |
 | `product-owner` → WSJF/DORA numbers | `DELIVERY_STATE.md` (Delivery Manager writes) |
 
 The role owns the serialization. The skill never writes the file itself.

@@ -188,6 +188,11 @@
                     }
                   </tbody>
                 </table>
+                <app-phien-hop-panel
+                  [hoiDongId]="hoiDong.id"
+                  [maHoiDong]="hoiDong.maHoiDong"
+                  [thanhVien]="hoiDong.thanhVien"
+                  [nguoiThaoTac]="auth.user()?.hoTen || 'Người dùng'" />
               </div>
             }
           </nz-card>

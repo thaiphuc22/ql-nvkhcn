@@ -7,6 +7,7 @@ import { phieuDuToanDemoSchema } from './phieuDuToanDemo'
 import { phieuThanhVienDemoSchema } from './phieuThanhVienDemo'
 import { congVanDangKyXetDuyetNvKhcnSchema } from './congVanDangKyXetDuyetNvKhcn'
 import { bm0202DtoNv2024Schema } from './bm0202DtoNv2024'
+import type { NhomRD } from '../eform-nhom-rd'
 
 export interface FormMeta {
   key: string
@@ -14,6 +15,9 @@ export interface FormMeta {
   moTa: string
   /** Loại biểu mẫu — dùng để nhóm/lọc trong thư viện. */
   loai?: 'Soạn thảo' | 'Góp ý' | 'Nhận xét' | 'Thẩm định' | 'Phê duyệt'
+  /** Nhóm RD (RD01..RD10) — đối chiếu với luồng quy trình tương ứng.
+   *  Optional: form chưa gắn nhóm thì không hiện ở filter Nhóm RD. */
+  nhomRD?: NhomRD
   schema: unknown
 }
 

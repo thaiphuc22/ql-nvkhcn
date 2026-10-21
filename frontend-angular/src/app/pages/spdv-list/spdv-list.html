@@ -1,0 +1,134 @@
+<div class="spdv-page">
+  <div class="spdv-header">
+    <div>
+      <h2>Danh mục SPDV nghiên cứu (RD07)</h2>
+      <p>CRUD mock — vòng đời NC → NT → KD → cải tiến; đồng bộ CRM (chưa kết nối).</p>
+    </div>
+    <button nz-button nzType="primary" (click)="openCreate()">
+      <span nz-icon nzType="plus"></span> Thêm SPDV
+    </button>
+  </div>
+
+  <div class="spdv-toolbar">
+    <input nz-input placeholder="Tìm mã, tên, lĩnh vực, mã NV…" [ngModel]="search()" (ngModelChange)="search.set($event)" />
+  </div>
+
+  <nz-table [nzData]="rows()" [nzPageSize]="10" nzSize="middle">
+    <thead>
+      <tr>
+        <th>Mã</th>
+        <th>Tên</th>
+        <th>Phân loại</th>
+        <th>Vòng đời</th>
+        <th>Trạng thái</th>
+        <th>Quý</th>
+        <th nzWidth="140px">Thao tác</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (r of rows(); track r.id) {
+        <tr>
+          <td><code>{{ r.ma }}</code></td>
+          <td>
+            <div>{{ r.ten }}</div>
+            <small>{{ r.linhVuc }} · {{ r.nhomDong }}</small>
+          </td>
+          <td>{{ phanLoaiLabel[r.phanLoai] }}</td>
+          <td>{{ vongDoiLabel[r.vongDoi] }}</td>
+          <td><nz-tag [nzColor]="trangThaiColor[r.trangThai]">{{ trangThaiLabel[r.trangThai] }}</nz-tag></td>
+          <td>{{ r.quyHienHanh }}</td>
+          <td>
+            <button nz-button nzType="link" nzSize="small" (click)="openEdit(r)">Sửa</button>
+            <button
+              nz-button
+              nzType="link"
+              nzDanger
+              nzSize="small"
+              nz-popconfirm
+              nzPopconfirmTitle="Ngừng dùng SPDV này?"
+              (nzOnConfirm)="softDelete(r)">
+              Ngừng
+            </button>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </nz-table>
+</div>
+
+<nz-modal
+  [nzVisible]="modalOpen()"
+  [nzTitle]="editing() ? 'Sửa SPDV' : 'Thêm SPDV'"
+  nzOkText="Lưu"
+  nzCancelText="Đóng"
+  (nzOnCancel)="modalOpen.set(false)"
+  (nzOnOk)="save()"
+  [nzWidth]="640">
+  <ng-container *nzModalContent>
+    <label class="spdv-label">Tên *</label>
+    <input nz-input [ngModel]="form().ten" (ngModelChange)="patchForm('ten', $event)" />
+    <div class="spdv-row2">
+      <div>
+        <label class="spdv-label">Lĩnh vực</label>
+        <nz-select style="width:100%" [ngModel]="form().linhVuc" (ngModelChange)="patchForm('linhVuc', $event)">
+          @for (o of linhVucOpts; track o) {
+            <nz-option [nzValue]="o" [nzLabel]="o"></nz-option>
+          }
+        </nz-select>
+      </div>
+      <div>
+        <label class="spdv-label">Nhóm / dòng</label>
+        <nz-select style="width:100%" [ngModel]="form().nhomDong" (ngModelChange)="patchForm('nhomDong', $event)">
+          @for (o of nhomDongOpts; track o) {
+            <nz-option [nzValue]="o" [nzLabel]="o"></nz-option>
+          }
+        </nz-select>
+      </div>
+    </div>
+    <div class="spdv-row2">
+      <div>
+        <label class="spdv-label">Phân loại</label>
+        <nz-select style="width:100%" [ngModel]="form().phanLoai" (ngModelChange)="patchForm('phanLoai', $event)">
+          <nz-option nzValue="SPDV_KD" nzLabel="Kinh doanh TCT"></nz-option>
+          <nz-option nzValue="SPDV_NCPT" nzLabel="NCPT"></nz-option>
+          <nz-option nzValue="SPDV_CHUNG" nzLabel="Dùng chung"></nz-option>
+        </nz-select>
+      </div>
+      <div>
+        <label class="spdv-label">Vòng đời</label>
+        <nz-select style="width:100%" [ngModel]="form().vongDoi" (ngModelChange)="patchForm('vongDoi', $event)">
+          <nz-option nzValue="nghien_cuu" nzLabel="Nghiên cứu"></nz-option>
+          <nz-option nzValue="nghiem_thu" nzLabel="Nghiệm thu"></nz-option>
+          <nz-option nzValue="kinh_doanh" nzLabel="Kinh doanh"></nz-option>
+          <nz-option nzValue="cai_tien" nzLabel="Cải tiến"></nz-option>
+        </nz-select>
+      </div>
+    </div>
+    <div class="spdv-row2">
+      <div>
+        <label class="spdv-label">Trạng thái sản phẩm</label>
+        <nz-select style="width:100%" [ngModel]="form().trangThaiSanPham" (ngModelChange)="patchForm('trangThaiSanPham', $event)">
+          <nz-option nzValue="nghien_cuu" nzLabel="Nghiên cứu"></nz-option>
+          <nz-option nzValue="thu_nghiem" nzLabel="Thử nghiệm"></nz-option>
+          <nz-option nzValue="kinh_doanh" nzLabel="Kinh doanh"></nz-option>
+        </nz-select>
+      </div>
+      <div>
+        <label class="spdv-label">Mã NV liên quan</label>
+        <input nz-input [ngModel]="form().maNVLienQuan" (ngModelChange)="patchForm('maNVLienQuan', $event)" />
+      </div>
+    </div>
+    <label class="spdv-label">Khách hàng</label>
+    <input nz-input [ngModel]="form().khachHang" (ngModelChange)="patchForm('khachHang', $event)" />
+    <div class="spdv-row2">
+      <div>
+        <label class="spdv-label">Doanh thu</label>
+        <input nz-input type="number" [ngModel]="form().doanhThu" (ngModelChange)="patchForm('doanhThu', +$event)" />
+      </div>
+      <div>
+        <label class="spdv-label">Chi phí</label>
+        <input nz-input type="number" [ngModel]="form().chiPhi" (ngModelChange)="patchForm('chiPhi', +$event)" />
+      </div>
+    </div>
+  </ng-container>
+</nz-modal>

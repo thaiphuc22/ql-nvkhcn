@@ -48,6 +48,26 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/nhiem-vu-detail/nhiem-vu-detail').then((module) => module.NhiemVuDetailPage),
         data: { title: 'Chi tiết Nhiệm vụ KHCN', app: 'qlnvkhcn', permission: Perm.NV03 },
       },
+      {
+        path: 'kho-tai-lieu',
+        loadComponent: () => import('./pages/kho-tai-lieu/kho-tai-lieu').then((m) => m.KhoTaiLieuPage),
+        data: { title: 'Hồ sơ tài liệu dự án', app: 'qlnvkhcn', permission: Perm.NV01 },
+      },
+      {
+        path: 'vong-doi-rd',
+        loadComponent: () => import('./pages/rd-lifecycle/rd-lifecycle').then((m) => m.RdLifecyclePage),
+        data: { title: 'Bản đồ luồng RD03–RD10', app: 'qlnvkhcn', permission: Perm.NV01 },
+      },
+      {
+        path: 'danh-muc-spdv',
+        loadComponent: () => import('./pages/spdv-list/spdv-list').then((m) => m.SpdvListPage),
+        data: { title: 'Danh mục SPDV (RD07)', app: 'qlnvkhcn', permission: Perm.NV01 },
+      },
+      {
+        path: 'ho-so-shtt',
+        loadComponent: () => import('./pages/shtt-list/shtt-list').then((m) => m.ShttListPage),
+        data: { title: 'Hồ sơ SHTT (RD08)', app: 'qlnvkhcn', permission: Perm.NV01 },
+      },
       { path: 'ho-so', component: HoSoListPage, data: { title: 'Danh sách Hồ sơ KHCN', app: 'qlnvkhcn', permission: Perm.HS01 } },
       {
         path: 'hoi-dong',
@@ -75,6 +95,12 @@ export const routes: Routes = [
         data: { title: 'Chi tiết Hồ sơ', app: 'qlnvkhcn', permission: Perm.HS03 },
       },
       { path: 'quy-trinh', component: ProcessCatalogPage, data: { title: 'Quản lý quy trình', app: 'quytrinh', permission: Perm.QT01 } },
+      {
+        path: 'quy-trinh/rd06-02-du-lieu',
+        loadComponent: () =>
+          import('./pages/rd0602-data-flow/rd0602-data-flow').then((m) => m.Rd0602DataFlowPage),
+        data: { title: 'RD06.02 — Luồng dữ liệu quyết toán', app: 'quytrinh', permission: Perm.QT01 },
+      },
       {
         path: 'quy-trinh/ve',
         loadComponent: () => import('./pages/bpmn-editor/bpmn-editor').then((module) => module.BpmnEditorPage),

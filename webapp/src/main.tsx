@@ -8,6 +8,7 @@ import './branding/tokens.css'
 import { theme } from './theme'
 import { ProcessProvider } from './store/ProcessContext'
 import { NhiemVuProvider } from './store/NhiemVuContext'
+import { SpdvProvider } from './store/SpdvContext'
 import { DossierProvider } from './store/DossierContext'
 import { ExceptionProvider } from './store/ExceptionContext'
 import { RuleProvider } from './store/RuleContext'
@@ -28,6 +29,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <ProcessProvider>
           <FormProvider>
             <NhiemVuProvider>
+              <SpdvProvider>
               <DossierProvider>
                 <ExceptionProvider>
                   <RuleProvider>
@@ -49,6 +51,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
                   </RuleProvider>
                 </ExceptionProvider>
               </DossierProvider>
+              </SpdvProvider>
             </NhiemVuProvider>
           </FormProvider>
         </ProcessProvider>

@@ -1,0 +1,47 @@
+{
+  "generatedAt": "2026-09-29T04:27:12.535Z",
+  "items": [
+    {
+      "ma": "RD03.06",
+      "file": "rd03_06-stub.bpmn",
+      "bpmnProcessId": "RD03_06",
+      "steps": 5
+    },
+    {
+      "ma": "RD05.01",
+      "file": "rd05_01-stub.bpmn",
+      "bpmnProcessId": "RD05_01",
+      "steps": 5
+    },
+    {
+      "ma": "RD06.01",
+      "file": "rd06_01-stub.bpmn",
+      "bpmnProcessId": "RD06_01",
+      "steps": 5
+    },
+    {
+      "ma": "RD06.02",
+      "file": "rd06_02-stub.bpmn",
+      "bpmnProcessId": "RD06_02",
+      "steps": 5
+    },
+    {
+      "ma": "RD07",
+      "file": "rd07-stub.bpmn",
+      "bpmnProcessId": "RD07",
+      "steps": 5
+    },
+    {
+      "ma": "RD08",
+      "file": "rd08-stub.bpmn",
+      "bpmnProcessId": "RD08",
+      "steps": 5
+    },
+    {
+      "ma": "RD10",
+      "file": "rd10-stub.bpmn",
+      "bpmnProcessId": "RD10",
+      "steps": 4
+    }
+  ]
+}

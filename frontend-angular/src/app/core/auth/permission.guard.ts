@@ -17,6 +17,9 @@ export const permissionGuard: CanActivateFn = (route) => {
 
   const decide = () => (auth.hasPermission(required) ? true : router.createUrlTree(['/chon-ung-dung']));
 
+  // App picker không mount Shell, nên phải tự kích nạp quyền — nếu không, guard chờ
+  // `rolesLoaded` mãi và nút "Mở ứng dụng" không bao giờ vào được màn hình.
+  if (!auth.rolesLoaded() && !auth.identityUnavailable()) auth.refreshCurrentUser();
   if (auth.rolesLoaded() || auth.identityUnavailable()) return decide();
   return toObservable(auth.rolesLoaded).pipe(
     filter((loaded) => loaded),

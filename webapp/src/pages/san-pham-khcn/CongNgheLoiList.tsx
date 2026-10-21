@@ -1,11 +1,18 @@
 import { useMemo, useState } from 'react'
-import { Button, Col, Form, Input, Modal, Popconfirm, Row, Select, Space, Tag, message } from 'antd'
+import {
+  Button, Col, Descriptions, Form, Input, Modal, Popconfirm, Row, Select, Space, Tag, message,
+} from 'antd'
 import { EditOutlined, EyeOutlined, HistoryOutlined, PlusOutlined, StopOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { useNavigate } from 'react-router-dom'
 import { PageHeader, StatCard, EntityTable } from '../../components/ui'
 import {
-  seedCongNgheLoi, TRANG_THAI_SP_COLOR, TRANG_THAI_SP_LABEL, type CongNgheLoi, type TrangThaiSP,
+  KY_THONG_KE_OPTS,
+  TRANG_THAI_SP_COLOR,
+  TRANG_THAI_SP_LABEL,
+  seedCongNgheLoi,
+  type CongNgheLoi,
+  type TrangThaiSP,
 } from '../../data/sanPhamKhcn'
 import HistoryDrawer from './HistoryDrawer'
 
@@ -22,11 +29,21 @@ export default function CongNgheLoiList() {
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase()
     return data.filter((r) => r.trangThai !== 'deleted' && (
-      !s || r.ma.toLowerCase().includes(s) || r.ten.toLowerCase().includes(s) || r.maNV.toLowerCase().includes(s)
+      !s
+      || r.ma.toLowerCase().includes(s)
+      || r.ten.toLowerCase().includes(s)
+      || r.maNV.toLowerCase().includes(s)
+      || (r.donViChu ?? '').toLowerCase().includes(s)
+      || (r.sanPhamUngDung ?? '').toLowerCase().includes(s)
     ))
   }, [data, search])
 
-  const openCreate = () => { setEdit(null); form.resetFields(); setModalOpen(true) }
+  const openCreate = () => {
+    setEdit(null)
+    form.resetFields()
+    form.setFieldsValue({ mucDoChinMuoi: 'TRL 4', trangThaiChuyenGiao: 'Nghiên cứu', kyThongKe: 'quy' })
+    setModalOpen(true)
+  }
   const openEdit = (r: CongNgheLoi) => { setEdit(r); form.setFieldsValue(r); setModalOpen(true) }
 
   const save = async () => {
@@ -40,13 +57,13 @@ export default function CongNgheLoiList() {
     } else {
       const id = `CN${String(data.length + 1).padStart(3, '0')}`
       setData((prev) => [{
-        id, ma: v.ma, ten: v.ten, maNV: v.maNV, tenNV: v.tenNV, linhVuc: v.linhVuc,
-        mucDoChinMuoi: v.mucDoChinMuoi, trangThaiChuyenGiao: v.trangThaiChuyenGiao,
-        donViTiepNhan: v.donViTiepNhan, trangThai: 'draft',
+        id,
+        ...v,
+        trangThai: 'draft' as TrangThaiSP,
         updatedAt: new Date().toLocaleDateString('vi-VN'),
         history: [{ at: new Date().toLocaleString('vi-VN'), actor: 'Người dùng hiện tại', action: 'Ghi nhận công nghệ lõi' }],
       }, ...prev])
-      message.success('Đã ghi nhận công nghệ lõi từ nhiệm vụ')
+      message.success('Đã ghi nhận công nghệ lõi')
     }
     setModalOpen(false)
   }
@@ -61,12 +78,13 @@ export default function CongNgheLoiList() {
 
   const cols: ColumnsType<CongNgheLoi> = [
     { title: 'Mã', dataIndex: 'ma', width: 120, render: (v) => <code>{v}</code> },
-    { title: 'Tên công nghệ', dataIndex: 'ten', ellipsis: true },
-    { title: 'Nhiệm vụ', dataIndex: 'maNV', width: 120, render: (v) => <a onClick={() => navigate(`/nhiem-vu/${encodeURIComponent(v)}`)}>{v}</a> },
-    { title: 'Lĩnh vực', dataIndex: 'linhVuc', width: 140 },
+    { title: 'Tên công nghệ lõi', dataIndex: 'ten', ellipsis: true },
+    { title: 'Đơn vị chủ CNL', dataIndex: 'donViChu', width: 150, ellipsis: true, render: (v) => v || '—' },
+    { title: 'SP ứng dụng', dataIndex: 'sanPhamUngDung', width: 180, ellipsis: true, render: (v) => v || '—' },
+    { title: 'Hoàn thành', dataIndex: 'thoiGianHoanThanh', width: 100, render: (v) => v || '—' },
+    { title: 'Nhiệm vụ', dataIndex: 'maNV', width: 110, render: (v) => <a onClick={() => navigate(`/nhiem-vu/${encodeURIComponent(v)}`)}>{v}</a> },
     { title: 'TRL', dataIndex: 'mucDoChinMuoi', width: 80 },
-    { title: 'Chuyển giao', dataIndex: 'trangThaiChuyenGiao', width: 180, ellipsis: true },
-    { title: 'Trạng thái', dataIndex: 'trangThai', width: 130, render: (v: TrangThaiSP) => <Tag color={TRANG_THAI_SP_COLOR[v]}>{TRANG_THAI_SP_LABEL[v]}</Tag> },
+    { title: 'Trạng thái', dataIndex: 'trangThai', width: 120, render: (v: TrangThaiSP) => <Tag color={TRANG_THAI_SP_COLOR[v]}>{TRANG_THAI_SP_LABEL[v]}</Tag> },
     {
       title: 'Thao tác', key: 'act', width: 180, fixed: 'right',
       render: (_, r) => (
@@ -85,8 +103,8 @@ export default function CongNgheLoiList() {
   return (
     <div>
       <PageHeader
-        title="Công nghệ lõi"
-        breadcrumb={[{ label: 'Quản trị KHCN', to: '/nhiem-vu' }, { label: 'Công nghệ & chuyển giao' }]}
+        title="Quản lý công nghệ lõi"
+        breadcrumb={[{ label: 'Quản trị KHCN', to: '/nhiem-vu' }, { label: 'Công nghệ lõi' }]}
         extra={<Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>Ghi nhận từ nhiệm vụ</Button>}
       />
       <Row gutter={12} style={{ marginBottom: 16 }}>
@@ -95,40 +113,51 @@ export default function CongNgheLoiList() {
         <Col span={6}><StatCard title="Đang hoàn thiện" value={filtered.filter((x) => x.trangThaiChuyenGiao.includes('hoàn thiện')).length} color="#daa520" /></Col>
         <Col span={6}><StatCard title="Nghiên cứu" value={filtered.filter((x) => x.trangThaiChuyenGiao === 'Nghiên cứu').length} /></Col>
       </Row>
-      <Input.Search placeholder="Tìm mã, tên, mã NV..." allowClear style={{ maxWidth: 360, marginBottom: 12 }} onSearch={setSearch} onChange={(e) => !e.target.value && setSearch('')} />
+      <Input.Search placeholder="Tìm mã, tên, đơn vị, SP ứng dụng, mã NV..." allowClear style={{ maxWidth: 440, marginBottom: 12 }} onSearch={setSearch} onChange={(e) => !e.target.value && setSearch('')} />
       <EntityTable rowKey="id" columns={cols} dataSource={filtered} />
 
-      <Modal open={modalOpen} title={edit ? 'Chỉnh sửa công nghệ lõi' : 'Ghi nhận công nghệ lõi từ nhiệm vụ'} onCancel={() => setModalOpen(false)} onOk={save} width={720} destroyOnClose>
-        <Form form={form} layout="vertical" initialValues={{ mucDoChinMuoi: 'TRL 4', trangThaiChuyenGiao: 'Nghiên cứu' }}>
+      <Modal open={modalOpen} title={edit ? 'Chỉnh sửa công nghệ lõi' : 'Ghi nhận công nghệ lõi từ nhiệm vụ'} onCancel={() => setModalOpen(false)} onOk={save} width={840} destroyOnClose>
+        <Form form={form} layout="vertical">
           <Row gutter={12}>
-            <Col span={8}><Form.Item name="ma" label="Mã" rules={[{ required: true }]}><Input /></Form.Item></Col>
-            <Col span={16}><Form.Item name="ten" label="Tên công nghệ" rules={[{ required: true }]}><Input /></Form.Item></Col>
+            <Col span={8}><Form.Item name="ma" label="Mã CNL" rules={[{ required: true }]}><Input /></Form.Item></Col>
+            <Col span={16}><Form.Item name="ten" label="Tên công nghệ lõi" rules={[{ required: true }]}><Input /></Form.Item></Col>
+            <Col span={12}><Form.Item name="donViChu" label="Đơn vị chủ CNL" rules={[{ required: true }]}><Input /></Form.Item></Col>
+            <Col span={12}><Form.Item name="thoiGianHoanThanh" label="Thời gian hoàn thành CNL" rules={[{ required: true }]}><Input placeholder="MM/YYYY hoặc dd/MM/yyyy" /></Form.Item></Col>
+            <Col span={24}><Form.Item name="sanPhamUngDung" label="Sản phẩm ứng dụng CNL" rules={[{ required: true }]}><Input.TextArea rows={2} placeholder="Liệt kê SP gắn với CNL" /></Form.Item></Col>
             <Col span={8}><Form.Item name="maNV" label="Mã nhiệm vụ" rules={[{ required: true }]}><Input /></Form.Item></Col>
             <Col span={16}><Form.Item name="tenNV" label="Tên nhiệm vụ" rules={[{ required: true }]}><Input /></Form.Item></Col>
-            <Col span={12}><Form.Item name="linhVuc" label="Lĩnh vực" rules={[{ required: true }]}><Input /></Form.Item></Col>
-            <Col span={12}><Form.Item name="mucDoChinMuoi" label="Mức độ chín muồi (TRL)" rules={[{ required: true }]}>
+            <Col span={8}><Form.Item name="linhVuc" label="Lĩnh vực" rules={[{ required: true }]}><Input /></Form.Item></Col>
+            <Col span={8}><Form.Item name="mucDoChinMuoi" label="Mức độ chín muồi (TRL)" rules={[{ required: true }]}>
               <Select options={['TRL 1', 'TRL 2', 'TRL 3', 'TRL 4', 'TRL 5', 'TRL 6', 'TRL 7', 'TRL 8', 'TRL 9'].map((x) => ({ value: x, label: x }))} />
             </Form.Item></Col>
-            <Col span={12}><Form.Item name="trangThaiChuyenGiao" label="Trạng thái chuyển giao" rules={[{ required: true }]}>
+            <Col span={8}><Form.Item name="trangThaiChuyenGiao" label="Trạng thái chuyển giao" rules={[{ required: true }]}>
               <Select options={['Nghiên cứu', 'Đang hoàn thiện', 'Sẵn sàng chuyển giao nội bộ', 'Đã chuyển giao'].map((x) => ({ value: x, label: x }))} />
             </Form.Item></Col>
             <Col span={12}><Form.Item name="donViTiepNhan" label="Đơn vị tiếp nhận"><Input /></Form.Item></Col>
+            <Col span={6}><Form.Item name="thoiGianTinhChiTieu" label="Thời gian tính chỉ tiêu BC"><Input placeholder="VD: Quý 2/2026" /></Form.Item></Col>
+            <Col span={6}><Form.Item name="kyThongKe" label="Kỳ thống kê"><Select options={KY_THONG_KE_OPTS} allowClear /></Form.Item></Col>
+            <Col span={24}><Form.Item name="ghiChuThongKe" label="Ghi chú dữ liệu thống kê"><Input.TextArea rows={2} /></Form.Item></Col>
           </Row>
         </Form>
       </Modal>
 
-      <Modal open={!!detail} title="Chi tiết công nghệ lõi" onCancel={() => setDetail(null)} footer={<Button onClick={() => setDetail(null)}>Đóng</Button>} width={640}>
+      <Modal open={!!detail} title="Chi tiết công nghệ lõi" onCancel={() => setDetail(null)} footer={<Button onClick={() => setDetail(null)}>Đóng</Button>} width={720}>
         {detail && (
-          <Space direction="vertical" style={{ width: '100%' }}>
-            <div><b>Mã:</b> {detail.ma}</div>
-            <div><b>Tên:</b> {detail.ten}</div>
-            <div><b>Nhiệm vụ nguồn:</b> {detail.maNV} — {detail.tenNV}</div>
-            <div><b>Lĩnh vực:</b> {detail.linhVuc}</div>
-            <div><b>TRL:</b> {detail.mucDoChinMuoi}</div>
-            <div><b>Chuyển giao:</b> {detail.trangThaiChuyenGiao}</div>
-            <div><b>Đơn vị tiếp nhận:</b> {detail.donViTiepNhan || '—'}</div>
-            <div><b>Trạng thái:</b> <Tag color={TRANG_THAI_SP_COLOR[detail.trangThai]}>{TRANG_THAI_SP_LABEL[detail.trangThai]}</Tag></div>
-          </Space>
+          <Descriptions column={2} size="small" bordered>
+            <Descriptions.Item label="Mã">{detail.ma}</Descriptions.Item>
+            <Descriptions.Item label="TRL">{detail.mucDoChinMuoi}</Descriptions.Item>
+            <Descriptions.Item label="Tên CNL" span={2}>{detail.ten}</Descriptions.Item>
+            <Descriptions.Item label="Đơn vị chủ CNL">{detail.donViChu || '—'}</Descriptions.Item>
+            <Descriptions.Item label="Hoàn thành">{detail.thoiGianHoanThanh || '—'}</Descriptions.Item>
+            <Descriptions.Item label="SP ứng dụng" span={2}>{detail.sanPhamUngDung || '—'}</Descriptions.Item>
+            <Descriptions.Item label="Nhiệm vụ nguồn" span={2}>{detail.maNV} — {detail.tenNV}</Descriptions.Item>
+            <Descriptions.Item label="Lĩnh vực">{detail.linhVuc}</Descriptions.Item>
+            <Descriptions.Item label="Chuyển giao">{detail.trangThaiChuyenGiao}</Descriptions.Item>
+            <Descriptions.Item label="Đơn vị tiếp nhận">{detail.donViTiepNhan || '—'}</Descriptions.Item>
+            <Descriptions.Item label="Chỉ tiêu BC">{detail.thoiGianTinhChiTieu || '—'}</Descriptions.Item>
+            <Descriptions.Item label="Kỳ TK">{KY_THONG_KE_OPTS.find((x) => x.value === detail.kyThongKe)?.label || '—'}</Descriptions.Item>
+            <Descriptions.Item label="Trạng thái"><Tag color={TRANG_THAI_SP_COLOR[detail.trangThai]}>{TRANG_THAI_SP_LABEL[detail.trangThai]}</Tag></Descriptions.Item>
+          </Descriptions>
         )}
       </Modal>
 

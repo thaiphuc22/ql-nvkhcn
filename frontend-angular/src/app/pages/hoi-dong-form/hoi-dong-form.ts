@@ -25,6 +25,7 @@ import {
 import { CandidateProfile, HoiDongCandidateService } from '../../core/services/hoi-dong-candidate.service';
 import { HoiDongService } from '../../core/services/hoi-dong.service';
 import { HoSoService } from '../../core/services/ho-so.service';
+import { PhienHopPanelComponent } from '../../shared/phien-hop-panel/phien-hop-panel';
 
 interface MemberRow {
   /** Tên hiển thị — lấy từ hồ sơ ứng viên khi chọn; giữ nguyên giá trị cũ nếu record cũ chưa gắn tài khoản. */
@@ -54,6 +55,7 @@ function emptyMember(): MemberRow {
     NzInputModule,
     NzSelectModule,
     NzSpinModule,
+    PhienHopPanelComponent,
   ],
   templateUrl: './hoi-dong-form.html',
   styleUrl: './hoi-dong-form.scss',

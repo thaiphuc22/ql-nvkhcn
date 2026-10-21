@@ -1,0 +1,118 @@
+<div class="shtt-page">
+  <div class="shtt-header">
+    <div>
+      <h2>Hồ sơ sở hữu trí tuệ (RD08)</h2>
+      <p>CRUD mock — sáng chế / GPHI / bản quyền; gắn NV KHCN. Tác nhân tạm theo khảo sát OQ-044.</p>
+    </div>
+    <button nz-button nzType="primary" (click)="openCreate()">
+      <span nz-icon nzType="plus"></span> Thêm hồ sơ SHTT
+    </button>
+  </div>
+
+  <div class="shtt-toolbar">
+    <input nz-input placeholder="Tìm mã, tên, NV, tác giả…" [ngModel]="search()" (ngModelChange)="search.set($event)" />
+  </div>
+
+  <nz-table [nzData]="rows()" [nzPageSize]="10" nzSize="middle">
+    <thead>
+      <tr>
+        <th>Mã</th>
+        <th>Tên đăng ký</th>
+        <th>Loại</th>
+        <th>NV liên quan</th>
+        <th>Bảo hộ</th>
+        <th>HS</th>
+        <th nzWidth="200px">Thao tác</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (r of rows(); track r.id) {
+        <tr>
+          <td><code>{{ r.ma }}</code></td>
+          <td>
+            <div>{{ r.ten }}</div>
+            <small>{{ r.tacGia }}</small>
+          </td>
+          <td>{{ loaiLabel(r.loai) }}</td>
+          <td>{{ r.maNV }}</td>
+          <td>{{ r.trangThaiBaoHo }}</td>
+          <td><nz-tag [nzColor]="statusColor[r.trangThai]">{{ statusLabel[r.trangThai] }}</nz-tag></td>
+          <td>
+            <button nz-button nzType="link" nzSize="small" (click)="openEdit(r)">Sửa</button>
+            @if (r.trangThai === 'draft') {
+              <button nz-button nzType="link" nzSize="small" (click)="submit(r)">Trình duyệt</button>
+            }
+            <button
+              nz-button
+              nzType="link"
+              nzDanger
+              nzSize="small"
+              nz-popconfirm
+              nzPopconfirmTitle="Ngừng sử dụng hồ sơ này?"
+              (nzOnConfirm)="softDelete(r)">
+              Ngừng
+            </button>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </nz-table>
+</div>
+
+<nz-modal
+  [nzVisible]="modalOpen()"
+  [nzTitle]="editing() ? 'Sửa hồ sơ SHTT' : 'Thêm hồ sơ SHTT'"
+  nzOkText="Lưu"
+  nzCancelText="Đóng"
+  (nzOnCancel)="modalOpen.set(false)"
+  (nzOnOk)="save()"
+  [nzWidth]="640">
+  <ng-container *nzModalContent>
+    <label class="shtt-label">Tên đăng ký *</label>
+    <input nz-input [ngModel]="form().ten" (ngModelChange)="patchForm('ten', $event)" />
+    <div class="shtt-row2">
+      <div>
+        <label class="shtt-label">Loại</label>
+        <nz-select style="width:100%" [ngModel]="form().loai" (ngModelChange)="patchForm('loai', $event)">
+          @for (o of loaiOpts; track o.value) {
+            <nz-option [nzValue]="o.value" [nzLabel]="o.label"></nz-option>
+          }
+        </nz-select>
+      </div>
+      <div>
+        <label class="shtt-label">Trạng thái bảo hộ</label>
+        <nz-select style="width:100%" [ngModel]="form().trangThaiBaoHo" (ngModelChange)="patchForm('trangThaiBaoHo', $event)">
+          @for (o of baoHoOpts; track o) {
+            <nz-option [nzValue]="o" [nzLabel]="o"></nz-option>
+          }
+        </nz-select>
+      </div>
+    </div>
+    <div class="shtt-row2">
+      <div>
+        <label class="shtt-label">Mã NV</label>
+        <input nz-input [ngModel]="form().maNV" (ngModelChange)="patchForm('maNV', $event)" />
+      </div>
+      <div>
+        <label class="shtt-label">Tên NV</label>
+        <input nz-input [ngModel]="form().tenNV" (ngModelChange)="patchForm('tenNV', $event)" />
+      </div>
+    </div>
+    <label class="shtt-label">Đơn vị chủ quản</label>
+    <input nz-input [ngModel]="form().donViChuQuan" (ngModelChange)="patchForm('donViChuQuan', $event)" />
+    <label class="shtt-label">Tác giả</label>
+    <input nz-input [ngModel]="form().tacGia" (ngModelChange)="patchForm('tacGia', $event)" />
+    <div class="shtt-row2">
+      <div>
+        <label class="shtt-label">Chủ sở hữu</label>
+        <input nz-input [ngModel]="form().chuSoHuu" (ngModelChange)="patchForm('chuSoHuu', $event)" />
+      </div>
+      <div>
+        <label class="shtt-label">Tỷ lệ quyền</label>
+        <input nz-input [ngModel]="form().tyLeQuyen" (ngModelChange)="patchForm('tyLeQuyen', $event)" />
+      </div>
+    </div>
+    <label class="shtt-label">Số đơn</label>
+    <input nz-input [ngModel]="form().soDon" (ngModelChange)="patchForm('soDon', $event)" />
+  </ng-container>
+</nz-modal>

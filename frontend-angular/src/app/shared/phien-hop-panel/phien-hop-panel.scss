@@ -1,0 +1,21 @@
+.php { display: grid; gap: 10px; }
+.php-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.php-head h3, .php h4 { margin: 0; }
+.php-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.php-actions button { display: inline-flex; align-items: center; gap: 6px; }
+.php-note { margin: 0; color: #647183; font-size: 13px; }
+
+.php-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.php-table th, .php-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #eef1f4; vertical-align: top; }
+.php-table th { color: #6b7785; font-size: 12px; font-weight: 600; }
+.php-table small { display: block; color: #8793a3; }
+.php-row-actions { white-space: nowrap; }
+.php-label { display: block; font-weight: 600; margin: 8px 0 4px; font-size: 13px; }
+.php input, .php textarea { width: 100%; }
+.php-when { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.php-when nz-date-picker, .php-when nz-time-picker { width: 100%; }
+.php-table-wrap { overflow-x: auto; }
+.php-detail { display: grid; gap: 10px; }
+.php-detail > div { display: grid; grid-template-columns: 110px 1fr; gap: 8px; align-items: start; }
+.php-detail span { color: #6b7785; font-size: 13px; }
+.php-detail strong { font-weight: 600; }

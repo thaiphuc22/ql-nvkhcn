@@ -53,6 +53,7 @@ import {
 import { SelectableProcessResponse } from '../../core/models/process-definition';
 import { ProcessDefinitionService } from '../../core/services/process-definition.service';
 import { BpmnViewerComponent } from '../../shared/bpmn-viewer/bpmn-viewer';
+import { PhienHopPanelComponent } from '../../shared/phien-hop-panel/phien-hop-panel';
 import { FormRendererComponent } from '../../shared/form-renderer/form-renderer';
 
 const STATUS_COLOR: Record<DossierStatus, string> = {
@@ -74,7 +75,7 @@ const STEP_COLOR: Record<StepStatus, string> = {
     DatePipe, FormsModule, NzAlertModule, NzButtonModule, NzCardModule, NzDescriptionsModule, NzEmptyModule,
     NzGridModule, NzIconModule, NzInputModule, NzModalModule, NzPopconfirmModule, NzResultModule, NzSelectModule,
     NzSpinModule, NzStepsModule, NzTabsModule, NzTagModule,
-    FormRendererComponent, BpmnViewerComponent,
+    FormRendererComponent, BpmnViewerComponent, PhienHopPanelComponent,
   ],
   templateUrl: './ho-so-detail.html',
   styleUrl: './ho-so-detail.scss',

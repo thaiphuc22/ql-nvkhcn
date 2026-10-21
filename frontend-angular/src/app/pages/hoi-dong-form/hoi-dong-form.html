@@ -99,5 +99,21 @@
         </table>
       </div>
     </section>
+
+    <section class="hdf-section">
+      @if (editingId(); as id) {
+        <app-phien-hop-panel
+          [hoiDongId]="id"
+          [maHoiDong]="maHoiDong()"
+          [thanhVien]="members()"
+          [nguoiThaoTac]="auth.user()?.hoTen || 'Người dùng'" />
+      } @else {
+        <app-phien-hop-panel
+          [hoiDongId]="0"
+          maHoiDong="Bản xem trước"
+          [thanhVien]="members()"
+          [nguoiThaoTac]="auth.user()?.hoTen || 'Người dùng'" />
+      }
+    </section>
   </div>
 }

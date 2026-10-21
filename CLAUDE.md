@@ -65,8 +65,24 @@ Two committed hooks in [`.claude/settings.json`](.claude/settings.json) give the
 | `.harness/lite/` | Lite profile: 1-file state + 3-phase workflow for small projects |
 | `.harness/workflows/foundations.md` | Full spec for foundations including done-when checklists |
 | `.harness/workflows/feature-delivery.md` | Feature module delivery workflow |
-| `.harness/rules/` | Coding standards, review policy, e2e testing policy, approval policy |
+| `.harness/workflows/srs-authoring.md` | **BA:** viết SRS (markdown-first) |
+| `.harness/workflows/blueprint-review.md` | **BA:** rà blueprint trước SRS |
+| `.harness/rules/` | Coding standards, review/approval (code + `*-srs` cho tài liệu), SRS DoD/template |
 | `.claude/hooks/` | Enforcement hooks (SessionStart digest, foundations guard) |
+| `.claude/skills/srs-to-drawio-flows/` | **BA:** sinh sơ đồ `.drawio` từ SRS |
+| `docs/ba/` | Working tree BA/SRS (OQ tracker, templates, output SRS) |
+
+### BA / SRS authoring
+
+Khi task là viết hoặc review **SRS** (không phải code feature):
+
+1. Đọc `.harness/workflows/blueprint-review.md` rồi `.harness/workflows/srs-authoring.md`.
+2. Tự chấm theo `.harness/rules/srs-definition-of-done.md`; khung màn hình copy từ
+   `.harness/rules/srs-screen-template.md`.
+3. Review theo `.harness/rules/review-policy-srs.md` (song song với `review-policy.md` cho code).
+4. Uỷ quyền sản xuất cho skill: `babok-assistant` → `ba-doc-write` / `ba-doc-review` /
+   `srs-to-drawio-flows` (xem `harness-skill-boundary.md`).
+5. Artifact ghi vào `docs/ba/`; OQ ghi `docs/ba/OQ-TRACKER.md`. Quyết định: **D23–D27**.
 
 ---
 

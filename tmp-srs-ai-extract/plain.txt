@@ -1,0 +1,691 @@
+
+TẬP ĐOÀN CÔNG NGHIỆP VIỄN THÔNG QUÂN ĐỘI VIETTEL
+DỰ ÁN CHUYỂN ĐỔI SỐ VHT KHOA HỌC CÔNG NGHỆ
+
+
+
+TÀI LIỆU ĐẶC TẢ YÊU CẦU
+VÀ THIẾT KẾ CHI TIẾT
+Tích hợp AI Agent nhập dữ liệu E form
+
+
+Thông tin
+Giá trị
+Biểu mẫu áp dụng
+BM.04 Thiết kế chi tiết
+Mã tài liệu đề xuất
+CDSVHT.KHCN.SRS.AI.EFORM
+Phiên bản
+1.0.0
+Ngày lập
+15/10/2026
+Trạng thái
+Dự thảo phục vụ rà soát và thống nhất triển khai
+Phạm vi cập nhật
+Cấu hình task AI theo 5 vai trò; AI nhập thay; xử lý nền và kết nối vith-agents API
+Tài liệu là cơ sở thống nhất giữa PM, BA, nhóm phát triển, kiểm thử và đội VHT AI. Các thông số đề xuất và nội dung chờ xác nhận được nhận diện riêng; tài liệu chưa ghi nhận phê duyệt của các bên.
+
+Hà Nội tháng 10 năm 2026
+
+Kiểm soát tài liệu
+Bảng ghi nhận thay đổi tài liệu
+Phiên bản
+Ngày
+Loại
+Người lập
+Nội dung
+1.0.0
+15/10/2026
+A
+Nhóm phân tích dự án
+Tạo mới đặc tả 3 cập nhật AI theo yêu cầu người dùng
+A là tạo mới; M là sửa đổi; D là xóa bỏ. Người lập chính thức sẽ được dự án cập nhật khi trình duyệt.
+Trang ký
+Vai trò
+Đơn vị hoặc trách nhiệm
+Họ tên và ngày ký
+Người lập
+BA dự án
+Chờ điền
+Người xem xét
+PM và Tech Lead
+Chờ điền
+Người xem xét
+Đầu mối VHT AI và nghiệp vụ E-form
+Chờ điền
+Người phê duyệt
+Đại diện có thẩm quyền của dự án
+Chờ điền
+Mục lục định hướng
+Phần
+Nội dung
+1
+Giới thiệu và gói yêu cầu đầu vào
+2
+Tổng quan giải pháp và danh mục yêu cầu
+3
+Thiết kế chi tiết cấu hình quy trình, E-form, API và xử lý nền
+4
+Thiết kế dùng chung và tái sử dụng
+5
+Thiết kế đảm bảo tuân thủ tiêu chuẩn quản trị dữ liệu
+6
+Phụ lục kiểm chứng, truy vết và nội dung cần xác nhận
+Giữ sáu phần chính của BM.04; thay các ví dụ chính sách bảo hiểm và ETL trong mẫu bằng phân hệ AI của dự án. Các phần SRS gồm giới thiệu, tổng quan, yêu cầu cụ thể, kiểm chứng và phụ lục được bố trí trong cấu trúc này.
+
+1 Giới thiệu
+1.1 Mục đích
+Bổ sung khả năng chọn AI Agent cho từng User Task và cho phép người xử lý chủ động yêu cầu AI điền dữ liệu E-form. Hệ thống phải tiếp nhận yêu cầu, xử lý nền, lưu nháp kết quả và thông báo hoàn thành trên ứng dụng và qua email. Người dùng kiểm tra dữ liệu trước khi hoàn thành task theo quy trình hiện hành.
+1.2 Phạm vi
+Trong phạm vi: thuộc tính Extension properties tên AI; năm giá trị vai trò PM, CQ_MS, CQ_CLKHCN, CQ_TCKT, CQ_NS; nút AI nhập thay trên task có form; màn hình loading; quản lý job nền; upload hồ sơ; gửi job, theo dõi và lấy kết quả; ánh xạ form; lưu nháp; thông báo; nhật ký và xử lý lỗi.
+Ngoài phạm vi: huấn luyện năm agent, chatbot nhiều lượt, xây dựng kho RAG mới, tự ký duyệt, tự hoàn thành User Task và tự chuyển bước quy trình. Hệ thống không tự khởi chạy AI chỉ vì người dùng mở E-form.
+1.3 Gói yêu cầu đầu vào đã phân loại
+Mã
+Loại
+Nội dung và nguồn
+BR01
+Nghiệp vụ
+Yêu cầu 1 của người dùng: nhận diện task AI và chọn 1 trong 5 vai trò.
+BR02
+Nghiệp vụ
+Yêu cầu 2: nút AI nhập thay, loading, 15–20 phút, thông báo màn hình và email, lưu nháp tự động.
+BR03
+Nghiệp vụ
+Yêu cầu 3: xử lý nền để ghi nhận và kết nối API.
+CON01
+Ràng buộc
+Dùng hợp đồng vith-agents v0.1.0 trong Swagger đính kèm; không giả định có webhook hoặc API hủy job.
+AS01
+Giả định
+Dự án có dịch vụ draft E-form, phân quyền task và gửi email; Tech Lead xác nhận khả năng tái sử dụng.
+AS02
+Giả định
+VHT AI cung cấp mã agent thực tế tương ứng 5 vai trò; đầu mối AI xác nhận trước kiểm thử tích hợp.
+1.4 Cách sử dụng tài liệu
+SHALL nghĩa là bắt buộc; Must là ưu tiên phải có. Các quy tắc gắn nhãn Đề xuất là giải pháp để rà soát, chưa phải hiện trạng đã kiểm chứng. Chỉ đọc tài liệu được cung cấp; chưa gọi thử API UAT hoặc kiểm tra mã nguồn hệ thống.
+
+1 Giới thiệu tiếp theo
+1.5 Khái niệm và thuật ngữ
+Thuật ngữ
+Định nghĩa
+User Task
+Bước người dùng xử lý trong quy trình; task instance là một lần thực thi cụ thể.
+AI role
+Mã vai trò trong thuộc tính AI; không phải quyền truy cập hay mã agent mặc định của nhà cung cấp.
+agent_code
+Mã agent gửi đến vith-agents; tra từ cấu hình ánh xạ phía backend.
+AI request
+Bản ghi yêu cầu nội bộ, có request_id; khác job_id phía AI.
+Draft
+Bản nháp E-form đã lưu trên backend; không đồng nghĩa biểu mẫu đã trình duyệt.
+output_schema
+Schema JSON tự chứa để ràng buộc dữ liệu trả về; không dùng $ref trong V1.
+Outbox
+Bản ghi sự kiện được lưu cùng giao dịch để gửi thông báo sau commit.
+Optimistic locking
+Kiểm tra phiên bản bản nháp trước khi ghi để tránh mất cập nhật đồng thời.
+1.6 Tài liệu tham khảo
+Mã nguồn
+Tài liệu
+Cách sử dụng
+SRC01
+Yêu cầu cập nhật ngày 15/10/2026
+Nguồn quyết định phạm vi và thời gian 15–20 phút.
+SRC02
+agents-swagger.json.txt — vith-agents v0.1.0
+Nguồn cấu trúc endpoint, payload, giới hạn và mã phản hồi.
+SRC03
+Huong-dan-su-dung-vith-agents-API.md
+Luồng tích hợp, trạng thái job và lưu ý vận hành.
+SRC04
+BM.04_Thiết kế chi tiết.docx
+Cấu trúc và loại nội dung thiết kế.
+SRC05
+Skill-3-and-13-Huong-Dan-Soan-SRS-and-BRD.pdf
+Mã yêu cầu, EARS, mức ưu tiên, truy vết và báo cáo hoàn chỉnh.
+SRC06
+image.png
+Ảnh cấu hình Extension properties có Name AI; form Form_PDG và binding latest trong ví dụ.
+Các hồ sơ nghiệp vụ KHCN khác trong gói dự án là bối cảnh. Tài liệu này không đặc tả lại trường dữ liệu của từng hồ sơ; danh mục form áp dụng và ánh xạ trường phải được nghiệm thu theo từng phiên bản form.
+
+2 Tổng quan giải pháp
+2.1 Tổng quan chức năng
+Người thiết kế chọn một vai trò AI tại User Task. Khi task được thực thi và đã gắn form hợp lệ, người có quyền xử lý thấy nút AI nhập thay. Khi bấm nút, backend ghi nhận snapshot của form và hồ sơ rồi đưa yêu cầu vào hàng đợi. Màn hình hiển thị AI đang xử lý; người dùng có thể tiếp tục nhập hoặc rời trang.
+Worker gọi dịch vụ AI và theo dõi job độc lập với phiên trình duyệt. Khi có kết quả, backend kiểm tra cấu trúc, ánh xạ và hợp nhất dữ liệu có kiểm soát vào bản nháp. Sau khi commit bản nháp mới, hệ thống mới thông báo hoàn thành và đưa email vào hàng đợi gửi.
+2.2 Mô hình giao tiếp với hệ thống khác
+Thành phần
+Trách nhiệm
+Giao tiếp
+BPMN Modeler và kho quy trình
+Lưu thuộc tính AI theo phiên bản quy trình
+Cơ chế lưu và triển khai quy trình hiện có
+E-form frontend
+Nút, loading, hiển thị trạng thái và dữ liệu draft
+Chỉ gọi backend CĐS VHT
+Backend và worker
+Phân quyền, snapshot, điều phối, poll, mapping, draft
+API nội bộ, DB, kho file, vith-agents
+vith-agents
+Nhận file, xử lý theo agent và trả JSON
+Files, Jobs, Status, Result
+Thông báo và email
+Gửi sau khi lưu nháp thành công
+Outbox và dịch vụ notification hiện có
+2.3 Những khác biệt được xử lý
+SRC03 mô tả ví dụ tự chạy khi mở task và thời gian 1–2 phút hoặc timeout 2 phút. Đợt cập nhật này áp dụng thao tác bấm nút và thông báo thời gian dự kiến 15–20 phút theo SRC01. Không dùng timeout 2 phút cho toàn bộ job.
+Swagger không có danh mục agent, callback, phần trăm tiến độ, hủy job hoặc trường idempotency. Bản thiết kế không bổ sung các trường này vào request gửi AI. Trạng thái phần trăm không được giả lập; các cơ chế chống trùng nằm ở backend nội bộ.
+
+2 Danh mục yêu cầu chức năng
+Các mã dưới đây được viết theo điều kiện và hành vi có thể kiểm chứng. Nguồn SRC01 được chia thành BR01, BR02, BR03 tại mục 1.3. DT là quy tắc thiết kế dẫn xuất cần thiết để thực hiện yêu cầu gốc.
+SRS FR 001  Nhận diện task AI
+Khi User Task có thuộc tính AI bằng một trong năm mã hợp lệ, hệ thống phải nhận diện task đó là task có hỗ trợ AI theo đúng mã vai trò đã cấu hình.
+Mức độ: SHALL — Bắt buộc | Ưu tiên: Must | Nguồn: BR01 và SRC06 | Kiểm chứng: Inspection và Test.
+SRS FR 002  Kiểm tra cấu hình
+Khi lưu hoặc triển khai quy trình, hệ thống phải từ chối thuộc tính AI trùng tên, sai kiểu hoặc có giá trị ngoài danh mục; thiếu hoặc rỗng nghĩa là không bật AI.
+Mức độ: SHALL — Bắt buộc | Ưu tiên: Must | Nguồn: BR01 và DT | Kiểm chứng: Test.
+SRS FR 003  Ánh xạ agent
+Khi tạo yêu cầu AI, backend phải lấy agent_code đang được kích hoạt cho vai trò và lưu snapshot ánh xạ; nếu chưa có ánh xạ thì không gửi job.
+Mức độ: SHALL — Bắt buộc | Ưu tiên: Must | Nguồn: BR01 và CON01 | Kiểm chứng: Inspection và Test.
+SRS FR 004  Điều kiện hiển thị nút
+Khi task AI đang hoạt động có form xử lý được và người dùng có quyền sửa task, hệ thống phải hiển thị nút AI nhập thay; trường hợp còn lại không cho phép gọi chức năng.
+Mức độ: SHALL — Bắt buộc | Ưu tiên: Must | Nguồn: BR02 | Kiểm chứng: Demonstration và Test.
+SRS FR 005  Tiếp nhận chủ động
+Khi người dùng bấm AI nhập thay, hệ thống phải lưu nháp dữ liệu đang nhập trước, tạo yêu cầu nền duy nhất cho task instance và draft, rồi trả request_id cùng trạng thái xử lý.
+Mức độ: SHALL — Bắt buộc | Ưu tiên: Must | Nguồn: BR02 và BR03, DT | Kiểm chứng: Test.
+SRS FR 006  Thông báo thời gian
+Khi yêu cầu đã được tiếp nhận, hệ thống phải hiển thị loading và thông báo thời gian dự kiến 15–20 phút; trạng thái này phải được khôi phục khi mở lại trang.
+Mức độ: SHALL — Bắt buộc | Ưu tiên: Must | Nguồn: BR02 | Kiểm chứng: Demonstration và Test.
+
+2 Yêu cầu xử lý và hoàn thành
+SRS FR 007  Xử lý nền
+Trong khi AI đang chạy, worker phải tiếp tục upload, submit và poll mà không phụ thuộc trình duyệt; UI phải cho phép người dùng nhập và lưu nháp thủ công.
+Mức độ: SHALL — Bắt buộc | Ưu tiên: Must | Nguồn: BR03 và BR02 | Kiểm chứng: Test.
+SRS FR 008  Gửi dữ liệu hợp lệ
+Trước khi gửi job, backend phải kiểm tra file thuộc hồ sơ được phép, giới hạn 50 file, prompt 1–32000 ký tự và output_schema đúng phiên bản form.
+Mức độ: SHALL — Bắt buộc | Ưu tiên: Must | Nguồn: BR03 và SRC02 | Kiểm chứng: Inspection và Test.
+SRS FR 009  Theo dõi job
+Khi đã nhận job_id, worker phải poll theo job_id và chỉ gọi result sau COMPLETED; FAILED phải kết thúc xử lý với thông báo lỗi.
+Mức độ: SHALL — Bắt buộc | Ưu tiên: Must | Nguồn: BR03 và SRC02, SRC03 | Kiểm chứng: Test.
+SRS FR 010  Lưu nháp tự động
+Khi nhận structured_result hợp lệ và task còn hiệu lực, backend phải map các trường được phép, bảo vệ dữ liệu người dùng và lưu bản nháp tự động trong giao dịch có kiểm tra phiên bản.
+Mức độ: SHALL — Bắt buộc | Ưu tiên: Must | Nguồn: BR02 và DT | Kiểm chứng: Test.
+SRS FR 011  Thông báo hoàn thành
+Sau khi lưu nháp thành công, hệ thống phải ghi nhận thông báo trong ứng dụng và yêu cầu gửi email cho người khởi chạy; thông báo phải dẫn đến đúng task và bản nháp.
+Mức độ: SHALL — Bắt buộc | Ưu tiên: Must | Nguồn: BR02 | Kiểm chứng: Test.
+SRS FR 012  Ngăn báo thành công sai
+Nếu job lỗi, dữ liệu kết quả không hợp lệ hoặc lưu nháp thất bại, hệ thống phải giữ bản nháp hiện có và không gửi thông báo hoặc email hoàn thành đổ dữ liệu.
+Mức độ: SHALL — Bắt buộc | Ưu tiên: Must | Nguồn: BR02 và DT | Kiểm chứng: Test.
+
+2 Yêu cầu bảo toàn dữ liệu và vận hành
+SRS FR 013  Chống ghi đè
+Nếu người dùng đã thay đổi một trường từ thời điểm chụp snapshot, hệ thống phải giữ giá trị hiện tại và lưu đề xuất AI riêng để người dùng quyết định áp dụng.
+Mức độ: SHALL — Bắt buộc | Ưu tiên: Must | Nguồn: BR02 và DT | Kiểm chứng: Test.
+SRS FR 014  Chống chạy trùng
+Khi có yêu cầu đang hoạt động trên cùng task instance và draft, hệ thống phải trả lại yêu cầu đó thay vì tạo thêm job; kiểm soát này phải có hiệu lực với nhiều tab và nhiều worker.
+Mức độ: SHALL — Bắt buộc | Ưu tiên: Must | Nguồn: BR03 và DT | Kiểm chứng: Test.
+SRS FR 015  Task hết hiệu lực
+Nếu task đã hoàn thành, hủy hoặc đổi phiên bản form không tương thích trước lúc áp dụng kết quả, hệ thống phải ngừng đổ dữ liệu và lưu kết quả ở trạng thái không áp dụng kèm lý do.
+Mức độ: SHALL — Bắt buộc | Ưu tiên: Must | Nguồn: BR03 và DT | Kiểm chứng: Test.
+SRS FR 016  Phục hồi xử lý
+Sau khi worker khởi động lại, hệ thống phải tiếp tục từ checkpoint đã lưu và không tự submit lại một yêu cầu có kết quả submit chưa xác định.
+Mức độ: SHALL — Bắt buộc | Ưu tiên: Must | Nguồn: BR03 và DT | Kiểm chứng: Test.
+SRS FR 017  Truy vết
+Với mỗi yêu cầu, hệ thống phải lưu người khởi chạy, task, form version, vai trò, agent_code, job_id nếu có, trạng thái, thời điểm, lỗi và kết quả áp dụng mà không ghi bí mật xác thực vào log.
+Mức độ: SHALL — Bắt buộc | Ưu tiên: Must | Nguồn: BR03 và DT | Kiểm chứng: Inspection và Test.
+SRS FR 018  Thử lại thông báo
+Nếu gửi email thất bại sau khi bản nháp đã lưu, hệ thống phải giữ trạng thái lưu nháp thành công, ghi lỗi email và thử gửi lại độc lập; không được chạy lại AI.
+Mức độ: SHALL — Bắt buộc | Ưu tiên: Must | Nguồn: BR02 và DT | Kiểm chứng: Test.
+Toàn bộ 18 FR là Must. Các giá trị mặc định vận hành ở phần thiết kế là đề xuất, cần được nhóm dự án chốt khi baseline tài liệu; không được hiểu là năng lực đã được đo trên UAT.
+
+3 Thiết kế chi tiết
+3.1 Phân hệ cấu hình quy trình
+3.1.1 Thông tin chung chức năng
+Mã UC01. Tác nhân là người có quyền thiết kế quy trình. Đầu vào là User Task và form binding. Đầu ra là thuộc tính AI được lưu trong phiên bản quy trình. Cấu hình mới có hiệu lực theo phiên bản quy trình được triển khai, không sửa ngược task instance đang chạy.
+3.1.2 Màn hình
+
+Hình 1  Ảnh tham chiếu do người dùng cung cấp về Extension properties
+3.1.3 Mô tả chi tiết các thành phần
+Thành phần
+Quy định
+Vị trí
+User Task → Extension properties → thêm property.
+Name
+AI — phân biệt hoa thường, duy nhất trong task.
+Value
+PM hoặc CQ_MS hoặc CQ_CLKHCN hoặc CQ_TCKT hoặc CQ_NS. Chỉ một giá trị.
+Không sử dụng AI
+Không có property AI hoặc giá trị rỗng sau khi trim; không dùng true/false.
+Form binding
+Giữ cơ chế form hiện có. Khi khởi chạy phải resolve và chụp form version cụ thể dù binding là latest.
+Kiểm tra backend
+Kiểm tra lại cấu hình đã triển khai; không tin giá trị AI role gửi từ frontend.
+Đề xuất thiết kế: một property AI vừa đánh dấu task AI vừa xác định vai trò, phù hợp ảnh tham chiếu; không tạo thêm cờ isAI độc lập gây hai nguồn cấu hình.
+
+3.1 Cấu hình và kiểm tra triển khai
+3.1.4 Danh mục giá trị và ánh xạ
+Value
+Vai trò nghiệp vụ
+Mã agent phía API
+PM
+Quản lý dự án
+Tra cấu hình cho PM
+CQ_MS
+Cơ quan mua sắm — tên gọi cần nghiệp vụ xác nhận
+Tra cấu hình cho CQ_MS
+CQ_CLKHCN
+Cơ quan chiến lược khoa học công nghệ — tên gọi cần xác nhận
+Tra cấu hình cho CQ_CLKHCN
+CQ_TCKT
+Cơ quan tài chính kế toán — tên gọi cần xác nhận
+Tra cấu hình cho CQ_TCKT
+CQ_NS
+Cơ quan nhân sự — tên gọi cần xác nhận
+Tra cấu hình cho CQ_NS
+Mã vai trò do người dùng cung cấp là giá trị chuẩn. Swagger chỉ định agent_code là chuỗi, không xác nhận 5 mã trên là agent_code thực tế. Bảng ánh xạ được cấu hình theo môi trường; không dùng DOSSIER_REVIEW_AGENT trong hướng dẫn làm mã chung cho tất cả vai trò.
+3.1.5 Luồng nghiệp vụ
+1. Người thiết kế chọn task và thêm Name AI. 2. Nhập một Value hợp lệ. 3. Gắn form nếu muốn sử dụng AI nhập thay. 4. Lưu và kiểm tra cấu hình. 5. Triển khai phiên bản quy trình. 6. Backend resolve thuộc tính từ phiên bản đang chạy khi người xử lý mở task.
+3.1.6 Quy tắc ngoại lệ
+Tình huống
+Xử lý
+AI=PM; form hợp lệ
+Nhận diện task AI, bật theo quyền xử lý.
+AI rỗng hoặc không có
+Task thông thường, không có AI nhập thay.
+AI=true; AI=pm; AI=PM,CQ_NS
+Từ chối lưu hoặc triển khai; báo giá trị không hợp lệ.
+Có 2 property cùng Name AI
+Từ chối vì cấu hình không duy nhất.
+Có AI nhưng chưa gắn form
+Giữ nhận diện task AI; không cung cấp AI nhập thay, cảnh báo thiếu form khi kiểm tra triển khai.
+Có form nhưng không có mapping agent đang bật
+Không khởi chạy; báo Chưa cấu hình AI Agent cho vai trò này.
+
+3.2 Phân hệ xử lý E form
+3.2.1 Thông tin chung chức năng
+Mã UC02. Tác nhân là người đang có quyền sửa User Task. Tiền điều kiện: task hoạt động, thuộc tính AI hợp lệ, form đã resolve, mapping agent đang bật, hồ sơ đầu vào truy cập được. Hậu điều kiện thành công: có bản nháp tự động mới và thông báo sau commit; User Task vẫn chờ người xử lý quyết định.
+3.2.2 Màn hình và các thành phần
+Thành phần
+Vị trí và hành vi
+AI nhập thay
+Cùng nhóm thao tác Lưu nháp trên E-form. Khi đang chạy, đổi nhãn AI đang nhập và vô hiệu thao tác chạy thêm.
+Loading
+Spinner và vùng thông báo trên form trong suốt thời gian chờ; không chặn chỉnh sửa toàn màn hình 15–20 phút.
+Nội dung chờ
+AI nhập thay dự kiến mất 15–20 phút để nhập dữ liệu cho E-form. Bạn có thể tiếp tục nhập hoặc rời màn hình; hệ thống sẽ thông báo khi hoàn tất.
+Thông tin tiến trình
+Hiển thị trạng thái và thời điểm bắt đầu. Không hiển thị phần trăm vì API chỉ trả status.
+Kết quả thành công
+AI đã nhập dữ liệu xong và tự động lưu nháp E-form. Vui lòng kiểm tra trước khi hoàn thành công việc.
+Kết quả có xung đột
+Đã lưu nháp dữ liệu AI vào các trường phù hợp. Một số trường bạn đang sửa được giữ nguyên; xem đề xuất AI.
+Mở lại trang
+Đọc request và draft từ backend; khôi phục loading hoặc hiển thị kết quả cuối. Không tự tạo job mới.
+3.2.3 Luồng nghiệp vụ chính
+1. Người dùng mở task, hệ thống kiểm tra quyền và cấu hình. 2. Người dùng bấm AI nhập thay. 3. Frontend lưu nháp các thay đổi đang có; nếu lỗi thì dừng và báo lỗi. 4. Backend tạo request, snapshot dữ liệu, file và schema. 5. Frontend hiển thị loading và thông báo thời gian. 6. Worker chạy nền. 7. Backend lưu nháp kết quả hợp lệ. 8. UI nhận thông báo, cập nhật draft an toàn và cho phép người dùng rà soát.
+Nếu frontend còn trường chưa lưu khi thông báo đến, UI phải giữ dữ liệu cục bộ, tải phiên bản server và hợp nhất theo từng trường. Không thay toàn bộ form bằng một response mới làm mất nội dung đang gõ.
+
+3.2 Quy tắc nhập đồng thời và ngoại lệ
+3.2.4 Hợp nhất dữ liệu vào bản nháp
+Đề xuất chính sách điền an toàn: AI chỉ điền trường được phép đang trống tại thời điểm khởi chạy và chưa bị người dùng sửa. Các trường đã có giá trị ban đầu hoặc đã bị chỉnh sửa được giữ nguyên; đề xuất AI được lưu riêng để người dùng chủ động áp dụng. Giá trị 0 và false là giá trị đã có; chỉ null, chuỗi rỗng hoặc cấu trúc rỗng được schema định nghĩa mới là trống.
+Trạng thái trường
+Khi nhận kết quả AI
+Hành vi
+Trống và chưa sửa
+AI trả giá trị hợp lệ
+Tự đổ và lưu nháp.
+Trống nhưng người dùng đã sửa
+Dù sửa rồi trở lại rỗng
+Không tự đổ; đánh dấu phiên bản sửa trường để bảo vệ ý định người dùng.
+Đã có giá trị từ đầu
+AI trả cùng hoặc khác
+Giữ nguyên; khác thì lưu đề xuất để xem xét.
+Read-only, công thức, chữ ký, điều khiển hệ thống
+AI trả bất kỳ giá trị nào
+Không cho ghi; bỏ key ngoài allowlist và ghi cảnh báo.
+Bảng lặp hoặc mảng
+Có thể đối chiếu theo row key ổn định
+Hợp nhất theo row key; nếu chưa có quy tắc thì giữ nguyên cả mảng và đưa vào đề xuất.
+Thiếu hoặc sai kiểu
+Không đủ căn cứ nhập
+Không ghi đè, báo danh sách trường chưa điền.
+3.2.5 Các luồng thay thế
+A1. Task chuyển trạng thái trước khi kết quả về: ghi NOT_APPLIED, giữ dữ liệu, thông báo không áp dụng; không gửi email hoàn thành đổ dữ liệu. A2. Người dùng rời trang: worker tiếp tục; thông báo vẫn được tạo và email gửi cho người khởi chạy. A3. Người dùng mất quyền hoặc task đổi người xử lý: tái kiểm tra quyền khi áp dụng; mặc định không áp dụng nếu người khởi chạy không còn quyền sửa, chờ xử lý nghiệp vụ.
+A4. Sau khi draft đã commit nhưng email lỗi: giữ kết quả, chỉ retry email. A5. Người dùng bấm chạy lại sau trạng thái cuối: tạo request mới gắn request trước đó, chụp snapshot mới; không xóa lịch sử. A6. Có lỗi form schema: dừng, không gửi AI và hiển thị Biểu mẫu chưa sẵn sàng cho AI nhập thay.
+
+3.3 Kết nối vith agents API
+3.3.1 Thông tin chung và phạm vi hợp đồng
+Mã UC03. Backend CĐS VHT gọi dịch vụ vith-agents v0.1.0. URL UAT theo SRC03 là http://172.16.28.63:18080; chỉ là thông tin tài liệu, chưa kiểm tra kết nối. URL và thông tin xác thực phải cấu hình theo môi trường, không nhúng frontend.
+Thứ tự
+API đã có trong Swagger
+Request và response chính
+0
+GET /api/agents/health
+Vận hành kiểm tra dependency; không dùng làm bảo đảm job chắc chắn thành công.
+1
+POST /api/agents/files
+multipart/form-data; field bắt buộc upload. 201 trả id UUID và metadata file.
+2
+POST /api/agents/jobs
+JSON. 202 trả job_id, session_id, status; không trả dữ liệu form ngay.
+3
+GET /api/agents/jobs/{job_id}/status
+200 trả job_id, status; poll bằng job_id, không dùng session_id.
+4
+GET /api/agents/jobs/{job_id}/result
+200 trả job_id, session_id và structured_result hoặc free_form_output. Chỉ lấy khi COMPLETED.
+Các API sessions và RAG có trong Swagger nhưng không cần gọi trong luồng single_turn này. Các endpoint nghiệp vụ có mô tả 422 cho validation; lỗi mạng, 401/403, 404, 429 và 5xx được xử lý phòng vệ nhưng chưa phải hợp đồng chi tiết đã xác nhận từ Swagger.
+3.3.2 Ràng buộc payload
+Trường
+Quy tắc theo Swagger
+agent_code
+Bắt buộc; chuỗi 1–128 ký tự; lấy từ mapping backend.
+prompt
+Bắt buộc; chuỗi 1–32000 ký tự; sinh theo template được quản lý phiên bản.
+file_ids
+Mảng UUID, tối đa 50; mỗi UUID là id upload nhận được từ /files.
+mode
+Gửi rõ single_turn; không tạo phiên nhiều lượt.
+session_id
+Bỏ qua khi submit single_turn; lưu session_id trả về để truy vết.
+output_schema
+Bắt buộc theo thiết kế nhập form dù API cho phép bỏ; tự chứa theo Schema Object OpenAPI 3.1, không $ref.
+
+3.3 Dữ liệu trao đổi với AI
+3.3.3 Ví dụ payload và kết quả
+Ví dụ minh họa theo form giả định; không khẳng định đây là trường thực tế của Form_PDG. Chuỗi AGENT_PM_UAT phải được thay bằng mã agent đã được VHT AI xác nhận; file UUID phải lấy từ phản hồi upload.
+POST /api/agents/jobs
+{
+  "agent_code": "AGENT_PM_UAT",
+  "prompt": "Trich xuat ten nhiem vu va tong kinh phi tu ho so.",
+  "file_ids": ["550e8400-e29b-41d4-a716-446655440000"],
+  "mode": "single_turn",
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "mission.name": {
+        "type": ["string", "null"],
+        "description": "Ten nhiem vu; khong tim thay thi null"
+      },
+      "mission.totalBudget": {
+        "type": ["number", "null"],
+        "description": "Tong kinh phi VND; khong suy doan"
+      }
+    },
+    "required": ["mission.name", "mission.totalBudget"],
+    "additionalProperties": false
+  }
+}
+Đề xuất schema: yêu cầu xuất đủ key và cho phép null khi không tìm thấy để phân biệt thiếu dữ liệu nguồn với lỗi cấu trúc. Việc hỗ trợ type union cần kiểm chứng với đội AI trước baseline; nếu không hỗ trợ thì thống nhất schema nullable tương thích. Draft được phép thiếu trường bắt buộc nghiệp vụ; validation trình duyệt vẫn giữ nguyên.
+HTTP 202
+{"job_id":"880e8400-e29b-41d4-a716-446655440000",
+ "session_id":"990e8400-e29b-41d4-a716-446655440000",
+ "status":"PENDING"}
+
+GET /api/agents/jobs/{job_id}/result -> HTTP 200
+{"job_id":"880e8400-e29b-41d4-a716-446655440000",
+ "session_id":"990e8400-e29b-41d4-a716-446655440000",
+ "structured_result":{"mission.name":"Nhiem vu A",
+                      "mission.totalBudget":1500000000}}
+Map từ response.structured_result, không map trực tiếp toàn bộ response. Nếu chỉ có free_form_output, luồng nhập form phải báo kết quả sai hợp đồng và không tự phân tích text để ghi form.
+
+3.4 Xử lý nền và trạng thái
+3.4.1 Luồng xử lý của worker
+Bước
+Xử lý và checkpoint
+1 Tiếp nhận
+Kiểm tra quyền; lưu request và snapshot; tạo outbox job trong cùng giao dịch. Unique active key theo task instance và draft.
+2 Chuẩn bị
+Worker nhận lease; kiểm tra task; resolve prompt và schema; upload các file snapshot; lưu từng UUID và checksum.
+3 Submit
+Lưu SUBMITTING trước gọi POST /jobs. Khi nhận 202, lưu job_id và session_id ngay; chuyển AI_PENDING.
+4 Poll
+Đọc status, lưu last_polled_at, next_poll_at. PENDING/RUNNING thì lập lịch tiếp; COMPLETED thì lấy result.
+5 Lưu kết quả
+Chỉ một worker giữ lease lấy result. Lưu raw response mã hóa và checksum ngay sau nhận; sau đó validate và map.
+6 Áp dụng
+Khóa hoặc kiểm tra version draft, tái kiểm tra task/quyền, merge an toàn, ghi draft + trạng thái + notification outbox cùng giao dịch.
+7 Thông báo
+Sau commit: phát sự kiện UI và gửi email. Retry thông báo độc lập, không chạy lại AI.
+3.4.2 Trạng thái nội bộ đề xuất
+ACCEPTED → PREPARING → SUBMITTING → AI_PENDING → AI_RUNNING → RESULT_STORED → APPLYING → DRAFT_SAVED. Có thể bỏ qua AI_RUNNING nếu lần poll đầu đã COMPLETED. DRAFT_SAVED là mốc thành công nghiệp vụ; trạng thái AI COMPLETED tự nó chưa đủ.
+Các nhánh: FAILED khi lỗi xác định; SUBMIT_UNKNOWN khi POST bị mất phản hồi; DELAYED khi vượt thời gian dự kiến nhưng chưa có kết quả; NOT_APPLIED khi task hoặc quyền không còn hợp lệ; RESULT_UNCERTAIN khi lần lấy result mất phản hồi mà khả năng đọc lại chưa được xác nhận.
+Trạng thái email tách riêng: PENDING, SENT hoặc RETRY_EXHAUSTED. Trạng thái UI: Chờ xử lý, Đang xử lý, Xử lý lâu hơn dự kiến, Đã lưu nháp, Không áp dụng hoặc Xử lý lỗi. Status ngoài danh mục không tự coi là thành công; ghi lỗi hợp đồng và cảnh báo vận hành.
+
+3.4 Độ tin cậy và phục hồi
+3.4.3 Timeout và cơ chế thử lại
+Các giá trị sau là mặc định thiết kế đề xuất để rà soát với Tech Lead và VHT AI; thời gian 15–20 phút là dự kiến hiển thị theo yêu cầu, không phải cam kết SLA từ nhà cung cấp.
+Tình huống
+Quy tắc đề xuất
+Poll bình thường
+Mỗi 30 giây, có jitter ±5 giây; lưu next_poll_at, không giữ HTTP request từ UI chờ AI.
+Quá 20 phút
+Chuyển nhãn DELAYED, báo AI đang xử lý lâu hơn dự kiến; không tự tạo job mới.
+Hết 60 phút
+Dừng poll tự động, chuyển cần đối soát vận hành; job phía AI có thể vẫn chạy vì không có API cancel.
+Timeout từng HTTP call
+Connect 5 giây; read 30 giây cho jobs/status/result, 120 giây cho upload. Không đồng nhất timeout HTTP với thời gian job.
+GET status lỗi tạm thời
+Retry 3 lần với backoff 5, 15, 30 giây; sau đó giữ job và lên lịch poll tiếp trong ngân sách 60 phút.
+FAILED hoặc validation 422
+Không retry tự động cùng payload; hiển thị lỗi có mã request, cho nhập thủ công.
+POST jobs mất phản hồi
+SUBMIT_UNKNOWN; không blind retry vì Swagger chưa có idempotency hoặc API tra job bằng request_id.
+GET result mất phản hồi
+Không mặc định đọc lại an toàn; chuyển RESULT_UNCERTAIN và đối soát theo cam kết one-time read.
+3.4.4 Giới hạn bảo đảm cần nêu rõ
+SRC03 nói kết quả có thể chỉ đọc một lần; Swagger chưa bảo đảm đọc lại hoặc có cơ chế acknowledge. Nếu worker chết sau khi AI đã trả response nhưng trước khi lưu bền vững, backend có thể mất kết quả. Lưu raw response ngay và lease giảm rủi ro nhưng không loại bỏ được cửa sổ này. Cần đội AI xác nhận result đọc lặp hoặc cơ chế giữ kết quả để chốt khả năng phục hồi.
+Tương tự, không thể bảo đảm chỉ một job bên AI khi POST thành công nhưng response bị mất nếu dịch vụ không hỗ trợ idempotency/đối soát. Backend phải khóa yêu cầu mới trong trạng thái chưa xác định và có thao tác đối soát có audit; không báo rằng job phía AI đã bị hủy.
+
+3.5 Thiết kế dữ liệu
+Tên bảng và trường dưới đây là đề xuất logic cho phát triển; không phải mô hình CSDL hiện hữu đã kiểm chứng. UUID dùng cho request nội bộ; khóa task và form dùng kiểu tương ứng hệ thống hiện có.
+3.5.1 Các nhóm dữ liệu
+Đối tượng
+Trường chính
+Ràng buộc
+AI_AGENT_MAPPING
+role_code, environment, agent_code, enabled, config_version
+Chỉ một mapping đang bật cho mỗi vai trò trong môi trường.
+AI_FORM_REQUEST
+request_id, task_instance_id, process_definition_version, form_id, form_version, draft_id, initiator_id, role_code, agent_code
+Snapshot cấu hình theo lúc chạy; không đổi mapping giữa chừng.
+Theo dõi request
+status, external_status, job_id, session_id, created_at, deadline_at, next_poll_at, lease_until, retry_count, error_code
+job_id duy nhất nếu có; index status + next_poll_at; unique active key theo task và draft.
+Snapshot đầu vào
+draft_version, field_revision_map, form_schema_ref, prompt_version, file_manifest_ref, input_hash
+Immutable; file manifest chứa file version và checksum để không đọc nhầm file mới.
+AI_FORM_RESULT
+request_id, raw_result_ref, checksum, validation_report, proposed_patch, applied_fields, conflicts, result_received_at
+Một kết quả được áp dụng tối đa một lần theo request_id; bảo vệ raw result như hồ sơ nguồn.
+NOTIFICATION_OUTBOX
+event_id, request_id, draft_version, channel, recipient_id, recipient_email, status, attempts, next_retry_at
+Unique request_id + event_type + channel + recipient; lưu cùng commit draft.
+DRAFT hiện có
+draft_id, version, data, field_revision_map, updated_by, source, ai_request_id
+source=AI cho dữ liệu AI; ghi version mới và nguồn gốc từng trường.
+3.5.2 Giao dịch và chỉ mục
+Trong một transaction: tái kiểm tra task và quyền, compare draft version, áp dụng patch, tăng version, ghi kết quả đã áp dụng, chuyển DRAFT_SAVED, tạo outbox. Nếu conflict phiên bản, đọc lại và tính patch mới; tối đa 3 lần thử, sau đó giữ RESULT_STORED để vận hành áp dụng lại, không submit AI lại.
+Unique active key phải được bảo đảm bằng CSDL hoặc khóa phân tán có fencing, không chỉ disable nút UI. Worker lease hết hạn cho phép tiếp quản nhưng mọi bước ghi phải kiểm tra quyền sở hữu lease để ngăn worker cũ ghi muộn.
+
+3.6 Ánh xạ dữ liệu và API nội bộ
+3.6.1 Đặc tả ánh xạ form
+Nội dung
+Quy định
+Danh mục mapping
+Theo form_id + form_version + role_code; lưu source_key, target_key, kiểu, enum, quyền ghi và quy tắc transform.
+Khóa có dấu chấm
+Nếu form key là mission.name thì coi là key nguyên văn; chỉ giải thành đường dẫn lồng khi mapping xác định rõ.
+Số và ngày
+Chỉ nhận kiểu số hợp lệ; không tự đoán dấu phân cách. Ngày theo định dạng form đã quy định; timezone phải nhất quán.
+Dropdown hoặc radio
+Chỉ nhận mã option trong enum đã chụp. Nhãn hiển thị không tự đổi thành mã khi thiếu mapping.
+Trường dẫn xuất
+Tính lại bằng cơ chế form hiện có sau merge. Không dùng AI để ghi công thức, quyền, người ký hoặc trạng thái quy trình.
+Dữ liệu thiếu
+Null hoặc thiếu giá trị không ghi đè. Dữ liệu sai kiểu bị loại theo trường và có báo cáo; raw result sai cấu trúc thì dừng cả lần áp dụng.
+3.6.2 API backend nội bộ đề xuất
+Các endpoint sau là đề xuất xây mới của CĐS VHT, không nằm trong Swagger vith-agents. Frontend không được gửi agent_code, prompt hoặc danh sách file không được backend kiểm soát.
+API đề xuất
+Hành vi
+POST /api/tasks/{taskId}/ai-fill-requests
+Body: draftId, expectedDraftVersion, clientRequestId. 202 khi tạo; 200 khi trả request đang chạy cùng ngữ cảnh.
+GET /api/tasks/{taskId}/ai-fill-requests/current
+Trả request_id, trạng thái, started_at, message_code, draft_version, applied_count, conflict_count; không trả bí mật hoặc raw prompt.
+GET /api/ai-fill-requests/{requestId}
+Xem chi tiết đề xuất và lỗi theo quyền task; 403 nếu không có quyền.
+POST /api/ai-fill-requests/{requestId}/apply-proposals
+Người dùng chọn trường xung đột để áp dụng; kiểm tra expectedDraftVersion; ghi audit và draft mới.
+Lỗi nội bộ: 403 không có quyền; 409 draft version đổi hoặc task không còn hoạt động; 422 cấu hình/schema/file không hợp lệ; 503 cấu hình tích hợp chưa sẵn sàng. UI ưu tiên đọc trạng thái sau reconnect; có thể dùng SSE/WebSocket hiện có, fallback poll 30 giây.
+
+3.7 Thông báo và tiêu chí phi chức năng
+3.7.1 Thông báo trên màn hình và email
+Thông báo hoàn thành trong ứng dụng được lưu bền vững cho người khởi chạy, kể cả khi không online. Nếu có xung đột hoặc thiếu dữ liệu, thông báo phải phản ánh số trường đã điền và số trường cần kiểm tra, không khẳng định mọi trường đã đầy đủ.
+Tiêu đề email: [CĐS VHT] AI đã hoàn thành nhập dữ liệu E-form — {Tên công việc}. Nội dung: AI đã hoàn thành xử lý và hệ thống đã tự động lưu nháp E-form cho công việc {Tên công việc}, hồ sơ {Mã hồ sơ}, lúc {Thời điểm}. Số trường đã điền: {n}; số trường cần rà soát: {m}. Vui lòng mở công việc để kiểm tra trước khi hoàn thành. Kèm liên kết nội bộ đến task; khi mở vẫn kiểm tra đăng nhập và quyền.
+Không đưa toàn bộ dữ liệu hồ sơ hoặc tệp đính kèm vào email. Người nhận lấy từ tài khoản người khởi chạy trên hệ thống, không nhận email tùy ý từ frontend. Nếu thiếu email, vẫn lưu thông báo ứng dụng và ghi EMAIL_UNAVAILABLE cho vận hành. Đề xuất retry email tối đa 5 lần, cách nhau 1, 5, 15, 30, 60 phút; mail lỗi không làm rollback draft.
+3.7.2 Yêu cầu phi chức năng đề xuất
+Mã
+Chỉ số và ngưỡng kiểm chứng
+Phương pháp
+NFR01
+95% request nội bộ được ghi nhận hoặc trả lỗi trong ≤3 giây với 20 người bấm đồng thời; không tính thời gian lưu draft trước đó.
+Load test trên UAT
+NFR02
+100% thử truy cập chéo hồ sơ không có quyền bị từ chối ở create, status, result và apply.
+Security test
+NFR03
+Sau restart worker, request có job_id được lên lịch lại trong ≤60 giây; không submit lại job đã biết.
+Fault injection
+NFR04
+100% ca lưu draft lỗi không phát thông báo hoàn thành; 100% ca retry apply không nhân đôi dữ liệu.
+Integration test
+NFR05
+Thông báo ứng dụng xuất hiện trong ≤60 giây sau commit draft khi kết nối hoạt động; email đưa vào hàng đợi trong ≤60 giây.
+Test theo timestamp
+NFR06
+Log vận hành không chứa token, nội dung raw file hoặc toàn bộ raw prompt; 100% request có correlation ID.
+Inspection và test log
+
+4 Thiết kế dùng chung và tái sử dụng
+4.1 Các thành phần tái sử dụng
+Thành phần
+Cách sử dụng
+Phân quyền hiện có
+Dùng cùng kiểm tra quyền User Task và hồ sơ cho cả UI, API, worker và link email.
+Dịch vụ E-form draft
+Tái sử dụng lưu nháp, version, validation ở chế độ draft và audit; không ghi thẳng bỏ qua rule của form.
+Adapter vith-agents
+Dùng chung client upload, submit, status, result; cấu hình timeout và môi trường tập trung.
+Bộ ánh xạ form
+Quản lý schema và mapping theo form version; chỉ bật AI nhập thay khi mapping đã được kiểm thử.
+Notification outbox
+Tái sử dụng hạ tầng gửi thông báo và email, bổ sung loại sự kiện AI_DRAFT_SAVED và khóa chống gửi trùng.
+Giám sát nền
+Tái sử dụng scheduler, lease, retry và dashboard vận hành nếu hiện có; Tech Lead xác nhận AS01.
+4.2 Quy tắc triển khai tương thích
+Task không có thuộc tính AI giữ luồng hiện có. Triển khai thay đổi CSDL trước khi bật chức năng; cấu hình mapping theo môi trường; chỉ bật với form đã có output_schema và kiểm thử. Đề xuất feature flag theo môi trường/quy trình để mở dần.
+Rollback tắt tạo yêu cầu mới bằng feature flag; request đã có job_id tiếp tục được theo dõi hoặc đối soát có kiểm soát. Không xóa bảng request/result/outbox khi rollback giao diện. Phiên bản quy trình cũ và form snapshot phải tiếp tục đọc được cho request đang chạy.
+4.3 Điều kiện hoàn thành phát triển
+Có đủ mapping cho 5 vai trò; API UAT truy cập được từ backend; xác thực và quyền file được chốt; form pilot có schema/mapping; các test quan trọng ở phần 6 đạt; xử lý được trường hợp chạy nền khi đóng trang, lưu nháp lỗi, xung đột và submit chưa xác định. Không dùng dữ liệu thật vượt quyền để kiểm thử.
+
+5 Thiết kế đảm bảo quản trị dữ liệu
+5.1 Quản trị và bảo mật dữ liệu
+Dữ liệu trọng yếu của đợt thay đổi gồm danh tính người khởi chạy, hồ sơ nguồn, nội dung E-form, kết quả AI và lịch sử áp dụng. Chủ dữ liệu nghiệp vụ là đơn vị quản lý hồ sơ tương ứng; đầu mối quản trị kỹ thuật và thời hạn lưu cụ thể do dự án xác nhận. AI chỉ được nhận file thuộc hồ sơ và phạm vi người dùng được phép xử lý.
+Backend giữ thông tin xác thực, dùng secret store hiện có; URL và credential tách theo môi trường. Swagger chưa khai báo securitySchemes nên không kết luận API được phép gọi ẩn danh. Cần thống nhất cơ chế xác thực, mã hóa đường truyền, kiểm soát mạng và phân loại dữ liệu trước tích hợp production.
+5.2 Chất lượng dữ liệu
+Luật
+Cách kiểm tra
+Đúng cấu hình
+Vai trò thuộc 5 mã; agent mapping đang bật; task và form snapshot khớp phiên bản.
+Đúng cấu trúc
+structured_result đúng schema; key đích trong allowlist, kiểu/enum/format hợp lệ.
+Toàn vẹn
+request trỏ đúng task, draft, hồ sơ và file version; job_id không gắn chéo request.
+Duy nhất
+Một request đang hoạt động trên task/draft; một lần apply có hiệu lực; outbox có khóa sự kiện.
+Bảo toàn
+Giữ trường người dùng sửa; kết quả muộn không cập nhật task đã kết thúc; lưu nguồn gốc AI theo trường.
+Đúng thời điểm
+Chỉ báo hoàn thành sau commit draft; ghi thời gian UTC, hiển thị theo múi giờ cấu hình người dùng.
+5.3 Quản lý siêu dữ liệu và vận hành
+Lưu process/form/prompt/mapping version, nguồn file và checksum, agent_code, người thực hiện, thời điểm nhận kết quả, thời điểm lưu draft và gửi thông báo. Dùng request_id làm correlation ID; log kỹ thuật chỉ chứa metadata cần thiết và mã lỗi đã làm sạch.
+Đề xuất giữ request/result theo chính sách lưu hồ sơ của dự án; log kỹ thuật 90 ngày, pending outbox giữ đến khi xử lý xong, sau đó lưu lịch sử theo chính sách. Các giá trị này cần chủ dữ liệu phê duyệt. Backup theo cơ chế CSDL và kho file hiện có; trước nghiệm thu phải thử khôi phục request, raw result và draft cùng thời điểm nhất quán.
+Cảnh báo vận hành cho SUBMIT_UNKNOWN, RESULT_UNCERTAIN, request quá 20 phút, quá 60 phút, lỗi mapping và email hết retry. Tài liệu API hiện tại chưa đủ để khẳng định có thể phục hồi tự động mọi trường hợp mất phản hồi.
+
+6 Phụ lục kiểm chứng và truy vết
+6.1 Ma trận yêu cầu và kiểm thử
+TC
+FR liên quan
+Tình huống và kết quả cần đạt
+01
+001–003
+Thử lần lượt 5 giá trị AI: nhận diện đúng và chọn đúng agent_code đã cấu hình.
+02
+002
+Thiếu/rỗng AI không bật; mã sai và trùng property bị chặn lưu/triển khai.
+03
+004
+Có/không form; có/không quyền; task kết thúc: nút và API đều kiểm soát đúng.
+04
+005–006
+Bấm AI nhập thay: lưu dữ liệu đang nhập, tạo request, trả ngay, hiện loading và nội dung 15–20 phút.
+05
+007
+Đóng trình duyệt và mở lại: job tiếp tục, trạng thái được khôi phục, không tạo thêm job.
+06
+008
+51 file, UUID sai, prompt quá 32000 ký tự, schema sai: chặn trước submit; file hợp lệ dùng đúng field upload.
+07
+009
+PENDING → RUNNING → COMPLETED: chỉ gọi result sau hoàn thành; FAILED không lấy result.
+08
+010–012
+AI COMPLETED nhưng DB lỗi: không báo thành công; retry apply từ kết quả đã lưu, không submit lại.
+09
+013
+Người dùng sửa và lưu trong lúc AI chạy: giữ giá trị người dùng; đề xuất AI lưu riêng.
+10
+013
+Đang gõ chưa lưu lúc kết quả đến: UI giữ buffer; không reset form; hợp nhất an toàn.
+11
+014
+Bấm đồng thời từ hai tab và hai worker: chỉ một request hoạt động; response cùng request_id.
+12
+015
+Task hoàn thành/hủy, đổi form hoặc mất quyền giữa chừng: NOT_APPLIED và không ghi draft.
+13
+016
+Restart sau upload, sau submit có job_id, sau nhận result, sau commit: tiếp tục đúng checkpoint.
+14
+016
+Mất phản hồi POST hoặc result: vào trạng thái chưa xác định, không blind retry sinh job/dữ liệu trùng.
+15
+017
+Truy vết đủ task/form/agent/job; log không chứa token hoặc toàn bộ nội dung hồ sơ.
+16
+011,018
+Draft commit thành công nhưng email lỗi: UI báo đúng, chỉ retry email; người nhận đúng người khởi chạy.
+
+6 Phụ lục nghiệm thu và nội dung cần chốt
+6.2 Kiểm thử bổ sung và điều kiện nghiệm thu
+TC17: kết quả chứa key lạ, sai enum, sai ngày, số không hợp lệ, null, bảng lặp và trường chữ ký — xử lý theo allowlist và chính sách merge. TC18: quá 20 phút hiện DELAYED; không sinh job mới; quá 60 phút chuyển đối soát. TC19: chạy lại sau trạng thái cuối dùng snapshot mới và vẫn giữ lịch sử. TC20: thực hiện NFR01–NFR06 với log đo, tải và môi trường được ghi nhận.
+Đạt nghiệm thu khi TC01–TC20 đạt; cả năm vai trò được kiểm tra trên môi trường tích hợp; không còn lỗi làm mất dữ liệu người dùng, ghi chéo hồ sơ hoặc báo thành công khi chưa lưu draft. Bằng chứng cần có request_id, job_id, version draft trước/sau, thời điểm và thông báo; không thu thập token trong biên bản.
+6.3 Danh sách cần xác nhận trước baseline
+Mã
+Nội dung và đề xuất hiện tại
+Đầu mối
+O01
+agent_code thực tế của 5 vai trò, tên vai trò nghiệp vụ và mapping từng môi trường. Chưa giả định role_code bằng agent_code.
+VHT AI và BA
+O02
+Xác thực, bảo vệ mạng, TTL file/result, loại và dung lượng file tối đa; bổ sung hợp đồng đối soát submit và đọc result lặp.
+VHT AI và Tech Lead
+O03
+Chấp thuận loading không chặn nhập; AI chỉ điền trường trống, giữ trường đã nhập; xử lý đổi người nhận task và danh mục form pilot.
+PM và nghiệp vụ
+O04
+Thông số poll/timeout/retry, NFR, giới hạn đồng thời, chính sách lưu dữ liệu và khả năng tái sử dụng AS01.
+Tech Lead và vận hành
+6.4 Báo cáo mức độ hoàn chỉnh
+Cấu trúc BM.04: 6/6 phần đã có nội dung. Yêu cầu chức năng: 18/18 có mã, câu điều kiện và hành vi, SHALL, nguồn, phương pháp kiểm chứng và ưu tiên; 0 yêu cầu thiếu nguồn hoặc thiếu phương pháp kiểm chứng. Yêu cầu phi chức năng: 6/6 có chỉ số và phương pháp kiểm chứng, đều là ngưỡng đề xuất chờ thống nhất. Không có kết quả kiểm thử thực tế được tuyên bố trong tài liệu này.
+Có 4 nhóm quyết định mở O01–O04 và 2 giả định AS01–AS02; chúng là điều kiện tích hợp hoặc phê duyệt, không được coi là đã hoàn tất chỉ vì không để trống văn bản. Tỷ lệ TBD trên yêu cầu chức năng không phản ánh đầy đủ rủi ro hợp đồng API; O01–O02 cần được chốt trước kiểm thử tích hợp. Thứ tự rà soát: BA/nghiệp vụ và VHT AI → Tech Lead/bảo mật/vận hành → PM và người phê duyệt.
+SRS này cần người duyệt trước khi ký duyệt chính thức. Xem báo cáo mức độ hoàn chỉnh để biết thứ tự ưu tiên review.

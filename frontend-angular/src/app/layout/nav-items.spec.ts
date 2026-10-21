@@ -20,7 +20,13 @@ describe('visibleNavItems', () => {
     const items = visibleNavItems('qlnvkhcn', (code) => code === 'NV01');
     expect(items.map((item) => item.key)).toEqual(['nvkhcn']);
     const group = items[0];
-    expect('children' in group && group.children.map((leaf) => leaf.key)).toEqual(['nhiem-vu']);
+    expect('children' in group && group.children.map((leaf) => leaf.key)).toEqual([
+      'nhiem-vu',
+      'rd-lifecycle',
+      'spdv',
+      'shtt',
+      'kho-tai-lieu',
+    ]);
   });
 
   it('keeps ungated leaves', () => {

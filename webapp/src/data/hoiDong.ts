@@ -1,25 +1,53 @@
-// Hội đồng (HĐXD) — thực thể quản lý Hội đồng xét duyệt đề tài KHCN.
-// Tự động thành lập khi hồ sơ đến bước Họp (Task_7 / Task_10) trong RD02.02.
+// Hội đồng (HĐXD) — quản lý Hội đồng xét duyệt đề tài KHCN (RD02.02).
+// Quy tắc nghiệp vụ (mock):
+// - Thành phần bắt buộc: CT + 02 UVPB + Thư ký KH
+// - Quorum: ≥ 2/3 thành viên có mặt + đủ 4 vai trò bắt buộc có mặt
+// - Điểm TB thang 0–100, làm tròn 2 số thập phân, ngưỡng cố định 70
+// - Đạt phiên 2 = đủ phiếu bắt buộc (CT+2 UVPB+TK đã gửi) VÀ TB ≥ 70
+// - Phiên 1: chỉ “Đã họp” + biên bản + danh sách điều chỉnh
+// - Phiên 2: Đạt / Không đạt; <70 → trả về bước 15
 
-/** Vai trò trong Hội đồng xét duyệt. */
+/** Vai trò trong Hội đồng xét duyệt (code nội bộ). */
 export type VaiTroHoiDong =
   | 'CHU_TICH'     // Chủ tịch
-  | 'PHAN_BIEN_1'  // Phản biện 1 – chuyên KHCN
-  | 'PHAN_BIEN_2'  // Phản biện 2 – chuyên TCKT/tiến độ
-  | 'UY_VIEN'      // Ủy viên (3–5 người)
+  | 'PHAN_BIEN_1'  // UVPB 1
+  | 'PHAN_BIEN_2'  // UVPB 2
+  | 'UY_VIEN'      // Ủy viên
   | 'THU_KY_KH'    // Thư ký Khoa học
 
-export const VAI_TRO_HD: Record<VaiTroHoiDong, { ten: string; mau: string; thuTu: number }> = {
-  CHU_TICH:    { ten: 'Chủ tịch',      mau: 'red',    thuTu: 1 },
-  PHAN_BIEN_1: { ten: 'Phản biện 1',   mau: 'blue',   thuTu: 2 },
-  PHAN_BIEN_2: { ten: 'Phản biện 2',   mau: 'cyan',   thuTu: 3 },
-  UY_VIEN:     { ten: 'Ủy viên',       mau: 'green',  thuTu: 4 },
-  THU_KY_KH:   { ten: 'Thư ký KH',     mau: 'orange', thuTu: 5 },
+export const VAI_TRO_BAT_BUOC: VaiTroHoiDong[] = [
+  'CHU_TICH',
+  'PHAN_BIEN_1',
+  'PHAN_BIEN_2',
+  'THU_KY_KH',
+]
+
+export const NGUONG_DIEM_HD = 70
+
+export const VAI_TRO_HD: Record<
+  VaiTroHoiDong,
+  { ten: string; mau: string; thuTu: number; batBuoc: boolean }
+> = {
+  CHU_TICH: { ten: 'Chủ tịch', mau: 'red', thuTu: 1, batBuoc: true },
+  PHAN_BIEN_1: { ten: 'UVPB 1', mau: 'blue', thuTu: 2, batBuoc: true },
+  PHAN_BIEN_2: { ten: 'UVPB 2', mau: 'cyan', thuTu: 3, batBuoc: true },
+  UY_VIEN: { ten: 'Ủy viên', mau: 'green', thuTu: 4, batBuoc: false },
+  THU_KY_KH: { ten: 'Thư ký KH', mau: 'orange', thuTu: 5, batBuoc: true },
+}
+
+export type TrangThaiPhieuDG = 'chua_nop' | 'da_gui' | 'thu_hoi'
+
+export interface PhieuDanhGiaTV {
+  trangThai: TrangThaiPhieuDG
+  /** Điểm quy đổi thang 0–100 */
+  diemQuyDoi: number
+  daKySo: boolean
+  /** Thư ký KH đã duyệt phiếu → không còn thu hồi */
+  daDuyetBoiThuKy: boolean
 }
 
 export interface ThanhVienHoiDong {
   id: string
-  /** Ánh xạ đến AppUser.id — undefined nếu là thành viên tự do */
   userId?: string
   hoTen: string
   vaiTro: VaiTroHoiDong
@@ -29,17 +57,66 @@ export interface ThanhVienHoiDong {
   email?: string
   dienThoai?: string
   kinhNghiemNam?: number
-  /** Trạng thái tham gia họp */
   trangThai: 'duKien' | 'chapNhan' | 'tuChoi' | 'vangMat'
+  /** Có mặt tại phiên họp */
+  coMatHop?: boolean
+  /** Điểm TB thành viên (0–100) — mirror từ phiếu nếu có */
   diemTrungBinh?: number
+  phieuDanhGia?: PhieuDanhGiaTV
   yKienDongGop?: string
+}
+
+export type KetQuaHoiDong = 'DAT' | 'KHONG_DAT'
+
+export type KetQuaBanThamDinh = 'DAT' | 'CHUA_DAT'
+
+/** Trạng thái tham dự của 1 thành viên trong phiên họp. */
+export type TrangThaiThamGiaPhien = 'tham_gia' | 'khong_tham_gia'
+
+export type TrangThaiPhienHop =
+  | 'nhap'
+  | 'da_moi'
+  | 'dang_hop'
+  | 'da_ket_thuc'
+  | 'huy'
+
+/** Điểm danh 1 thành viên trong phiên họp (tích chọn tham gia / không). */
+export interface DiemDanhPhienHop {
+  thanhVienId: string
+  trangThai: TrangThaiThamGiaPhien
+}
+
+/**
+ * Phiên họp hội đồng — bắt buộc khai báo thời gian, địa điểm
+ * và tích chọn từng thành viên tham gia / không tham gia.
+ */
+export interface PhienHopHoiDong {
+  id: string
+  /** Nhãn hiển thị, vd. "Họp phiên 1", "Họp bổ sung" */
+  ten: string
+  /** Liên kết với phiên nghiệp vụ 1/2 của HĐ (nếu có) */
+  loaiPhien: 1 | 2 | 'khac'
+  /** ISO datetime bắt đầu (bắt buộc) */
+  thoiGian: string
+  /** Địa điểm họp (bắt buộc) */
+  diaDiem: string
+  trangThai: TrangThaiPhienHop
+  /** Điểm danh đủ thành viên HĐ */
+  diemDanh: DiemDanhPhienHop[]
+  ghiChu?: string
+  ngayTao: string
+}
+
+export interface TienDeThamDinh4Ban {
+  khcn: KetQuaBanThamDinh
+  tckt: KetQuaBanThamDinh
+  ms: KetQuaBanThamDinh
+  ns: KetQuaBanThamDinh
 }
 
 export interface HoiDong {
   id: string
-  /** FK về HoSo.id */
   maHoSo: string
-  /** FK về NhiemVu.ma */
   maNhiemVu: string
   tenDeTai: string
   linhVucNghienCuu: string[]
@@ -49,15 +126,21 @@ export interface HoiDong {
   diaDiem?: string
   trangThai: 'sapLap' | 'dangHop' | 'daKetThuc' | 'huyBo'
   thanhVien: ThanhVienHoiDong[]
+  /** Danh sách phiên họp đã lập (thời gian / địa điểm / điểm danh) */
+  phienHop?: PhienHopHoiDong[]
   bienBanHopFile?: string
-  ketQuaDanhGia?: 'DAT' | 'CANH_CAO' | 'KHDAT'
+  /** Phiên 1: danh sách nội dung cần điều chỉnh / làm rõ */
+  danhSachDieuChinh?: string[]
+  /** Điểm TB hội đồng (0–100, 2 số thập phân) */
+  diemTrungBinhHoiDong?: number
+  ketQuaDanhGia?: KetQuaHoiDong
   tomTatKetLuan?: string
   ngayKetThuc?: string
+  /** Tiền đề mở phiên 2: thẩm định song song 4 ban */
+  tienDeThamDinh?: TienDeThamDinh4Ban
+  /** Cờ mock: không đạt → trả về bước 15 */
+  traVeBuoc15?: boolean
 }
-
-// ---------------------------------------------------------------------------
-// Experts pool — nguồn thành viên có lý lịch khoa học
-// ---------------------------------------------------------------------------
 
 export interface ExpertProfile {
   userId: string
@@ -69,9 +152,7 @@ export interface ExpertProfile {
   kinhNghiemNam: number
 }
 
-/** Pool experts cho demo Hội đồng — đa dạng đơn vị + lĩnh vực */
 export const EXPERT_POOL: ExpertProfile[] = [
-  // TT Nghiên cứu Vô tuyến (2 người)
   {
     userId: 'EXP-001',
     hoTen: 'PGS.TS. Nguyễn Văn An',
@@ -90,7 +171,6 @@ export const EXPERT_POOL: ExpertProfile[] = [
     linhVucChuyenMon: ['Vô tuyến', 'Xử lý tín hiệu', 'DSP'],
     kinhNghiemNam: 12,
   },
-  // TT Nghiên cứu Điều khiển (2 người)
   {
     userId: 'EXP-003',
     hoTen: 'GS.TSKH. Lê Đình Cường',
@@ -109,7 +189,6 @@ export const EXPERT_POOL: ExpertProfile[] = [
     linhVucChuyenMon: ['AI', 'Machine Learning', 'Điều khiển'],
     kinhNghiemNam: 10,
   },
-  // TT Nghiên cứu Vật liệu (2 người)
   {
     userId: 'EXP-005',
     hoTen: 'PGS.TS. Hoàng Thị Eva',
@@ -128,7 +207,6 @@ export const EXPERT_POOL: ExpertProfile[] = [
     linhVucChuyenMon: ['Vật liệu', 'Cơ khí chính xác'],
     kinhNghiemNam: 9,
   },
-  // TT Nghiên cứu Tác chiến Điện tử (2 người)
   {
     userId: 'EXP-007',
     hoTen: 'GS.TS. Bùi Xuân Lai',
@@ -147,7 +225,6 @@ export const EXPERT_POOL: ExpertProfile[] = [
     linhVucChuyenMon: ['Tác chiến Điện tử', 'Mô phỏng'],
     kinhNghiemNam: 11,
   },
-  // Ban KHCN (2 người)
   {
     userId: 'EXP-009',
     hoTen: 'PGS.TS. Trịnh Đình Long',
@@ -166,7 +243,6 @@ export const EXPERT_POOL: ExpertProfile[] = [
     linhVucChuyenMon: ['Quản lý KHCN', 'Tiêu chuẩn'],
     kinhNghiemNam: 8,
   },
-  // TP Tài chính Kế toán (2 người)
   {
     userId: 'EXP-011',
     hoTen: 'ThS. Lê Thị Mai Lan',
@@ -185,7 +261,6 @@ export const EXPERT_POOL: ExpertProfile[] = [
     linhVucChuyenMon: ['Tài chính', 'Quản lý dự án', 'Đấu thầu'],
     kinhNghiemNam: 7,
   },
-  // TP Nhân sự (1 người)
   {
     userId: 'EXP-013',
     hoTen: 'ThS. Phạm Thị Ngọc',
@@ -195,7 +270,6 @@ export const EXPERT_POOL: ExpertProfile[] = [
     linhVucChuyenMon: ['Nhân sự', 'Đào tạo', 'Quản lý'],
     kinhNghiemNam: 12,
   },
-  // Ban KHCN Tập đoàn (2 người)
   {
     userId: 'EXP-014',
     hoTen: 'GS.TS. Cao Minh Thắng',
@@ -216,8 +290,142 @@ export const EXPERT_POOL: ExpertProfile[] = [
   },
 ]
 
+function round2(n: number): number {
+  return Math.round(n * 100) / 100
+}
+
+export function kiemTraThanhPhanBatBuoc(hd: HoiDong): {
+  ok: boolean
+  thieu: VaiTroHoiDong[]
+} {
+  const present = new Set(hd.thanhVien.map((t) => t.vaiTro))
+  const thieu = VAI_TRO_BAT_BUOC.filter((v) => !present.has(v))
+  return { ok: thieu.length === 0, thieu }
+}
+
+/** Quorum: ≥ ceil(2/3 tổng TV) có mặt VÀ 4 vai trò bắt buộc đều có mặt. */
+export function kiemTraQuorum(hd: HoiDong): {
+  ok: boolean
+  soCoMat: number
+  canThiet: number
+  thieuVaiTroBatBuoc: VaiTroHoiDong[]
+} {
+  const total = hd.thanhVien.length
+  const canThiet = total === 0 ? 0 : Math.ceil((total * 2) / 3)
+  const soCoMat = hd.thanhVien.filter((t) => t.coMatHop).length
+  const thieuVaiTroBatBuoc = VAI_TRO_BAT_BUOC.filter(
+    (v) => !hd.thanhVien.some((t) => t.vaiTro === v && t.coMatHop),
+  )
+  return {
+    ok: soCoMat >= canThiet && thieuVaiTroBatBuoc.length === 0,
+    soCoMat,
+    canThiet,
+    thieuVaiTroBatBuoc,
+  }
+}
+
+export function tinhDiemTrungBinh(hd: HoiDong): number | undefined {
+  const scores = hd.thanhVien
+    .filter((t) => {
+      const st = t.phieuDanhGia?.trangThai
+      if (st === 'chua_nop' || st === 'thu_hoi') return false
+      if (st === 'da_gui') return true
+      return typeof t.diemTrungBinh === 'number'
+    })
+    .map((t) => t.phieuDanhGia?.diemQuyDoi ?? t.diemTrungBinh)
+    .filter((d): d is number => typeof d === 'number' && !Number.isNaN(d))
+  if (!scores.length) return undefined
+  return round2(scores.reduce((a, b) => a + b, 0) / scores.length)
+}
+
+/** Đủ phiếu bắt buộc: CT + 2 UVPB + TK đã gửi phiếu. */
+export function duPhieuBatBuoc(hd: HoiDong): boolean {
+  return VAI_TRO_BAT_BUOC.every((v) =>
+    hd.thanhVien.some(
+      (t) => t.vaiTro === v && t.phieuDanhGia?.trangThai === 'da_gui',
+    ),
+  )
+}
+
+export function coTheMoPhien2(hd: HoiDong): boolean {
+  const t = hd.tienDeThamDinh
+  if (!t) return false
+  return t.khcn === 'DAT' && t.tckt === 'DAT' && t.ms === 'DAT' && t.ns === 'DAT'
+}
+
+export function danhGiaKetQua(hd: HoiDong): {
+  ketQua: KetQuaHoiDong | undefined
+  diemTB: number | undefined
+  traVeBuoc15: boolean
+  lyDo?: string
+} {
+  if (hd.phiEn !== 2) {
+    return {
+      ketQua: undefined,
+      diemTB: tinhDiemTrungBinh(hd),
+      traVeBuoc15: false,
+      lyDo: 'Phiên 1 không chấm Đạt/Không đạt — chỉ lập biên bản & danh sách điều chỉnh.',
+    }
+  }
+  const diemTB = tinhDiemTrungBinh(hd)
+  if (diemTB === undefined) {
+    return { ketQua: undefined, diemTB, traVeBuoc15: false, lyDo: 'Chưa có phiếu điểm.' }
+  }
+  const duPhieu = duPhieuBatBuoc(hd)
+  if (duPhieu && diemTB >= NGUONG_DIEM_HD) {
+    return { ketQua: 'DAT', diemTB, traVeBuoc15: false }
+  }
+  const lyDo = !duPhieu
+    ? 'Thiếu phiếu bắt buộc (CT + 02 UVPB + Thư ký KH).'
+    : `Điểm TB ${diemTB.toFixed(2)} < ${NGUONG_DIEM_HD}.`
+  return { ketQua: 'KHONG_DAT', diemTB, traVeBuoc15: true, lyDo }
+}
+
+export function coTheThuHoiPhieu(tv: ThanhVienHoiDong): boolean {
+  const p = tv.phieuDanhGia
+  return Boolean(p && p.trangThai === 'da_gui' && !p.daDuyetBoiThuKy)
+}
+
+export const TRANG_THAI_PHIEN_HOP: Record<
+  TrangThaiPhienHop,
+  { label: string; color: string }
+> = {
+  nhap: { label: 'Nháp', color: 'default' },
+  da_moi: { label: 'Đã mời', color: 'blue' },
+  dang_hop: { label: 'Đang họp', color: 'processing' },
+  da_ket_thuc: { label: 'Đã kết thúc', color: 'green' },
+  huy: { label: 'Hủy', color: 'red' },
+}
+
+/** Kiểm tra phiên họp đã khai báo đủ thời gian, địa điểm và điểm danh mọi thành viên. */
+export function kiemTraPhienHopHopLe(
+  ph: Pick<PhienHopHoiDong, 'thoiGian' | 'diaDiem' | 'diemDanh'>,
+  thanhVienIds: string[],
+): { ok: boolean; loi: string[] } {
+  const loi: string[] = []
+  if (!ph.thoiGian?.trim()) loi.push('Chưa khai báo thời gian họp')
+  if (!ph.diaDiem?.trim()) loi.push('Chưa khai báo địa điểm họp')
+  const map = new Map(ph.diemDanh.map((d) => [d.thanhVienId, d.trangThai]))
+  const thieu = thanhVienIds.filter((id) => !map.has(id))
+  if (thieu.length) {
+    loi.push(`Chưa tích chọn tham gia/không cho ${thieu.length} thành viên`)
+  }
+  return { ok: loi.length === 0, loi }
+}
+
+export function demThamGiaPhien(ph: PhienHopHoiDong): {
+  thamGia: number
+  khongThamGia: number
+} {
+  return {
+    thamGia: ph.diemDanh.filter((d) => d.trangThai === 'tham_gia').length,
+    khongThamGia: ph.diemDanh.filter((d) => d.trangThai === 'khong_tham_gia')
+      .length,
+  }
+}
+
 // ---------------------------------------------------------------------------
-// Seed data — Hội đồng mock cho demo
+// Seed
 // ---------------------------------------------------------------------------
 
 export const seedHoiDong: HoiDong[] = [
@@ -231,7 +439,17 @@ export const seedHoiDong: HoiDong[] = [
     ngayThanhLap: '2026-07-20',
     ngayHopDuKien: '2026-07-28',
     diaDiem: 'Phòng họp A3 - Tầng 3, Trụ sở VHT',
-    trangThai: 'sapLap',
+    trangThai: 'daKetThuc',
+    ngayKetThuc: '2026-07-28',
+    bienBanHopFile: 'BB-HĐXD-P1-HS-2026-043.pdf',
+    danhSachDieuChinh: [
+      'Bổ sung phân tích rủi ro kỹ thuật cho module workflow',
+      'Làm rõ phương án tích hợp Camunda 8 với hệ thống VO',
+      'Điều chỉnh dự toán nhân công giai đoạn triển khai',
+    ],
+    tomTatKetLuan:
+      'Phiên 1 hoàn thành. Hội đồng thống nhất danh sách nội dung cần điều chỉnh trước khi thẩm định 4 ban và họp phiên 2.',
+    diemTrungBinhHoiDong: undefined,
     thanhVien: [
       {
         id: 'TV-001',
@@ -244,7 +462,7 @@ export const seedHoiDong: HoiDong[] = [
         email: 'longtd@viettel.com.vn',
         kinhNghiemNam: 20,
         trangThai: 'chapNhan',
-        diemTrungBinh: 8.5,
+        coMatHop: true,
       },
       {
         id: 'TV-002',
@@ -257,7 +475,7 @@ export const seedHoiDong: HoiDong[] = [
         email: 'thangcm@viettel.com.vn',
         kinhNghiemNam: 24,
         trangThai: 'chapNhan',
-        diemTrungBinh: 9.0,
+        coMatHop: true,
       },
       {
         id: 'TV-003',
@@ -270,7 +488,7 @@ export const seedHoiDong: HoiDong[] = [
         email: 'lanltm@viettel.com.vn',
         kinhNghiemNam: 14,
         trangThai: 'chapNhan',
-        diemTrungBinh: 8.0,
+        coMatHop: true,
       },
       {
         id: 'TV-004',
@@ -282,7 +500,8 @@ export const seedHoiDong: HoiDong[] = [
         linhVucChuyenMon: ['Điều khiển', 'AI', 'Hệ thống nhúng'],
         email: 'cuongld@viettel.com.vn',
         kinhNghiemNam: 25,
-        trangThai: 'duKien',
+        trangThai: 'chapNhan',
+        coMatHop: true,
       },
       {
         id: 'TV-005',
@@ -294,7 +513,8 @@ export const seedHoiDong: HoiDong[] = [
         linhVucChuyenMon: ['Vô tuyến', 'Truyền thông', 'Anten'],
         email: 'annv@viettel.com.vn',
         kinhNghiemNam: 18,
-        trangThai: 'duKien',
+        trangThai: 'chapNhan',
+        coMatHop: false,
       },
       {
         id: 'TV-006',
@@ -307,6 +527,7 @@ export const seedHoiDong: HoiDong[] = [
         email: 'ducpm@viettel.com.vn',
         kinhNghiemNam: 10,
         trangThai: 'tuChoi',
+        coMatHop: false,
         yKienDongGop: 'Lịch họp trùng với công tác triển khai dự án RD.2026.018',
       },
       {
@@ -320,22 +541,219 @@ export const seedHoiDong: HoiDong[] = [
         email: 'sonnt@viettel.com.vn',
         kinhNghiemNam: 8,
         trangThai: 'chapNhan',
-        diemTrungBinh: 8.2,
+        coMatHop: true,
+      },
+    ],
+    phienHop: [
+      {
+        id: 'PH-001',
+        ten: 'Họp phiên 1',
+        loaiPhien: 1,
+        thoiGian: '2026-07-28T09:00:00',
+        diaDiem: 'Phòng họp A3 - Tầng 3, Trụ sở VHT',
+        trangThai: 'da_ket_thuc',
+        ngayTao: '2026-07-22',
+        diemDanh: [
+          { thanhVienId: 'TV-001', trangThai: 'tham_gia' },
+          { thanhVienId: 'TV-002', trangThai: 'tham_gia' },
+          { thanhVienId: 'TV-003', trangThai: 'tham_gia' },
+          { thanhVienId: 'TV-004', trangThai: 'tham_gia' },
+          { thanhVienId: 'TV-005', trangThai: 'khong_tham_gia' },
+          { thanhVienId: 'TV-006', trangThai: 'khong_tham_gia' },
+          { thanhVienId: 'TV-007', trangThai: 'tham_gia' },
+        ],
+        ghiChu: 'Phiên tư vấn — thống nhất danh sách điều chỉnh.',
+      },
+    ],
+  },
+  {
+    id: 'HD-2026-002',
+    maHoSo: 'HS-2026-043',
+    maNhiemVu: 'RD.2026.021',
+    tenDeTai: 'Nghiên cứu xây dựng nền tảng quản trị quy trình KHCN thông minh cho VHT',
+    linhVucNghienCuu: ['AI', 'Quản lý KHCN', 'Process Automation'],
+    phiEn: 2,
+    ngayThanhLap: '2026-08-05',
+    ngayHopDuKien: '2026-08-15',
+    diaDiem: 'Phòng họp A3 - Tầng 3, Trụ sở VHT',
+    trangThai: 'dangHop',
+    tienDeThamDinh: { khcn: 'DAT', tckt: 'DAT', ms: 'DAT', ns: 'DAT' },
+    thanhVien: [
+      {
+        id: 'TV-101',
+        userId: 'EXP-009',
+        hoTen: 'PGS.TS. Trịnh Đình Long',
+        vaiTro: 'CHU_TICH',
+        donVi: 'Ban KHCN VHT',
+        hocHamHocVi: 'PGS.TS.',
+        linhVucChuyenMon: ['Quản lý KHCN', 'AI', 'IoT'],
+        email: 'longtd@viettel.com.vn',
+        kinhNghiemNam: 20,
+        trangThai: 'chapNhan',
+        coMatHop: true,
+        diemTrungBinh: 82,
+        phieuDanhGia: {
+          trangThai: 'da_gui',
+          diemQuyDoi: 82,
+          daKySo: true,
+          daDuyetBoiThuKy: true,
+        },
+      },
+      {
+        id: 'TV-102',
+        userId: 'EXP-014',
+        hoTen: 'GS.TS. Cao Minh Thắng',
+        vaiTro: 'PHAN_BIEN_1',
+        donVi: 'Ban CNCNC Tập đoàn',
+        hocHamHocVi: 'GS.TS.',
+        linhVucChuyenMon: ['AI', 'Big Data', 'Cloud Computing'],
+        email: 'thangcm@viettel.com.vn',
+        kinhNghiemNam: 24,
+        trangThai: 'chapNhan',
+        coMatHop: true,
+        diemTrungBinh: 88,
+        phieuDanhGia: {
+          trangThai: 'da_gui',
+          diemQuyDoi: 88,
+          daKySo: true,
+          daDuyetBoiThuKy: false,
+        },
+      },
+      {
+        id: 'TV-103',
+        userId: 'EXP-011',
+        hoTen: 'ThS. Lê Thị Mai Lan',
+        vaiTro: 'PHAN_BIEN_2',
+        donVi: 'TP Tài chính Kế toán',
+        hocHamHocVi: 'ThS.',
+        linhVucChuyenMon: ['Tài chính', 'Kế toán', 'Quản lý dự án'],
+        email: 'lanltm@viettel.com.vn',
+        kinhNghiemNam: 14,
+        trangThai: 'chapNhan',
+        coMatHop: true,
+        diemTrungBinh: 75,
+        phieuDanhGia: {
+          trangThai: 'da_gui',
+          diemQuyDoi: 75,
+          daKySo: true,
+          daDuyetBoiThuKy: false,
+        },
+      },
+      {
+        id: 'TV-104',
+        userId: 'EXP-003',
+        hoTen: 'GS.TSKH. Lê Đình Cường',
+        vaiTro: 'UY_VIEN',
+        donVi: 'TT Nghiên cứu Điều khiển',
+        hocHamHocVi: 'GS.TSKH.',
+        linhVucChuyenMon: ['Điều khiển', 'AI', 'Hệ thống nhúng'],
+        email: 'cuongld@viettel.com.vn',
+        kinhNghiemNam: 25,
+        trangThai: 'chapNhan',
+        coMatHop: true,
+        diemTrungBinh: 80,
+        phieuDanhGia: {
+          trangThai: 'da_gui',
+          diemQuyDoi: 80,
+          daKySo: true,
+          daDuyetBoiThuKy: false,
+        },
+      },
+      {
+        id: 'TV-105',
+        userId: 'EXP-001',
+        hoTen: 'PGS.TS. Nguyễn Văn An',
+        vaiTro: 'UY_VIEN',
+        donVi: 'TT Nghiên cứu Vô tuyến',
+        hocHamHocVi: 'PGS.TS.',
+        linhVucChuyenMon: ['Vô tuyến', 'Truyền thông', 'Anten'],
+        email: 'annv@viettel.com.vn',
+        kinhNghiemNam: 18,
+        trangThai: 'chapNhan',
+        coMatHop: true,
+        diemTrungBinh: 78,
+        phieuDanhGia: {
+          trangThai: 'da_gui',
+          diemQuyDoi: 78,
+          daKySo: true,
+          daDuyetBoiThuKy: false,
+        },
+      },
+      {
+        id: 'TV-106',
+        userId: 'EXP-015',
+        hoTen: 'PGS.TS. Đỗ Thu Hà',
+        vaiTro: 'UY_VIEN',
+        donVi: 'Ban CNCNC Tập đoàn',
+        hocHamHocVi: 'PGS.TS.',
+        linhVucChuyenMon: ['An ninh mạng', 'Blockchain', 'IoT'],
+        email: 'hadt@viettel.com.vn',
+        kinhNghiemNam: 16,
+        trangThai: 'chapNhan',
+        coMatHop: false,
+        diemTrungBinh: undefined,
+        phieuDanhGia: { trangThai: 'chua_nop', diemQuyDoi: 0, daKySo: false, daDuyetBoiThuKy: false },
+      },
+      {
+        id: 'TV-107',
+        userId: 'EXP-010',
+        hoTen: 'ThS. Ngô Thanh Sơn',
+        vaiTro: 'THU_KY_KH',
+        donVi: 'Ban KHCN VHT',
+        hocHamHocVi: 'ThS.',
+        linhVucChuyenMon: ['Quản lý KHCN', 'Tiêu chuẩn'],
+        email: 'sonnt@viettel.com.vn',
+        kinhNghiemNam: 8,
+        trangThai: 'chapNhan',
+        coMatHop: true,
+        diemTrungBinh: 79.5,
+        phieuDanhGia: {
+          trangThai: 'da_gui',
+          diemQuyDoi: 79.5,
+          daKySo: true,
+          daDuyetBoiThuKy: true,
+        },
+      },
+    ],
+    phienHop: [
+      {
+        id: 'PH-002',
+        ten: 'Họp phiên 2',
+        loaiPhien: 2,
+        thoiGian: '2026-08-15T14:00:00',
+        diaDiem: 'Phòng họp A3 - Tầng 3, Trụ sở VHT',
+        trangThai: 'dang_hop',
+        ngayTao: '2026-08-08',
+        diemDanh: [
+          { thanhVienId: 'TV-101', trangThai: 'tham_gia' },
+          { thanhVienId: 'TV-102', trangThai: 'tham_gia' },
+          { thanhVienId: 'TV-103', trangThai: 'tham_gia' },
+          { thanhVienId: 'TV-104', trangThai: 'tham_gia' },
+          { thanhVienId: 'TV-105', trangThai: 'tham_gia' },
+          { thanhVienId: 'TV-106', trangThai: 'tham_gia' },
+          { thanhVienId: 'TV-107', trangThai: 'tham_gia' },
+        ],
       },
     ],
   },
 ]
 
-// ---------------------------------------------------------------------------
-// Helper functions
-// ---------------------------------------------------------------------------
+// Gán điểm TB HĐ phiên 2 từ seed
+;(() => {
+  const hd2 = seedHoiDong.find((h) => h.id === 'HD-2026-002')
+  if (hd2) {
+    const r = danhGiaKetQua(hd2)
+    hd2.diemTrungBinhHoiDong = r.diemTB
+    hd2.ketQuaDanhGia = r.ketQua
+    hd2.traVeBuoc15 = r.traVeBuoc15
+  }
+})()
 
-let _idCounter = 100
+let _idCounter = 200
 function nextId(prefix: string) {
   return `${prefix}-${++_idCounter}`
 }
 
-/** Tạo mã HĐ mới */
 export function taoMaHoiDong(): string {
   const now = new Date()
   const y = now.getFullYear()
@@ -343,10 +761,28 @@ export function taoMaHoiDong(): string {
   return `HD-${y}-${s}`
 }
 
-/**
- * Parse lĩnh vực nghiên cứu từ tên đề tài.
- * Cần cập nhật khi NhiemVu có trường linhVucNghienCuu riêng.
- */
+export function taoPhienHopMacDinh(
+  hd: HoiDong,
+  opts?: Partial<Pick<PhienHopHoiDong, 'ten' | 'loaiPhien' | 'thoiGian' | 'diaDiem'>>,
+): PhienHopHoiDong {
+  const loai = opts?.loaiPhien ?? hd.phiEn
+  return {
+    id: nextId('PH'),
+    ten: opts?.ten ?? (loai === 'khac' ? 'Họp bổ sung' : `Họp phiên ${loai}`),
+    loaiPhien: loai,
+    thoiGian: opts?.thoiGian ?? `${hd.ngayHopDuKien}T09:00:00`,
+    diaDiem: opts?.diaDiem ?? hd.diaDiem ?? '',
+    trangThai: 'nhap',
+    diemDanh: hd.thanhVien.map((tv) => ({
+      thanhVienId: tv.id,
+      trangThai: (tv.coMatHop === false
+        ? 'khong_tham_gia'
+        : 'tham_gia') as TrangThaiThamGiaPhien,
+    })),
+    ngayTao: new Date().toISOString().slice(0, 10),
+  }
+}
+
 export function parseLinhVucTuDeTai(tenDeTai: string): string[] {
   const t = tenDeTai.toLowerCase()
   const linhVuc: string[] = []
@@ -360,7 +796,7 @@ export function parseLinhVucTuDeTai(tenDeTai: string): string[] {
     linhVuc.push('Vật liệu')
   if (t.includes('điện tử') || t.includes('vi điều khiển') || t.includes('mạch'))
     linhVuc.push('Điện tử')
-  if (t.includes('tác chiến') || t.includes('radar') || t.includes('ew') || t.includes('điện tử'))
+  if (t.includes('tác chiến') || t.includes('radar') || t.includes('ew'))
     linhVuc.push('Tác chiến Điện tử')
   if (t.includes('quy trình') || t.includes('workflow') || t.includes('khcn'))
     linhVuc.push('Quản lý KHCN')
@@ -370,15 +806,13 @@ export function parseLinhVucTuDeTai(tenDeTai: string): string[] {
   return linhVuc
 }
 
-/**
- * Lọc experts phù hợp với lĩnh vực nghiên cứu của đề tài.
- * Ưu tiên experts có overlap giữa linhVucChuyenMon và linhVucDeTai.
- */
 export function locExpertsTheoLinhVuc(experts: ExpertProfile[], linhVucDeTai: string[]): ExpertProfile[] {
   return experts
     .map((e) => {
       const overlap = e.linhVucChuyenMon.filter((lv) =>
-        linhVucDeTai.some((l) => lv.toLowerCase().includes(l.toLowerCase()) || l.toLowerCase().includes(lv.toLowerCase()))
+        linhVucDeTai.some(
+          (l) => lv.toLowerCase().includes(l.toLowerCase()) || l.toLowerCase().includes(lv.toLowerCase()),
+        ),
       )
       return { expert: e, score: overlap.length }
     })
@@ -387,10 +821,6 @@ export function locExpertsTheoLinhVuc(experts: ExpertProfile[], linhVucDeTai: st
     .map(({ expert }) => expert)
 }
 
-/**
- * Nhóm experts theo đơn vị, giới hạn tối đa 2 người mỗi đơn vị.
- * Đảm bảo đa dạng đơn vị (ít nhất 4 đơn vị khác nhau).
- */
 export function phanBoTheoDonVi(experts: ExpertProfile[]): ExpertProfile[] {
   const usedPerDonVi = new Map<string, number>()
   const result: ExpertProfile[] = []
@@ -404,38 +834,27 @@ export function phanBoTheoDonVi(experts: ExpertProfile[]): ExpertProfile[] {
   return result
 }
 
-/**
- * Tự động thành lập Hội đồng cho một hồ sơ.
- *
- * Thuật toán:
- * 1. Parse lĩnh vực từ tên đề tài
- * 2. Lọc experts phù hợp
- * 3. Nhóm theo đơn vị, max 2/đơn vị
- * 4. Phân vai trò: kinh nghiệm cao nhất → CHU_TICH,
- *    phù hợp nhất KHCN → PHAN_BIEN_1, giỏi TCKT → PHAN_BIEN_2,
- *    còn lại → UY_VIEN (tối đa 3), kinh nghiệm tổng hợp → THU_KY_KH
- */
 export function taoHoiDongMacDinh(
   maHoSo: string,
   maNhiemVu: string,
   tenDeTai: string,
-  phiEn: 1 | 2
+  phiEn: 1 | 2,
 ): HoiDong {
   const linhVuc = parseLinhVucTuDeTai(tenDeTai)
   const filtered = locExpertsTheoLinhVuc(EXPERT_POOL, linhVuc)
-  const diverse = phanBoTheoDonVi(filtered)
-
-  // Sắp xếp theo kinh nghiệm giảm dần
+  const diverse = phanBoTheoDonVi(filtered.length ? filtered : EXPERT_POOL)
   const sorted = [...diverse].sort((a, b) => b.kinhNghiemNam - a.kinhNghiemNam)
 
-  // Tìm experts phù hợp cho từng vai trò
   const tcktExperts = sorted.filter((e) =>
-    e.linhVucChuyenMon.some((lv) => lv.toLowerCase().includes('tài chính') || lv.toLowerCase().includes('kế toán'))
+    e.linhVucChuyenMon.some(
+      (lv) => lv.toLowerCase().includes('tài chính') || lv.toLowerCase().includes('kế toán'),
+    ),
   )
-  const khcnExperts = sorted.filter((e) =>
-    e.linhVucChuyenMon.some((lv) =>
-      !lv.toLowerCase().includes('tài chính') && !lv.toLowerCase().includes('kế toán')
-    )
+  const khcnExperts = sorted.filter(
+    (e) =>
+      !e.linhVucChuyenMon.some(
+        (lv) => lv.toLowerCase().includes('tài chính') || lv.toLowerCase().includes('kế toán'),
+      ),
   )
 
   const toMember = (e: ExpertProfile, vaiTro: VaiTroHoiDong): ThanhVienHoiDong => ({
@@ -449,40 +868,48 @@ export function taoHoiDongMacDinh(
     email: e.email,
     kinhNghiemNam: e.kinhNghiemNam,
     trangThai: 'duKien',
+    coMatHop: false,
+    phieuDanhGia: {
+      trangThai: 'chua_nop',
+      diemQuyDoi: 0,
+      daKySo: false,
+      daDuyetBoiThuKy: false,
+    },
   })
 
   const members: ThanhVienHoiDong[] = []
   let idx = 0
 
-  // 1. Chu tịch — kinh nghiệm cao nhất
   if (sorted[idx]) members.push(toMember(sorted[idx++], 'CHU_TICH'))
 
-  // 2. Phản biện 1 — chuyên KHCN
   const pb1 = khcnExperts.find((e) => !members.some((m) => m.userId === e.userId))
   if (pb1) members.push(toMember(pb1, 'PHAN_BIEN_1'))
 
-  // 3. Phản biện 2 — chuyên TCKT
   const pb2 = tcktExperts.find((e) => !members.some((m) => m.userId === e.userId))
   if (pb2) members.push(toMember(pb2, 'PHAN_BIEN_2'))
 
-  // 4. Ủy viên — tối đa 3 người, đa dạng đơn vị
-  const uyViens = sorted
-    .filter((e) => !members.some((m) => m.userId === e.userId))
-    .slice(0, 3)
+  const uyViens = sorted.filter((e) => !members.some((m) => m.userId === e.userId)).slice(0, 3)
   uyViens.forEach((e) => members.push(toMember(e, 'UY_VIEN')))
 
-  // 5. Thư ký KH — người có kinh nghiệm quản lý KHCN
   const tkkh = sorted.find(
     (e) =>
       !members.some((m) => m.userId === e.userId) &&
-      e.linhVucChuyenMon.some((lv) => lv.toLowerCase().includes('quản lý') || lv.toLowerCase().includes('khcn'))
+      e.linhVucChuyenMon.some(
+        (lv) => lv.toLowerCase().includes('quản lý') || lv.toLowerCase().includes('khcn'),
+      ),
   )
   if (tkkh) members.push(toMember(tkkh, 'THU_KY_KH'))
-
-  // Nếu chưa đủ thư ký, lấy người còn lại đầu tiên
   if (!members.some((m) => m.vaiTro === 'THU_KY_KH')) {
     const fallback = sorted.find((e) => !members.some((m) => m.userId === e.userId))
     if (fallback) members.push(toMember(fallback, 'THU_KY_KH'))
+  }
+
+  // Bổ sung UVPB còn thiếu từ pool
+  for (const role of ['PHAN_BIEN_1', 'PHAN_BIEN_2'] as VaiTroHoiDong[]) {
+    if (!members.some((m) => m.vaiTro === role)) {
+      const fb = EXPERT_POOL.find((e) => !members.some((m) => m.userId === e.userId))
+      if (fb) members.push(toMember(fb, role))
+    }
   }
 
   const now = new Date()
@@ -501,5 +928,9 @@ export function taoHoiDongMacDinh(
     diaDiem: 'Phòng họp A3 - Tầng 3, Trụ sở VHT',
     trangThai: 'sapLap',
     thanhVien: members,
+    tienDeThamDinh:
+      phiEn === 2
+        ? { khcn: 'DAT', tckt: 'DAT', ms: 'DAT', ns: 'DAT' }
+        : undefined,
   }
 }

@@ -1,0 +1,4 @@
+interface:
+  display_name: "SRS to diagrams.net Flows"
+  short_description: "Sinh sơ đồ SRS chuẩn theo ba mức chi tiết"
+  default_prompt: "Use $srs-to-drawio-flows to analyze this SRS and generate validated diagrams.net outputs at simple, medium, and detailed levels."

@@ -2,6 +2,13 @@
 // Thư viện biểu mẫu (Camunda Forms / form-js) cho module PH3 "Thư viện biểu mẫu"
 // (route /phan-he/PH3/bieu-mau). Ghép backend Spring Boot `/api/eform` — service
 // HTTP-backed (core/services/eform.service.ts) đóng vai trò FormContext gốc.
+//
+// `nhomRD` là **thuộc tính client-side tạm thời** (xem `.harness/state/...`
+// 2026-08-05): backend hiện chưa có cột `nhom_rd`, trường này dùng để lọc
+// biểu mẫu theo nhóm quy trình RD01..RD10 ngay trên Angular. Khi backend
+// chính thức hỗ trợ sẽ đối chiếu với `NhomRD` ở `core/models/eform-nhom-rd.ts`.
+
+import type { NhomRD } from './eform-nhom-rd';
 
 export interface FormMeta {
   key: string;
@@ -9,6 +16,8 @@ export interface FormMeta {
   moTa: string;
   /** Loại biểu mẫu — dùng để nhóm/lọc trong thư viện. */
   loai?: 'Soạn thảo' | 'Góp ý' | 'Nhận xét' | 'Thẩm định' | 'Phê duyệt';
+  /** Nhóm quy trình RD — dùng để lọc biểu mẫu theo luồng nghiệp vụ. */
+  nhomRD?: NhomRD;
   schema: unknown;
   /** Optimistic lock version từ backend — dùng làm If-Match khi sửa/xoá. */
   version: number;
